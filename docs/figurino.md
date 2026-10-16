@@ -309,7 +309,7 @@ antes de 1883, manga presunto (anos 1890), nome "chapéu-panamá".
 | **Bolso na camisa** | sem fonte | H (aparece só em foto de 1946 a 1951) | se o caderninho é essencial, fica como licença registrada |
 | Calça arregaçada até a canela | **certo** | D | manter |
 | **Bolsos traseiros chapados** | **cara de jeans** | sem fonte | **tirar** |
-| Cordão na cintura | sem fonte para jangadeiro | H (embira só em pesca interior; porto de 1935 usa cinto de couro) | aceitável como embira (P fraco) ou trocar por cinto de couro simples; decisão do Joabe |
+| Cordão na cintura | sem fonte para jangadeiro | H (embira só em pesca interior; porto de 1935 usa cinto de couro) | **decidido (Joabe, 16/10): cinto de couro** cru gasto, castanho escuro, estreito, fivela simples de ferro escurecido; no avô, o mesmo cinto mais velho |
 | Pé descalço | **certo** | D (Lau 1941, Cela 1945, Welles 1942) | manter |
 | **Chapéu cônico (formato "chinês")** | **forma errada** | D: copa alta e **aba larga mole levantada nas bordas** (Lau 1941) | **refazer a forma** do chapéu de carnaúba nos dois |
 | Pano anil no braço | sem registro de costume | H; anil existia (P) | licença narrativa (acento de cor), registrar |
@@ -318,8 +318,9 @@ antes de 1883, manga presunto (anos 1890), nome "chapéu-panamá".
 | Avô: camisa creme | plausível | P (desbotado ou roupa não tingida) | manter ou puxar para o tinto muito desbotado `#CDB596` |
 | Objetos que faltam | | D | samburá, cabaça a tiracolo, cachimbo (avô), faca |
 
-**Decisões para o Joabe:** (1) cordão de embira ou cinto de couro; (2) manter o bolso como licença
-para o caderninho; (3) confirmar a troca da forma do chapéu.
+**Decididas em 16/10:** cinto de couro no lugar do cordão (Joabe); chapéu de copa alta e aba larga mole
+levantada nas bordas e calça sem bolsos traseiros (correções documentadas, liberadas pela direção de
+arte). Bolso, pano anil e caderninho ficam como licença narrativa registrada.
 
 ---
 
