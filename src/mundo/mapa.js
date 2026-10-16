@@ -7,7 +7,7 @@
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js'
 import {
   costaZ, larguraPraiaX, rioCearaX, distPolilinha, pajeuJogo, lagoasJogo, lugaresJogo,
-  densidadeLotes, nomeBairro,
+  densidadeLotes, nomeBairro, trechosJogo, VILAS,
 } from './fortaleza1932.js'
 
 const perlin = new ImprovedNoise()
@@ -160,6 +160,13 @@ export function densidadeGrama(x, z, h, inclinacao) {
   for (const l of lagoasJogo) {
     const q = Math.hypot((x - l.x) / l.rx, (z - l.z) / l.rz)
     d = Math.max(d, (1 - smooth(1.1, 2.4, q)) * 0.85)
+  }
+  // vilas de jangadeiros: chão de areia pisada com capim baixo e ralo (Platt 1935, ids 2987 e 3019)
+  if (s < bw + 90) {
+    for (const v of VILAS) {
+      const [a, b] = trechosJogo[v]
+      if (x > a - 20 && x < b + 20) { d *= 0.3; break }
+    }
   }
   // dunas altas: só restinga
   d *= 1 - 0.7 * smooth(5, 10, h - 6)

@@ -40,7 +40,8 @@ function barra(a, b, r, hex, lados = 6) {
 }
 
 // vela: triângulo subdividido (coordenadas baricêntricas), bojo no meio, faixas de pano costuradas
-// paralelas ao mastro, manchas (sangue de peixe, limo) e remendos
+// paralelas à valuma (a borda de trás, do topo do mastro ao fim da retranca: Platt 3263), manchas
+// (sangue de peixe, limo) e remendos
 function vela(amura, topo, punho, semente, idade) {
   const N = 20
   const base = new THREE.Color('#e9dfcb').lerp(new THREE.Color('#b9a582'), idade)
@@ -51,7 +52,7 @@ function vela(amura, topo, punho, semente, idade) {
     const p = new THREE.Vector3().addScaledVector(amura, w0).addScaledVector(punho, w1).addScaledVector(topo, w2)
     p.z += 27 * w0 * w1 * w2 * 0.42 + w1 * w2 * 0.3 // bojo, maior perto da valuma
     const c = base.clone()
-    if ((w1 * 11) % 1 < 0.07) c.multiplyScalar(0.85) // costura das faixas
+    if ((w0 * 12) % 1 < 0.07) c.multiplyScalar(0.85) // costura das faixas: w0 constante corre paralelo à valuma
     const n = ruido(p.x * 0.55 + semente, p.y * 0.55, semente * 0.7)
     c.multiplyScalar(1 - Math.max(0, n) * (0.22 + idade * 0.4))
     c.multiplyScalar(1 - (1 - w2) * 0.1 * idade)
@@ -109,7 +110,7 @@ export function geometriaJangada({ semente = 0, idade = 0.4, naAreia = false } =
   partes.push(barra(pe, topoMastro, 0.065, '#7a6040'))
   // retranca e vela
   const amura = new THREE.Vector3(xBanco - 0.02, 1.05, 0)
-  const punho = new THREE.Vector3(xBanco - 5.0, 1.3, 0)
+  const punho = new THREE.Vector3(xBanco - 6.1, 1.45, 0) // a retranca passa da popa (fotos de 1935)
   partes.push(barra(amura, punho, 0.045, '#7a6040'))
   partes.push(vela(amura, topoMastro.clone().add(new THREE.Vector3(0.05, -0.15, 0)), punho, semente, idade))
   // banco de governo na popa, remo de governo em pá descendo na água
@@ -122,6 +123,9 @@ export function geometriaJangada({ semente = 0, idade = 0.4, naAreia = false } =
   // samburá (cesto de boca apertada) e a quimanga
   partes.push(colorir(new THREE.CylinderGeometry(0.14, 0.24, 0.4, 9).translate(-0.6, 0.55, 0.45), '#b89a63'))
   partes.push(colorir(new THREE.SphereGeometry(0.15, 8, 6).scale(1, 0.8, 1).translate(-1.1, 0.48, -0.35), '#7f6a3c'))
+  // rolo de corda no convés (Platt 3235)
+  partes.push(colorir(new THREE.TorusGeometry(0.22, 0.06, 5, 12).rotateX(Math.PI / 2).translate(0.6, 0.42, -0.45), '#a08a64'))
+  partes.push(colorir(new THREE.TorusGeometry(0.17, 0.05, 5, 10).rotateX(Math.PI / 2).translate(0.6, 0.5, -0.45), '#94805c'))
   // roletes de tronco de coqueiro por baixo (quando está na areia)
   if (naAreia) for (const x of [-1.8, 1.4]) partes.push(colorir(new THREE.CylinderGeometry(0.13, 0.13, 2.3, 8).rotateX(Math.PI / 2).translate(x, -0.08, 0), '#8a7a62'))
   return mergeGeometries(partes)

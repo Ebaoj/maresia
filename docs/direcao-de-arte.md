@@ -224,16 +224,17 @@ pedras no mar (Rio), a igreja no morro e o rio largo com pontes (Recife). Carros
 - **Murici:** *Byrsonima crassifolia* (dunas a sudeste de Fortaleza, 1927): flor amarela a
   avermelhada, fruto amarelo-alaranjado.
 - **Guajiru:** flor branca, fruto vermelho-escuro a preto; dunas e planícies arenosas.
-- **Coqueiro:** em 1932 só o **gigante** (20 a 30 m; o anão chega ao Brasil em 1925). **Não há prova
-  de coqueiral na orla em 1932**: o razoável são coqueiros esparsos em quintais e vilas de
-  pescadores. Os coqueirais contínuos da praia do jogo saem ou rareiam na fase do mapa.
+- **Coqueiro:** em 1932 só o **gigante** (20 a 30 m; o anão chega ao Brasil em 1925). **Revisto em
+  16/10/2026:** as fotos de Platt (1935) e do Arquivo Nirez mostram **coqueiral denso nas vilas de
+  pescadores** e atrás da Praia do Peixe, e coqueiro novo plantado nos quintais. No centro, poucos.
 
 ## 6. Três ambientes
 
 ### A praia com a jangada
 
-- **1932.** Faixa de areia larga com jangadas sobre roletes de coqueiro, viradas para o mar. Casas
-  de palha em fileira atrás, coqueiros inclinados. Ao fundo, a Ponte Metálica com guindastes e
+- **1932.** Faixa de areia larga com jangadas sobre roletes de coqueiro, viradas para o mar. Casebres
+  de palha (paredes e cobertura) em grupos soltos atrás, quintais de cerca de varas, coqueiral
+  denso; na parte leste da Praia de Iracema, chalés de telha da elite (fotos de 1930 e 1931). Ao fundo, a Ponte Metálica com guindastes e
   fardos de algodão; mais longe, a estrutura inacabada da Ponte dos Ingleses e o farol do
   Mucuripe. Peixe vendido na areia, samburás, gente ajudando a puxar quem chega.
   - Luz: madrugada azul (saída) e tarde dourada (volta).

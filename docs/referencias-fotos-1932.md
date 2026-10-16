@@ -95,6 +95,39 @@ planta de 1931 e 1932 são a melhor base que existe.
 - **Varanda do Excelsior (id 3121):** a praça depois da reforma de 1933, com caminhos e as mesmas
   árvores em bola; gradil de ferro art nouveau na sacada.
 
+## Vila de jangadeiros e Praia do Peixe (revisto em 16/10/2026)
+
+A vila do jogo era inventada (fileiras de casas de taipa iguais, sem coqueiro nem cerca). Fontes
+que corrigiram:
+
+- **Platt 2987 e 3019 (1935):** casebre com **parede de palha trançada** e cobertura grossa de
+  **quatro águas** ou de duas, beiral baixo; uma casa de tábuas; **cerca de varas** finas e tortas
+  em volta do quintal, com **coqueiro pequeno plantado** dentro; coqueiral alto e denso atrás;
+  casas espalhadas sem alinhamento; trilho de bitola estreita na areia (ainda não feito).
+- **"As antigas casinhas de pescadores na Praia do Peixe" (Arquivo Nirez, sem data):** casas
+  baixas em grupos soltos atrás de uma areia larga e aberta, coqueiral contínuo ao fundo.
+- **"A tranquilidade da Praia de Iracema" (Arquivo Nirez):** coqueiral denso logo atrás da areia,
+  troncos caiados, um casebre de palha baixo debaixo dos coqueiros.
+- **Postal de 1931 e "Beira Mar da Praia de Iracema, 1930":** a parte leste da praia **já era de
+  chalés** de um e dois andares, telhado de telha de quatro águas, varanda, muro baixo, coqueiros.
+  O Fortaleza Nobre conta que a partir de 1920 a elite construiu "casas alpendradas" ali, a praia
+  virou "de Iracema" em 1925 e os pescadores foram sendo empurrados. **No jogo:** palha só onde a
+  planta de 1931-32 não tem lote; **os chalés ainda faltam** (próxima correção).
+- **Igreja de São Pedro** dos pescadores (início dos anos 1930) e o **Poço da Draga em 1932**
+  (porto, alvarengas, guindastes): ainda não estão no jogo.
+- **Jangada (Platt 3263, 3235, 3290, 3212):** a retranca passa da popa; as costuras da vela
+  correm paralelas à valuma; rolo de corda no convés; numa vela aparece pintado "Z 1" (colônia
+  de pescadores), a conferir antes de usar.
+
+Fonte das fotos do Nirez: Fortaleza Nobre, "Praia do Peixe: as diversas fases da Praia de Iracema"
+(http://www.fortalezanobre.com.br/2009/11/praia-do-peixe-as-diversas-fases-da.html), sem licença
+declarada: só referência.
+
+## Roupas (1907 a 1935)
+
+Fotos e observações separadas para o personagem em
+`arte/entradas/referencias/epoca-1932-roupas/LEIA.md` (fora do git: as do Platt têm direitos reservados).
+
 ## Fotos a buscar ainda
 
 Praia do Peixe e casas de palha (Acervo Nirez, 1925 e 1929, citadas pelo Diário do Nordeste);

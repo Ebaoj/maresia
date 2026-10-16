@@ -6,7 +6,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import {
   linhaCosta, larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA, pesos, fbm,
 } from './mapa.js'
-import { trechosJogo, VILAS } from './fortaleza1932.js'
+import { coqueirosDasVilas } from './vilas.js'
 import { LIMITES, densidadeLotes } from './mapa.js'
 import { alturaTerreno, inclinacao } from './terreno.js'
 import { gradienteToon, texturaCanvas, pintar } from '../materiais.js'
@@ -152,25 +152,20 @@ function mascaraFolha() {
   }, { repetir: false, cor: false })
 }
 
-// 1932: não há prova de coqueiral na orla (docs/direcao-de-arte.md). Coqueiros esparsos nas vilas
-// de jangadeiros e alguns em quintais da periferia; só o coqueiro gigante (alto e fino).
+// 1932: coqueiral denso nas vilas de jangadeiros (fotos de Platt, 1935, e do Arquivo Nirez; ver
+// docs/referencias-fotos-1932.md); as posições vêm de vilas.js. Fora delas, alguns em quintais da
+// periferia. Só o coqueiro gigante (alto e fino).
 function posicoes() {
   const lista = []
-  const tentar = (x, z, escala = 1) => {
-    if (!ocupacao.livre(x, z, 1.2, 1.2)) return
+  const tentar = (x, z, escala = 1, noQuintal = false) => {
+    if (!noQuintal && !ocupacao.livre(x, z, 1.2, 1.2)) return
     if (Math.abs(x - rioX(z)) < RIO_MEIA_LARGURA * 1.5) return
-    ocupacao.marcar(x, z, 1.4, 1.4)
+    if (!noQuintal) ocupacao.marcar(x, z, 1.4, 1.4)
     lista.push({ x, z, y: alturaTerreno(x, z), escala })
   }
-  for (const v of VILAS) {
-    const [a, b] = trechosJogo[v]
-    for (let i = 0; i < 26; i++) {
-      const x = rnd.entre(a, b)
-      const s = larguraPraia(x) + rnd.entre(-6, FIM_AVENIDA + 22)
-      if (rnd.chance(0.35)) tentar(x, linhaCosta(x) + s, rnd.entre(1.0, 1.35))
-    }
-  }
-  for (let i = 0; i < 3000 && lista.length < 90; i++) {
+  for (const c of coqueirosDasVilas) tentar(c.x, c.z, c.escala, c.noQuintal)
+  const nVilas = lista.length
+  for (let i = 0; i < 3000 && lista.length < nVilas + 90; i++) {
     const x = rnd.entre(LIMITES.x0 + 20, LIMITES.x1 - 20)
     const z = rnd.entre(-200, 700)
     if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 4) continue
