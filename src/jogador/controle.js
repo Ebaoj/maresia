@@ -7,6 +7,7 @@ import { alturaChao, resolverColisoes } from '../mundo/colisao.js'
 import { linhaCosta, LIMITES, distCosta, larguraPraia } from '../mundo/mapa.js'
 import { lerpAngulo, clamp } from '../utils.js'
 import { prenderNaFatia } from '../mundo/fatia.js'
+import { trajetoriaPedida } from './motion-matching.js'
 
 const PROFUNDIDADE_NADO = 1.15
 const ALTURA_BOIANDO = -1.05
@@ -29,6 +30,7 @@ export class Jogador {
     this.escalaVel = 0
     this.tempo = 0
     this.velHoriz = 0
+    this.velDesejada = new THREE.Vector3()
     this.sentado = null // banco onde está sentado
     this.carregando = null // objeto que está segurando
     this.afundado = 0
@@ -54,7 +56,7 @@ export class Jogador {
   // estado que o animador lê a cada quadro
   animar(dt, cfg) {
     const a = this.animador
-    Object.assign(a.opcoes, { fps: cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar })
+    Object.assign(a.opcoes, { fps: cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar, mm: cfg.motionMatching && !!a.banco })
     const y = this.pos.y
     a.atualizar(dt, {
       vel: this.velHoriz,
@@ -65,6 +67,13 @@ export class Jogador {
       carregando: !!this.carregando,
       yaw: this.yawVisual,
       chao: (x, z) => alturaChao(x, z, y + 0.4),
+      // trajetória que o controle vai fazer no próximo segundo (motion matching)
+      traj: trajetoriaPedida({
+        vel: this.vel,
+        velDesejada: this.velDesejada,
+        yaw: this.yawVisual,
+        yawDesejado: this.velDesejada.lengthSq() > 0.09 ? Math.atan2(this.velDesejada.x, this.velDesejada.z) : this.yawVisual,
+      }),
     })
     // pisadas do pé de verdade (o boneco antigo usava a fase do passo)
     for (const ev of a.eventos) this.eventos.push(ev)
@@ -129,6 +138,7 @@ export class Jogador {
     else if (profAqui > 0.35 && this.pos.y < 0.2) alvoVel *= 0.6 // água pela canela
 
     const acel = this.noChao || this.nadando ? 10 : 3
+    this.velDesejada.set(dx * alvoVel, 0, dz * alvoVel) // o motion matching lê para prever a trajetória
     this.vel.x += (dx * alvoVel - this.vel.x) * Math.min(1, dt * acel)
     this.vel.z += (dz * alvoVel - this.vel.z) * Math.min(1, dt * acel)
 

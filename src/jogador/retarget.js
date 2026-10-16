@@ -57,6 +57,9 @@ function alturaQuadril(rep) {
 export function converter(clipe, fonte, alvo, { fps = 30, noLugar = true, nome = clipe.name } = {}) {
   const mixer = new THREE.AnimationMixer(fonte.raiz)
   const acao = mixer.clipAction(clipe)
+  // uma vez só e parado no fim: com repetição, pedir o último quadro devolve o primeiro
+  acao.setLoop(THREE.LoopOnce, 1)
+  acao.clampWhenFinished = true
   acao.play()
   const n = Math.max(2, Math.round(clipe.duration * fps) + 1)
   const tempos = new Float32Array(n)

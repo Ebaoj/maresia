@@ -91,6 +91,64 @@ export class Animador {
 
   tem(nome) { return !!this.acoes[nome] }
 
+  // Motion matching (motion-matching.js): liga o banco; cada movimento ganha duas ações (A e B) para
+  // poder trocar de um trecho para outro do mesmo movimento com transição
+  usarBanco(banco) {
+    this.banco = banco
+    this.mm = { e: -1, t: 0, chave: null, tocando: false, espera: 0 }
+    banco.entradas.forEach((ent, e) => {
+      const clipe = banco.clipeParaTocar(e)
+      for (const lado of ['A', 'B']) {
+        const a = this.mixer.clipAction(lado === 'A' ? clipe : clipe.clone())
+        a.setLoop(ent.loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity)
+        a.clampWhenFinished = true
+        a.enabled = true
+        a.setEffectiveWeight(0)
+        a.play()
+        a.userData = { peso: 0, e, lado }
+        this.acoes[`mm:${ent.nome}:${lado}`] = a
+      }
+    })
+    this.opcoes.mm = true
+  }
+
+  // a cada pose: procura no banco o quadro mais parecido com (pose de agora + trajetória pedida)
+  casar(DT, s, alvo) {
+    const mm = this.mm
+    const FPSB = 30
+    const atual = mm.tocando && mm.chave ? this.acoes[mm.chave] : null
+    const entAtual = atual ? this.banco.entradas[atual.userData.e] : null
+    let fAtual = 0
+    if (atual) {
+      const dur = atual.getClip().duration
+      const t = entAtual.loop ? atual.time % dur : Math.min(atual.time, dur)
+      fAtual = Math.min(entAtual.n - 1, Math.round(t * FPSB))
+    }
+    mm.espera -= DT
+    const fimDoClipe = atual && !entAtual.loop && fAtual >= entAtual.n - 3
+    if (!atual || mm.espera <= 0 || fimDoClipe) {
+      mm.espera = 0.1 // procura 10 vezes por segundo
+      const pose = atual ? this.banco.linha(atual.userData.e, fAtual) : this.banco.linha(0, 0)
+      const r = this.banco.buscar(pose, s.traj)
+      const custoAtual = atual ? this.banco.custoDe(atual.userData.e, fAtual, r.q) : Infinity
+      const mesmoLugar = atual && r.e === atual.userData.e && Math.abs(r.f - fAtual) < 8
+      // só troca se o novo for claramente melhor (evita ficar pulando entre trechos parecidos)
+      if (!mesmoLugar && (r.custo < custoAtual * 0.85 || fimDoClipe || !atual)) {
+        const nome = this.banco.entradas[r.e].nome
+        const lado = atual && atual.userData.e === r.e && atual.userData.lado === 'A' ? 'B' : 'A'
+        const chave = `mm:${nome}:${lado}`
+        const a = this.acoes[chave]
+        a.reset()
+        a.time = r.f / FPSB
+        a.play()
+        mm.chave = chave
+        mm.tocando = true
+        this.mmUltimo = { nome, f: r.f, custo: +r.custo.toFixed(2) }
+      }
+    }
+    alvo[mm.chave] = 1
+  }
+
   disparar(nome) {
     const a = this.acoes[nome]
     if (!a) return
@@ -132,7 +190,9 @@ export class Animador {
     else if (s.sentado) alvo.sentado = 1
     else if (s.nadando) alvo[s.vel > 0.6 && this.tem('nadar') ? 'nadar' : 'boiar'] = 1
     else if (s.noAr) alvo[s.velY > 0 && this.tem('pulo-subida') ? 'pulo-subida' : 'pulo-queda'] = 1
+    else if (this.mm && this.opcoes.mm && !s.carregando && s.traj) this.casar(DT, s, alvo)
     else loc(s.vel, s.carregando && this.tem('carregar-andando') ? 'carregar-andando' : 'andar')
+    if (this.mm && !alvo[this.mm.chave]) this.mm.tocando = false
 
     // troca suave entre movimentos (pesos andam para o alvo) e o que não existe cai no "parado"
     let soma = 0

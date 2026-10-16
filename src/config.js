@@ -74,6 +74,7 @@ export const PADRAO = {
     corridaNova: 4.5,
     peNoChao: true,        // IK: cada pé pisa no chão de verdade (ladeira, degrau, duna)
     inclinar: true,        // o corpo inclina na curva e na arrancada
+    motionMatching: true,  // locomoção por motion matching (motion-matching.js); desligado = mistura antiga por velocidade
   },
   camera: {
     distancia: 5.0,        // fatia: câmera mais perto e mais baixa, composta como ilustração
