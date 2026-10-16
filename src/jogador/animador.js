@@ -274,6 +274,7 @@ export class Animador {
     if (this.opcoes.inclinar) this.inclinar(DT, s)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)
     this.detectarPisadas(s)
+    this.rosto?.atualizar(DT, s)
     this.antes = { noAr: s.noAr, sentado: s.sentado, yaw: s.yaw, vel: s.vel }
     return true
   }
