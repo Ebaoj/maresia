@@ -90,6 +90,7 @@ export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
     pivo.add(peca)
     ossos.set('Chapeu', pivo)
   }
+  relaxarMaos(ossos)
   // eixos do repouso, no espaço local de cada osso (o animador não pode supor como o modelo foi montado)
   const local = (osso, v) => v.clone().applyQuaternion(osso.getWorldQuaternion(new THREE.Quaternion()).invert())
   const eixos = {
@@ -98,6 +99,30 @@ export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
     abaChapeu: new THREE.Vector3(-0.17, topo - 0.09 - pc.y, 0.07).applyQuaternion(inv), // aba do lado direito, um pouco à frente
   }
   return { raiz, ossos, esqueleto: malhas[0].skeleton, malhas, eixos, ancorasRosto: liso ? ancorasDoRosto(raiz, cabeca, malhas) : null }
+}
+
+// Mão relaxada: os movimentos vêm do esqueleto padrão, que não tem dedos, e a pose em T deixa a mão
+// espalmada e o polegar aberto. Curva cada falange para dentro da palma (mais no mínimo que no
+// indicador, como a mão de verdade descansando) e traz o polegar para perto da mão. Fica fixo.
+function relaxarMaos(ossos) {
+  const curva = { Index: [0.22, 0.32, 0.22], Middle: [0.3, 0.42, 0.28], Ring: [0.38, 0.48, 0.3], Pinky: [0.45, 0.52, 0.32] }
+  const giros = []
+  for (const [L, s] of [['Left', 1], ['Right', -1]]) {
+    // repouso: dedos no eixo X do lado da mão, palma para baixo; dobrar = girar em torno de Z do mundo
+    for (const [dedo, angs] of Object.entries(curva)) {
+      angs.forEach((a, i) => {
+        const o = ossos.get(`${L}Hand${dedo}${i + 1}`)
+        if (o) giros.push([o, new THREE.Vector3(0, 0, 1), -s * a])
+      })
+    }
+    const p1 = ossos.get(`${L}HandThumb1`)
+    if (p1) giros.push([p1, new THREE.Vector3(0, 1, 0), s * 0.35]) // polegar para junto do indicador
+    const p2 = ossos.get(`${L}HandThumb2`)
+    if (p2) giros.push([p2, new THREE.Vector3(0, 0, 1), -s * 0.2])
+  }
+  // eixos locais calculados todos antes de girar qualquer um (girar o pai muda o mundo do filho)
+  const locais = giros.map(([o, eixo, a]) => [o, eixo.clone().applyQuaternion(o.getWorldQuaternion(new THREE.Quaternion()).invert()), a])
+  for (const [o, eixo, a] of locais) o.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(eixo, a))
 }
 
 // Onde desenhar olhos e boca: procura a superfície do rosto (raio vindo da frente) na altura dos olhos

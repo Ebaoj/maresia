@@ -284,6 +284,7 @@ export class Animador {
     const wNado = nado?.userData.peso || 0
     if (wNado > 0.01 && !nado.getClip().userData?.procedural) this.ossos.get('Hips').position.y += wNado * 0.7
     this.corpo.raiz.updateMatrixWorld(true)
+    if (this.opcoes.bracosJuntos !== 0) this.bracosJuntos(s, this.opcoes.bracosJuntos ?? 0.6)
     if (this.opcoes.inclinar) this.inclinar(DT, s)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)
     const olharVida = this.vidaParado(DT, s)
@@ -402,6 +403,27 @@ export class Animador {
     for (const [L, s] of [['Left', 1], ['Right', -1]]) {
       const a = this.ossos.get(L + 'Arm'), b = this.ossos.get(L + 'ForeArm'), c = this.ossos.get(L + 'Hand')
       if (a && b && c) ikDuas(a, b, c, centro.clone().addScaledVector(direita, s * (raio + 0.03)))
+    }
+  }
+
+  // Postura: os movimentos do Mixamo andam e trotam com os braços abertos para o lado (até 30° a 47°),
+  // o que lê como "duro" num corpo de camisa larga. Aproxima do corpo a parte da abertura que passa
+  // de 6°, sem mexer no balanço para a frente e para trás.
+  bracosJuntos(s, quanto) {
+    const lado = v().set(Math.cos(s.yaw), 0, -Math.sin(s.yaw)) // esquerda do corpo no mundo
+    for (const [L, sinal] of [['Left', 1], ['Right', -1]]) {
+      const braco = this.ossos.get(L + 'Arm')
+      const ante = this.ossos.get(L + 'ForeArm')
+      if (!braco || !ante) continue
+      const u = ante.getWorldPosition(v()).sub(braco.getWorldPosition(v())).normalize()
+      const ladoDoBraco = lado.clone().multiplyScalar(sinal)
+      const abre = Math.asin(THREE.MathUtils.clamp(u.dot(ladoDoBraco), -1, 1)) // + = para fora
+      const excesso = abre - 0.105 // 6°
+      if (excesso <= 0) continue
+      const alvo = u.clone().addScaledVector(ladoDoBraco, -Math.sin(excesso * quanto)).normalize()
+      const eixo = v().crossVectors(u, alvo)
+      if (eixo.lengthSq() < 1e-10) continue
+      girarNoMundo(braco, eixo.normalize(), u.angleTo(alvo))
     }
   }
 
