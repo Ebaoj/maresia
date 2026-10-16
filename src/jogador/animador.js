@@ -157,11 +157,16 @@ export class Animador {
       const a = this.acoes[nome]
       if (a) { a.paused = true; a.time = this.fase * a.getClip().duration }
     }
+    const nado = this.acoes.nadar
+    if (nado) {
+      const vNado = nado.getClip().userData?.velocidade || 1.2
+      nado.timeScale = THREE.MathUtils.clamp(s.vel / vNado, 0.5, 2.2)
+    }
     this.mixer.update(DT) // os outros movimentos correm no tempo deles
 
     // o nado do Mixamo é submerso: deitado, o corpo sobe até a linha d'água (o jogador boia com o quadril fundo)
-    const wNado = this.acoes.nadar?.userData.peso || 0
-    if (wNado > 0.01) this.ossos.get('Hips').position.y += wNado * 0.7
+    const wNado = nado?.userData.peso || 0
+    if (wNado > 0.01 && !nado.getClip().userData?.procedural) this.ossos.get('Hips').position.y += wNado * 0.7
     this.corpo.raiz.updateMatrixWorld(true)
     if (this.opcoes.inclinar) this.inclinar(DT, s)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)

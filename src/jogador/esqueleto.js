@@ -91,12 +91,14 @@ export function criarBoneco() {
     pecas.get(cor).push(g)
   }
   // cápsula de a até b (posições de repouso no mundo), raio r
-  const membro = (osso, a, b, r, cor, achatar = 1) => {
+  // achatar: espessura no eixo Z do mundo; achatarX: no eixo que, depois do giro, fica perpendicular
+  // ao osso no plano vertical (para a mão, é o que deixa a palma virada para baixo na pose em T)
+  const membro = (osso, a, b, r, cor, achatar = 1, achatarX = 1) => {
     const A = a instanceof THREE.Vector3 ? a : mundo(a)
     const B = b instanceof THREE.Vector3 ? b : mundo(b)
     const d = new THREE.Vector3().subVectors(B, A)
     const L = d.length()
-    const g = new THREE.CapsuleGeometry(r, Math.max(0.01, L - r), 4, 10).scale(1, 1, achatar)
+    const g = new THREE.CapsuleGeometry(r, Math.max(0.01, L - r), 4, 10).scale(achatarX, 1, achatar)
     g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()))
     g.translate((A.x + B.x) / 2, (A.y + B.y) / 2, (A.z + B.z) / 2)
     peca(osso, g, cor)
@@ -119,7 +121,11 @@ export function criarBoneco() {
     membro(L + 'Shoulder', L + 'Shoulder', L + 'Arm', 0.06, COR.camisa)
     membro(L + 'Arm', L + 'Arm', L + 'ForeArm', 0.058, COR.camisa)
     membro(L + 'ForeArm', L + 'ForeArm', L + 'Hand', 0.045, COR.pele)
-    membro(L + 'Hand', L + 'Hand', L + 'HandEnd', 0.045, COR.pele, 0.55)
+    // mão espalmada: larga e fina, palma para baixo na pose em T (como a de verdade), e o polegar
+    // saindo para a frente; é a palma que empurra a água no nado e que se vê no gesto
+    const s = L === 'Left' ? 1 : -1
+    membro(L + 'Hand', L + 'Hand', L + 'HandEnd', 0.048, COR.pele, 1, 0.42)
+    membro(L + 'Hand', em(L + 'Hand', s * 0.015, -0.01, 0.035), em(L + 'Hand', s * 0.075, -0.02, 0.075), 0.018, COR.pele)
     membro(L + 'UpLeg', L + 'UpLeg', L + 'Leg', 0.085, COR.calca)
     membro(L + 'Leg', L + 'Leg', em(L + 'Foot', 0, 0.12, 0), 0.06, COR.calca)
     membro(L + 'Leg', em(L + 'Foot', 0, 0.12, 0), L + 'Foot', 0.045, COR.pele)

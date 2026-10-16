@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { criarBoneco } from './esqueleto.js'
 import { carregarMovimentosMixamo } from './retarget.js'
 import { Animador } from './animador.js'
+import { criarNadoCrawl } from './nado-crawl.js'
 
 const NOMES = [
   'parado', 'olhando', 'andar', 'correr', 'disparada', 'pulo-subida', 'pulo-queda', 'pulo-pouso', 'sentar',
@@ -27,6 +28,7 @@ export async function carregarCorpo() {
   const corpo = new THREE.Group()
   raiz.add(corpo)
   corpo.add(boneco.raiz)
+  r.clipes.nadar = criarNadoCrawl() // o Joabe quer crawl; o "nadar" do Mixamo é submerso
   const animador = new Animador({ raiz: boneco.raiz, ossos: boneco.ossos }, r.clipes, r.passadas)
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
   return { raiz, corpo, animador, passadas: r.passadas }

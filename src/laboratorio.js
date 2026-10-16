@@ -9,6 +9,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { criarBoneco } from './jogador/esqueleto.js'
 import { carregarMovimentosMixamo } from './jogador/retarget.js'
 import { Animador } from './jogador/animador.js'
+import { criarNadoCrawl } from './jogador/nado-crawl.js'
 
 const MOVIMENTOS = [
   'parado', 'olhando', 'andar', 'correr', 'disparada', 'pulo-subida', 'pulo-queda', 'pulo-pouso', 'sentar',
@@ -105,6 +106,7 @@ async function iniciar() {
   } else linhas.push('Y Bot: faltando (uso a pose inicial de cada arquivo como repouso)')
   Object.assign(clipesCrus, r.crus)
   const { clipes, passadas, faltando } = r
+  clipes.nadar = criarNadoCrawl()
   linhas.push(`movimentos: ${Object.keys(clipes).join(', ') || 'nenhum'}`)
   if (faltando.length) linhas.push(`faltando: ${faltando.join(', ')}`)
   linhas.push(`passada natural: andar ${passadas.andar?.toFixed(2) ?? '?'} m/s, correr ${passadas.correr?.toFixed(2) ?? '?'} m/s`)
