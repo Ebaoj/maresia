@@ -13,7 +13,7 @@ import { ocupacao } from './ocupacao.js'
 import { instanciarEmBlocos } from './blocos.js'
 import { criarCasas } from './quarteirao.js'
 import { criarAleatorio } from '../utils.js'
-import { lugaresJogo, lagoasJogo, ANGULO_GRADE } from './fortaleza1932.js'
+import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha } from './fortaleza1932.js'
 
 const rnd = criarAleatorio(42)
 
@@ -138,6 +138,8 @@ function cidade(casario, simples) {
       if (reservadas.has(`${a},${b}`)) { quadras.push({ cx, cz, reservada: true }); continue }
       const dens = densidadeLotes(cx, cz)
       if (dens < 0.12) continue
+      // o riacho Pajeú corre entre as quadras, não por baixo das casas
+      if (distPolilinha(cx, cz, pajeuJogo) < QUADRA_W * 0.62) continue
       const dCentro = Math.hypot(cx - PFX, cz - PFZ)
       const cheia = Math.min(0.97, 0.55 + dens * 0.9)
       if (dCentro < 330) quadra(casario, cx, cz, cheia, 6.5, 12, CORES_CASARIO)

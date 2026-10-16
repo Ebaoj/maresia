@@ -24,7 +24,7 @@ export function criarSom(cfg) {
   let mestre = null
   let mar = null
   let vento = null
-  let ligado = false // começa mudo; tecla M liga
+  let ligado = false // começa mudo; tecla N liga
 
   function iniciar() {
     if (ctx) return

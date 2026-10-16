@@ -86,6 +86,7 @@ function casaPalha(variante) {
 
 export function criarVilas(cena) {
   const tipos = [0, 1, 2].map((v) => ({ ...casaPalha(v), mats: [] }))
+  const casas = [] // para o mapa (tecla M)
   const Y = new THREE.Vector3(0, 1, 0)
   for (const vila of VILAS) {
     const [a, b] = trechosJogo[vila]
@@ -104,6 +105,7 @@ export function criarVilas(cena) {
         ocupacao.marcar(x, z, t.w / 2 + 0.6, t.d / 2 + 0.6, rot)
         adicionarCaixa(x, z, t.w / 2, t.d / 2, rot)
         const y = alturaTerreno(x, z) - 0.15
+        casas.push({ x, z, rot, w: t.w, d: t.d })
         t.mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(Y, rot), new THREE.Vector3(1, 1, 1)))
       }
     }
@@ -116,5 +118,6 @@ export function criarVilas(cena) {
     n += t.mats.length
   }
   void FIM_AVENIDA
-  return n
+  void n
+  return casas
 }

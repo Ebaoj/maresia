@@ -65,6 +65,36 @@ indício, não de prova.
 - Família sentada no chão na frente da casa: mulheres e crianças de vestido claro, um velho de
   barba branca, chapéu e paletó escuro.
 
+## Robert S. Platt, 1935 (UWM, American Geographical Society Library)
+
+Cerca de 60 fotos de Fortaleza, feitas em setembro de 1935 por um geógrafo americano. **Direitos
+reservados** (Board of Regents, University of Wisconsin): servem de referência visual, não para
+publicar. Imagem: `https://collections.lib.uwm.edu/digital/iiif/ags_south/ID/full/1200,/0/default.jpg`.
+A pesquisa achou que **ninguém reconstituiu a Fortaleza de 1880 a 1935 em 3D**; estas fotos e a
+planta de 1931 e 1932 são a melhor base que existe.
+
+- **Jangadas chegando (id 3198):** vela triangular enorme, mais alta que larga, bojuda, de pano
+  claro **manchado e remendado**; o mastro perto da proa; a retranca deixa a base da vela quase
+  reta e alta; **o casco é rente à água**, quase não aparece. Multidão de branco na areia esperando.
+  **Corrigir:** a jangada do jogo é um bote com vela pequena.
+- **Venda do peixe (id 3131):** o peixe é vendido **em cima da própria jangada**, que vira mesa.
+  Troncos grossos e redondos. Homens de chapéu de feltro, de palha e de boné de pano; o jangadeiro
+  de **camisa escura de manga comprida** (o tingido de mangue) e gorro.
+- **Fabricação de jangadas (id 3145):** na areia, **debaixo de coqueiros**, troncos de piúba
+  empilhados e sendo lavrados; píer ao fundo. Havia coqueiro na praia junto às vilas.
+- **Casebres na duna (id 3019):** casas de palha com **paredes também de palha** (trançado
+  vertical) e cobertura grossa; uma de tábuas; **coqueiral denso** em volta; **cercas de varas**
+  marcando os quintais; chão de areia com capim baixo. **Corrigir:** as vilas do jogo só têm
+  paredes de taipa, nenhuma cerca e poucos coqueiros.
+- **Ponte do porto (id 3288):** píer comprido e reto sobre **pares de pilares de concreto**,
+  guarda-corpo, **postes de luz** ao longo, e na ponta uma plataforma com **guindastes**, uma torre
+  de estrutura metálica e um galpão coberto. **Navios a vapor ancorados ao largo.**
+- **Rua da Praça do Ferreira vista do Excelsior (id 3155):** bonde nos trilhos, ônibus e carro,
+  prédio de três andares branco com torre no alto, marquise de ferro sobre a calçada, **árvores da
+  praça podadas em bola** (copa densa e redonda), telhados de telha em volta.
+- **Varanda do Excelsior (id 3121):** a praça depois da reforma de 1933, com caminhos e as mesmas
+  árvores em bola; gradil de ferro art nouveau na sacada.
+
 ## Fotos a buscar ainda
 
 Praia do Peixe e casas de palha (Acervo Nirez, 1925 e 1929, citadas pelo Diário do Nordeste);

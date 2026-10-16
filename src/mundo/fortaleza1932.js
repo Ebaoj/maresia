@@ -111,10 +111,10 @@ function catmull(pts, n = 10) {
   out.push(p[p.length - 2])
   return out
 }
-const costaJogo = catmull(COSTA.map(([a, b]) => ll(a, b)), 12)
+export const costaJogo = catmull(COSTA.map(([a, b]) => ll(a, b)), 12)
 const praiaX = PRAIA.map(([lon]) => ll(lon, -3.72)[0])
 const praiaL = pchip(praiaX, PRAIA.map(([, l]) => l))
-const rioJogo = catmull(RIO_CEARA.map(([a, b]) => ll(a, b)), 10)
+export const rioJogo = catmull(RIO_CEARA.map(([a, b]) => ll(a, b)), 10)
 export const pajeuJogo = catmull(PAJEU.map(([a, b]) => ll(a, b)), 10)
 
 // z da costa para um x (a costa de 1932 é uma função de x de ponta a ponta)
@@ -177,7 +177,7 @@ export const lagoasJogo = LAGOAS.map(([nome, lon, lat, rx, rz]) => {
   return { nome, x, z, rx, rz }
 })
 export const lugaresJogo = Object.fromEntries(Object.entries(LUGARES).map(([k, [lon, lat]]) => [k, ll(lon, lat)]))
-const bairrosJogo = BAIRROS.map(([nome, lon, lat]) => [nome, ...ll(lon, lat)])
+export const bairrosJogo = BAIRROS.map(([nome, lon, lat]) => [nome, ...ll(lon, lat)])
 export function nomeBairro(x, z) {
   let melhor = null
   let d = Infinity

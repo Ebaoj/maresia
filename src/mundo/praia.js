@@ -14,6 +14,7 @@ import { ocupacao } from './ocupacao.js'
 import { globais } from '../globais.js'
 import { criarAleatorio } from '../utils.js'
 import { instanciarEmBlocos } from './blocos.js'
+import { geometriaJangada, materialJangada } from './jangada.js'
 
 const rnd = criarAleatorio(2024)
 
@@ -132,30 +133,14 @@ function postes(cena) {
   return () => matLuz.color.copy(apagada).lerp(acesa, globais.uNoite.value)
 }
 
-function jangada(corVela) {
+// a jangada de paus de verdade mora em jangada.js (casco de troncos, vela grande, remo de governo)
+const VARIANTES = Array.from({ length: 6 }, (_, i) => ({ areia: geometriaJangada({ semente: i * 3.1, idade: 0.2 + (i % 3) * 0.3, naAreia: true }), mar: geometriaJangada({ semente: i * 3.1 + 1, idade: 0.2 + (i % 3) * 0.3 }) }))
+function jangada(_cor, naAreia = false) {
   const g = new THREE.Group()
-  const casco = new THREE.Mesh(new THREE.BoxGeometry(6, 0.45, 1.9), toon('#c9925a'))
-  casco.position.y = 0.25
-  const proa = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.45, 1.5), toon('#b27a45'))
-  proa.position.set(3.3, 0.35, 0)
-  proa.rotation.z = 0.25
-  const mastro = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 7, 6), toon('#8a6040'))
-  mastro.position.set(0.6, 3.9, 0)
-  // vela triangular com uma faixa de cor
-  const v = new Float32Array([0.7, 0.8, 0, 0.7, 7.2, 0, -2.6, 0.9, 0])
-  const geoVela = new THREE.BufferGeometry()
-  geoVela.setAttribute('position', new THREE.BufferAttribute(v, 3))
-  geoVela.computeVertexNormals()
-  const vela = new THREE.Mesh(geoVela, toon(corVela, { side: THREE.DoubleSide }))
-  const geoFaixa = new THREE.BufferGeometry()
-  geoFaixa.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0.7, 0.8, 0.02, 0.7, 2.6, 0.02, -2.6, 0.9, 0.02]), 3))
-  geoFaixa.computeVertexNormals()
-  const faixa = new THREE.Mesh(geoFaixa, toon('#c2412d', { side: THREE.DoubleSide }))
-  for (const o of [casco, proa, mastro, vela, faixa]) {
-    o.castShadow = true
-    o.receiveShadow = true
-    g.add(o)
-  }
+  const m = new THREE.Mesh(rnd.escolha(VARIANTES)[naAreia ? 'areia' : 'mar'], materialJangada())
+  m.castShadow = true
+  m.receiveShadow = true
+  g.add(m)
   return g
 }
 
@@ -169,9 +154,9 @@ function jangadas(cena) {
     const z = linhaCosta(x) + rnd.entre(2, 9)
     if (!ocupacao.livre(x, z, 3.5, 3.5)) continue
     ocupacao.marcar(x, z, 3.5, 3.5)
-    const j = jangada(rnd.escolha(cores))
-    j.position.set(x, alturaTerreno(x, z), z)
-    j.rotation.set(0, rnd.entre(-1.9, -1.2), rnd.entre(-0.06, 0.06))
+    const j = jangada(rnd.escolha(cores), true)
+    j.position.set(x, alturaTerreno(x, z) + 0.18, z)
+    j.rotation.set(0, Math.PI / 2 + rnd.entre(-0.35, 0.35), rnd.entre(-0.03, 0.03)) // proa para o mar, como nas fotos de 1935
     cena.add(j)
     adicionarCaixa(x, z, 3.2, 1.1, j.rotation.y)
   }
@@ -180,7 +165,7 @@ function jangadas(cena) {
     const x = vila()
     const z = linhaCosta(x) - rnd.entre(25, 90)
     const j = jangada(rnd.escolha(cores))
-    j.position.set(x, -0.1, z)
+    j.position.set(x, -0.18, z)
     j.rotation.y = rnd.entre(0, Math.PI * 2)
     j.userData.fase = rnd.entre(0, 6.28)
     cena.add(j)
@@ -188,7 +173,7 @@ function jangadas(cena) {
   }
   return (t) => {
     for (const j of lista) {
-      j.position.y = -0.15 + Math.sin(t * 1.3 + j.userData.fase) * 0.18
+      j.position.y = -0.2 + Math.sin(t * 1.3 + j.userData.fase) * 0.12
       j.rotation.z = Math.sin(t * 1.1 + j.userData.fase) * 0.06
       j.rotation.x = Math.cos(t * 0.9 + j.userData.fase) * 0.04
     }

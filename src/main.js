@@ -23,6 +23,7 @@ import { criarCoqueiros } from './mundo/vegetacao.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
 import { criarVilas } from './mundo/vilas.js'
+import { criarMapa } from './ui/mapa.js'
 import { trechosJogo } from './mundo/fortaleza1932.js'
 import { criarToque } from './mundo/toque.js'
 import { criarAreia } from './mundo/areia.js'
@@ -72,14 +73,14 @@ async function iniciar() {
   const mar = criarMar(cena, mapaAltura, cfg, toque.publico)
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
   void criarFaixas
-  const { predios, casas, grade } = criarCidade(cena)
+  const { predios, casas, grade, quadras } = criarCidade(cena)
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')
   const cenografia = criarCenografia(cena, predios.filter((p) => p.tipo === 'casario'))
   const marcos = criarMarcos(cena)
   const praia = criarPraia(cena)
-  criarVilas(cena)
+  const casasPalha = criarVilas(cena)
   const lugares = criarRua(cena, predios, grade)
   marcar('rua')
   criarArvores(cena, predios, grade)
@@ -126,6 +127,7 @@ async function iniciar() {
     }, 4000)
   }
   const hud = criarHud(camera)
+  const mapa = criarMapa({ quadras, grade, casasPalha })
   const som = criarSom(cfg)
   const painel = criarPainel(cfg)
 
@@ -147,7 +149,8 @@ async function iniciar() {
     if (e.code === 'Space') { e.preventDefault(); jogador.pular() }
     if (e.code === 'KeyE' && !e.repeat) interacoes.acao()
     if (e.code === 'KeyH') painel.alternar()
-    if (e.code === 'KeyM') som.alternar()
+    if (e.code === 'KeyN') som.alternar()
+    if (e.code === 'KeyM') mapa.alternar()
     if (e.code === 'KeyT') cfg.tempo.hora = (cfg.tempo.hora + 1) % 24
   })
   addEventListener('keyup', (e) => {
@@ -214,6 +217,7 @@ async function iniciar() {
     toque.atualizar(dt, pj)
     areia.atualizar(dt, pj)
     hud.atualizar(dt, jogador)
+    mapa.atualizar(jogador)
     som.atualizar(distCosta(jogador.pos.x, jogador.pos.z), jogador.pos.y)
 
     pos.render(t, jogador.velHoriz)

@@ -164,3 +164,24 @@ html, body {
   display: grid;
   place-items: center;
 }
+
+/* mapa da cidade (tecla M): a planta de 1932 por cima do jogo */
+#mapa {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 22, 16, 0.55);
+  z-index: 20;
+  pointer-events: none;
+}
+#mapa.aberto {
+  display: flex;
+}
+#mapa canvas {
+  max-width: 94vw;
+  max-height: 92vh;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  border-radius: 2px;
+}

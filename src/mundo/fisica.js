@@ -25,10 +25,10 @@ const PASSO = 1 / 60
 const NIVEL_AGUA = 0
 
 function geometriaBola() {
-  // bola de praia: gomos coloridos
-  const g = new THREE.SphereGeometry(0.35, 16, 12).toNonIndexed()
+  // bola de couro de 1932 (a bola de praia de plástico colorido é anacronismo): gomos em dois tons
+  const g = new THREE.SphereGeometry(0.22, 16, 12).toNonIndexed()
   const pos = g.attributes.position
-  const cores = ['#e63946', '#fff6e0', '#3a86ff', '#ffd23f', '#fff6e0', '#06d6a0']
+  const cores = ['#8a5a3c', '#7a4e33', '#8a5a3c', '#7a4e33', '#8a5a3c', '#7a4e33']
   const c = new THREE.Color()
   const arr = new Float32Array(pos.count * 3)
   for (let i = 0; i < pos.count; i += 3) {
@@ -36,7 +36,7 @@ function geometriaBola() {
     const cz = (pos.getZ(i) + pos.getZ(i + 1) + pos.getZ(i + 2)) / 3
     const cy = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3
     const gomo = Math.floor(((Math.atan2(cz, cx) + Math.PI) / (Math.PI * 2)) * 6) % 6
-    c.set(Math.abs(cy) > 0.3 ? '#fff6e0' : cores[gomo])
+    c.set(Math.abs(cy) > 0.19 ? '#6b4430' : cores[gomo])
     for (let k = 0; k < 3; k++) { arr[(i + k) * 3] = c.r; arr[(i + k) * 3 + 1] = c.g; arr[(i + k) * 3 + 2] = c.b }
   }
   g.setAttribute('color', new THREE.BufferAttribute(arr, 3))
@@ -139,11 +139,11 @@ export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
     const desc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z).setAngularDamping(tipo === 'coco' ? 1.5 : 0.3).setCanSleep(true)
     const corpo = world.createRigidBody(desc)
     const col = tipo === 'bola'
-      ? RAPIER.ColliderDesc.ball(0.35).setDensity(0.08).setRestitution(0.65).setFriction(0.6)
+      ? RAPIER.ColliderDesc.ball(0.22).setDensity(0.25).setRestitution(0.5).setFriction(0.6)
       : RAPIER.ColliderDesc.ball(0.17).setDensity(1.1).setRestitution(0.15).setFriction(0.9)
     world.createCollider(col, corpo)
     if (vel) corpo.setLinvel(vel, true)
-    const p = { tipo, corpo, raio: tipo === 'bola' ? 0.35 : 0.17, naAgua: false, carregado: false }
+    const p = { tipo, corpo, raio: tipo === 'bola' ? 0.22 : 0.17, naAgua: false, carregado: false }
     props.push(p)
     return p
   }

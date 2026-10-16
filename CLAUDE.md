@@ -18,7 +18,7 @@ npm run dev
 Abre em http://localhost:5195. No preview do Claude: `preview_start` com o nome `maresia`.
 
 Controles: WASD andar, Shift correr, Espaço pular, arrastar o mouse gira a câmera, roda dá zoom,
-Z/C giram a câmera, E faz a ação (sentar, pegar, arremessar, pedir água de coco), H esconde o painel, M liga/desliga o som, T avança uma hora.
+Z/C giram a câmera, E faz a ação (sentar, pegar, arremessar, pedir água de coco), M abre o mapa da cidade, H esconde o painel, N liga/desliga o som, T avança uma hora.
 
 Depuração pelo console do navegador: `maresia.irPara(x, z, yawCamera, hora)` teletransporta.
 Gravar vídeo para avaliar movimento (só em `npm run dev`): `await maresia.gravar({ nome, segundos, fps, roteiro })`
@@ -73,7 +73,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 - Números aleatórios sempre com semente (`criarAleatorio`), para a cidade sair igual.
 - Muitas cópias do mesmo objeto: sempre `instanciarEmBlocos`, nunca um InstancedMesh cobrindo o mapa (mata o desempenho).
 - Peso do traço vai no alfa da cor: material com `opacity` < 1 e `blending: NoBlending` (personagem 0,5, gente 0,85).
-- O jogo abre mudo; som só com a tecla M.
+- O jogo abre mudo; som só com a tecla N (o M virou o mapa em 16/10/2026).
 - Física (Rapier) só perto do jogador: sólidos num raio de 70 m, objetos soltos desligados além de 80 m.
 - A cena é desenhada em duas imagens (MRT): cor e luz recebida. **Todo material novo precisa escrever `gLuz`**:
   toon via `pintar()` (já escreve), sem luz via `luzFixa()`, ShaderMaterial com `${SAIDA_LUZ}` e `gLuz = ...`.
