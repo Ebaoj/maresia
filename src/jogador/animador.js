@@ -86,6 +86,7 @@ export class Animador {
     this.inclinacao = { lado: 0, frente: 0 }
     this.umaVez = null // movimento de uma vez só tocando (pouso, sentar, levantar)
     this.opcoes = { ik: true, inclinar: true, em2: true, fps: 12 }
+    this.eventos = [] // pisadas, recolhidas por quem usa o animador
   }
 
   tem(nome) { return !!this.acoes[nome] }
@@ -158,11 +159,37 @@ export class Animador {
     }
     this.mixer.update(DT) // os outros movimentos correm no tempo deles
 
+    // o nado do Mixamo é submerso: deitado, o corpo sobe até a linha d'água (o jogador boia com o quadril fundo)
+    const wNado = this.acoes.nadar?.userData.peso || 0
+    if (wNado > 0.01) this.ossos.get('Hips').position.y += wNado * 0.7
     this.corpo.raiz.updateMatrixWorld(true)
     if (this.opcoes.inclinar) this.inclinar(DT, s)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)
+    this.detectarPisadas(s)
     this.antes = { noAr: s.noAr, sentado: s.sentado, yaw: s.yaw, vel: s.vel }
     return true
+  }
+
+  // o pé tocou o chão neste quadro? (o calcanhar desceu a 2,5 cm depois de ter subido acima de 7 cm)
+  // vira um evento com o lugar do pé de verdade, para a pegada e a poeira
+  detectarPisadas(s) {
+    this.pes ??= { Left: { alto: true }, Right: { alto: true } }
+    if (s.noAr || s.nadando || s.sentado || !s.chao) return
+    for (const L of ['Left', 'Right']) {
+      const pe = this.ossos.get(L + 'Foot')
+      const dedo = this.ossos.get(L + 'ToeBase')
+      if (!pe || !dedo) continue
+      const a = pe.getWorldPosition(v())
+      const b = dedo.getWorldPosition(v())
+      const meio = a.clone().lerp(b, 0.6)
+      // calcanhar: o tornozelo fica ~6 cm acima do chão com o pé apoiado (medido no andar do Mixamo)
+      const h = a.y - 0.06 - s.chao(meio.x, meio.z)
+      const st = this.pes[L]
+      if (st.alto && h < 0.025 && s.vel > 0.3) {
+        this.eventos.push({ tipo: 'pisada', pos: meio, yaw: s.yaw, lado: L === 'Left' ? -1 : 1 })
+        st.alto = false
+      } else if (!st.alto && h > 0.07) st.alto = true
+    }
   }
 
   // inclinar na curva (para dentro, como bicicleta) e na arrancada (para frente)

@@ -65,6 +65,9 @@ export class Jogador {
       yaw: this.yawVisual,
       chao: (x, z) => alturaChao(x, z, y + 0.4),
     })
+    // pisadas do pé de verdade (o boneco antigo usava a fase do passo)
+    for (const ev of a.eventos) this.eventos.push(ev)
+    a.eventos.length = 0
   }
 
   pular() {
@@ -189,7 +192,7 @@ export class Jogador {
     this.fase += this.velHoriz * dt * (Math.PI / passoM)
     // passada: o pé toca o chão quando o seno da fase troca de sinal
     const ladoAtual = Math.sign(Math.sin(this.fase))
-    if (this.noChao && !this.nadando && this.velHoriz > 0.6 && this.ultimoLado !== undefined && ladoAtual !== this.ultimoLado) {
+    if (!this.animador && this.noChao && !this.nadando && this.velHoriz > 0.6 && this.ultimoLado !== undefined && ladoAtual !== this.ultimoLado) {
       const lado = ladoAtual > 0 ? 1 : -1
       const rx = -Math.cos(this.yawVisual)
       const rz = Math.sin(this.yawVisual)

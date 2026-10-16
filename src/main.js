@@ -208,7 +208,7 @@ async function iniciar() {
     }
     for (const ev of jogador.eventos) {
       if (ev.tipo === 'pisada') {
-        const correndo = jogador.velHoriz > 6
+        const correndo = jogador.velHoriz > (jogador.animador ? cfg.personagem.corridaNova * 0.75 : 6)
         areia.pisar(ev.pos.x, ev.pos.z, ev.yaw, ev.lado, correndo ? 1.25 : 1)
         if (correndo && jogador.naAreiaSeca) areia.poeira(ev.pos.x, pj.y, ev.pos.z, 3)
       }
