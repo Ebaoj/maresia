@@ -279,13 +279,22 @@ pedras no mar (Rio), a igreja no morro e o rio largo com pontes (Recife). Carros
 Fica em aberto o que é escolha do Joabe: nome, aparência e origem do neto e do avô (ver perguntas
 no fim).
 
-- **Neto, 1932, ~14 anos.**
-  - Magro, comprido, ainda desajeitado. Usa o chapéu de palha do avô, **grande demais**: a
-    silhueta é um triângulo sobre um traço fino, que rima com a vela.
-  - Roupa de algodãozinho tingida (castanho de mangue), calça arregaçada, pé descalço.
-  - Um único acento: um pano anil amarrado no pescoço ou no braço.
-  - Leva um caderno pequeno no bolso: é ele quem ensina letras no campo.
-  - Anda rápido, para de repente para olhar as coisas.
+- **Neto, 1932, ~14 anos.** (revisto em 16/10/2026: decisões do Joabe transmitidas pela sessão do
+  personagem; substituem as anteriores)
+  - Magro, comprido, ainda desajeitado; **postura relaxada**. Chapéu de palha **de copa alta e aba
+    larga desfiada**.
+  - **Figurino pelas fotos de jangadeiros de 1935** (Platt; e uma foto com a vela "Z-1"): camisa de
+    **malha listrada na horizontal**, vermelho-tijolo desbotado e creme, manga até o cotovelo; calça
+    clara de algodão, larga, **arregaçada até o meio da canela**; descalço.
+  - **Sem cinto** (revoga o cinto de couro): a calça se prende por cordão de cós escondido.
+  - **O mínimo de acessórios:** saem o pano anil e o caderninho do figurino. Se a história precisar,
+    voltam como objeto de cena.
+  - **Rosto cearense:** caboclo do litoral, herança indígena forte, maçãs altas, olhos amendoados,
+    cabelo preto liso e grosso, pele bronze de sol (segue "pardo").
+  - **Não tão polido:** pele curtida, pés calejados de areia, roupa esgarçada.
+  - Tem também uma **versão sem camisa**, com a mesma calça e o mesmo chapéu.
+  - Folhas candidatas (o Joabe ainda não escolheu): `arte/entradas/openai-neto-final-1.png` e `-2.png`,
+    vestido e sem camisa, quatro vistas cada.
 - **Avô, 1932, ~66 anos.**
   - Costas curvas como um mastro vergado, mãos e pés grandes (o ofício), barba branca curta,
     chapéu de palha gasto, camisa aberta desbotada.
@@ -298,12 +307,11 @@ no fim).
   - Uma **marca que liga os dois**: uma cicatriz de linha na mão ou um jeito de amarrar a corda
     (ficção). O jogador reconhece o velho no menino por ela.
   - Em 1881 ele é desenhado na paleta de tinta como todo mundo; só a marca é destacada.
-- **Etnia do neto: pardo** (decisão do Joabe, 16/10/2026, transmitida pela sessão do personagem):
-  ascendência indígena, africana e portuguesa, pele castanho-média quente, cabelo castanho-escuro a
-  preto, grosso e levemente ondulado. O avô acompanha a mesma família na pele e no cabelo. O neto
-  recomeça do zero com nova folha; as folhas `neto-v7` deixam de ser candidatas.
-- **Folhas candidatas a finais (16/10/2026, sessão do personagem):** `arte/saida/neto-v7/folha-neto-final.png`
-  e `folha-avo-final.png`, no traço do jogo (o Joabe recusou ver o personagem em render 3D: quebra a
+- **Etnia do neto: pardo** (decisão do Joabe, 16/10/2026), com o rosto caboclo do litoral descrito
+  na ficha acima. O avô acompanha a mesma família na pele e no cabelo. As folhas `neto-v7` deixaram
+  de ser candidatas.
+- **Folhas anteriores (16/10/2026, superadas para o neto):** `arte/saida/neto-v7/folha-neto-final.png`
+  e `folha-avo-final.png` (a do avô segue de referência), no traço do jogo (o Joabe recusou ver o personagem em render 3D: quebra a
   imersão). Neto na direção "leitor": em pé, caderninho costurado na mão, anil no braço esquerdo.
   A curvatura do avô não sai no gerador de imagem; vai no 3D (painel de intenção na folha).
   Etnia, nome e gênero seguem provisórios.
@@ -311,16 +319,16 @@ no fim).
   - **Chapéu:** o documentado (Percy Lau, IBGE 1941) é de palha de carnaúba, **copa alta e aba larga
     mole, levantada nas bordas**, às vezes com oleado por cima. O cônico das folhas está errado.
   - **Calça:** sem bolsos traseiros chapados (lembram jeans; sem fonte).
-  - **Cintura: cinto de couro** (decisão do Joabe, 16/10/2026), como o carregador do porto na foto de
-    Platt de 1935: couro cru gasto, estreito, fivela simples de ferro escurecido. Sai o cordão.
-  - **Licenças narrativas registradas** (sem registro de época): bolso da camisa, pano anil no braço,
-    caderninho.
+  - **Cintura:** cordão de cós escondido. O cinto de couro foi decidido e depois revogado (16/10/2026).
+  - **Licenças narrativas** (sem registro de época): bolso da camisa. O pano anil e o caderninho
+    saíram do figurino do neto.
   - **Confirmado:** algodãozinho tinto de mangue, murici e cajueiro ("cor de couro"), camisa de manga
     comprida aberta no peito, calça arregaçada, pé descalço. Avô: algodãozinho tinto como orgulho do
     ofício; samburá, cabaça a tiracolo e cachimbo.
 - **Cores de material do personagem** (medidas na folha final; conferir sob a luz toon):
   pele `#B26E41`, camisa `#C38D7E`, calça `#7E4A3A` (avô também), anil `#324F58`,
-  palha `#EEC184`, cordão `#B8A058`.
+  palha `#EEC184`, cordão `#B8A058`. Valem para as folhas antigas; o neto novo (listrado, calça clara)
+  precisa ser medido de novo quando o Joabe escolher a folha.
 - **Personagens reais, secundários.** Napoleão, Tia Simoa, o Dragão do Mar. Retratados com
   economia e sem inventar biografia. Pela pesquisa, Napoleão e Simoa devem ter **o mesmo peso
   visual** que Nascimento, e não ficar como figurantes atrás dele.
