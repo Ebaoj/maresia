@@ -49,7 +49,8 @@ function chapeuDePalha() {
   return g
 }
 
-export async function carregarNeto() {
+// chapeu: false tira o chapéu (decisão do Joabe em 16/10/2026: o neto anda sem chapéu)
+export async function carregarNeto({ chapeu = false } = {}) {
   let g
   try { g = await carregar(ARQUIVO_NETO) } catch (e) { console.warn('Neto: não carregou', e); return null }
   const raiz = g.raiz
@@ -71,14 +72,16 @@ export async function carregarNeto() {
   // topo da cabeça pela malha (o modelo não tem o osso HeadTop_End): o chapéu senta um pouco abaixo
   const topo = new THREE.Box3().setFromObject(raiz).max.y
   const pc = cabeca.getWorldPosition(new THREE.Vector3())
-  const pivo = new THREE.Object3D()
-  pivo.name = 'Chapeu'
-  pivo.position.copy(new THREE.Vector3(0, topo - 0.075 - pc.y, 0.0).applyQuaternion(inv))
-  cabeca.add(pivo)
-  const chapeu = chapeuDePalha()
-  chapeu.quaternion.copy(inv) // em pé no repouso
-  pivo.add(chapeu)
-  ossos.set('Chapeu', pivo)
+  if (chapeu) {
+    const pivo = new THREE.Object3D()
+    pivo.name = 'Chapeu'
+    pivo.position.copy(new THREE.Vector3(0, topo - 0.075 - pc.y, 0.0).applyQuaternion(inv))
+    cabeca.add(pivo)
+    const peca = chapeuDePalha()
+    peca.quaternion.copy(inv) // em pé no repouso
+    pivo.add(peca)
+    ossos.set('Chapeu', pivo)
+  }
   // eixos do repouso, no espaço local de cada osso (o animador não pode supor como o modelo foi montado)
   const local = (osso, v) => v.clone().applyQuaternion(osso.getWorldQuaternion(new THREE.Quaternion()).invert())
   const eixos = {

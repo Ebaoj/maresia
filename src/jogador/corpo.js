@@ -43,7 +43,7 @@ function criarAdaptador(alvo) {
 }
 
 // modelo: 'neto' (o personagem da história) ou 'boneco' (o de cápsulas, para testes)
-export async function carregarCorpo({ modelo = 'neto' } = {}) {
+export async function carregarCorpo({ modelo = 'neto', chapeu = false } = {}) {
   const boneco = criarBoneco()
   const r = await carregarMovimentosMixamo({
     alvo: { ossos: boneco.ossos, raiz: boneco.raiz }, pasta: '/animacoes/mixamo/', nomes: [...NOMES, ...Object.keys(BANCO)],
@@ -68,7 +68,7 @@ export async function carregarCorpo({ modelo = 'neto' } = {}) {
   let alvo = { raiz: boneco.raiz, ossos: boneco.ossos, esqueleto: boneco.esqueleto }
   let adaptar = (c) => c
   if (modelo === 'neto') {
-    const neto = await carregarNeto()
+    const neto = await carregarNeto({ chapeu })
     if (neto) { alvo = neto; adaptar = criarAdaptador(neto) } else console.warn('Corpo: o neto não carregou; fica o boneco')
   }
   const clipesAlvo = Object.fromEntries(Object.entries(r.clipes).map(([k, c]) => [k, adaptar(c)]))

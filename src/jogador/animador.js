@@ -356,7 +356,7 @@ export class Animador {
     this.tParado = (this.tParado || 0) + DT
     this.proximoGesto ??= 4 + this.sorteio() * 4
     if (!this.gesto && this.tParado > this.proximoGesto) {
-      const opcoes = ['mar', 'chapeu', ...(this.tem('olhando') ? ['olhando'] : [])]
+      const opcoes = ['mar', ...(this.ossos.get('Chapeu') ? ['chapeu'] : []), ...(this.tem('olhando') ? ['olhando'] : [])]
       const tipo = opcoes[Math.floor(this.sorteio() * opcoes.length)]
       const dur = { mar: 3.5, chapeu: 1.4, olhando: this.acoes.olhando?.getClip().duration || 3 }[tipo]
       if (tipo === 'olhando') this.disparar('olhando')

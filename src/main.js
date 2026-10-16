@@ -111,7 +111,7 @@ async function iniciar() {
   let atores = null
   // corpo novo (esqueleto padrão + mocap do Mixamo): carrega em segundo plano e substitui o boneco antigo
   if (cfg.personagem.corpoNovo) {
-    carregarCorpo({ modelo: cfg.personagem.modelo }).then((c) => {
+    carregarCorpo({ modelo: cfg.personagem.modelo, chapeu: cfg.personagem.chapeu }).then((c) => {
       if (!c) return
       jogador.trocarCorpo(c)
       // a gente mais próxima vira ator animado, com os mesmos movimentos (mundo/atores.js)

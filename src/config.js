@@ -71,6 +71,7 @@ export const PADRAO = {
     posicaoEm2: false,     // ligado: o corpo inteiro anda em 2 (mais Aranhaverso, mais travado)
     corpoNovo: true,       // esqueleto padrão com os movimentos do Mixamo (jogador/corpo.js); desligado = boneco antigo
     modelo: 'neto',        // corpo do jogador: 'neto' (arte/finais/neto-mpfb.glb) ou 'boneco' (cápsulas, para testes); recarregar
+    chapeu: false,         // chapéu de palha no neto (o Joabe tirou em 16/10/2026); recarregar
     velocidadeNova: 1.8,   // com o corpo novo: gente de verdade anda a ~1,4 m/s e corre a ~3,5 m/s
     corridaNova: 4.5,
     peNoChao: true,        // IK: cada pé pisa no chão de verdade (ladeira, degrau, duna)
