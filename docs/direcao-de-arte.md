@@ -306,8 +306,8 @@ no fim).
   - **Chapéu:** o documentado (Percy Lau, IBGE 1941) é de palha de carnaúba, **copa alta e aba larga
     mole, levantada nas bordas**, às vezes com oleado por cima. O cônico das folhas está errado.
   - **Calça:** sem bolsos traseiros chapados (lembram jeans; sem fonte).
-  - **Cintura:** cordão sem fonte para jangadeiro; o carregador do porto em 1935 usa cinto de couro
-    (foto de Platt). Decisão do Joabe.
+  - **Cintura: cinto de couro** (decisão do Joabe, 16/10/2026), como o carregador do porto na foto de
+    Platt de 1935: couro cru gasto, estreito, fivela simples de ferro escurecido. Sai o cordão.
   - **Licenças narrativas registradas** (sem registro de época): bolso da camisa, pano anil no braço,
     caderninho.
   - **Confirmado:** algodãozinho tinto de mangue, murici e cajueiro ("cor de couro"), camisa de manga
