@@ -1,21 +1,24 @@
-// O desenho da cidade: onde fica o mar, a praia, o rio e os morros.
-// Tudo aqui é função matemática de (x, z). O resto do jogo pergunta para este arquivo.
-//
-// Oeste (x negativo): Rio, com morros, favela e as pedras no mar.
-// Centro: Recife, com o rio, as pontes e o casario colorido.
-// Leste (x positivo): Fortaleza, com praia larga, jangadas, prédios na orla, dunas e o farol.
-// O mar fica ao sul (z negativo).
+// O desenho da cidade: Fortaleza em 1932 (só Fortaleza; docs/mapa-1932.md).
+// Os dados (costa, rios, lagoas, lugares, lotes de 1932) moram em fortaleza1932.js, em geografia
+// real comprimida. Este arquivo responde às mesmas perguntas de sempre para o resto do jogo:
+// onde fica o mar, a praia, o rio, qual a altura do chão e onde nasce a grama.
+// O mar fica ao norte, em z negativo. x cresce para leste.
 
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js'
+import {
+  costaZ, larguraPraiaX, rioCearaX, distPolilinha, pajeuJogo, lagoasJogo, lugaresJogo,
+  densidadeLotes, nomeBairro,
+} from './fortaleza1932.js'
 
 const perlin = new ImprovedNoise()
 
-export const LIMITES = { x0: -450, x1: 450, z0: -220, z1: 430, passo: 2 }
+export const LIMITES = { x0: -1221, x1: 1221, z0: -462, z1: 1002, passo: 3 } // grade de 3 m: Fortaleza é plana; a praia perto do jogador usa a malha fina da areia
 export const NIVEL_CIDADE = 1.8
-export const LARG_CALCADAO = 7
-export const LARG_AVENIDA = 12
+// em 1932 não havia avenida na beira-mar: só uma rua de areia batida entre a praia e as casas
+export const LARG_CALCADAO = 4
+export const LARG_AVENIDA = 6
 export const FIM_AVENIDA = LARG_CALCADAO + LARG_AVENIDA // medido a partir do fim da areia
-export const RIO_MEIA_LARGURA = 12
+export const RIO_MEIA_LARGURA = 14
 
 export const smooth = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
@@ -40,33 +43,23 @@ export function fbm(x, z, oitavas = 4, semente = 0) {
   return soma / norma
 }
 
-// Peso de cada "cidade" num ponto x, com transição suave entre elas.
-export function pesos(x) {
-  const rio = 1 - smooth(-140, -100, x)
-  const fortaleza = smooth(100, 140, x)
-  return { rio, fortaleza, recife: Math.max(0, 1 - rio - fortaleza) }
+// Antes o mapa misturava três cidades; agora é só Fortaleza. Mantido para quem ainda pergunta.
+export function pesos() {
+  return { rio: 0, recife: 0, fortaleza: 1 }
 }
 
-export function bairro(x) {
-  const p = pesos(x)
-  if (p.rio > 0.5) return 'rio'
-  if (p.fortaleza > 0.5) return 'fortaleza'
-  return 'recife'
+// nome do bairro de 1932 mais próximo (para a legenda na tela)
+export function bairro(x, z = 0) {
+  return nomeBairro(x, z)
 }
 
-// Onde a areia encontra a água.
+// Onde a areia encontra a água (com uma ondulação pequena: praia de verdade não é régua).
 export function linhaCosta(x) {
-  return (
-    22 * Math.sin(x * 0.0075 + 0.5) +
-    9 * Math.sin(x * 0.021 + 1.3) -
-    45 * Math.exp(-(((x - 335) / 38) ** 2)) + // a ponta do farol
-    18 * Math.exp(-(((x + 215) / 70) ** 2)) // a enseada do Rio
-  )
+  return costaZ(x) + 1.6 * Math.sin(x * 0.045) + 0.9 * Math.sin(x * 0.13 + 1.1)
 }
 
 export function larguraPraia(x) {
-  const p = pesos(x)
-  return p.rio * 36 + p.recife * 26 + p.fortaleza * 46
+  return larguraPraiaX(x)
 }
 
 // Positivo em terra, negativo no mar.
@@ -74,18 +67,21 @@ export function distCosta(x, z) {
   return z - linhaCosta(x)
 }
 
-// Centro do rio do Recife ao longo de z.
+// Eixo do rio Ceará ao longo de z (o rio do jogo agora é ele, a oeste, com mangue).
 export function rioX(z) {
-  return 8 + 14 * Math.sin(z * 0.011 + 0.4) + 6 * Math.sin(z * 0.031)
+  return rioCearaX(z)
 }
 
-export const MORROS = [
-  { x: -250, z: 160, r: 85, h: 72 },
-  { x: -165, z: 245, r: 70, h: 55 },
-  { x: -350, z: 110, r: 62, h: 50 },
-  { x: -305, z: 275, r: 95, h: 85 },
-  { x: 88, z: 215, r: 55, h: 17, nome: 'olinda' },
-]
+// Os morros do Rio saíram. Fortaleza é plana: um tabuleiro baixo, dunas a leste e o outeiro da Prainha.
+export const MORROS = []
+
+const [semX, semZ] = lugaresJogo.seminario
+const [pajX0, pajX1, pajZ0, pajZ1] = (() => {
+  const xs = pajeuJogo.map((p) => p[0])
+  const zs = pajeuJogo.map((p) => p[1])
+  return [Math.min(...xs) - 40, Math.max(...xs) + 40, Math.min(...zs) - 40, Math.max(...zs) + 40]
+})()
+const [, aldeotaX] = [0, lugaresJogo.seminario[0] + 60] // as dunas começam a leste da Prainha
 
 export function alturaBruta(x, z) {
   const s = distCosta(x, z)
@@ -97,54 +93,78 @@ export function alturaBruta(x, z) {
     const p = -s
     h = -Math.min(14, p * 0.12 + Math.pow(p, 1.5) * 0.004)
     h += fbm(x * 0.03, z * 0.03, 2, 5) * 0.4 * smooth(0, 20, p)
+    // linha de recifes ao largo do centro (a que fechava a enseada de 1881)
+    const recife = Math.exp(-(((p - 34) / 6) ** 2)) * smooth(-260, -200, x) * (1 - smooth(60, 140, x))
+    if (recife > 0.01) h = mix(h, -0.7 + fbm(x * 0.2, z * 0.2, 2, 8) * 0.5, recife * 0.85)
   } else if (s < bw) {
-    // areia subindo do mar até o calçadão
+    // areia subindo do mar até a rua da praia
     h = NIVEL_CIDADE * Math.pow(s / bw, 1.3) + fbm(x * 0.08, z * 0.08, 2, 9) * 0.08
   } else {
-    // a cidade é plana perto da avenida; morros e dunas só começam depois
-    const mascara = smooth(bw + FIM_AVENIDA + 6, bw + FIM_AVENIDA + 45, s)
-    h = NIVEL_CIDADE + fbm(x * 0.04, z * 0.04, 3, 2) * 0.35 * mascara
+    // tabuleiro: sobe devagar para dentro, alguns metros acima da praia
+    const dentro = smooth(bw + FIM_AVENIDA + 4, bw + FIM_AVENIDA + 140, s)
+    h = NIVEL_CIDADE + dentro * (4.5 + fbm(x * 0.006, z * 0.006, 2, 2) * 2.5) + fbm(x * 0.03, z * 0.03, 3, 2) * 0.35 * dentro
 
-    // morros: o ponto é deformado por ruído para não saírem redondos
-    const wx = x + fbm(x * 0.01, z * 0.01, 2, 11) * 30
-    const wz = z + fbm(x * 0.01, z * 0.01, 2, 23) * 30
-    for (const m of MORROS) {
-      const d2 = ((wx - m.x) ** 2 + (wz - m.z) ** 2) / (m.r * m.r)
-      if (d2 < 6) h += m.h * Math.exp(-d2 * 1.6) * (1 + 0.28 * fbm(x * 0.03, z * 0.03, 3, 31)) * mascara
+    // outeiro da Prainha (o morro do Seminário)
+    h += 6 * Math.exp(-(((x - semX) ** 2 + (z - semZ) ** 2) / (70 * 70)))
+
+    // dunas a leste (Aldeota, Meireles, Mucuripe) e um pouco a oeste da Barra
+    const leste = smooth(aldeotaX, aldeotaX + 120, x)
+    const oeste = 1 - smooth(-1000, -900, x)
+    const praiaLivre = smooth(bw + 6, bw + 50, s) // a primeira faixa atrás da praia fica baixa
+    const pesoDuna = (leste * 16 + oeste * 5) * praiaLivre
+    if (pesoDuna > 0) {
+      const crista = Math.max(0, fbm(x * 0.009, z * 0.016, 3, 41)) * 1.6 + Math.max(0, fbm(x * 0.03, z * 0.05, 2, 43)) * 0.4
+      h += pesoDuna * crista
     }
 
-    // dunas a leste
-    const duna = smooth(290, 340, x)
-    if (duna > 0) h += duna * (0.55 + 0.45 * fbm(x * 0.012, z * 0.022, 3, 41)) * 14 * smooth(bw + 10, bw + 60, s)
+    // riacho Pajeú: um vale raso e verde cortando o lado leste do centro
+    if (x > pajX0 && x < pajX1 && z > pajZ0 && z < pajZ1) {
+      const dp = distPolilinha(x, z, pajeuJogo)
+      h -= 3.2 * (1 - smooth(3, 22, dp))
+    }
 
-    // serra no fundo e nas pontas: verticalização que fecha o mapa
-    h += smooth(300, 420, z) * (55 + 35 * fbm(x * 0.006, z * 0.006, 3, 51))
-    h += smooth(390, 450, Math.abs(x)) * 45 * mascara
+    // lagoas: bacias que descem abaixo da água
+    for (const l of lagoasJogo) {
+      const q0 = Math.hypot((x - l.x) / l.rx, (z - l.z) / l.rz)
+      if (q0 > 2.6) continue // longe da lagoa: nem calcula o ruído da margem
+      const q = q0 * (1 + 0.15 * fbm(x * 0.05, z * 0.05, 2, 13))
+      if (q < 2.2) h = mix(h, -1.6 * (1 - q) + 0.3, 1 - smooth(0.6, 2.2, q))
+    }
   }
 
-  // o rio corta o Recife até o mar
-  const pr = pesos(x).recife
-  if (pr > 0 && s > -40) {
+  // o rio Ceará corta da foz até o sul, com as margens baixas (mangue)
+  if (s > -60) {
     const d = Math.abs(x - rioX(z))
-    const k = (1 - smooth(RIO_MEIA_LARGURA * 0.7, RIO_MEIA_LARGURA * 1.35, d)) * pr
-    h = mix(h, -2.4, k)
+    const varzea = (1 - smooth(RIO_MEIA_LARGURA * 1.2, RIO_MEIA_LARGURA * 5, d)) * smooth(-60, 0, s)
+    h = mix(h, Math.min(h, 0.6), varzea)
+    const k = 1 - smooth(RIO_MEIA_LARGURA * 0.7, RIO_MEIA_LARGURA * 1.3, d)
+    h = mix(h, -2.6, k)
   }
   return h
 }
 
-// Densidade de grama (0 a 1). A grama do shader só nasce onde isto é alto.
+// Densidade de grama (0 a 1). Em 1932 o chão da cidade era areia; a grama fica nos terrenos
+// vazios, nas margens do rio e do Pajeú e em volta das lagoas. Nas dunas, só restinga rala.
 export function densidadeGrama(x, z, h, inclinacao) {
   const s = distCosta(x, z)
   const bw = larguraPraia(x)
   if (s < bw + FIM_AVENIDA + 2 || h < 0.5) return 0
-  const p = pesos(x)
+  // onde havia cidade em 1932 não nasce grama: rua de pedra ou de areia batida (fotos de 1925 a 1936)
+  const cidade = smooth(0.02, 0.1, densidadeLotes(x, z))
+  if (cidade > 0.98) return 0
   const manchas = fbm(x * 0.02, z * 0.02, 3, 61)
-  let d = 0
-  d += p.rio * mix(0.75, 1.0, smooth(-0.2, 0.3, manchas))
-  d += p.recife * smooth(0.12, 0.3, manchas) // só nas praças
-  d += p.fortaleza * 0.7 * smooth(-0.15, 0.25, manchas)
-  d *= 1 - 0.75 * smooth(290, 340, x) // nas dunas, só um pouco de restinga
-  d = Math.max(d, smooth(300, 340, z)) // a serra é toda verde
+  let d = 0.75 * smooth(-0.15, 0.25, manchas) * (1 - cidade)
+  // várzea do rio e margens das lagoas: verde
+  const dr = Math.abs(x - rioX(z))
+  d = Math.max(d, (1 - smooth(RIO_MEIA_LARGURA * 1.5, RIO_MEIA_LARGURA * 6, dr)) * 0.9)
+  for (const l of lagoasJogo) {
+    const q = Math.hypot((x - l.x) / l.rx, (z - l.z) / l.rz)
+    d = Math.max(d, (1 - smooth(1.1, 2.4, q)) * 0.85)
+  }
+  // dunas altas: só restinga
+  d *= 1 - 0.7 * smooth(5, 10, h - 6)
   d *= 1 - smooth(0.75, 1.15, inclinacao)
   return Math.min(1, Math.max(0, d))
 }
+
+export { densidadeLotes }

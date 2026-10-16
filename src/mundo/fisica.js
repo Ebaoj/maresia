@@ -13,6 +13,7 @@
 import * as THREE from 'three'
 import RAPIER from '@dimforge/rapier3d-compat'
 import { LIMITES, distCosta, larguraPraia, linhaCosta } from './mapa.js'
+import { trechosJogo } from './fortaleza1932.js'
 import { alturas, NX, NZ, alturaTerreno } from './terreno.js'
 import { fixosPerto } from './colisao.js'
 import { toonVertice } from '../materiais.js'
@@ -149,7 +150,7 @@ export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
 
   // bolas espalhadas nas praias; cocos caídos no pé de alguns coqueiros
   for (let i = 0; i < MAX_BOLAS; i++) {
-    const x = rnd.entre(-380, 380)
+    const x = rnd.entre(...trechosJogo.praiaDoPeixe)
     const z = linhaCosta(x) + larguraPraia(x) * rnd.entre(0.3, 0.7)
     criarProp('bola', x, alturaTerreno(x, z) + 0.5, z)
   }

@@ -4,6 +4,7 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { linhaCosta, larguraPraia, pesos, NIVEL_CIDADE, LARG_CALCADAO, rioX, RIO_MEIA_LARGURA } from './mapa.js'
+import { trechosJogo, VILAS } from './fortaleza1932.js'
 import { alturaTerreno } from './terreno.js'
 import { toonVertice } from '../materiais.js'
 import { ocupacao } from './ocupacao.js'
@@ -54,20 +55,23 @@ export function criarPessoas(cena) {
   const sentadas = tipos.filter((t) => t.sentada)
   const andando = []
 
-  const longeDoRio = (x, z) => !(pesos(x).recife > 0.3 && Math.abs(x - rioX(z)) < RIO_MEIA_LARGURA * 2)
+  const longeDoRio = (x, z) => Math.abs(x - rioX(z)) > RIO_MEIA_LARGURA * 2
+  // gente nas vilas de jangadeiros e na Praia Formosa (perto do porto)
+  const trechos = [...VILAS, 'praiaFormosa'].map((k) => trechosJogo[k])
+  const xPraia = () => { const [a, b] = rnd.escolha(trechos); return rnd.entre(a, b) }
 
   // caminhando no calçadão, cada um num trecho, indo e voltando
-  for (let i = 0; i < 46; i++) {
-    const x = rnd.entre(-400, 400)
+  for (let i = 0; i < 24; i++) {
+    const x = xPraia()
     const z0 = linhaCosta(x) + larguraPraia(x)
     if (!longeDoRio(x, z0)) continue
     const t = rnd.escolha(emPe)
-    andando.push({ tipo: t, idx: t.lista.length, x, faixa: rnd.entre(1.5, LARG_CALCADAO - 1.5), vel: rnd.entre(0.9, 1.5) * (rnd.chance(0.5) ? 1 : -1), ini: x - rnd.entre(20, 50), fim: x + rnd.entre(20, 50), fase: rnd.entre(0, 6) })
+    andando.push({ tipo: t, idx: t.lista.length, x, faixa: rnd.entre(1.5, LARG_CALCADAO - 1.5), vel: rnd.entre(0.9, 1.5) * (rnd.chance(0.5) ? 1 : -1), ini: x - rnd.entre(15, 35), fim: x + rnd.entre(15, 35), fase: rnd.entre(0, 6) })
     t.lista.push(new THREE.Matrix4())
   }
   // sentadas na areia, perto do mar
-  for (let i = 0; i < 70; i++) {
-    const x = rnd.entre(-410, 410)
+  for (let i = 0; i < 30; i++) {
+    const x = xPraia()
     const bw = larguraPraia(x)
     const z = linhaCosta(x) + rnd.entre(bw * 0.25, bw * 0.75)
     if (!longeDoRio(x, z) || !ocupacao.livre(x, z, 0.4, 0.4)) continue
@@ -76,7 +80,7 @@ export function criarPessoas(cena) {
   }
   // de pé conversando em grupinhos pela cidade e na praia
   for (let g = 0; g < 26; g++) {
-    const x = rnd.entre(-400, 400)
+    const x = xPraia()
     const naPraia = rnd.chance(0.5)
     const bw = larguraPraia(x)
     const z = linhaCosta(x) + (naPraia ? rnd.entre(bw * 0.3, bw * 0.8) : bw + rnd.entre(1, LARG_CALCADAO - 1))

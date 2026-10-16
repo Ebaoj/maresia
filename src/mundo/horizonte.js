@@ -59,9 +59,9 @@ void main() {
 
 export function criarHorizonte(cena) {
   const camadas = [
-    { raio: 1250, min: 60, max: 210, semente: 3, mistura: 0.35 },
-    { raio: 1550, min: 120, max: 330, semente: 7, mistura: 0.6 },
-    { raio: 1850, min: 200, max: 460, semente: 11, mistura: 0.8 },
+    { raio: 2500, min: 40, max: 160, semente: 3, mistura: 0.45 },
+    { raio: 3100, min: 90, max: 300, semente: 7, mistura: 0.65 },
+    { raio: 3700, min: 180, max: 520, semente: 11, mistura: 0.82 },
   ].map((c) => {
     const mat = luzFixa(new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }), 0.8)
     const m = new THREE.Mesh(cordilheira(c.raio, c.min, c.max, c.semente, -0.35, Math.PI + 0.35), mat)
@@ -72,26 +72,8 @@ export function criarHorizonte(cena) {
     return { ...c, mat }
   })
 
-  // cidade continuando pela costa, a oeste e a leste do mapa
-  const caixas = []
-  for (const lado of [-1, 1]) {
-    for (let i = 0; i < 700; i++) {
-      const x = lado * rnd.entre(520, 1250)
-      const z = linhaCosta(lado * 450) + rnd.entre(30, 420) * (rnd.chance(0.7) ? 0.6 : 1)
-      const w = rnd.entre(10, 26)
-      const d = rnd.entre(10, 26)
-      const perto = 1 - Math.min(1, (Math.abs(x) - 520) / 700)
-      const h = rnd.entre(8, 22) + rnd.entre(0, 55) * perto * (rnd.chance(0.3) ? 1 : 0.4)
-      caixas.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rnd.entre(-0.2, 0.2)), new THREE.Vector3(w, h, d)))
-    }
-  }
-  const uCidade = { uCor: { value: new THREE.Color() }, uLuz: { value: new THREE.Color('#ffd27a') }, uNoite: globais.uNoite }
-  const geo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0)
-  const cidade = new THREE.InstancedMesh(geo, new THREE.ShaderMaterial({ uniforms: uCidade, vertexShader: vertCidade, fragmentShader: fragCidade }), caixas.length)
-  caixas.forEach((m, i) => cidade.setMatrixAt(i, m))
-  cidade.frustumCulled = false
-  cidade.userData.semNormal = true
-  cena.add(cidade)
+  // 1932: nada de cidade moderna no horizonte (saiu em 16/10/2026); só as serras ao sul
+  const uCidade = { uCor: { value: new THREE.Color() } }
 
   const tmp = new THREE.Color()
   return {

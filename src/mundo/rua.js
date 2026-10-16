@@ -8,6 +8,8 @@ import {
   linhaCosta, larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA, LARG_CALCADAO,
   NIVEL_CIDADE, pesos,
 } from './mapa.js'
+import { trechosJogo } from './fortaleza1932.js'
+import { LIMITES, densidadeLotes } from './mapa.js'
 import { alturaTerreno } from './terreno.js'
 import { toon, toonVertice, texturaCanvas, pintar, gradienteToon } from '../materiais.js'
 import { globais } from '../globais.js'
@@ -48,7 +50,7 @@ const pertoDoRio = (x, z, folga = 1.6) => pesos(x).recife > 0.3 && Math.abs(x - 
 function geometriaPoste() {
   const haste = new THREE.CylinderGeometry(0.11, 0.2, 9, 4).rotateY(Math.PI / 4).translate(0, 4.5, 0)
   const cruzeta = new THREE.BoxGeometry(1.8, 0.14, 0.14).translate(0, 8.3, 0)
-  return mergeGeometries([colorir(haste, '#b9b2a6'), colorir(cruzeta, '#8a8478')])
+  return mergeGeometries([colorir(haste, '#7a5a3c'), colorir(cruzeta, '#6b4e34')]) // madeira
 }
 
 function catenaria(a, b, flecha, segs = 10) {
@@ -101,40 +103,30 @@ function geometriaFios(fios, raio = 0.028) {
   return g
 }
 
-function postesEFios(cena, predios) {
-  const linhas = [] // cada linha é uma sequência de postes ligados por fios
-  // ao longo da avenida, do lado da cidade
-  let atual = []
-  for (let x = -440; x < 440; x += 30) {
-    const z = linhaCosta(x) + larguraPraia(x) + FIM_AVENIDA + 1.3
-    if (pertoDoRio(x, z, 2.2)) { if (atual.length > 1) linhas.push(atual); atual = []; continue }
-    atual.push(new THREE.Vector3(x, alturaTerreno(x, z), z))
-  }
-  if (atual.length > 1) linhas.push(atual)
-  // ruas do Recife (entre os quarteirões) e de Fortaleza
-  for (const xr of [-77, -31, 15, 61, 107, 165, 215, 265]) {
-    atual = []
-    for (let z = 20; z < 290; z += 20) {
-      const x = xr + rnd.entre(-0.5, 0.5)
-      if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 6 || pertoDoRio(x, z, 2.2) || alturaTerreno(x, z) > 12 || !ocupacao.livre(x, z, 0.5, 0.5)) {
-        if (atual.length > 1) linhas.push(atual)
-        atual = []
-        continue
-      }
-      atual.push(new THREE.Vector3(x, alturaTerreno(x, z), z))
-    }
-    if (atual.length > 1) linhas.push(atual)
-  }
-  // favela: postes espalhados, cada um ligado ao vizinho mais perto (bagunça de propósito)
+// 1932: postes de madeira da Light nas ruas do centro (fios de luz e do bonde), um a cada ~30 m.
+// Nada de poste de concreto, transformador ou "gato" (saíram em 16/10/2026).
+function postesEFios(cena, predios, grade) {
+  const linhas = []
   const favela = []
-  for (let t = 0; t < 1500 && favela.length < 90; t++) {
-    const x = rnd.entre(-430, -130)
-    const z = rnd.entre(40, 320)
-    const h = alturaTerreno(x, z)
-    if (h < 4 || h > 46 || !ocupacao.livre(x, z, 0.6, 0.6)) continue
-    if (favela.some((p) => p.distanceToSquared(new THREE.Vector3(x, h, z)) < 120)) continue
-    favela.push(new THREE.Vector3(x, h, z))
+  const [ox, oz] = grade.origem
+  const passoX = grade.w + grade.rua
+  const passoZ = grade.d + grade.rua
+  const ponto = (a, b) => [ox + a * grade.ex[0] + b * grade.ez[0], oz + a * grade.ex[1] + b * grade.ez[1]]
+  // ruas na direção ex (leste-sudeste) e na direção ez, na beira da rua (a 3,5 m do eixo)
+  for (let k = -8; k <= 8; k++) {
+    for (const dir of [0, 1]) {
+      let atual = []
+      for (let t = -9 * 43; t <= 9 * 43; t += 30) {
+        const [x, z] = dir === 0 ? ponto(t, (k + 0.5) * passoZ - 3.5) : ponto((k + 0.5) * passoX - 3.5, t)
+        const ok = Math.hypot(x - ox, z - oz) < 360 && densidadeLotes(x, z) > 0.2 &&
+          distCosta(x, z) > larguraPraia(x) + FIM_AVENIDA + 4 && ocupacao.livre(x, z, 0.5, 0.5)
+        if (!ok) { if (atual.length > 1) linhas.push(atual); atual = []; continue }
+        atual.push(new THREE.Vector3(x, alturaTerreno(x, z), z))
+      }
+      if (atual.length > 1) linhas.push(atual)
+    }
   }
+  void predios
 
   const postes = []
   const fios = []
@@ -144,8 +136,7 @@ function postesEFios(cena, predios) {
     for (let i = 0; i < linha.length - 1; i++) {
       const a = linha[i]
       const b = linha[i + 1]
-      for (let k = 0; k < 3; k++) fios.push(catenaria(topo(a, k), topo(b, k), rnd.entre(0.5, 1.1)))
-      if (rnd.chance(0.35)) fios.push(catenaria(topo(a, 1).setY(a.y + 7.2), topo(b, 1).setY(b.y + 7.2), rnd.entre(1.2, 2.2)))
+      for (let k = 0; k < 2; k++) fios.push(catenaria(topo(a, k * 2), topo(b, k * 2), rnd.entre(0.4, 0.8)))
     }
   }
   for (const p of favela) {
@@ -166,16 +157,12 @@ function postesEFios(cena, predios) {
   postes.forEach((p) => adicionarCirculo(p.x, p.z, 0.25))
   instanciar(cena, geometriaPoste(), toonVertice(), matrizes, null, 'postes', { peso: 0.6 })
 
-  // transformadores em alguns postes
-  const trafo = postes.filter(() => rnd.chance(0.18)).map((p) => matriz(p.x + 0.3, p.y + 6.6, p.z))
-  instanciar(cena, new THREE.CylinderGeometry(0.4, 0.4, 1.0, 8), toon('#7d8a8f'), trafo, null, 'transformadores')
-
   const malhaFios = new THREE.Mesh(geometriaFios(fios), toon('#231a33'))
   malhaFios.name = 'fios'
   malhaFios.userData.peso = 0.5
   cena.add(malhaFios)
 
-  return { postes: postes.filter((p) => p.x > -120) }
+  return { postes }
 }
 
 // carros: saíram em 16/10/2026 (anacronismo: os modelos eram de carro moderno, e a rua de 1932
@@ -189,11 +176,13 @@ function calcadao(cena) {
   const lixeiras = []
   const carrinhos = []
   const cocos = []
-  for (let x = -430; x < 430; x += 13) {
+  const trechos = [trechosJogo.praiaDoPeixe, trechosJogo.praiaFormosa]
+  for (let x = LIMITES.x0; x < LIMITES.x1; x += 13) {
+    if (!trechos.some(([a, b]) => x > a && x < b)) continue
     const zc = linhaCosta(x) + larguraPraia(x)
     if (pertoDoRio(x, zc + 5, 2.4)) continue
     const yaw = tangenteCosta(x)
-    const k = Math.round((x + 430) / 13)
+    const k = Math.round((x - LIMITES.x0) / 13)
     if (k % 3 === 0) {
       // banco virado para o mar
       const z = zc + 1.4
@@ -338,13 +327,13 @@ function varais(cena, predios) {
   instanciar(cena, geoRoupa, matRoupa, roupas, cores, 'roupas', { sombra: false })
 }
 
-export function criarRua(cena, predios) {
-  const { postes } = postesEFios(cena, predios)
+export function criarRua(cena, predios, grade) {
+  postesEFios(cena, predios, grade)
   const lugares = calcadao(cena)
-  placas(cena, postes)
-  bancas(cena)
   varais(cena, predios)
   return lugares
 }
+void placas
+void bancas
 
 export { LARG_CALCADAO }

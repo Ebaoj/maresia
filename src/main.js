@@ -22,6 +22,7 @@ import { criarPraia } from './mundo/praia.js'
 import { criarCoqueiros } from './mundo/vegetacao.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
+import { trechosJogo } from './mundo/fortaleza1932.js'
 import { criarToque } from './mundo/toque.js'
 import { criarAreia } from './mundo/areia.js'
 import { criarFisica } from './mundo/fisica.js'
@@ -42,7 +43,7 @@ renderer.shadowMap.type = THREE.PCFShadowMap // borda nítida, combina com o too
 renderer.shadowMap.autoUpdate = false
 
 const cena = new THREE.Scene()
-const camera = new THREE.PerspectiveCamera(cfg.camera.fov, innerWidth / innerHeight, 0.3, 2500)
+const camera = new THREE.PerspectiveCamera(cfg.camera.fov, innerWidth / innerHeight, 0.3, 6000)
 
 const teclas = { frente: false, tras: false, esquerda: false, direita: false, correr: false, girarEsq: false, girarDir: false }
 const MAPA_TECLAS = {
@@ -59,27 +60,41 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
 async function iniciar() {
   await esperar(50) // deixa a capa de carregamento aparecer antes do trabalho pesado
 
-  const { mapaAltura } = criarTerreno(cena)
+  const tempos = {}
+  let tMarca = performance.now()
+  const marcar = (nome) => { const t = performance.now(); tempos[nome] = Math.round(t - tMarca); tMarca = t }
+  const terreno = criarTerreno(cena)
+  marcar('terreno')
+  const { mapaAltura } = terreno
   const ceu = criarCeu(cena)
   const toque = criarToque(renderer, mapaAltura, cfg)
   const mar = criarMar(cena, mapaAltura, cfg, toque.publico)
-  criarFaixas(cena)
-  const { predios, casas } = criarCidade(cena)
+  // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
+  void criarFaixas
+  const { predios, casas, grade } = criarCidade(cena)
+  marcar('cidade')
   criarFachadas(cena, predios)
+  marcar('fachadas')
   const cenografia = criarCenografia(cena, predios.filter((p) => p.tipo === 'casario'))
   const marcos = criarMarcos(cena)
   const praia = criarPraia(cena)
-  const lugares = criarRua(cena, predios)
-  criarArvores(cena, predios)
+  const lugares = criarRua(cena, predios, grade)
+  marcar('rua')
+  criarArvores(cena, predios, grade)
+  marcar('arvores')
   const { coqueiros } = criarCoqueiros(cena, cfg)
+  marcar('coqueiros')
   const pessoas = criarPessoas(cena)
   const horizonte = criarHorizonte(cena)
   const grama = criarGrama(cena, mapaAltura, cfg, toque.publico)
+  marcar('grama')
   const areia = criarAreia(cena, renderer, mapaAltura, cfg)
+  marcar('areia')
   const fisica = await criarFisica(cena, cfg, { coqueiros, toque, areia })
+  marcar('fisica')
 
-  // começa no calçadão do Recife, olhando para o oeste: rio, ponte e o sol caindo atrás das pedras
-  const x0 = 62
+  // começa na Praia do Peixe (Praia de Iracema), entre as jangadas, olhando para o oeste: o porto
+  const x0 = (trechosJogo.praiaDoPeixe[0] + trechosJogo.praiaDoPeixe[1]) / 2
   const z0 = linhaCosta(x0) + larguraPraia(x0) + 3.5
   const inicio = new THREE.Vector3(x0, alturaChao(x0, z0), z0)
   const jogador = new Jogador(cena, cfg, inicio, -Math.PI / 2)
@@ -167,6 +182,7 @@ async function iniciar() {
     pessoas.atualizar(dt, t)
     mar.atualizar(jogador.pos)
     grama.atualizar(jogador.pos, camera)
+    terreno.atualizar(camera)
     praia.atualizar(t)
     cenografia.atualizar()
     casas.atualizar(camera)
@@ -221,6 +237,7 @@ async function iniciar() {
     cam.iniciado = false
     cfg.tempo.hora = hora
   }
+  window.__tempos = tempos
   window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
   if (import.meta.env.DEV) import('./debug/medidor.js').then((g) => g.instalar(window.maresia))

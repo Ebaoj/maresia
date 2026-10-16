@@ -6,6 +6,7 @@ import {
   linhaCosta, larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, pesos, LARG_CALCADAO,
   NIVEL_CIDADE,
 } from './mapa.js'
+import { trechosJogo, VILAS } from './fortaleza1932.js'
 import { alturaTerreno } from './terreno.js'
 import { toon, toonVertice, luzFixa } from '../materiais.js'
 import { adicionarCaixa, adicionarCirculo, adicionarDeck } from './colisao.js'
@@ -162,8 +163,9 @@ function jangadas(cena) {
   const lista = []
   const cores = ['#e7d8bd', '#e7d8bd', '#d9c39a', '#cbbf9f', '#e2c2a8'] // algodão cru, velas e panos gastos
   // na areia, perto da água
-  for (let i = 0; i < 12; i++) {
-    const x = rnd.entre(150, 320)
+  const vila = () => { const [a, b] = trechosJogo[rnd.escolha(VILAS)]; return rnd.entre(a, b) }
+  for (let i = 0; i < 26; i++) {
+    const x = vila()
     const z = linhaCosta(x) + rnd.entre(2, 9)
     if (!ocupacao.livre(x, z, 3.5, 3.5)) continue
     ocupacao.marcar(x, z, 3.5, 3.5)
@@ -174,8 +176,8 @@ function jangadas(cena) {
     adicionarCaixa(x, z, 3.2, 1.1, j.rotation.y)
   }
   // no mar, balançando
-  for (let i = 0; i < 9; i++) {
-    const x = rnd.entre(140, 380)
+  for (let i = 0; i < 12; i++) {
+    const x = vila()
     const z = linhaCosta(x) - rnd.entre(25, 90)
     const j = jangada(rnd.escolha(cores))
     j.position.set(x, -0.1, z)
@@ -249,16 +251,17 @@ function pier(cena) {
   adicionarCirculo(x + (-comp / 2 + 3) * s, zc + (-comp / 2 + 3) * c, 0.3)
 }
 
+// 1932: sem guarda-sol, barraca, poste de praia ou píer moderno (saíram em 16/10/2026).
+// Ficam as jangadas, nas vilas de jangadeiros (a Ponte Metálica entra com a reconstituição do porto).
 export function criarPraia(cena) {
-  pier(cena)
-  barracas(cena)
-  guardaSois(cena)
-  const atualizarPostes = postes(cena)
   const atualizarJangadas = jangadas(cena)
   return {
     atualizar(t) {
-      atualizarPostes()
       atualizarJangadas(t)
     },
   }
 }
+void pier
+void barracas
+void guardaSois
+void postes

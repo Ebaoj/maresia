@@ -19,7 +19,7 @@ const frag = /* glsl */ `
 uniform sampler2D tAltura; uniform vec4 uMapa; uniform vec2 uMapaTam;
 uniform float uTempo; uniform vec3 uCorFundo; uniform vec3 uCorRaso; uniform vec3 uCorEspuma;
 uniform vec3 uSolDir; uniform vec3 uSolCor; uniform vec3 uAmbiente; uniform float uNoite; uniform float uOndas;
-uniform float uRio; uniform float uCostaRio;
+uniform float uRio; uniform float uCostaRio; uniform float uRioX;
 uniform sampler2D tOnda; uniform vec2 uToqueCentro; uniform float uToqueArea;
 uniform vec3 uNevoaCor; uniform float uNevoaPerto; uniform float uNevoaLonge;
 varying vec3 vMundo;
@@ -47,7 +47,7 @@ void main() {
   cor = mix(cor, cor * 1.18 + 0.03, faixa * 0.6 * uOndas);
 
   // rio: água mais verde e mais escura que o mar
-  float rio = uRio * step(1.0, vMundo.z - uCostaRio) * (1.0 - step(60.0, abs(vMundo.x - 10.0))) * dentro;
+  float rio = uRio * step(1.0, vMundo.z - uCostaRio) * (1.0 - step(60.0, abs(vMundo.x - uRioX))) * dentro;
   cor = mix(cor, mix(uCorFundo, vec3(0.05, 0.42, 0.36), 0.7), rio * 0.75);
 
   // linhas de espuma chegando na praia, em traços quebrados como pincel
@@ -98,6 +98,7 @@ export function criarMar(cena, mapaAltura, cfg, toque) {
     uOndas: { value: cfg.mar.ondas },
     uRio: { value: 1 },
     uCostaRio: { value: linhaCosta(rioX(0)) },
+    uRioX: { value: rioX(300) },
     tOnda: toque.tOnda, uToqueCentro: toque.uToqueCentro, uToqueArea: toque.uToqueArea,
     uSolDir: globais.uSolDir,
     uSolCor: globais.uSolCor,

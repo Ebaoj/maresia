@@ -1,23 +1,37 @@
 // Caixas de narração de gibi ao entrar num lugar novo, e onomatopeias na tela.
 
-import { bairro, distCosta, larguraPraia } from '../mundo/mapa.js'
-import { alturaTerreno } from '../mundo/terreno.js'
+import { bairro } from '../mundo/mapa.js'
 
+// legenda de gibi ao entrar em cada bairro de 1932 (docs/mapa-1932.md)
 const LUGARES = {
-  rio: ['PEDRA DO PÃO', 'morros, casas coloridas e o bondinho'],
-  recife: ['BAIRRO DO CAIS', 'casario, o rio e as pontes'],
-  fortaleza: ['BEIRA-MAR', 'jangadas, coqueiros e o farol'],
-  pier: ['O PÍER', 'daqui o pôr do sol é outro'],
-  morro: ['NO ALTO DO MORRO', 'dá pra ver a cidade inteira'],
+  'Barra do Ceará': ['BARRA DO CEARÁ', 'a foz do rio e o mangue'],
+  Pirambu: ['PIRAMBU', 'praia de pescadores'],
+  Floresta: ['FLORESTA', 'as oficinas da estrada de ferro'],
+  Jacarecanga: ['JACARECANGA', 'o trem passa rente ao mar'],
+  'Moura Brasil': ['MOURA BRASIL', 'entre a linha do trem e a praia'],
+  Centro: ['CENTRO', 'a cidade em xadrez'],
+  'Praia Formosa': ['PRAIA FORMOSA', 'a areia atrás da estação'],
+  'Poço da Draga': ['POÇO DA DRAGA', 'a ponte do porto'],
+  'Praia de Iracema': ['PRAIA DE IRACEMA', 'a antiga Praia do Peixe, dos jangadeiros'],
+  Prainha: ['PRAINHA', 'o outeiro do Seminário'],
+  Outeiro: ['OUTEIRO', 'a cidade sobe devagar'],
+  Aldeota: ['ALDEOTA', 'casas sobre as dunas'],
+  Meireles: ['MEIRELES', 'dunas e cajueiros'],
+  Mucuripe: ['MUCURIPE', 'o farol e a vila dos jangadeiros'],
+  'Alagadiço': ['ALAGADIÇO', 'a estrada para o sertão'],
+  'Otávio Bonfim': ['OTÁVIO BONFIM', 'a linha do trem para o sul'],
+  Benfica: ['BENFICA', 'chácaras e a lagoa'],
+  'Joaquim Távora': ['JOAQUIM TÁVORA', 'a cidade termina em sítios'],
+  Tauape: ['TAUAPE', 'a lagoa e os sítios'],
+  duna: ['NO ALTO DA DUNA', 'dá pra ver o mar inteiro'],
   mar: ['MAR ABERTO', 'água morna, sem pressa'],
 }
 
 function lugar(jogador) {
   const p = jogador.pos
   if (jogador.nadando) return 'mar'
-  if (p.y > 26) return 'morro'
-  if (distCosta(p.x, p.z) < larguraPraia(p.x) - 1 && p.y > alturaTerreno(p.x, p.z) + 0.5) return 'pier'
-  return bairro(p.x)
+  if (p.y > 13) return 'duna'
+  return bairro(p.x, p.z)
 }
 
 export function criarHud(camera) {

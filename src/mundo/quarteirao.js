@@ -33,6 +33,7 @@ const m4 = new THREE.Matrix4()
 class Pilha {
   constructor() { this.geos = []; this.chao = 0 }
   add(geo, matriz, hex) {
+    if (SO_PLANEJAR || !geo) return
     const g = (geo.index ? geo.toNonIndexed() : geo.clone())
     g.deleteAttribute('uv')
     g.applyMatrix4(matriz)
@@ -46,6 +47,7 @@ class Pilha {
     this.geos.push(g)
   }
   caixa(base, x, y, z, sx, sy, sz, hex) {
+    if (SO_PLANEJAR) return
     this.add(new THREE.BoxGeometry(sx, sy, sz), m4.copy(base).multiply(new THREE.Matrix4().makeTranslation(x, y, z)), hex)
   }
   malha(material, nome) {
@@ -76,8 +78,48 @@ function contornoVao(path, cx, y0, w, h, arco) {
   path.lineTo(x0, y0)
 }
 
+let SO_PLANEJAR = false
 function extrudar(shape, prof) {
+  if (SO_PLANEJAR) return null
   return new THREE.ExtrudeGeometry(shape, { depth: prof, bevelEnabled: false, curveSegments: 8 })
+}
+
+// Telhado de telha à vista (fotos de 1925 a 1936: quase toda casa tem): cumeeira paralela à rua,
+// duas águas (empenas fechadas) ou quatro águas, beiral avançando sobre a rua e os fundos.
+function telhado(pilha, base, F, D, y0, beiral, inclinacao, quatroAguas, hex) {
+  const meiaF = F / 2 + beiral
+  const meiaD = D / 2 + beiral
+  const alto = meiaD * inclinacao
+  const recuo = quatroAguas ? Math.min(meiaD, meiaF * 0.9) : 0
+  const v = {
+    a: [-meiaF, 0, meiaD], b: [meiaF, 0, meiaD], c: [meiaF, 0, -meiaD], d: [-meiaF, 0, -meiaD],
+    r1: [-meiaF + recuo, alto, 0], r2: [meiaF - recuo, alto, 0],
+  }
+  const tris = [
+    [v.a, v.b, v.r2], [v.a, v.r2, v.r1], // água da rua
+    [v.c, v.d, v.r1], [v.c, v.r1, v.r2], // água dos fundos
+  ]
+  if (quatroAguas) tris.push([v.b, v.c, v.r2], [v.d, v.a, v.r1])
+  const pos = []
+  for (const t of tris) for (const p of t) pos.push(p[0], p[1] + y0, p[2])
+  // espessura da telha na beira (uma faixa vertical escura de 8 cm em volta)
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  g.computeVertexNormals()
+  pilha.add(g, base, hex)
+  pilha.caixa(base, 0, y0 - 0.04, meiaD - 0.03, F + 2 * beiral, 0.08, 0.06, new THREE.Color(hex).multiplyScalar(0.6).getHex())
+  if (!quatroAguas) {
+    // empenas: o triângulo de parede nas pontas, no plano da parede lateral
+    for (const sx of [-1, 1]) {
+      const tri = new THREE.BufferGeometry()
+      const x = sx * (F / 2 - 0.02)
+      const zz = D / 2 * (meiaD - 0.01) / meiaD
+      tri.setAttribute('position', new THREE.Float32BufferAttribute([x, y0, zz, x, y0, -zz, x, y0 + alto * (zz / meiaD) + 0.02, 0, x, y0, -zz, x, y0, zz, x, y0 + alto * (zz / meiaD) + 0.02, 0], 3))
+      tri.computeVertexNormals()
+      pilha.empenas?.push([tri, base])
+    }
+  }
+  return alto
 }
 
 // uma folha de madeira (janela ou porta) com almofadas em relevo, girada pela dobradiça
@@ -104,7 +146,8 @@ function folha(pecas, base, hx, y0, z, w, h, ang, lado, hex, porta, simples) {
   }
 }
 
-function casa(it, reboco, pecas, interiorEscuro, interiorAceso, rnd, simples) {
+function casa(it, P, rnd, simples) {
+  const { reboco, pecas, interior: interiorEscuro, aceso: interiorAceso, telhas } = P
   // eixo local: fachada voltada para +z
   const frenteX = it.frente && it.frente[0] !== 0
   const F = frenteX ? it.d : it.w // largura da fachada
@@ -113,11 +156,13 @@ function casa(it, reboco, pecas, interiorEscuro, interiorAceso, rnd, simples) {
   const chao = it.chao
   // parte das casas tem luz acesa lá dentro à noite (vista pelas folhas abertas)
   const interior = rnd.chance(simples ? 0.5 : 0.4) ? interiorAceso : interiorEscuro
-  reboco.chao = pecas.chao = interiorEscuro.chao = interiorAceso.chao = chao
+  reboco.chao = pecas.chao = interiorEscuro.chao = interiorAceso.chao = telhas.chao = chao
   const base = new THREE.Matrix4().makeTranslation(it.x, chao, it.z).multiply(new THREE.Matrix4().makeRotationY(ang + it.rot))
 
   // no morro a casa mantém a altura que já tinha (há casas por cima de outras); sem calçada
-  const H = simples ? Math.max(2.9, it.y + it.h - chao) : (rnd.chance(0.5) ? rnd.entre(7.6, 8.6) : rnd.entre(4.8, 5.6))
+  // altura original do lote (guardada na 1ª passada: depois it.y e it.h viram os da casa montada)
+  it.alturaLote ??= it.y + it.h - chao
+  const H = simples ? Math.max(2.9, it.alturaLote) : (rnd.chance(0.5) ? rnd.entre(7.6, 8.6) : rnd.entre(4.8, 5.6))
   const sobrado = H > 6.8
   const platibanda = !simples && rnd.chance(0.55)
   const arco = !simples && rnd.chance(0.45) ? 0.22 : 0
@@ -218,44 +263,27 @@ function casa(it, reboco, pecas, interiorEscuro, interiorAceso, rnd, simples) {
     const passos = [[0.08, 0.1], [0.16, 0.08], [0.26, 0.1], [0.34, 0.07]]
     let y = H - 0.5
     for (const [p, a] of passos) { pecas.caixa(base, 0, y + a / 2, zf + p / 2, F + p * 0.6, a, p, moldura); y += a }
-    reboco.caixa(base, 0, H + 0.45, zf - 0.1, F, 0.9, 0.2, parede)
-    pecas.caixa(base, 0, H + 0.93, zf - 0.07, F + 0.1, 0.07, 0.32, moldura)
+    reboco.caixa(base, 0, H + 0.3, zf - 0.1, F, 0.6, 0.2, parede)
+    pecas.caixa(base, 0, H + 0.63, zf - 0.07, F + 0.1, 0.07, 0.32, moldura)
     // ornamento no meio da platibanda (pináculo ou frontão baixo)
     if (rnd.chance(0.5)) {
       const fr = new THREE.Shape()
       fr.moveTo(-0.9, 0); fr.lineTo(0.9, 0); fr.lineTo(0, 0.55); fr.lineTo(-0.9, 0)
-      pecas.add(extrudar(fr, 0.16), new THREE.Matrix4().copy(base).multiply(new THREE.Matrix4().makeTranslation(0, H + 0.95, zf - 0.17)), moldura)
+      pecas.add(extrudar(fr, 0.16), new THREE.Matrix4().copy(base).multiply(new THREE.Matrix4().makeTranslation(0, H + 0.65, zf - 0.17)), moldura)
     }
-    // telhado escondido (só aparece de cima)
-    reboco.caixa(base, 0, H + 0.2, -0.2, F - 0.1, 0.1, D - 0.6, '#9a8f86')
+    // telhado atrás da platibanda: a cumeeira passa por cima dela (como nas fotos)
+    const telhaP = new THREE.Color(CAL.telha).multiplyScalar(rnd.entre(0.78, 1.0)).getHex()
+    const P1 = { add: (g, m, h) => telhas.add(g, m, h), caixa: (...a) => telhas.caixa(...a), empenas: [] }
+    const baseP = new THREE.Matrix4().copy(base).multiply(new THREE.Matrix4().makeTranslation(0, 0, -0.35))
+    telhado(P1, baseP, F - 0.4, D - 0.9, H + 0.05, 0.05, 0.36, rnd.chance(0.6), telhaP)
+    for (const [tri, m] of P1.empenas) reboco.add(tri, m, parede)
   } else {
-    // beiral: telhado de uma água caindo para a rua, telha canal em capa e canal
-    const beiral = simples ? 0.45 : 0.75
-    const queda = simples ? 0.9 : 1.4
-    const comp = D + beiral
-    const incl = Math.atan2(queda, comp)
-    const zMeio = zf + beiral - comp / 2
-    const telhado = new THREE.Matrix4().copy(base)
-      .multiply(new THREE.Matrix4().makeTranslation(0, H + queda / 2, zMeio))
-      .multiply(new THREE.Matrix4().makeRotationX(incl))
-    pecas.add(new THREE.BoxGeometry(F + 0.3, 0.05, comp / Math.cos(incl)), telhado, '#7a4a35')
-    const telha = new THREE.CylinderGeometry(0.11, 0.13, comp / Math.cos(incl) + 0.08, 6, 1, true, Math.PI / 2, Math.PI).rotateX(Math.PI / 2)
-    const colunas = Math.floor((F + 0.3) / 0.2)
-    for (let k = 0; k < colunas; k++) {
-      const tx = -(F + 0.3) / 2 + 0.1 + k * 0.2
-      const capa = k % 2 === 0
-      const tom = new THREE.Color(CAL.telha).multiplyScalar(rnd.entre(0.82, 1.08)).getHex()
-      const mt = new THREE.Matrix4().copy(telhado).multiply(new THREE.Matrix4().makeTranslation(tx, capa ? 0.1 : 0.03, 0))
-      if (!capa) mt.multiply(new THREE.Matrix4().makeRotationZ(Math.PI))
-      pecas.add(telha, mt, tom)
-    }
-    // empena lateral fechando o triângulo do telhado
-    for (const s of [-1, 1]) {
-      const emp = new THREE.Shape()
-      emp.moveTo(-D / 2, 0); emp.lineTo(D / 2, 0); emp.lineTo(D / 2, queda); emp.lineTo(-D / 2, queda * (beiral / comp)); emp.lineTo(-D / 2, 0)
-      const me = new THREE.Matrix4().copy(base).multiply(new THREE.Matrix4().makeTranslation(s * F / 2 - (s > 0 ? 0.1 : 0), H, 0)).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2))
-      reboco.add(extrudar(emp, 0.1), me, parede)
-    }
+    // beiral: telhado de duas ou quatro águas com telha canal à vista
+    const beiral = simples ? 0.45 : 0.7
+    const telhaB = new THREE.Color(CAL.telha).multiplyScalar(rnd.entre(0.75, 1.05)).getHex()
+    const P2 = { add: (g, m, h) => telhas.add(g, m, h), caixa: (...a) => telhas.caixa(...a), empenas: [] }
+    telhado(P2, base, F, D, H, beiral, simples ? 0.3 : 0.36, simples ? rnd.chance(0.3) : rnd.chance(0.5), telhaB)
+    for (const [tri, m] of P2.empenas) reboco.add(tri, m, parede)
     // testeira sob o beiral (sombra forte na parede)
     pecas.caixa(base, 0, H - 0.06, zf + 0.06, F, 0.12, 0.1, moldura)
   }
@@ -280,7 +308,7 @@ function casa(it, reboco, pecas, interiorEscuro, interiorAceso, rnd, simples) {
 
   // altura e base reais (árvores e vasos usam) e marca de que a casa já tem fachada própria
   it.y = chao
-  it.h = H + (platibanda ? 1.0 : 1.4)
+  it.h = H + (platibanda ? 1.6 : 2.0)
   it.detalhado = true
   // dados da fachada para a cenografia (lampião, cadeiras na calçada): ver cenografia.js
   const porta1 = vaos.find((v) => v.porta && !v.alto)
@@ -291,7 +319,7 @@ function casa(it, reboco, pecas, interiorEscuro, interiorAceso, rnd, simples) {
   pecas.caixa(base, 0, CALCADA / 2, zc, F, CALCADA, LARG_CALCADA, rnd.escolha(['#cdbb9c', '#c8b596', '#d3c3a5']))
   pecas.caixa(base, 0, CALCADA / 2 - 0.02, zf + LARG_CALCADA - 0.08, F, calcada + 0.04, 0.16, '#a99b84')
   const centro = new THREE.Vector3(0, 0, zc).applyMatrix4(base)
-  adicionarDeck(centro.x, centro.z, F / 2, LARG_CALCADA / 2, ang + it.rot, chao + CALCADA)
+  if (SO_PLANEJAR) adicionarDeck(centro.x, centro.z, F / 2, LARG_CALCADA / 2, ang + it.rot, chao + CALCADA)
 }
 
 // Material de reboco: cor por vértice, pincelada (pintar) e desgaste preso ao mundo:
@@ -348,11 +376,45 @@ function materialReboco(desgaste) {
 const TAM_BLOCO = 96
 
 // casario: itens do Lote 'casario'; morro: itens do Lote 'favela' (variante simples)
+// Telha canal: colunas de capa (clara, abaulada) e canal (escuro), fiadas a cada ~40 cm, cada telha
+// com seu tom, sujeira e limo mais embaixo. Direção tirada da própria inclinação de cada água.
+function materialTelhas() {
+  const mat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon(), side: THREE.DoubleSide })
+  mat.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vMundoT; varying vec3 vNormT;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMundoT = (modelMatrix * vec4(transformed, 1.0)).xyz; vNormT = normalize(mat3(modelMatrix) * normal);')
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vMundoT; varying vec3 vNormT;
+        float hashT(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        vec2 desce = normalize(vNormT.xz + vec2(1e-4));
+        vec2 lado = vec2(-desce.y, desce.x);
+        float u = dot(vMundoT.xz, lado) / 0.23;
+        float v = dot(vMundoT.xz, desce) / 0.42 + vMundoT.y * 0.6;
+        float coluna = floor(u);
+        float capa = mod(coluna, 2.0);
+        float fu = fract(u);
+        float curva = sin(fu * 3.14159);
+        float tom = 0.9 + 0.2 * hashT(vec2(coluna, floor(v + capa * 0.5)));
+        vec3 t = diffuseColor.rgb * tom;
+        t *= mix(0.7 + 0.18 * curva, 0.9 + 0.22 * curva, capa); // canal escuro, capa clara e abaulada
+        t *= 1.0 - 0.28 * smoothstep(0.82, 0.98, fract(v + capa * 0.5)); // sombra da telha de cima
+        float limo = hashT(floor(vMundoT.xz * 0.7)) * smoothstep(0.4, 0.0, vNormT.y - 0.75);
+        t = mix(t, t * vec3(0.72, 0.74, 0.62), limo * 0.35);
+        diffuseColor.rgb = mix(diffuseColor.rgb, t, step(0.35, vNormT.y));`)
+  }
+  mat.customProgramCacheKey = () => 'telhas-1932'
+  return pintar(mat, 'telhas-1932')
+}
+
 export function criarCasas(cena, casario, morro) {
   const rnd = criarAleatorio(1932)
   const matReboco = materialReboco(0.4)
   const matRebocoMorro = materialReboco(0.85)
   const matPecas = pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 'toon-pintado')
+  const matTelhas = materialTelhas()
   const grupo = new THREE.Group()
   grupo.name = 'casas-1932'
   const blocos = new Map()
@@ -365,18 +427,34 @@ export function criarCasas(cena, casario, morro) {
     }
     return blocos.get(k)
   }
-  for (const it of casario) { const b = bloco(it, false); casa(it, b.reboco, b.pecas, b.interior, b.aceso, rnd, false) }
-  for (const it of morro) { const b = bloco(it, true); casa(it, b.reboco, b.pecas, b.interior, b.aceso, rnd, true) }
+  // cada casa tem o próprio sorteio: montar agora ou depois dá a mesma casa
+  const semente = (i) => criarAleatorio(1932 + i * 7919)
+  const todas = [...casario.map((it) => [it, false]), ...morro.map((it) => [it, true])]
+  SO_PLANEJAR = true
+  const vazio = () => ({ reboco: new Pilha(), pecas: new Pilha(), interior: new Pilha(), aceso: new Pilha(), telhas: new Pilha() })
+  todas.forEach(([it, simples], i) => {
+    const b = bloco(it, simples)
+    casa(it, vazio(), semente(i), simples)
+    ;(b.itens ||= []).push([it, i])
+  })
+  SO_PLANEJAR = false
+  void rnd
   // interior aceso: escuro de dia, candeeiro quente à noite (não recebe luz; brilha no filtro)
   const matAceso = luzFixa(new THREE.MeshBasicMaterial({ vertexColors: true }), 0.6, globais.uNoite)
-  for (const b of blocos.values()) {
-    const r = b.reboco.malha(b.simples ? matRebocoMorro : matReboco, 'casas-reboco')
-    const p = b.pecas.malha(matPecas, 'casas-pecas')
-    const i = b.interior.malha(matPecas, 'casas-interior')
-    const a = b.aceso.malha(matAceso, 'casas-interior-aceso')
+  const montarBloco = (b) => {
+    const pilhas = vazio()
+    for (const [it, i] of b.itens) casa(it, pilhas, semente(i), b.simples)
+    const r = pilhas.reboco.malha(b.simples ? matRebocoMorro : matReboco, 'casas-reboco')
+    const p = pilhas.pecas.malha(matPecas, 'casas-pecas')
+    const i = pilhas.interior.malha(matPecas, 'casas-interior')
+    const a = pilhas.aceso.malha(matAceso, 'casas-interior-aceso')
+    const t = pilhas.telhas.malha(matTelhas, 'casas-telhas')
     for (const m of [i, a]) if (m) m.castShadow = false
-    for (const m of [r, p, i, a]) if (m) { grupo.add(m); b.malhas.push(m) }
+    for (const m of [r, p, i, a, t]) if (m) { m.visible = b.perto; grupo.add(m); b.malhas.push(m) }
+    b.montado = true
+    if (b.perto) for (const m of b.longe) m.visible = false
   }
+  for (const b of blocos.values()) { b.perto = false; b.montado = false }
   // a câmera colide com caixas simples, uma por casa (invisíveis). Raio contra a malha detalhada
   // testava centenas de milhares de triângulos por quadro e derrubava o jogo para 40 ms.
   const caixas = []
@@ -408,7 +486,7 @@ export function criarCasas(cena, casario, morro) {
         im.getMatrixAt(0, mt)
         v.setFromMatrixPosition(mt)
         const b = blocos.get(`${simples ? 'm' : 'c'}${Math.floor(v.x / TAM_BLOCO)},${Math.floor(v.z / TAM_BLOCO)}`)
-        if (b) { b.longe.push(im); im.visible = !b.perto } else im.visible = true
+        if (b) { b.longe.push(im); im.visible = !(b.perto && b.montado) } else im.visible = true
       }
     },
     atualizar(camera) {
@@ -416,15 +494,24 @@ export function criarCasas(cena, casario, morro) {
       if (!camera) return
       const cx = camera.position.x
       const cz = camera.position.z
+      let montou = 0
       for (const b of blocos.values()) {
         const dx = Math.max(b.x0 - cx, 0, cx - (b.x0 + TAM_BLOCO))
         const dz = Math.max(b.z0 - cz, 0, cz - (b.z0 + TAM_BLOCO))
         const d = Math.hypot(dx, dz)
         const perto = b.perto ? d < PERTO + 8 : d < PERTO // folga para não piscar na divisa
+        // bloco perto e ainda não montado: monta agora (no máximo dois por quadro)
+        if (perto && !b.montado) {
+          if (montou >= 2) continue
+          b.perto = true
+          montarBloco(b)
+          montou++
+          continue
+        }
         if (perto === b.perto) continue
         b.perto = perto
         for (const m of b.malhas) m.visible = perto
-        for (const m of b.longe) m.visible = !perto
+        for (const m of b.longe) m.visible = !(perto && b.montado)
       }
     },
   }

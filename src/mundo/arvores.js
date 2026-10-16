@@ -11,6 +11,8 @@ import { adicionarCirculo } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { criarAleatorio } from '../utils.js'
 import { instanciarEmBlocos } from './blocos.js'
+import { lugaresJogo } from './fortaleza1932.js'
+import { LIMITES, densidadeLotes, linhaCosta } from './mapa.js'
 import { cajueiro, carnauba, mangueVermelho, murici, guajiru, oiti } from './especies.js'
 
 const rnd = criarAleatorio(555)
@@ -55,7 +57,7 @@ function geometriaVaso() {
   return mergeGeometries([vaso.toNonIndexed(), massa(0.45, 0, 0.85, 0, '#1f6b3a', '#6cc75a', 2.2).toNonIndexed()])
 }
 
-export function criarArvores(cena, predios) {
+export function criarArvores(cena, predios, grade) {
   // espécies nativas (src/mundo/especies.js), 3 ou 4 variações de cada, com semente própria
   const rndE = criarAleatorio(1932)
   const variantes = (fn, n) => Array.from({ length: n }, () => ({ geo: fn(rndE), mats: [] }))
@@ -92,17 +94,24 @@ export function criarArvores(cena, predios) {
     return tabela[0][0]
   }
 
-  // ruas do Recife e de Fortaleza: fileira de oitis na calçada
-  for (const xr of [-77, -31, 15, 61, 107, 165, 215, 265]) {
-    for (let z = 24; z < 285; z += rnd.entre(9, 16)) {
-      const x = xr + (rnd.chance(0.5) ? 3.6 : -3.6)
-      if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 5 || alturaTerreno(x, z) > 14) continue
-      if (rnd.chance(0.7)) plantar('oiti', x, z, rnd.entre(0.9, 1.2))
+  // oitis nas ruas do centro, na beira da rua (seguindo a grade de Herbster)
+  const [ox, oz] = grade.origem
+  const pX = grade.w + grade.rua
+  const pZ = grade.d + grade.rua
+  for (let k = -9; k <= 9; k++) {
+    for (let t = -420; t <= 420; t += rnd.entre(10, 16)) {
+      const lado = rnd.chance(0.5) ? 1 : -1
+      const b = (k + 0.5) * pZ + lado * 3.4
+      const x = ox + t * grade.ex[0] + b * grade.ez[0]
+      const z = oz + t * grade.ex[1] + b * grade.ez[1]
+      if (Math.hypot(x - ox, z - oz) > 480 || densidadeLotes(x, z) < 0.15) continue
+      if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 5) continue
+      if (rnd.chance(0.45)) plantar('oiti', x, z, rnd.entre(0.9, 1.2))
     }
   }
 
   // mangue nas margens baixas do rio, com a base no nível da água
-  for (let z = -30; z < 300; z += rnd.entre(3, 5.5)) {
+  for (let z = linhaCosta(rioX(0)) + 4; z < LIMITES.z1; z += rnd.entre(3, 5.5)) {
     for (const lado of [-1, 1]) {
       const x = rioX(z) + lado * RIO_MEIA_LARGURA * rnd.entre(0.95, 1.3)
       if (alturaTerreno(x, z) > 1.2 || rnd.chance(0.35)) continue
@@ -111,32 +120,31 @@ export function criarArvores(cena, predios) {
   }
 
   // dunas a leste: restinga (murici, guajiru) e cajueiros
-  for (let i = 0; i < 2500; i++) {
-    const x = rnd.entre(285, 440)
-    const z = rnd.entre(-60, 260)
+  const inicioDunas = lugaresJogo.seminario[0] + 60
+  for (let i = 0; i < 9000; i++) {
+    const x = rnd.entre(inicioDunas, LIMITES.x1 - 10)
+    const z = rnd.entre(linhaCosta(x), LIMITES.z1 - 10)
     const s = distCosta(x, z)
-    if (s < larguraPraia(x) + 3 || s > larguraPraia(x) + 110 || inclinacao(x, z) > 0.7) continue
-    if (!rnd.chance(0.12)) continue
+    if (s < larguraPraia(x) + 3 || inclinacao(x, z) > 0.7 || densidadeLotes(x, z) > 0.2) continue
+    if (!rnd.chance(0.06)) continue
     plantar(sortear([['guajiru', 0.4], ['murici', 0.35], ['cajueiro', 0.25]]), x, z, rnd.entre(0.8, 1.2))
   }
 
   // praças e terrenos verdes: cada região com sua mistura
-  for (let i = 0; i < 4000; i++) {
-    const x = rnd.entre(-440, 440)
-    const z = rnd.entre(20, 320)
+  for (let i = 0; i < 14000; i++) {
+    const x = rnd.entre(LIMITES.x0 + 10, LIMITES.x1 - 10)
+    const z = rnd.entre(linhaCosta(x) + 20, LIMITES.z1 - 10)
+    if (x > inicioDunas) continue // as dunas já foram plantadas
     if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 6) continue
     const h = alturaTerreno(x, z)
     if (h > 60 || inclinacao(x, z) > 0.8) continue
     const verde = fbm(x * 0.02, z * 0.02, 3, 61)
-    const p = pesos(x)
-    const chance = p.recife * (verde > 0.22 ? 0.35 : 0) + p.fortaleza * 0.05 + p.rio * (h > 30 ? 0.25 : 0.06) + (z > 300 ? 0.3 : 0)
+    // terreno vazio entre os bairros e quintais: mais árvore onde a cidade rareia
+    const dl = densidadeLotes(x, z)
+    const chance = (dl > 0.35 ? 0.01 : 0.05) * (verde > -0.05 ? 1.4 : 0.6)
     if (!rnd.chance(chance)) continue
     // só Fortaleza (decisão de 16/10/2026): a mesma mistura em todo o mapa; na serra, mata (oiti por
     // enquanto; ipê, embaúba e piúba vêm na segunda leva)
-    if (h > 30 || z > 300) {
-      plantar(sortear([['oiti', 0.8], ['cajueiro', 0.2]]), x, z, rnd.entre(0.9, 1.5))
-      continue
-    }
     const esp = sortear([['cajueiro', 0.4], ['carnauba', 0.3], ['murici', 0.15], ['guajiru', 0.15]])
     if (esp === 'carnauba') {
       // carnaúba em grupo

@@ -1,8 +1,9 @@
 import * as THREE from 'three'
 import {
-  LIMITES, alturaBruta, distCosta, larguraPraia, pesos, fbm, smooth, mix,
-  FIM_AVENIDA, densidadeGrama, rioX, RIO_MEIA_LARGURA,
+  LIMITES, alturaBruta, distCosta, larguraPraia, fbm, smooth, mix,
+  FIM_AVENIDA, densidadeGrama, rioX, RIO_MEIA_LARGURA, densidadeLotes,
 } from './mapa.js'
+import { lagoasJogo, lugaresJogo } from './fortaleza1932.js'
 import { gradienteToon, pintar } from '../materiais.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
@@ -84,9 +85,18 @@ const PALETA = {
   rocha: C('#a3909a'),
   pedra: C('#d3b08e'),
   pedra2: C('#b98f78'),
+  areiaChao: C('#e9d7ae'),
+  terraBatida: C('#cdb58c'),
   duna: C('#f8e3b4'),
   serra: C('#3f9a62'),
   lama: C('#8e7a5c'),
+}
+
+const [pfX, pfZ] = lugaresJogo.pracaFerreira
+// calçamento de pedra só no centro de 1932; no resto as ruas eram de areia
+function calcamento(x, z) {
+  const centro = 1 - smooth(260, 380, Math.hypot(x - pfX, (z - pfZ) * 1.15))
+  return centro * smooth(0.12, 0.3, densidadeLotes(x, z))
 }
 
 function corChao(x, z, h, incl, dens, alvo) {
@@ -97,97 +107,168 @@ function corChao(x, z, h, incl, dens, alvo) {
     alvo.copy(PALETA.fundoMar)
   } else if (s < bw) {
     alvo.copy(PALETA.areiaMolhada).lerp(PALETA.areiaSeca, smooth(0, 7, s))
-  } else if (s < bw + FIM_AVENIDA + 3) {
-    alvo.copy(PALETA.pedra)
   } else {
-    const p = pesos(x)
-    const t = new THREE.Color()
-    // chão de cada bairro, misturado nas transições
-    const rio = PALETA.grama.clone().lerp(PALETA.mata, smooth(6, 34, h))
-    const recife = PALETA.pedra.clone().lerp(PALETA.pedra2, smooth(-0.3, 0.4, variacao))
-    const forta = PALETA.areiaSeca.clone().lerp(PALETA.grama, 0.35)
-    t.setRGB(0, 0, 0)
-      .add(rio.multiplyScalar(p.rio))
-      .add(recife.multiplyScalar(p.recife))
-      .add(forta.multiplyScalar(p.fortaleza))
-    // dunas
-    t.lerp(PALETA.duna, smooth(290, 340, x) * smooth(4, 9, h))
+    // chão de Fortaleza: areia clara do tabuleiro, batida onde havia gente
+    const cidade = smooth(0.05, 0.3, densidadeLotes(x, z))
+    alvo.copy(PALETA.areiaChao).lerp(PALETA.terraBatida, cidade * 0.8)
+    // rua da praia: areia batida
+    alvo.lerp(PALETA.terraBatida, 1 - smooth(bw + FIM_AVENIDA, bw + FIM_AVENIDA + 4, s))
+    // dunas: areia branca, mais clara quanto mais alta
+    alvo.lerp(PALETA.duna, smooth(7, 12, h) * (1 - cidade))
     // onde tem grama, o chão fica verde
-    t.lerp(PALETA.baseGrama.clone().lerp(PALETA.gramaEscura, smooth(-0.3, 0.3, variacao) * 0.4), smooth(0.05, 0.45, dens))
-    // serra
-    t.lerp(PALETA.serra, smooth(310, 360, z))
-    alvo.copy(t)
+    alvo.lerp(PALETA.baseGrama.clone().lerp(PALETA.gramaEscura, smooth(-0.3, 0.3, variacao) * 0.4), smooth(0.05, 0.45, dens))
   }
-  // barranco do rio
+  // margens do rio e das lagoas: lama de mangue e de várzea
   const dr = Math.abs(x - rioX(z))
-  if (pesos(x).recife > 0.5 && dr < RIO_MEIA_LARGURA * 1.5 && s > 0) alvo.lerp(PALETA.lama, 1 - smooth(RIO_MEIA_LARGURA * 0.9, RIO_MEIA_LARGURA * 1.5, dr))
-  // encosta íngreme mostra a pedra
-  alvo.lerp(PALETA.rocha, smooth(0.85, 1.3, incl))
+  if (s > 0) alvo.lerp(PALETA.lama, 1 - smooth(RIO_MEIA_LARGURA * 0.9, RIO_MEIA_LARGURA * 1.8, dr))
+  for (const l of lagoasJogo) {
+    const q = Math.hypot((x - l.x) / l.rx, (z - l.z) / l.rz)
+    if (q < 1.6) alvo.lerp(PALETA.lama, 1 - smooth(0.9, 1.5, q))
+  }
+  // encosta íngreme
+  alvo.lerp(PALETA.rocha, smooth(0.85, 1.3, incl) * 0.5)
   // manchas de pintura
   alvo.multiplyScalar(1 + variacao * 0.12)
   return alvo
 }
 
+// O terreno é montado em pedaços de 96 m (48 células). Cada pedaço tem duas malhas: a detalhada
+// (passo 2 m) perto da câmera e a simples (passo 8 m) longe, com uma saia vertical que esconde a
+// fresta entre resoluções. Normais, cor e piso vêm da grade inteira: nada de costura entre pedaços.
+const CEL_PEDACO = 48
 export function criarTerreno(cena) {
+  const t0 = performance.now()
   calcularAlturas()
+  const t1 = performance.now()
 
-  const pos = new Float32Array(NX * NZ * 3)
   const cores = new Float32Array(NX * NZ * 3)
   const piso = new Float32Array(NX * NZ)
+  const normais = new Float32Array(NX * NZ * 3)
   const cor = new THREE.Color()
+  const h = (i, j) => alturas[Math.min(NZ - 1, Math.max(0, j)) * NX + Math.min(NX - 1, Math.max(0, i))]
   for (let j = 0; j < NZ; j++) {
     for (let i = 0; i < NX; i++) {
       const k = j * NX + i
       const x = x0 + i * passo
       const z = z0 + j * passo
-      const h = alturas[k]
-      pos[k * 3] = x
-      pos[k * 3 + 1] = h
-      pos[k * 3 + 2] = z
-      const incl = inclinacao(x, z)
-      const dens = densidadeGrama(x, z, h, incl)
+      const hh = alturas[k]
+      const dx = (h(i + 1, j) - h(i - 1, j)) / (2 * passo)
+      const dz = (h(i, j + 1) - h(i, j - 1)) / (2 * passo)
+      const incl = Math.hypot(dx, dz)
+      const nl = 1 / Math.sqrt(dx * dx + dz * dz + 1)
+      normais[k * 3] = -dx * nl
+      normais[k * 3 + 1] = nl
+      normais[k * 3 + 2] = -dz * nl
+      const dens = densidadeGrama(x, z, hh, incl)
       densidades[k] = dens
       const sc = distCosta(x, z)
       areias[k] = sc > -3 && sc < larguraPraia(x) - 0.3 ? 1 : 0
-      corChao(x, z, h, incl, dens, cor)
-      // paralelepípedo nas ruas do Recife e de Fortaleza (onde não é grama nem areia)
-      const pp = pesos(x)
-      const cidade = smooth(larguraPraia(x) + FIM_AVENIDA + 1, larguraPraia(x) + FIM_AVENIDA + 3, distCosta(x, z))
-      piso[k] = cidade * (1 - dens) * (pp.recife + pp.fortaleza * (1 - smooth(290, 330, x))) * (1 - smooth(4, 8, h)) * (h > 0.8 ? 1 : 0)
+      corChao(x, z, hh, incl, dens, cor)
+      piso[k] = calcamento(x, z) * (1 - dens) * (sc > larguraPraia(x) + FIM_AVENIDA + 2 ? 1 : 0)
       cores[k * 3] = cor.r
       cores[k * 3 + 1] = cor.g
       cores[k * 3 + 2] = cor.b
     }
   }
 
-  const indices = new Uint32Array((NX - 1) * (NZ - 1) * 6)
-  let n = 0
-  for (let j = 0; j < NZ - 1; j++) {
-    for (let i = 0; i < NX - 1; i++) {
-      const a = j * NX + i
-      const b = a + 1
-      const c = a + NX
-      const d = c + 1
-      indices[n++] = a; indices[n++] = c; indices[n++] = b
-      indices[n++] = b; indices[n++] = c; indices[n++] = d
+  const t2 = performance.now()
+  const material = materialTerreno()
+  const grupo = new THREE.Group()
+  grupo.name = 'terreno'
+  const pedacos = []
+  const montar = (i0, j0, n, salto, saia) => {
+    const m = Math.floor(n / salto) + 1
+    const pos = []
+    const nor = []
+    const col = []
+    const ps = []
+    const ar = []
+    const idx = []
+    const ponto = (i, j, desce) => {
+      const ii = Math.min(NX - 1, i0 + i * salto)
+      const jj = Math.min(NZ - 1, j0 + j * salto)
+      const k = jj * NX + ii
+      pos.push(x0 + ii * passo, alturas[k] - desce, z0 + jj * passo)
+      nor.push(normais[k * 3], normais[k * 3 + 1], normais[k * 3 + 2])
+      col.push(cores[k * 3], cores[k * 3 + 1], cores[k * 3 + 2])
+      ps.push(piso[k])
+      ar.push(areias[k])
+      return pos.length / 3 - 1
+    }
+    for (let j = 0; j < m; j++) for (let i = 0; i < m; i++) ponto(i, j, 0)
+    for (let j = 0; j < m - 1; j++) {
+      for (let i = 0; i < m - 1; i++) {
+        const a = j * m + i
+        idx.push(a, a + m, a + 1, a + 1, a + m, a + m + 1)
+      }
+    }
+    if (saia) {
+      // borda que desce 2 m nos quatro lados
+      const borda = []
+      for (let i = 0; i < m; i++) borda.push([i, 0])
+      for (let j = 1; j < m; j++) borda.push([m - 1, j])
+      for (let i = m - 2; i >= 0; i--) borda.push([i, m - 1])
+      for (let j = m - 2; j > 0; j--) borda.push([0, j])
+      borda.push([0, 0])
+      for (let b = 0; b < borda.length - 1; b++) {
+        const [ia, ja] = borda[b]
+        const [ib, jb] = borda[b + 1]
+        const a = ja * m + ia
+        const c = jb * m + ib
+        const a2 = ponto(ia, ja, 2)
+        const c2 = ponto(ib, jb, 2)
+        idx.push(a, c, a2, c, c2, a2, a, a2, c, c, a2, c2)
+      }
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3))
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
+    g.setAttribute('aPiso', new THREE.Float32BufferAttribute(ps, 1))
+    g.setAttribute('aAreia', new THREE.Float32BufferAttribute(ar, 1))
+    g.setIndex(idx)
+    g.computeBoundingSphere()
+    const malha = new THREE.Mesh(g, material)
+    malha.receiveShadow = true
+    malha.castShadow = false // o chão só recebe sombra; projetar custava caro
+    malha.name = 'terreno'
+    return malha
+  }
+  for (let j0 = 0; j0 < NZ - 1; j0 += CEL_PEDACO) {
+    for (let i0 = 0; i0 < NX - 1; i0 += CEL_PEDACO) {
+      const n = Math.min(CEL_PEDACO, NX - 1 - i0, NZ - 1 - j0)
+      const nI = Math.min(CEL_PEDACO, NX - 1 - i0)
+      const nJ = Math.min(CEL_PEDACO, NZ - 1 - j0)
+      const lado = Math.max(nI, nJ)
+      const perto = montar(i0, j0, lado, 1, false)
+      const longe = montar(i0, j0, lado, 4, true)
+      longe.visible = false
+      grupo.add(perto, longe)
+      pedacos.push({ perto, longe, cx: x0 + (i0 + lado / 2) * passo, cz: z0 + (j0 + lado / 2) * passo, ehPerto: true })
+      void n
     }
   }
+  cena.add(grupo)
+  // tempo de cada parte (para medir o carregamento no console: window.__tTerreno)
+  window.__tTerreno = { alturas: Math.round(t1 - t0), coresEGrama: Math.round(t2 - t1), pedacos: Math.round(performance.now() - t2) }
 
-  const geo = new THREE.BufferGeometry()
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-  geo.setAttribute('color', new THREE.BufferAttribute(cores, 3))
-  geo.setAttribute('aPiso', new THREE.BufferAttribute(piso, 1))
-  geo.setAttribute('aAreia', new THREE.BufferAttribute(areias, 1))
-  geo.setIndex(new THREE.BufferAttribute(indices, 1))
-  geo.computeVertexNormals()
-
-  const malha = new THREE.Mesh(geo, materialTerreno())
-  malha.receiveShadow = true
-  malha.castShadow = false // o chão só recebe sombra; projetar custava caro
-  malha.name = 'terreno'
-  cena.add(malha)
-
-  return { malha, mapaAltura: criarMapaAltura() }
+  const LONGE = 230
+  return {
+    malha: grupo,
+    mapaAltura: criarMapaAltura(),
+    atualizar(camera) {
+      const px = camera.position.x
+      const pz = camera.position.z
+      for (const p of pedacos) {
+        const d = Math.hypot(p.cx - px, p.cz - pz)
+        const perto = p.ehPerto ? d < LONGE + 20 : d < LONGE
+        if (perto === p.ehPerto) continue
+        p.ehPerto = perto
+        p.perto.visible = perto
+        p.longe.visible = !perto
+      }
+    },
+  }
 }
 
 // Chão com paralelepípedo desenhado no shader (fileiras desencontradas, rejunte escuro),

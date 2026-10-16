@@ -6,6 +6,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import {
   linhaCosta, larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA, pesos, fbm,
 } from './mapa.js'
+import { trechosJogo, VILAS } from './fortaleza1932.js'
+import { LIMITES, densidadeLotes } from './mapa.js'
 import { alturaTerreno, inclinacao } from './terreno.js'
 import { gradienteToon, texturaCanvas, pintar } from '../materiais.js'
 import { adicionarCirculo } from './colisao.js'
@@ -150,39 +152,31 @@ function mascaraFolha() {
   }, { repetir: false, cor: false })
 }
 
+// 1932: não há prova de coqueiral na orla (docs/direcao-de-arte.md). Coqueiros esparsos nas vilas
+// de jangadeiros e alguns em quintais da periferia; só o coqueiro gigante (alto e fino).
 function posicoes() {
   const lista = []
   const tentar = (x, z, escala = 1) => {
     if (!ocupacao.livre(x, z, 1.2, 1.2)) return
-    if (Math.abs(x - rioX(z)) < RIO_MEIA_LARGURA * 1.5 && pesos(x).recife > 0.3) return
+    if (Math.abs(x - rioX(z)) < RIO_MEIA_LARGURA * 1.5) return
     ocupacao.marcar(x, z, 1.4, 1.4)
     lista.push({ x, z, y: alturaTerreno(x, z), escala })
   }
-  // fileira entre a areia e o calçadão, com falhas
-  for (let x = -440; x < 440; x += rnd.entre(8, 16)) {
-    if (rnd.chance(0.2)) continue
-    const s = larguraPraia(x) - rnd.entre(1.5, 5)
-    tentar(x, linhaCosta(x) + s, rnd.entre(0.85, 1.2))
+  for (const v of VILAS) {
+    const [a, b] = trechosJogo[v]
+    for (let i = 0; i < 26; i++) {
+      const x = rnd.entre(a, b)
+      const s = larguraPraia(x) + rnd.entre(-6, FIM_AVENIDA + 22)
+      if (rnd.chance(0.35)) tentar(x, linhaCosta(x) + s, rnd.entre(1.0, 1.35))
+    }
   }
-  // espalhados na areia, mais em Fortaleza
-  for (let i = 0; i < 260; i++) {
-    const x = rnd.entre(-440, 440)
-    const p = pesos(x)
-    if (!rnd.chance(0.25 + p.fortaleza * 0.6)) continue
-    const s = rnd.entre(larguraPraia(x) * 0.35, larguraPraia(x) - 3)
-    tentar(x, linhaCosta(x) + s, rnd.entre(0.8, 1.25))
-  }
-  // dunas, praças do Recife e pé dos morros
-  for (let i = 0; i < 2500 && lista.length < 520; i++) {
-    const x = rnd.entre(-440, 440)
-    const z = rnd.entre(0, 300)
+  for (let i = 0; i < 3000 && lista.length < 90; i++) {
+    const x = rnd.entre(LIMITES.x0 + 20, LIMITES.x1 - 20)
+    const z = rnd.entre(-200, 700)
     if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 4) continue
-    const h = alturaTerreno(x, z)
-    if (h > 26 || inclinacao(x, z) > 0.6) continue
-    const praca = fbm(x * 0.02, z * 0.02, 3, 61)
-    const p = pesos(x)
-    const chance = p.fortaleza * 0.35 + p.recife * (praca > 0.2 ? 0.6 : 0.02) + p.rio * 0.12
-    if (rnd.chance(chance)) tentar(x, z, rnd.entre(0.8, 1.2))
+    const d = densidadeLotes(x, z)
+    if (d < 0.08 || d > 0.4) continue // quintal da periferia, não o centro
+    if (rnd.chance(0.04)) tentar(x, z, rnd.entre(1.0, 1.3))
   }
   return lista
 }

@@ -3,6 +3,7 @@
 
 import * as THREE from 'three'
 import { linhaCosta, larguraPraia, ruido, NIVEL_CIDADE } from './mapa.js'
+import { lugaresJogo } from './fortaleza1932.js'
 import { alturaTerreno } from './terreno.js'
 import { toon, toonVertice, luzFixa } from '../materiais.js'
 import { adicionarCirculo, adicionarCaixa } from './colisao.js'
@@ -53,8 +54,8 @@ function pedra({ x, z, altura, raio, alongar = 1.3, inclinar = 0.12, semente = 0
 }
 
 function farol(cena) {
-  const x = 336
-  const z = linhaCosta(x) + 16
+  const [x] = lugaresJogo.farol
+  const z = linhaCosta(x) + 26
   const base = alturaTerreno(x, z) - 0.3
   const g = new THREE.Group()
   g.position.set(x, base, z)
@@ -112,15 +113,7 @@ function farol(cena) {
 }
 
 export function criarMarcos(cena) {
-  // as duas pedras do Rio, no mar
-  const grande = { x: -335, z: linhaCosta(-335) - 115, altura: 96, raio: 44, alongar: 1.45, inclinar: 0.1, semente: 3 }
-  const pequena = { x: -248, z: linhaCosta(-248) - 62, altura: 48, raio: 34, alongar: 1.25, inclinar: -0.05, semente: 9 }
-  cena.add(pedra(grande), pedra(pequena))
-  adicionarCirculo(grande.x, grande.z, grande.raio * 1.2)
-  adicionarCirculo(pequena.x, pequena.z, pequena.raio * 1.1)
-
-  // o bondinho saiu em 16/10/2026: o jogo agora é só Fortaleza (as pedras saem com o mapa)
-
+  // as pedras do Rio e o bondinho saíram em 16/10/2026: o jogo é só Fortaleza
   const atualizarFarol = farol(cena)
 
   return {
