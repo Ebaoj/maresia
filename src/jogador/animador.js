@@ -78,7 +78,7 @@ export class Animador {
       a.setEffectiveWeight(0)
       a.play()
       a.userData = { peso: 0, alvo: 0 }
-      if (['sentar', 'levantar', 'pulo-pouso', 'pulo-subida'].includes(nome)) {
+      if (['sentar', 'levantar', 'pulo-pouso', 'pulo-subida', 'olhando'].includes(nome)) {
         a.setLoop(THREE.LoopOnce, 1)
         a.clampWhenFinished = true
       }
@@ -277,7 +277,9 @@ export class Animador {
     this.corpo.raiz.updateMatrixWorld(true)
     if (this.opcoes.inclinar) this.inclinar(DT, s)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)
-    if (this.opcoes.olhar !== false) this.olhar(DT, s.olhar)
+    const olharVida = this.vidaParado(DT, s)
+    if (this.opcoes.olhar !== false) this.olhar(DT, olharVida || s.olhar)
+    if (this.gesto?.tipo === 'chapeu') this.ajeitarChapeu()
     if (s.segurando) this.maosEm(s.segurando)
     this.detectarPisadas(s)
     this.rosto?.atualizar(DT, s)
@@ -334,6 +336,50 @@ export class Animador {
     ang = Math.min(ang, 1.2) * this.olharPeso // ~70° de pescoço no máximo
     girarNoMundo(pescoco, eixo, ang * 0.4)
     girarNoMundo(cabeca, eixo, ang * 0.6)
+  }
+
+  // Parado com vida (fase 6): depois de alguns segundos parado, um gesto sorteado; mexeu, acabou.
+  // Devolve um ponto para olhar quando o gesto é olhar alguma coisa.
+  vidaParado(DT, s) {
+    const parado = s.vel < 0.2 && !s.noAr && !s.nadando && !s.sentado && !s.carregando && !this.umaVez
+    if (!parado) { this.gesto = null; this.tParado = 0; this.proximoGesto = 4 + this.sorteio() * 4; return null }
+    this.tParado = (this.tParado || 0) + DT
+    this.proximoGesto ??= 4 + this.sorteio() * 4
+    if (!this.gesto && this.tParado > this.proximoGesto) {
+      const opcoes = ['mar', 'chapeu', ...(this.tem('olhando') ? ['olhando'] : [])]
+      const tipo = opcoes[Math.floor(this.sorteio() * opcoes.length)]
+      const dur = { mar: 3.5, chapeu: 1.4, olhando: this.acoes.olhando?.getClip().duration || 3 }[tipo]
+      if (tipo === 'olhando') this.disparar('olhando')
+      this.gesto = { tipo, t: 0, dur }
+      this.proximoGesto = this.tParado + dur + 5 + this.sorteio() * 6
+    }
+    if (!this.gesto) return null
+    this.gesto.t += DT
+    if (this.gesto.t > this.gesto.dur) { this.gesto = null; return null }
+    if (this.gesto.tipo === 'mar') {
+      // o mar fica ao norte (z negativo): olha o horizonte, um pouco à esquerda ou à direita
+      const q = this.ossos.get('Hips').getWorldPosition(v())
+      return q.add(v().set(Math.sin(this.gesto.t * 0.6) * 6, 0.6, -25))
+    }
+    return null
+  }
+
+  // número sorteado com semente (o jogo é reproduzível)
+  sorteio() {
+    this._s = ((this._s ?? 1932) * 16807) % 2147483647
+    return (this._s - 1) / 2147483646
+  }
+
+  // a mão direita sobe até a aba do chapéu e volta (curva em sino ao longo do gesto)
+  ajeitarChapeu() {
+    const g = this.gesto
+    const w = Math.sin(Math.PI * Math.min(1, g.t / g.dur))
+    const cabeca = this.ossos.get('Head')
+    const a = this.ossos.get('RightArm'), b = this.ossos.get('RightForeArm'), c = this.ossos.get('RightHand')
+    if (!cabeca || !a || !b || !c) return
+    const aba = v().set(-0.16, 0.2, 0.06).applyMatrix4(cabeca.matrixWorld)
+    const mao = c.getWorldPosition(v())
+    ikDuas(a, b, c, mao.lerp(aba, w))
   }
 
   // segurando algo: as duas mãos vão aos lados do objeto (mundo)
