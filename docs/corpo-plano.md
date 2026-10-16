@@ -14,7 +14,7 @@ inclinação, tudo "em 2" (branch `corpo`). Cada fase termina com vídeo gravado
 | 6 | Parado com vida: pequenas ações sorteadas (olhar o mar, ajeitar o chapéu, trocar o peso) | feito (16/10): depois de 4 a 8 s parado, sorteia olhar o mar, ajeitar o chapéu (IK do braço) ou olhar em volta (Mixamo); mexeu, acaba. Mais gestos entram fácil |
 | 7 | Física no corpo (Jolt): chapéu e camisa balançando, reação a empurrão | parcial (16/10): molas leves sem motor de física; chapéu num osso próprio atrasa e balança (arrancada, freada, pulo, vento), tronco dá tranco na freada e no pouso. Pano de verdade (Jolt) espera o neto ter roupa |
 | 8 | Muita gente gastando pouco: os mesmos movimentos na multidão, leves de longe | feito (16/10): 16 atores no esqueleto padrão ocupam as pessoas mais próximas (35 m), com roupa e pele sorteadas, andando ou parados com o mocap; longe, as figuras simples de sempre. Falta: sentados, mulheres de vestido, atores com rosto |
-| 9 | Areia e água: pé afunda na areia fofa, respingo na água rasa, onda empurra | |
+| 9 | Areia e água: pé afunda na areia fofa, respingo na água rasa, onda empurra | feito (16/10): o pé afunda junto com o corpo na areia seca (o IK desfazia), cada passo na água rasa abre um anel em vez de pegada, o vaivém da onda (~7 s) empurra para a praia e puxa de volta |
 | 10 | Gestos do ofício gravados em vídeo de celular e convertidos em movimento (modelo aberto no Modal) | |
 
 Movimentos do Mixamo: `public/animacoes/mixamo/` (fora do git, a licença não permite redistribuir).

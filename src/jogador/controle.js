@@ -76,7 +76,7 @@ export class Jogador {
       nadando: this.nadando,
       carregando: !!this.carregando,
       yaw: this.yawVisual,
-      chao: (x, z) => alturaChao(x, z, y + 0.4),
+      chao: (x, z) => alturaChao(x, z, y + 0.4) - this.afundado, // na areia fofa o pé afunda junto com o corpo
       velPedida: this.velDesejada.length(),
       // para onde olhar: o que dá para usar (interacoes.js) ou, parado, para onde a câmera aponta
       olhar: this.olharPara || (this.velHoriz < 0.3 && this.yawCamera !== undefined
@@ -169,6 +169,15 @@ export class Jogador {
     if (!this.nadando) this.vel.y -= cfg.gravidade * dt
 
     const nova = this.pos.clone().addScaledVector(this.vel, dt)
+    // onda: na água rasa o vaivém empurra para a praia e puxa de volta (período de ~7 s; a praia fica
+    // para +z). Mais forte quanto mais fundo, até a profundidade de nadar.
+    if (!this.nadando && profAqui > 0.15) {
+      const fundo = clamp((profAqui - 0.15) / (PROFUNDIDADE_NADO - 0.15), 0, 1)
+      const fase = Math.sin(this.tempo * (Math.PI * 2 / 7))
+      const empurra = (fase > 0 ? fase * 1.1 : fase * 0.5) * fundo
+      nova.z += empurra * dt
+      this.onda = empurra
+    } else this.onda = 0
     nova.x = clamp(nova.x, LIMITES.x0 + 15, LIMITES.x1 - 15)
     nova.z = clamp(nova.z, linhaCosta(nova.x) - 150, LIMITES.z1 - 40)
     resolverColisoes(nova, 0.35)

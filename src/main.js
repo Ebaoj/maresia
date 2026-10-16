@@ -220,6 +220,11 @@ async function iniciar() {
       esperaGota = jogador.nadando ? 0.22 : 0.14
     }
     for (const ev of jogador.eventos) {
+      if (ev.tipo === 'pisada' && jogador.molhado) {
+        // água rasa: o passo abre um anel na água, sem pegada
+        toque.gota(ev.pos.x, ev.pos.z, jogador.velHoriz > 3 ? 0.3 : 0.22, jogador.velHoriz > 3 ? 0.5 : 0.3)
+        continue
+      }
       if (ev.tipo === 'pisada') {
         const correndo = jogador.velHoriz > (jogador.animador ? cfg.personagem.corridaNova * 0.75 : 6)
         areia.pisar(ev.pos.x, ev.pos.z, ev.yaw, ev.lado, correndo ? 1.25 : 1)
