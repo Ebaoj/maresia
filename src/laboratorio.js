@@ -7,7 +7,7 @@ import * as THREE from 'three'
 import GUI from 'lil-gui'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { criarBoneco } from './jogador/esqueleto.js'
-import { carregar, ossosPorNome, repouso, converter, medirPassada } from './jogador/retarget.js'
+import { carregarMovimentosMixamo } from './jogador/retarget.js'
 import { Animador } from './jogador/animador.js'
 
 const MOVIMENTOS = [
@@ -89,25 +89,12 @@ let original = null // o Y Bot tocando o movimento cru, para comparar
 let mixerOriginal = null
 const clipesCrus = {}
 
-async function existe(url) {
-  try {
-    const r = await fetch(url, { method: 'HEAD' })
-    return r.ok && !(r.headers.get('content-type') || '').includes('text/html')
-  } catch { return false }
-}
-
 async function iniciar() {
   const linhas = []
-  // repouso da fonte: o Y Bot em T (mesmo esqueleto de todos os movimentos do Mixamo)
-  let repFonte = null
-  if (await existe(PASTA + 'ybot.fbx')) {
-    const y = await carregar(PASTA + 'ybot.fbx')
-    original = y.raiz
+  const r = await carregarMovimentosMixamo({ alvo: { ossos: boneco.ossos, raiz: boneco.raiz }, pasta: PASTA, nomes: MOVIMENTOS })
+  if (r.ybot) {
+    original = r.ybot
     original.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.material = new THREE.MeshLambertMaterial({ color: '#9aa7b8' }) } })
-    // repouso medido antes de mexer na escala: os movimentos vêm na mesma unidade do arquivo
-    original.updateMatrixWorld(true)
-    const ossosY = ossosPorNome(original)
-    repFonte = repouso(ossosY)
     // o FBX do Mixamo vem em centímetros: só o boneco de comparação é escalado para 1,68 m
     const caixa = new THREE.Box3().setFromObject(original)
     original.scale.multiplyScalar(1.68 / (caixa.max.y - caixa.min.y))
@@ -116,24 +103,8 @@ async function iniciar() {
     mixerOriginal = new THREE.AnimationMixer(original)
     linhas.push('Y Bot: ok (repouso em T da fonte)')
   } else linhas.push('Y Bot: faltando (uso a pose inicial de cada arquivo como repouso)')
-
-  const alvo = { ossos: boneco.ossos, rep: repouso(boneco.ossos) }
-  const clipes = {}
-  const faltando = []
-  for (const nome of MOVIMENTOS) {
-    const url = PASTA + nome + '.fbx'
-    if (!(await existe(url))) { faltando.push(nome); continue }
-    const f = await carregar(url)
-    const clipe = f.clipes[0]
-    if (!clipe) { faltando.push(nome + ' (sem animação)'); continue }
-    f.raiz.updateMatrixWorld(true)
-    const ossosF = ossosPorNome(f.raiz)
-    const fonte = { raiz: f.raiz, ossos: ossosF, rep: repFonte || repouso(ossosF) }
-    clipes[nome] = converter(clipe, fonte, alvo, { nome, noLugar: !['sentar', 'levantar', 'empurrar'].includes(nome) })
-    clipesCrus[nome] = clipe
-  }
-  const passadas = {}
-  for (const k of ['andar', 'correr']) if (clipes[k]) passadas[k] = medirPassada(clipes[k], alvo, boneco.raiz)
+  Object.assign(clipesCrus, r.crus)
+  const { clipes, passadas, faltando } = r
   linhas.push(`movimentos: ${Object.keys(clipes).join(', ') || 'nenhum'}`)
   if (faltando.length) linhas.push(`faltando: ${faltando.join(', ')}`)
   linhas.push(`passada natural: andar ${passadas.andar?.toFixed(2) ?? '?'} m/s, correr ${passadas.correr?.toFixed(2) ?? '?'} m/s`)

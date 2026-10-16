@@ -68,6 +68,11 @@ export const PADRAO = {
     gravidade: 25,
     fpsPose: 12,           // animação "em 2": 12 poses por segundo
     posicaoEm2: false,     // ligado: o corpo inteiro anda em 2 (mais Aranhaverso, mais travado)
+    corpoNovo: true,       // esqueleto padrão com os movimentos do Mixamo (jogador/corpo.js); desligado = boneco antigo
+    velocidadeNova: 1.8,   // com o corpo novo: gente de verdade anda a ~1,4 m/s e corre a ~3,5 m/s
+    corridaNova: 4.5,
+    peNoChao: true,        // IK: cada pé pisa no chão de verdade (ladeira, degrau, duna)
+    inclinar: true,        // o corpo inclina na curva e na arrancada
   },
   camera: {
     distancia: 7.5,

@@ -30,6 +30,7 @@ import { criarAreia } from './mundo/areia.js'
 import { criarFisica } from './mundo/fisica.js'
 import { distCosta as distCostaAreia, larguraPraia as larguraPraiaAreia } from './mundo/mapa.js'
 import { Jogador } from './jogador/controle.js'
+import { carregarCorpo } from './jogador/corpo.js'
 import { CameraTerceiraPessoa } from './jogador/camera.js'
 import { criarInteracoes } from './jogador/interacoes.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
@@ -101,6 +102,10 @@ async function iniciar() {
   const z0 = linhaCosta(x0) + larguraPraia(x0) + 3.5
   const inicio = new THREE.Vector3(x0, alturaChao(x0, z0), z0)
   const jogador = new Jogador(cena, cfg, inicio, -Math.PI / 2)
+  // corpo novo (esqueleto padrão + mocap do Mixamo): carrega em segundo plano e substitui o boneco antigo
+  if (cfg.personagem.corpoNovo) {
+    carregarCorpo().then((c) => { if (c) jogador.trocarCorpo(c) }).catch((e) => console.error('Corpo novo:', e))
+  }
   const cam = new CameraTerceiraPessoa(camera, canvas, cfg, Math.PI / 2)
   const interacoes = criarInteracoes({ jogador, fisica, lugares, camera })
   const pos = new Aranhaverso(renderer, cena, camera, cfg, globais)

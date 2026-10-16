@@ -140,3 +140,47 @@ export function medirPassada(clipe, alvo, raiz) {
   amostras.sort((a, b) => a - b)
   return amostras[Math.floor(amostras.length / 2)] // mediana: ignora a troca de pé
 }
+
+// Carrega o Y Bot (repouso da fonte) e cada movimento do Mixamo da pasta, já convertidos para o alvo.
+// alvo: { ossos (Map), raiz }. Devolve { clipes, crus, passadas, faltando, ybot }.
+export async function carregarMovimentosMixamo({ alvo, pasta, nomes, semDeslocamento = ['sentar', 'levantar', 'empurrar'] }) {
+  const existe = async (url) => {
+    try {
+      const r = await fetch(url, { method: 'HEAD' })
+      return r.ok && !(r.headers.get('content-type') || '').includes('text/html')
+    } catch { return false }
+  }
+  let repFonte = null
+  let ybot = null
+  if (await existe(pasta + 'ybot.fbx')) {
+    ybot = (await carregar(pasta + 'ybot.fbx')).raiz
+    ybot.updateMatrixWorld(true)
+    repFonte = repouso(ossosPorNome(ybot)) // antes de qualquer escala: mesma unidade dos movimentos
+  }
+  alvo.raiz.updateMatrixWorld(true)
+  const destino = { ossos: alvo.ossos, rep: repouso(alvo.ossos) }
+  const clipes = {}
+  const crus = {}
+  const faltando = []
+  await Promise.all(nomes.map(async (nome) => {
+    const url = pasta + nome + '.fbx'
+    if (!(await existe(url))) { faltando.push(nome); return }
+    const f = await carregar(url)
+    if (!f.clipes[0]) { faltando.push(nome); return }
+    f.raiz.updateMatrixWorld(true)
+    crus[nome] = { raiz: f.raiz, clipe: f.clipes[0] }
+  }))
+  // a conversão mexe nos ossos do alvo só pela leitura do repouso; uma por vez
+  for (const nome of nomes) {
+    const c = crus[nome]
+    if (!c) continue
+    const ossosF = ossosPorNome(c.raiz)
+    const fonte = { raiz: c.raiz, ossos: ossosF, rep: repFonte || repouso(ossosF) }
+    clipes[nome] = converter(c.clipe, fonte, destino, { nome, noLugar: !semDeslocamento.includes(nome) })
+  }
+  const passadas = {}
+  for (const k of ['andar', 'correr', 'disparada', 'velho-andar', 'carregar-andando']) {
+    if (clipes[k]) passadas[k] = medirPassada(clipes[k], destino, alvo.raiz)
+  }
+  return { clipes, crus: Object.fromEntries(Object.entries(crus).map(([k, v]) => [k, v.clipe])), passadas, faltando, ybot }
+}

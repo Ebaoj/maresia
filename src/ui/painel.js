@@ -96,6 +96,11 @@ export function criarPainel(cfg) {
   p.add(cfg.personagem, 'gravidade', 5, 60, 0.5)
   p.add(cfg.personagem, 'fpsPose', 4, 60, 1).name('poses por segundo')
   p.add(cfg.personagem, 'posicaoEm2').name('corpo todo "em 2"')
+  p.add(cfg.personagem, 'corpoNovo').name('corpo novo (mocap; recarregar)')
+  p.add(cfg.personagem, 'velocidadeNova', 0.8, 10, 0.1).name('corpo novo: andar (m/s)')
+  p.add(cfg.personagem, 'corridaNova', 2, 15, 0.1).name('corpo novo: correr (m/s)')
+  p.add(cfg.personagem, 'peNoChao').name('corpo novo: pé no chão (IK)')
+  p.add(cfg.personagem, 'inclinar').name('corpo novo: inclinar na curva')
 
   const c = gui.addFolder('Câmera')
   c.add(cfg.camera, 'distancia', 2.5, 45, 0.1).name('distância').listen()

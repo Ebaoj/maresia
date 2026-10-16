@@ -39,6 +39,34 @@ export class Jogador {
     this.p.raiz.rotation.y = yaw
   }
 
+  // troca o boneco antigo pelo corpo novo (esqueleto padrão + movimentos do Mixamo) quando ele carrega
+  trocarCorpo(c) {
+    const antigo = this.p.raiz
+    c.raiz.position.copy(antigo.position)
+    c.raiz.rotation.copy(antigo.rotation)
+    antigo.parent.add(c.raiz)
+    antigo.parent.remove(antigo)
+    this.p = { raiz: c.raiz, corpo: c.corpo }
+    this.animador = c.animador
+  }
+
+  // estado que o animador lê a cada quadro
+  animar(dt, cfg) {
+    const a = this.animador
+    Object.assign(a.opcoes, { fps: cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar })
+    const y = this.pos.y
+    a.atualizar(dt, {
+      vel: this.velHoriz,
+      velY: this.vel.y,
+      noAr: !this.noChao && !this.nadando,
+      sentado: !!this.sentado,
+      nadando: this.nadando,
+      carregando: !!this.carregando,
+      yaw: this.yawVisual,
+      chao: (x, z) => alturaChao(x, z, y + 0.4),
+    })
+  }
+
   pular() {
     if (this.sentado) return this.levantar()
     this.pediuPulo = true
@@ -86,7 +114,9 @@ export class Jogador {
     if (n > 0) { dx /= n; dz /= n }
 
     const profAqui = -alturaChao(this.pos.x, this.pos.z, this.pos.y)
-    let alvoVel = teclas.correr ? cfg.corrida : cfg.velocidade
+    let alvoVel = this.animador
+      ? (teclas.correr ? cfg.corridaNova : cfg.velocidadeNova)
+      : (teclas.correr ? cfg.corrida : cfg.velocidade)
     // areia seca é fofa: o pé afunda e o passo rende menos
     const sc = distCosta(this.pos.x, this.pos.z)
     this.naAreiaSeca = this.noChao && sc > 0 && sc < larguraPraia(this.pos.x) - 0.5 && this.pos.y > 0.25
@@ -180,14 +210,16 @@ export class Jogador {
     if (this.acPose >= passo) {
       this.acPose %= passo
       this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 14))
-      aplicarPose(this.p, {
-        fase: this.fase,
-        velocidade: this.velHoriz,
-        noAr: !this.noChao && !this.nadando,
-        tempo: this.tempo,
-        nadando: this.nadando,
-        carregando: !!this.carregando,
-      })
+      if (!this.animador) {
+        aplicarPose(this.p, {
+          fase: this.fase,
+          velocidade: this.velHoriz,
+          noAr: !this.noChao && !this.nadando,
+          tempo: this.tempo,
+          nadando: this.nadando,
+          carregando: !!this.carregando,
+        })
+      }
       const e = this.escala
       this.p.corpo.scale.set(1 / Math.sqrt(e), e, 1 / Math.sqrt(e))
       this.p.raiz.rotation.y = this.yawVisual
@@ -200,6 +232,8 @@ export class Jogador {
     // afundar uns centímetros na areia fofa (só no desenho)
     this.afundado += ((this.naAreiaSeca ? 0.045 : 0) - this.afundado) * Math.min(1, dt * 8)
     if (!cfg.posicaoEm2) this.p.raiz.position.y -= this.afundado
+    // o corpo novo faz o "em 2" dele mesmo, depois da raiz no lugar (o pé no chão precisa dela)
+    if (this.animador) this.animar(dt, cfg)
   }
 
   // sentado: posição fixa no banco, pose "em 2" como sempre
@@ -210,10 +244,11 @@ export class Jogador {
     const passo = 1 / Math.max(1, cfg.fpsPose)
     if (this.acPose >= passo) {
       this.acPose %= passo
-      aplicarPose(this.p, { fase: this.fase, velocidade: 0, noAr: false, tempo: this.tempo, nadando: false, sentado: true, carregando: !!this.carregando })
+      if (!this.animador) aplicarPose(this.p, { fase: this.fase, velocidade: 0, noAr: false, tempo: this.tempo, nadando: false, sentado: true, carregando: !!this.carregando })
       this.p.corpo.scale.set(1, 1, 1)
       this.p.raiz.rotation.y = this.yawVisual
     }
     this.p.raiz.position.copy(this.pos)
+    if (this.animador) this.animar(dt, cfg)
   }
 }
