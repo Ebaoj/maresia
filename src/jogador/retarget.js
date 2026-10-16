@@ -1,0 +1,142 @@
+// Carrega movimentos (FBX do Mixamo, GLB de qualquer lugar) e converte para outro esqueleto.
+// Conversão pela diferença em relação ao repouso: para cada osso, quanto ele girou no mundo a partir
+// da pose em T da fonte; o mesmo giro é aplicado à pose em T do alvo. Assim não importa como cada
+// programa orienta os eixos dos ossos, só que as duas poses de repouso sejam em T.
+
+import * as THREE from 'three'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { nomeCanonico, NOMES } from './esqueleto.js'
+
+const fbx = new FBXLoader()
+const gltf = new GLTFLoader()
+
+export async function carregar(url) {
+  if (url.endsWith('.fbx')) {
+    const obj = await fbx.loadAsync(url)
+    return { raiz: obj, clipes: obj.animations }
+  }
+  const g = await gltf.loadAsync(url)
+  return { raiz: g.scene, clipes: g.animations }
+}
+
+// ossos de um objeto, pelo nome canônico
+export function ossosPorNome(raiz) {
+  const m = new Map()
+  raiz.traverse((o) => { if (o.isBone && !m.has(nomeCanonico(o.name))) m.set(nomeCanonico(o.name), o) })
+  return m
+}
+
+// Retrato da pose atual: rotação e posição de cada osso no mundo, mais a rotação do pai do quadril
+function retrato(ossos) {
+  const r = new Map()
+  for (const [n, b] of ossos) {
+    b.updateWorldMatrix(true, false)
+    const q = new THREE.Quaternion()
+    const p = new THREE.Vector3()
+    b.matrixWorld.decompose(p, q, new THREE.Vector3())
+    r.set(n, { q, p })
+  }
+  return r
+}
+
+// Repouso da fonte e do alvo: tirado do jeito que estão agora (devem estar em T).
+export function repouso(ossos) {
+  return retrato(ossos)
+}
+
+// altura do quadril acima do pé mais baixo, no repouso (para escalar o sobe e desce)
+function alturaQuadril(rep) {
+  const q = rep.get('Hips').p.y
+  const pes = ['LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'].filter((n) => rep.has(n)).map((n) => rep.get(n).p.y)
+  return q - Math.min(...pes)
+}
+
+// Converte um clipe. fonte: {raiz, ossos, rep}; alvo: {ossos, rep}.
+// noLugar: tira o deslocamento horizontal do quadril (o jogo é quem anda).
+export function converter(clipe, fonte, alvo, { fps = 30, noLugar = true, nome = clipe.name } = {}) {
+  const mixer = new THREE.AnimationMixer(fonte.raiz)
+  const acao = mixer.clipAction(clipe)
+  acao.play()
+  const n = Math.max(2, Math.round(clipe.duration * fps) + 1)
+  const tempos = new Float32Array(n)
+  const nomes = NOMES.filter((k) => fonte.ossos.has(k) && alvo.ossos.has(k))
+  // ordem do pai para o filho, para ter o mundo do pai antes do filho
+  const ordem = nomes.slice().sort((a, b) => profundidade(alvo.ossos.get(a)) - profundidade(alvo.ossos.get(b)))
+  const qs = new Map(ordem.map((k) => [k, new Float32Array(n * 4)]))
+  const posQuadril = new Float32Array(n * 3)
+  const escala = alturaQuadril(alvo.rep) / alturaQuadril(fonte.rep)
+  const paiQuadrilAlvo = alvo.ossos.get('Hips').parent
+  const dq = new THREE.Quaternion()
+  const tmp = new THREE.Quaternion()
+  const p0 = new THREE.Vector3()
+  for (let f = 0; f < n; f++) {
+    const t = Math.min(clipe.duration, f / fps)
+    tempos[f] = t
+    mixer.setTime(t)
+    const atual = retrato(fonte.ossos)
+    const mundoAlvo = new Map()
+    for (const k of ordem) {
+      // giro no mundo desde o repouso, na fonte
+      dq.copy(atual.get(k).q).multiply(tmp.copy(fonte.rep.get(k).q).invert())
+      const qMundo = dq.clone().multiply(alvo.rep.get(k).q)
+      mundoAlvo.set(k, qMundo)
+      // local = inverso do mundo do pai × mundo
+      const pai = alvo.ossos.get(k).parent
+      const kPai = pai && pai.isBone ? nomeCanonico(pai.name) : null
+      let qPai
+      if (kPai && mundoAlvo.has(kPai)) qPai = mundoAlvo.get(kPai)
+      else { qPai = new THREE.Quaternion(); pai?.getWorldQuaternion(qPai) }
+      const local = qPai.clone().invert().multiply(qMundo)
+      local.toArray(qs.get(k), f * 4)
+    }
+    // quadril: o deslocamento desde o repouso, escalado, levado para o espaço do pai do alvo
+    const d = atual.get('Hips').p.clone().sub(fonte.rep.get('Hips').p).multiplyScalar(escala)
+    if (noLugar) { d.x = 0; d.z = 0 }
+    p0.copy(alvo.rep.get('Hips').p).add(d)
+    if (paiQuadrilAlvo) paiQuadrilAlvo.worldToLocal(p0)
+    p0.toArray(posQuadril, f * 3)
+  }
+  acao.stop()
+  mixer.uncacheRoot(fonte.raiz)
+  const trilhas = ordem.map((k) => new THREE.QuaternionKeyframeTrack(`${alvo.ossos.get(k).name}.quaternion`, tempos, qs.get(k)))
+  trilhas.push(new THREE.VectorKeyframeTrack(`${alvo.ossos.get('Hips').name}.position`, tempos, posQuadril))
+  return new THREE.AnimationClip(nome, clipe.duration, trilhas)
+}
+
+function profundidade(o) {
+  let d = 0
+  while (o.parent) { d++; o = o.parent }
+  return d
+}
+
+// Velocidade natural de um ciclo de passada "no lugar": enquanto um pé está no chão ele anda para
+// trás em relação ao quadril na velocidade do corpo. Mede no próprio alvo.
+export function medirPassada(clipe, alvo, raiz) {
+  const mixer = new THREE.AnimationMixer(raiz)
+  const acao = mixer.clipAction(clipe)
+  acao.play()
+  const fps = 60
+  const pes = ['LeftFoot', 'RightFoot'].map((k) => alvo.ossos.get(k))
+  const quadril = alvo.ossos.get('Hips')
+  const amostras = []
+  let ant = null
+  for (let f = 0; f <= Math.round(clipe.duration * fps); f++) {
+    mixer.setTime(f / fps)
+    raiz.updateMatrixWorld(true)
+    const q = quadril.getWorldPosition(new THREE.Vector3())
+    const ps = pes.map((p) => p.getWorldPosition(new THREE.Vector3()))
+    if (ant) {
+      // o pé mais baixo é o que está apoiado
+      const i = ps[0].y < ps[1].y ? 0 : 1
+      const rel = ps[i].clone().sub(q)
+      const relAnt = ant.ps[i].clone().sub(ant.q)
+      amostras.push(Math.hypot(rel.x - relAnt.x, rel.z - relAnt.z) * fps)
+    }
+    ant = { q, ps }
+  }
+  acao.stop()
+  mixer.uncacheRoot(raiz)
+  amostras.sort((a, b) => a - b)
+  return amostras[Math.floor(amostras.length / 2)] // mediana: ignora a troca de pé
+}

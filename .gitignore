@@ -7,3 +7,6 @@ docs/capturas/video/
 arte/.venv/
 arte/saida/
 __pycache__/
+
+# movimentos do Mixamo: licença permite usar no jogo, não redistribuir os arquivos crus
+public/animacoes/mixamo/
