@@ -213,6 +213,8 @@ export class Animador {
 
     // eventos: pousou, sentou, levantou
     if (this.antes.noAr && !s.noAr && !s.nadando && s.vel < 2.5) this.disparar('pulo-pouso')
+    if (this.molas && this.antes.noAr && !s.noAr) this.molas.empurrar(Math.sin(s.yaw) * 1.5, Math.cos(s.yaw) * 1.5, s.yaw) // pouso: o tronco cai para a frente e volta
+    if (this.molas && this.antes.vel - s.vel > 1.2) this.molas.empurrar(Math.sin(s.yaw) * (this.antes.vel - s.vel), Math.cos(s.yaw) * (this.antes.vel - s.vel), s.yaw)
     if (!this.antes.noAr && s.noAr && s.velY > 0) this.disparar('pulo-subida')
     if (!this.antes.sentado && s.sentado) this.disparar('sentar')
     if (this.antes.sentado && !s.sentado) this.disparar('levantar')
@@ -281,6 +283,7 @@ export class Animador {
     if (this.opcoes.olhar !== false) this.olhar(DT, olharVida || s.olhar)
     if (this.gesto?.tipo === 'chapeu') this.ajeitarChapeu()
     if (s.segurando) this.maosEm(s.segurando)
+    this.molas?.atualizar(DT, s)
     this.detectarPisadas(s)
     this.rosto?.atualizar(DT, s)
     this.antes = { noAr: s.noAr, sentado: s.sentado, yaw: s.yaw, vel: s.vel }

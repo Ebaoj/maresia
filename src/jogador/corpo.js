@@ -9,6 +9,7 @@ import { criarNadoCrawl } from './nado-crawl.js'
 import { BancoDeMovimento, espelhar } from './motion-matching.js'
 import { criarMultiplos } from './multiplos.js'
 import { criarRosto } from './rosto.js'
+import { criarMolas } from './molas.js'
 
 // banco do motion matching: movimentos com deslocamento (os que repetem marcados); os que não repetem
 // entram também espelhados (curva para a esquerda vira curva para a direita, etc.)
@@ -56,6 +57,7 @@ export async function carregarCorpo() {
   animador.multiplos = multiplos
   // o rosto entra depois dos múltiplos: as cópias em retícula ficam sem rosto
   animador.rosto = criarRosto(boneco.ossos.get('Head'))
+  animador.molas = criarMolas(boneco.ossos)
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
   return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto }
 }

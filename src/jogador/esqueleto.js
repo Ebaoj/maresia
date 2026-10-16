@@ -16,6 +16,8 @@ const BASE = [
   ['Neck', 'Spine2', [0, 0.18, 0.01]],
   ['Head', 'Neck', [0, 0.09, 0.02]],
   ['HeadTop_End', 'Head', [0, 0.2, 0]],
+  // fora do Mixamo: osso do chapéu, movido só pelas molas (molas.js), nunca pelos movimentos gravados
+  ['Chapeu', 'Head', [0, 0.19, 0.0]],
 ]
 const LADO = [
   ['Shoulder', 'Spine2', [0.03, 0.13, 0.0]],
@@ -114,8 +116,8 @@ export function criarBoneco() {
   membro('Neck', 'Neck', 'Head', 0.055, COR.pele)
   bola('Head', em('Head', 0, 0.1, 0.01), 0.115, COR.pele, 0.95, 1.1, 1.05)
   bola('Head', em('Head', 0, 0.13, -0.035), 0.1, COR.cabelo, 1, 0.95, 1)
-  peca('Head', new THREE.CylinderGeometry(0.2, 0.21, 0.02, 18).translate(...em('Head', 0, 0.2, 0).toArray()), COR.chapeu)
-  peca('Head', new THREE.CylinderGeometry(0.1, 0.12, 0.09, 14).translate(...em('Head', 0, 0.245, 0).toArray()), COR.chapeu)
+  peca('Chapeu', new THREE.CylinderGeometry(0.2, 0.21, 0.02, 18).translate(...em('Head', 0, 0.2, 0).toArray()), COR.chapeu)
+  peca('Chapeu', new THREE.CylinderGeometry(0.1, 0.12, 0.09, 14).translate(...em('Head', 0, 0.245, 0).toArray()), COR.chapeu)
   bola('Head', em('Head', 0, 0.09, 0.115), 0.022, COR.pele) // nariz: mostra para onde a cabeça olha
   for (const L of ['Left', 'Right']) {
     membro(L + 'Shoulder', L + 'Shoulder', L + 'Arm', 0.06, COR.camisa)

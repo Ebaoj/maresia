@@ -12,7 +12,7 @@ inclinação, tudo "em 2" (branch `corpo`). Cada fase termina com vídeo gravado
 | 4 | Rosto desenhado: olhos e boca 2D trocáveis (piscar, sorrir, susto) | feito (16/10): 5 olhos e 5 bocas em traço de nanquim, pisca sozinho, muda com a ação (correr, pular), `rosto.expressar()` para a história; o neto só precisa das âncoras |
 | 5 | Mão e olhar: a mão alcança o que pega, a cabeça acompanha quem passa e a câmera | feito (16/10): a cabeça olha o que dá para usar e, parada, para onde a câmera aponta (nunca torce para trás); segurando, as duas mãos vão ao objeto (IK de braço). Falta: olhar gente que passa |
 | 6 | Parado com vida: pequenas ações sorteadas (olhar o mar, ajeitar o chapéu, trocar o peso) | feito (16/10): depois de 4 a 8 s parado, sorteia olhar o mar, ajeitar o chapéu (IK do braço) ou olhar em volta (Mixamo); mexeu, acaba. Mais gestos entram fácil |
-| 7 | Física no corpo (Jolt): chapéu e camisa balançando, reação a empurrão | |
+| 7 | Física no corpo (Jolt): chapéu e camisa balançando, reação a empurrão | parcial (16/10): molas leves sem motor de física; chapéu num osso próprio atrasa e balança (arrancada, freada, pulo, vento), tronco dá tranco na freada e no pouso. Pano de verdade (Jolt) espera o neto ter roupa |
 | 8 | Muita gente gastando pouco: os mesmos movimentos na multidão, leves de longe | |
 | 9 | Areia e água: pé afunda na areia fofa, respingo na água rasa, onda empurra | |
 | 10 | Gestos do ofício gravados em vídeo de celular e convertidos em movimento (modelo aberto no Modal) | |
