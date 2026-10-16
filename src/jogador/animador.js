@@ -69,6 +69,12 @@ export class Animador {
   constructor(corpo, clipes, passadas) {
     this.corpo = corpo
     this.ossos = corpo.ossos
+    // eixos do repouso no espaço de cada osso (cada modelo monta os ossos de um jeito); o padrão vale
+    // para o esqueleto do jogo, que tem os ossos sem rotação no repouso
+    this.eixos = {
+      cabecaFrente: new THREE.Vector3(0, 0, 1), quadrilEsquerda: new THREE.Vector3(1, 0, 0),
+      abaChapeu: new THREE.Vector3(-0.16, 0.2, 0.06), ...(corpo.eixos || {}),
+    }
     this.mixer = new THREE.AnimationMixer(corpo.raiz)
     this.passadas = passadas
     this.acoes = {}
@@ -97,11 +103,12 @@ export class Animador {
 
   // Motion matching (motion-matching.js): liga o banco; cada movimento ganha duas ações (A e B) para
   // poder trocar de um trecho para outro do mesmo movimento com transição
-  usarBanco(banco) {
+  // adaptar: converte o clipe do esqueleto padrão para o modelo que está tocando (o neto, por exemplo)
+  usarBanco(banco, adaptar = (c) => c) {
     this.banco = banco
     this.mm = { e: -1, t: 0, chave: null, tocando: false, espera: 0 }
     banco.entradas.forEach((ent, e) => {
-      const clipe = banco.clipeParaTocar(e)
+      const clipe = adaptar(banco.clipeParaTocar(e))
       for (const lado of ['A', 'B']) {
         const a = this.mixer.clipAction(lado === 'A' ? clipe : clipe.clone())
         a.setLoop(ent.loop ? THREE.LoopRepeat : THREE.LoopOnce, Infinity)
@@ -332,7 +339,7 @@ export class Animador {
     if (!this.olharAlvo || this.olharPeso < 0.02) return
     const pc = cabeca.getWorldPosition(v()).add(v().set(0, 0.1, 0))
     const desejo = this.olharAlvo.clone().sub(pc).normalize()
-    const frente = v().set(0, 0, 1).applyQuaternion(cabeca.getWorldQuaternion(new THREE.Quaternion()))
+    const frente = this.eixos.cabecaFrente.clone().applyQuaternion(cabeca.getWorldQuaternion(new THREE.Quaternion()))
     let ang = frente.angleTo(desejo)
     if (ang < 1e-3) return
     const eixo = v().crossVectors(frente, desejo).normalize()
@@ -380,7 +387,7 @@ export class Animador {
     const cabeca = this.ossos.get('Head')
     const a = this.ossos.get('RightArm'), b = this.ossos.get('RightForeArm'), c = this.ossos.get('RightHand')
     if (!cabeca || !a || !b || !c) return
-    const aba = v().set(-0.16, 0.2, 0.06).applyMatrix4(cabeca.matrixWorld)
+    const aba = this.eixos.abaChapeu.clone().applyMatrix4(cabeca.matrixWorld)
     const mao = c.getWorldPosition(v())
     ikDuas(a, b, c, mao.lerp(aba, w))
   }
@@ -389,7 +396,7 @@ export class Animador {
   maosEm({ x, y, z, raio = 0.2 }) {
     const centro = v().set(x, y, z)
     const quadril = this.ossos.get('Hips')
-    const direita = v().set(1, 0, 0).applyQuaternion(quadril.getWorldQuaternion(new THREE.Quaternion()))
+    const direita = this.eixos.quadrilEsquerda.clone().applyQuaternion(quadril.getWorldQuaternion(new THREE.Quaternion()))
     direita.y = 0
     direita.normalize()
     for (const [L, s] of [['Left', 1], ['Right', -1]]) {

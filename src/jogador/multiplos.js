@@ -33,12 +33,12 @@ export function criarMultiplos(boneco, quantos = 2) {
     raiz.visible = false
     const malhas = []
     raiz.traverse((o) => {
-      if (o.isSkinnedMesh) {
-        o.material = materialRetícula(o.material.color.clone(), densidade)
+      if (o.isMesh) { // pele e roupa (com esqueleto) e peças presas, como o chapéu
+        o.material = materialRetícula((o.material.color || new THREE.Color('#ffffff')).clone(), densidade)
         o.castShadow = false
         o.receiveShadow = false
         o.frustumCulled = false
-        malhas.push(o)
+        if (o.isSkinnedMesh) malhas.push(o)
       }
     })
     const ossos = malhas[0].skeleton.bones

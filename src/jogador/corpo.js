@@ -2,8 +2,9 @@
 // Carrega em segundo plano: enquanto não chega, o jogo segue com o boneco antigo (personagem.js).
 
 import * as THREE from 'three'
-import { criarBoneco } from './esqueleto.js'
-import { carregarMovimentosMixamo } from './retarget.js'
+import { criarBoneco, criarEsqueleto } from './esqueleto.js'
+import { carregarMovimentosMixamo, converter, repouso } from './retarget.js'
+import { carregarNeto } from './neto.js'
 import { Animador } from './animador.js'
 import { criarNadoCrawl } from './nado-crawl.js'
 import { BancoDeMovimento, espelhar } from './motion-matching.js'
@@ -24,7 +25,25 @@ const NOMES = [
   'sentado', 'levantar', 'carregar-andando', 'carregar-parado', 'boiar', 'nadar', 'empurrar',
 ]
 
-export async function carregarCorpo() {
+// Converte clipes do esqueleto padrão para outro modelo (o neto): um esqueleto padrão novo, em repouso,
+// é a fonte; o alvo é o modelo, também em repouso. Mesmo conversor dos movimentos do Mixamo.
+function criarAdaptador(alvo) {
+  const { raizOsso, ossos } = criarEsqueleto()
+  const raiz = new THREE.Group()
+  raiz.add(raizOsso)
+  raiz.updateMatrixWorld(true)
+  const fonte = { raiz, ossos, rep: repouso(ossos) }
+  alvo.raiz.updateMatrixWorld(true)
+  const destino = { ossos: alvo.ossos, rep: repouso(alvo.ossos) }
+  return (clipe) => {
+    const c = converter(clipe, fonte, destino, { noLugar: false, nome: clipe.name })
+    c.userData = clipe.userData // o crawl guarda a velocidade dele aí
+    return c
+  }
+}
+
+// modelo: 'neto' (o personagem da história) ou 'boneco' (o de cápsulas, para testes)
+export async function carregarCorpo({ modelo = 'neto' } = {}) {
   const boneco = criarBoneco()
   const r = await carregarMovimentosMixamo({
     alvo: { ossos: boneco.ossos, raiz: boneco.raiz }, pasta: '/animacoes/mixamo/', nomes: [...NOMES, ...Object.keys(BANCO)],
@@ -44,20 +63,30 @@ export async function carregarCorpo() {
     console.warn('Corpo novo: faltam movimentos do Mixamo em public/animacoes/mixamo/; fica o boneco antigo', r.faltando)
     return null
   }
-  // mesma forma do boneco antigo: raiz (posição e direção) > corpo (estica e amassa) > boneco
+  r.clipes.nadar = criarNadoCrawl() // o Joabe quer crawl; o "nadar" do Mixamo é submerso
+  // tudo acima é preparado no esqueleto padrão; o corpo que aparece pode ser outro modelo
+  let alvo = { raiz: boneco.raiz, ossos: boneco.ossos, esqueleto: boneco.esqueleto }
+  let adaptar = (c) => c
+  if (modelo === 'neto') {
+    const neto = await carregarNeto()
+    if (neto) { alvo = neto; adaptar = criarAdaptador(neto) } else console.warn('Corpo: o neto não carregou; fica o boneco')
+  }
+  const clipesAlvo = Object.fromEntries(Object.entries(r.clipes).map(([k, c]) => [k, adaptar(c)]))
+  // mesma forma do boneco antigo: raiz (posição e direção) > corpo (estica e amassa) > modelo
   const raiz = new THREE.Group()
   raiz.userData.peso = 1
   const corpo = new THREE.Group()
   raiz.add(corpo)
-  corpo.add(boneco.raiz)
-  r.clipes.nadar = criarNadoCrawl() // o Joabe quer crawl; o "nadar" do Mixamo é submerso
-  const animador = new Animador({ raiz: boneco.raiz, ossos: boneco.ossos }, r.clipes, r.passadas)
-  if (banco) animador.usarBanco(banco)
-  const multiplos = criarMultiplos(boneco, 2)
+  corpo.add(alvo.raiz)
+  const animador = new Animador({ raiz: alvo.raiz, ossos: alvo.ossos, eixos: alvo.eixos }, clipesAlvo, r.passadas)
+  if (banco) animador.usarBanco(banco, adaptar)
+  const multiplos = criarMultiplos(alvo, 2)
   animador.multiplos = multiplos
-  // o rosto entra depois dos múltiplos: as cópias em retícula ficam sem rosto
-  animador.rosto = criarRosto(boneco.ossos.get('Head'))
-  animador.molas = criarMolas(boneco.ossos)
+  // rosto desenhado só no boneco: o neto tem olhos, sobrancelhas e boca modelados
+  // (o rosto entra depois dos múltiplos: as cópias em retícula ficam sem rosto)
+  if (alvo.raiz === boneco.raiz) animador.rosto = criarRosto(boneco.ossos.get('Head'))
+  animador.molas = criarMolas(alvo.ossos)
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
+  // clipes no esqueleto padrão: a gente da cidade (atores.js) usa o boneco
   return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto, clipes: r.clipes }
 }
