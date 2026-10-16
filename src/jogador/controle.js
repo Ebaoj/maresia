@@ -78,6 +78,11 @@ export class Jogador {
       yaw: this.yawVisual,
       chao: (x, z) => alturaChao(x, z, y + 0.4),
       velPedida: this.velDesejada.length(),
+      // para onde olhar: o que dá para usar (interacoes.js) ou, parado, para onde a câmera aponta
+      olhar: this.olharPara || (this.velHoriz < 0.3 && this.yawCamera !== undefined
+        ? new THREE.Vector3(this.pos.x - Math.sin(this.yawCamera) * 10, this.pos.y + 1.4, this.pos.z - Math.cos(this.yawCamera) * 10)
+        : null),
+      segurando: this.carregando?.corpo ? (() => { const t = this.carregando.corpo.translation(); return { x: t.x, y: t.y, z: t.z, raio: this.carregando.tipo === 'bola' ? 0.22 : 0.15 } })() : null,
       // trajetória que o controle vai fazer no próximo segundo (motion matching)
       traj: trajetoriaPedida({
         vel: this.vel,
@@ -114,6 +119,7 @@ export class Jogador {
   }
 
   update(dt, teclas, yawCamera) {
+    this.yawCamera = yawCamera
     const cfg = this.cfg.personagem
     this.tempo += dt
     this.esperaTchibum -= dt

@@ -10,7 +10,7 @@ inclinação, tudo "em 2" (branch `corpo`). Cada fase termina com vídeo gravado
 | 2 | Motion matching: escolher a cada instante o trecho de mocap mais parecido com o que o jogador faz, com começar, parar e virar | primeira versão no ar (16/10): 14 movimentos com deslocamento + 6 espelhados, 953 quadros; liga e desliga no painel |
 | 3 | Estilo Aranhaverso no movimento: quadro esticado, linhas de velocidade, pausa no alto do pulo, "em 2" que muda com a ação | feito (16/10): em 1 na ação e em 2 andando, pausa no alto do pulo, múltiplos em retícula, linhas de velocidade recalibradas; tudo no painel |
 | 4 | Rosto desenhado: olhos e boca 2D trocáveis (piscar, sorrir, susto) | feito (16/10): 5 olhos e 5 bocas em traço de nanquim, pisca sozinho, muda com a ação (correr, pular), `rosto.expressar()` para a história; o neto só precisa das âncoras |
-| 5 | Mão e olhar: a mão alcança o que pega, a cabeça acompanha quem passa e a câmera | |
+| 5 | Mão e olhar: a mão alcança o que pega, a cabeça acompanha quem passa e a câmera | feito (16/10): a cabeça olha o que dá para usar e, parada, para onde a câmera aponta (nunca torce para trás); segurando, as duas mãos vão ao objeto (IK de braço). Falta: olhar gente que passa |
 | 6 | Parado com vida: pequenas ações sorteadas (olhar o mar, ajeitar o chapéu, trocar o peso) | |
 | 7 | Física no corpo (Jolt): chapéu e camisa balançando, reação a empurrão | |
 | 8 | Muita gente gastando pouco: os mesmos movimentos na multidão, leves de longe | |

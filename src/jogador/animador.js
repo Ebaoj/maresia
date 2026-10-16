@@ -31,7 +31,11 @@ function apontar(osso, de, para) {
 }
 
 // IK de duas juntas: coxa, canela e pé; o tornozelo vai para "alvo", o joelho dobra para onde já dobrava
-function ikPerna(coxa, canela, pe, alvo) {
+function ikPerna(coxa, canela, pe, alvo) { ikDuas(coxa, canela, pe, alvo) }
+
+// IK de duas juntas genérico (perna: coxa/canela/pé; braço: braço/antebraço/mão). A ponta vai para
+// "alvo"; a junta do meio dobra para o lado em que já dobrava; a ponta mantém a rotação do movimento
+function ikDuas(coxa, canela, pe, alvo) {
   const qPe = pe.getWorldQuaternion(new THREE.Quaternion())
   const A = coxa.getWorldPosition(_a)
   const B = canela.getWorldPosition(_b)
@@ -273,6 +277,8 @@ export class Animador {
     this.corpo.raiz.updateMatrixWorld(true)
     if (this.opcoes.inclinar) this.inclinar(DT, s)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)
+    if (this.opcoes.olhar !== false) this.olhar(DT, s.olhar)
+    if (s.segurando) this.maosEm(s.segurando)
     this.detectarPisadas(s)
     this.rosto?.atualizar(DT, s)
     this.antes = { noAr: s.noAr, sentado: s.sentado, yaw: s.yaw, vel: s.vel }
@@ -298,6 +304,48 @@ export class Animador {
         this.eventos.push({ tipo: 'pisada', pos: meio, yaw: s.yaw, lado: L === 'Left' ? -1 : 1 })
         st.alto = false
       } else if (!st.alto && h > 0.07) st.alto = true
+    }
+  }
+
+  // a cabeça vira para o ponto (mundo), com limite de pescoço; o pescoço leva 40% e a cabeça 60%.
+  // Sem ponto, volta suave para a frente.
+  olhar(DT, ponto) {
+    const cabeca = this.ossos.get('Head')
+    const pescoco = this.ossos.get('Neck')
+    if (!cabeca || !pescoco) return
+    const k = 1 - Math.exp(-DT * 6)
+    // ponto atrás das costas (mais de ~110° da frente do corpo): não torce o pescoço, olha em frente
+    if (ponto) {
+      const q = this.ossos.get('Hips').getWorldPosition(v())
+      const fr = v().set(0, 0, 1).applyQuaternion(this.ossos.get('Hips').getWorldQuaternion(new THREE.Quaternion()))
+      const para = ponto.clone().sub(q)
+      fr.y = 0; para.y = 0
+      if (fr.angleTo(para) > 1.9) ponto = null
+    }
+    this.olharPeso = (this.olharPeso || 0) + ((ponto ? 1 : 0) - (this.olharPeso || 0)) * k
+    if (ponto) this.olharAlvo = (this.olharAlvo || ponto.clone()).lerp(ponto, k)
+    if (!this.olharAlvo || this.olharPeso < 0.02) return
+    const pc = cabeca.getWorldPosition(v()).add(v().set(0, 0.1, 0))
+    const desejo = this.olharAlvo.clone().sub(pc).normalize()
+    const frente = v().set(0, 0, 1).applyQuaternion(cabeca.getWorldQuaternion(new THREE.Quaternion()))
+    let ang = frente.angleTo(desejo)
+    if (ang < 1e-3) return
+    const eixo = v().crossVectors(frente, desejo).normalize()
+    ang = Math.min(ang, 1.2) * this.olharPeso // ~70° de pescoço no máximo
+    girarNoMundo(pescoco, eixo, ang * 0.4)
+    girarNoMundo(cabeca, eixo, ang * 0.6)
+  }
+
+  // segurando algo: as duas mãos vão aos lados do objeto (mundo)
+  maosEm({ x, y, z, raio = 0.2 }) {
+    const centro = v().set(x, y, z)
+    const quadril = this.ossos.get('Hips')
+    const direita = v().set(1, 0, 0).applyQuaternion(quadril.getWorldQuaternion(new THREE.Quaternion()))
+    direita.y = 0
+    direita.normalize()
+    for (const [L, s] of [['Left', 1], ['Right', -1]]) {
+      const a = this.ossos.get(L + 'Arm'), b = this.ossos.get(L + 'ForeArm'), c = this.ossos.get(L + 'Hand')
+      if (a && b && c) ikDuas(a, b, c, centro.clone().addScaledVector(direita, s * (raio + 0.03)))
     }
   }
 

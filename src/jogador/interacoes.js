@@ -96,6 +96,8 @@ export function criarInteracoes({ jogador, fisica, lugares, camera }) {
         jogador.carregando.corpo.setNextKinematicTranslation(m)
       }
       alvo = escolher()
+      // o corpo olha para o que dá para usar (bola, coco, banco, carrinho)
+      jogador.olharPara = alvo && alvo.tipo !== 'arremessar' && alvo.tipo !== 'levantar' ? alvo.pos : null
       if (!alvo) {
         balao.classList.remove('mostrar')
         return
