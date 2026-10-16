@@ -322,6 +322,23 @@ antes de 1883, manga presunto (anos 1890), nome "chapéu-panamá".
 levantada nas bordas e calça sem bolsos traseiros (correções documentadas, liberadas pela direção de
 arte). Bolso, pano anil e caderninho ficam como licença narrativa registrada.
 
+### Atualização de 16/10/2026 (noite): decisões do Joabe que substituem a tabela acima
+
+- **Figurino do neto** pelas fotos de jangadeiros de Fortaleza em 1935 (Platt) e por uma foto com a vela
+  "Z-1": camisa de **malha listrada na horizontal** (vermelho-tijolo desbotado e creme, manga até o
+  cotovelo), **calça clara de algodão** larga, arregaçada até o meio da canela, descalço, chapéu de palha
+  de copa alta e aba larga desfiada. A camisa listrada é a peça mais repetida nos pescadores das fotos (D,
+  Platt 1935; Cela 1945).
+- **Sem cinto** (revoga o cinto de couro): a calça se prende por cordão de cós escondido sob a camisa.
+- **Mínimo de acessórios:** saem o pano anil e o caderninho do figurino; se a história pedir, entram como
+  objeto de cena.
+- **Rosto:** caboclo do litoral do Ceará, herança indígena forte (maçãs altas, olhos amendoados, cabelo
+  preto liso e grosso, pele bronze de sol). Aparência nada polida: pele curtida, pés calejados, roupa
+  esgarçada.
+- Há também uma **versão sem camisa** (mesma calça e chapéu).
+- Folhas candidatas: `arte/entradas/openai-neto-final-1.png` e `-2.png` (geradas no GPT Image com o
+  estudo de rosto 6, as fotos de 1935 e a folha anterior como referências).
+
 ---
 
 ## 10. Fontes principais
