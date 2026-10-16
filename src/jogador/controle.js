@@ -67,6 +67,7 @@ export class Jogador {
       carregando: !!this.carregando,
       yaw: this.yawVisual,
       chao: (x, z) => alturaChao(x, z, y + 0.4),
+      velPedida: this.velDesejada.length(),
       // trajetória que o controle vai fazer no próximo segundo (motion matching)
       traj: trajetoriaPedida({
         vel: this.vel,
@@ -225,7 +226,16 @@ export class Jogador {
     const passo = 1 / Math.max(1, cfg.fpsPose)
     if (this.acPose >= passo) {
       this.acPose %= passo
-      this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 14))
+      if (this.animador?.mmAtivo && this.noChao && !this.nadando) {
+        // motion matching: o corpo gira o que o movimento escolhido gira (meia-volta, curva, virar no
+        // lugar), e o controle só corrige o desvio aos poucos
+        const giro = this.animador.consumirGiro()
+        this.yawVisual += giro
+        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 3))
+      } else {
+        this.animador?.consumirGiro()
+        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 14))
+      }
       if (!this.animador) {
         aplicarPose(this.p, {
           fase: this.fase,

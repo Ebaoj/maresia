@@ -129,7 +129,14 @@ export class Animador {
     if (!atual || mm.espera <= 0 || fimDoClipe) {
       mm.espera = 0.1 // procura 10 vezes por segundo
       const pose = atual ? this.banco.linha(atual.userData.e, fAtual) : this.banco.linha(0, 0)
-      const r = this.banco.buscar(pose, s.traj)
+      // ritmo: correndo (ou pedindo corrida) não pega movimento de andar; andando não pega de corrida
+      // freando de uma corrida, segue no ritmo de corrida até quase parar (usa a freada de quem corre)
+      const vinhaCorrendo = entAtual && entAtual.ritmo === 'corrida'
+      const correndo = (s.velPedida || 0) > 3 || (vinhaCorrendo && s.vel > 0.8 && (s.velPedida || 0) < 0.5)
+      const r = this.banco.buscar(pose, s.traj, (e) => {
+        const rit = this.banco.entradas[e].ritmo
+        return rit === 'livre' || (correndo ? rit === 'corrida' : rit === 'andar')
+      })
       const custoAtual = atual ? this.banco.custoDe(atual.userData.e, fAtual, r.q) : Infinity
       const mesmoLugar = atual && r.e === atual.userData.e && Math.abs(r.f - fAtual) < 8
       // só troca se o novo for claramente melhor (evita ficar pulando entre trechos parecidos)
@@ -147,6 +154,32 @@ export class Animador {
       }
     }
     alvo[mm.chave] = 1
+  }
+
+  // quanto a raiz do movimento do motion matching girou neste quadro (radianos, no mesmo sentido do
+  // yaw do controle). O controle soma isso ao corpo: na meia-volta o corpo gira no tempo do mocap.
+  medirGiro() {
+    const mm = this.mm
+    if (!mm) return
+    const a = mm.tocando && mm.chave && this.opcoes.mm ? this.acoes[mm.chave] : null
+    this.mmAtivo = !!a && (a.userData.peso > 0.5)
+    if (!a) { mm.raizAnt = null; return }
+    const ent = this.banco.entradas[a.userData.e]
+    const f = Math.min(ent.n - 1, Math.round(a.time * 30))
+    const ant = mm.raizAnt
+    if (ant && ant.chave === mm.chave) {
+      // movimento que repete: ao dar a volta, compara com o quadro "depois do fim" (raiz acumulada)
+      const fComp = f < ant.f && ent.loop ? Math.min(ent.R.length - 1, f + ent.n - 1) : f
+      this.giroAcumulado = (this.giroAcumulado || 0) + (ent.R[fComp].yaw - ent.R[ant.f].yaw)
+    }
+    mm.raizAnt = { chave: mm.chave, f }
+  }
+
+  // o controle lê e zera o giro acumulado
+  consumirGiro() {
+    const g = this.giroAcumulado || 0
+    this.giroAcumulado = 0
+    return g
   }
 
   disparar(nome) {
@@ -223,6 +256,7 @@ export class Animador {
       nado.timeScale = THREE.MathUtils.clamp(s.vel / vNado, 0.5, 2.2)
     }
     this.mixer.update(DT) // os outros movimentos correm no tempo deles
+    this.medirGiro()
 
     // o nado do Mixamo é submerso: deitado, o corpo sobe até a linha d'água (o jogador boia com o quadril fundo)
     const wNado = nado?.userData.peso || 0

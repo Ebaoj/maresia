@@ -109,7 +109,8 @@ export class BancoDeMovimento {
         // fim de clipe que não repete: sem futuro de verdade, não serve para começar a tocar
         valido.push(e.loop || f < n - 12)
       }
-      this.entradas.push({ ...e, inicio, n, valido, quadros, R })
+      const ritmo = /correr|disparada|trote|correndo/.test(e.nome) ? 'corrida' : /parado|virar/.test(e.nome) ? 'livre' : 'andar'
+      this.entradas.push({ ...e, inicio, n, valido, quadros, R, ritmo })
     }
     // normalização por grupo: cada grupo pesa o mesmo, qualquer que seja a unidade
     this.grupos = [[0, 6, PESOS.pes], [6, 12, PESOS.velPes], [12, 15, PESOS.velQuadril], [15, 21, PESOS.trajPos], [21, 27, PESOS.trajDir]]
@@ -133,21 +134,25 @@ export class BancoDeMovimento {
   linha(e, f) { const i = this.entradas[e].inicio + f; return this.dados.subarray(i * DIM, i * DIM + DIM) }
 
   // consulta: pose do quadro tocando agora + trajetória pedida (6 posições e 6 direções, no espaço da raiz)
-  buscar(pose, traj) {
+  // permitido(e): filtro opcional de entradas (ritmo: não pegar virada de corrida andando, e vice-versa)
+  buscar(pose, traj, permitido = null) {
     const q = new Float32Array(DIM)
     for (let d = 0; d < 15; d++) q[d] = pose[d]
     for (let d = 15; d < DIM; d++) q[d] = (traj[d - 15] - this.media[d]) * this.escala[d]
     let melhor = -1
     let custo = Infinity
+    const ok = permitido ? this.entradas.map((_, e) => permitido(e)) : null
+    let e = 0
     for (let i = 0; i < this.total; i++) {
-      if (!this.validos[i]) continue
+      while (e + 1 < this.entradas.length && i >= this.entradas[e + 1].inicio) e++
+      if (!this.validos[i] || (ok && !ok[e])) continue
       let c = 0
       const o = i * DIM
       for (let d = 0; d < DIM; d++) { const x = this.dados[o + d] - q[d]; c += x * x; if (c >= custo) break }
       if (c < custo) { custo = c; melhor = i }
     }
-    const e = this.entradas.findIndex((x) => melhor >= x.inicio && melhor < x.inicio + x.n)
-    return { e, f: melhor - this.entradas[e].inicio, custo, q }
+    const em = this.entradas.findIndex((x) => melhor >= x.inicio && melhor < x.inicio + x.n)
+    return { e: em, f: melhor - this.entradas[em].inicio, custo, q }
   }
 
   custoDe(e, f, q) {
