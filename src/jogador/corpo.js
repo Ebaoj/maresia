@@ -7,6 +7,7 @@ import { carregarMovimentosMixamo } from './retarget.js'
 import { Animador } from './animador.js'
 import { criarNadoCrawl } from './nado-crawl.js'
 import { BancoDeMovimento, espelhar } from './motion-matching.js'
+import { criarMultiplos } from './multiplos.js'
 
 // banco do motion matching: movimentos com deslocamento (os que repetem marcados); os que não repetem
 // entram também espelhados (curva para a esquerda vira curva para a direita, etc.)
@@ -50,6 +51,8 @@ export async function carregarCorpo() {
   r.clipes.nadar = criarNadoCrawl() // o Joabe quer crawl; o "nadar" do Mixamo é submerso
   const animador = new Animador({ raiz: boneco.raiz, ossos: boneco.ossos }, r.clipes, r.passadas)
   if (banco) animador.usarBanco(banco)
+  const multiplos = criarMultiplos(boneco, 2)
+  animador.multiplos = multiplos
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
-  return { raiz, corpo, animador, passadas: r.passadas, banco }
+  return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos }
 }

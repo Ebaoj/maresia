@@ -515,7 +515,11 @@ export class Aranhaverso {
     u.uTomSombra.value = e.tomSombra
     srgb(e.corLuz, u.uCorLuz.value)
     u.uTomLuz.value = e.tomLuz
-    const alvoVel = e.linhasVelocidade ? Math.min(1, Math.max(0, (velocidadeJogador - 6) / 3)) : 0
+    // linhas de velocidade a partir de ~70% da corrida (o corpo novo corre a 4,5 m/s; o antigo a 9)
+    const pj = this.cfg.personagem
+    const ini = pj.corpoNovo ? pj.corridaNova * 0.7 : 6
+    const faixa = pj.corpoNovo ? pj.corridaNova * 0.3 : 3
+    const alvoVel = e.linhasVelocidade ? Math.min(1, Math.max(0, (velocidadeJogador - ini) / faixa)) : 0
     this.velocidade += (alvoVel - this.velocidade) * 0.1
     u.uVelocidade.value = this.velocidade
     this.globais.uPincel.value = e.pincel

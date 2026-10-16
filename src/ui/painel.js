@@ -106,6 +106,9 @@ export function criarPainel(cfg) {
   p.add(cfg.personagem, 'peNoChao').name('corpo novo: pé no chão (IK)')
   p.add(cfg.personagem, 'inclinar').name('corpo novo: inclinar na curva')
   p.add(cfg.personagem, 'motionMatching').name('corpo novo: motion matching')
+  p.add(cfg.personagem, 'fpsAcao', 6, 60, 1).name('poses por segundo na ação')
+  p.add(cfg.personagem, 'pausaPulo').name('pausa no alto do pulo')
+  p.add(cfg.personagem, 'multiplos', 0, 1.5, 0.05).name('múltiplos (rastro em retícula)')
 
   const c = gui.addFolder('Câmera')
   c.add(cfg.camera, 'distancia', 2.5, 45, 0.1).name('distância').listen()

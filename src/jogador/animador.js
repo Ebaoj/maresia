@@ -198,6 +198,15 @@ export class Animador {
     const DT = this.opcoes.em2 ? this.acumulado - (this.acumulado % passo) : this.acumulado
     this.acumulado = this.opcoes.em2 ? this.acumulado % passo : 0
 
+    // pausa no alto do pulo: a pose segura alguns quadros no topo (Aranhaverso)
+    if (this.opcoes.pausaPulo && s.noAr && Math.abs(s.velY) < 2.2 && (this.segura || 0) < 3) {
+      this.segura = (this.segura || 0) + 1
+      return true
+    }
+    if (!s.noAr || Math.abs(s.velY) >= 2.2) this.segura = 0
+    // múltiplos: a pose que sai fica para trás, em retícula
+    if (this.multiplos && this.opcoes.multiplos) this.multiplos.registrar()
+
     // eventos: pousou, sentou, levantou
     if (this.antes.noAr && !s.noAr && !s.nadando && s.vel < 2.5) this.disparar('pulo-pouso')
     if (!this.antes.noAr && s.noAr && s.velY > 0) this.disparar('pulo-subida')

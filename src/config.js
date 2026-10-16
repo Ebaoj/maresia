@@ -75,6 +75,9 @@ export const PADRAO = {
     peNoChao: true,        // IK: cada pé pisa no chão de verdade (ladeira, degrau, duna)
     inclinar: true,        // o corpo inclina na curva e na arrancada
     motionMatching: true,  // locomoção por motion matching (motion-matching.js); desligado = mistura antiga por velocidade
+    fpsAcao: 24,           // correndo e no ar a pose anda "em 1" (Aranhaverso: ação mais fluida, calma em 2)
+    pausaPulo: true,       // a pose segura alguns quadros no alto do pulo
+    multiplos: 1.0,        // cópias do corpo em retícula ficando para trás na corrida e no pulo (0 desliga)
   },
   camera: {
     distancia: 5.0,        // fatia: câmera mais perto e mais baixa, composta como ilustração

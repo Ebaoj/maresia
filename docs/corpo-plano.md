@@ -8,7 +8,7 @@ inclinação, tudo "em 2" (branch `corpo`). Cada fase termina com vídeo gravado
 |---|---|---|
 | 1 | Pegadas no pé de verdade; conferir sentar, nadar, carregar e degrau | feito (16/10): pegada pelo calcanhar; sentar, levantar, boiar e nadar conferidos em vídeo; carregar e degrau no jogo ainda não |
 | 2 | Motion matching: escolher a cada instante o trecho de mocap mais parecido com o que o jogador faz, com começar, parar e virar | primeira versão no ar (16/10): 14 movimentos com deslocamento + 6 espelhados, 953 quadros; liga e desliga no painel |
-| 3 | Estilo Aranhaverso no movimento: quadro esticado, linhas de velocidade, pausa no alto do pulo, "em 2" que muda com a ação | |
+| 3 | Estilo Aranhaverso no movimento: quadro esticado, linhas de velocidade, pausa no alto do pulo, "em 2" que muda com a ação | feito (16/10): em 1 na ação e em 2 andando, pausa no alto do pulo, múltiplos em retícula, linhas de velocidade recalibradas; tudo no painel |
 | 4 | Rosto desenhado: olhos e boca 2D trocáveis (piscar, sorrir, susto) | |
 | 5 | Mão e olhar: a mão alcança o que pega, a cabeça acompanha quem passa e a câmera | |
 | 6 | Parado com vida: pequenas ações sorteadas (olhar o mar, ajeitar o chapéu, trocar o peso) | |

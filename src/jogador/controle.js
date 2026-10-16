@@ -48,7 +48,9 @@ export class Jogador {
     c.raiz.position.copy(antigo.position)
     c.raiz.rotation.copy(antigo.rotation)
     antigo.parent.add(c.raiz)
+    for (const m of c.multiplos?.raizes || []) antigo.parent.add(m)
     antigo.parent.remove(antigo)
+    this.multiplos = c.multiplos
     this.p = { raiz: c.raiz, corpo: c.corpo }
     this.animador = c.animador
   }
@@ -56,7 +58,15 @@ export class Jogador {
   // estado que o animador lê a cada quadro
   animar(dt, cfg) {
     const a = this.animador
-    Object.assign(a.opcoes, { fps: cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar, mm: cfg.motionMatching && !!a.banco })
+    // "em 2" que muda com a ação: correndo e no ar a pose muda 24 vezes por segundo ("em 1"), andando 12
+    const acao = this.velHoriz > cfg.corridaNova * 0.75 || !this.noChao
+    Object.assign(a.opcoes, {
+      fps: acao ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
+      mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0,
+    })
+    // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo
+    const forca = Math.max(clamp((this.velHoriz - cfg.corridaNova * 0.8) / (cfg.corridaNova * 0.3), 0, 1), this.noChao || this.nadando ? 0 : 0.5)
+    this.multiplos?.atualizar(forca * cfg.multiplos)
     const y = this.pos.y
     a.atualizar(dt, {
       vel: this.velHoriz,
