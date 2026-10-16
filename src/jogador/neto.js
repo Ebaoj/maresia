@@ -10,6 +10,8 @@ import { toon, toonVertice } from '../materiais.js'
 import { criarAleatorio } from '../utils.js'
 
 export const ARQUIVO_NETO = '/arte/finais/neto-mpfb.glb'
+// rosto liso (sem olhos, sobrancelhas, cílios nem lábios), para o rosto desenhado em 2D (rosto.js)
+export const ARQUIVO_NETO_SEM_ROSTO = '/arte/finais/neto-mpfb-sem-rosto.glb'
 
 // cores medidas pela sessão do personagem (docs/direcao-de-arte.md, seção 7)
 const COR = { pele: '#96593a', labios: '#80493a', cabelo: '#16110f', pelos: '#120d0b', calca: '#e3d8c2', palha: '#d9b98a' }
@@ -50,9 +52,15 @@ function chapeuDePalha() {
 }
 
 // chapeu: false tira o chapéu (decisão do Joabe em 16/10/2026: o neto anda sem chapéu)
-export async function carregarNeto({ chapeu = false } = {}) {
+export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
   let g
-  try { g = await carregar(ARQUIVO_NETO) } catch (e) { console.warn('Neto: não carregou', e); return null }
+  let liso = false
+  if (semRosto) {
+    try { g = await carregar(ARQUIVO_NETO_SEM_ROSTO); liso = true } catch { console.info('Neto: a versão de rosto liso ainda não existe; uso a normal') }
+  }
+  if (!g) {
+    try { g = await carregar(ARQUIVO_NETO) } catch (e) { console.warn('Neto: não carregou', e); return null }
+  }
   const raiz = g.raiz
   const malhas = []
   raiz.traverse((o) => {
@@ -89,5 +97,25 @@ export async function carregarNeto({ chapeu = false } = {}) {
     quadrilEsquerda: local(ossos.get('Hips'), new THREE.Vector3(1, 0, 0)),
     abaChapeu: new THREE.Vector3(-0.17, topo - 0.09 - pc.y, 0.07).applyQuaternion(inv), // aba do lado direito, um pouco à frente
   }
-  return { raiz, ossos, esqueleto: malhas[0].skeleton, malhas, eixos }
+  return { raiz, ossos, esqueleto: malhas[0].skeleton, malhas, eixos, ancorasRosto: liso ? ancorasDoRosto(raiz, cabeca, malhas) : null }
+}
+
+// Onde desenhar olhos e boca: procura a superfície do rosto (raio vindo da frente) na altura dos olhos
+// e da boca, medidas a partir do topo da cabeça; devolve no espaço do osso Head, como rosto.js pede
+function ancorasDoRosto(raiz, cabeca, malhas) {
+  raiz.updateMatrixWorld(true)
+  const topo = cabeca.children.find((o) => /HeadTop/i.test(o.name))?.getWorldPosition(new THREE.Vector3()).y
+    ?? new THREE.Box3().setFromObject(raiz).max.y
+  const pele = malhas.filter((m) => !/camisa|calca|short|cabelo/i.test(m.material?.name || m.name))
+  const ray = new THREE.Raycaster()
+  const frente = (x, y) => {
+    ray.set(new THREE.Vector3(x, y, 1), new THREE.Vector3(0, 0, -1))
+    const h = ray.intersectObjects(pele, false)[0]
+    return h ? h.point : new THREE.Vector3(x, y, cabeca.getWorldPosition(new THREE.Vector3()).z + 0.09)
+  }
+  const olho = frente(0.032, topo - 0.11)
+  const boca = frente(0, topo - 0.185)
+  const inv = cabeca.matrixWorld.clone().invert()
+  const local = (p) => p.clone().add(new THREE.Vector3(0, 0, 0.004)).applyMatrix4(inv).toArray() // 4 mm para fora da pele
+  return { olho: local(olho), boca: local(boca), tamOlho: 0.05, tamBoca: 0.055, curva: 0.35 }
 }
