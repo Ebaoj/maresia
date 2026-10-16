@@ -69,9 +69,12 @@ export function criarEsqueleto() {
 
 // Boneco de teste: uma cápsula por osso, presa 100% nele (pele rígida). Serve para ver o movimento
 // enquanto o modelo do neto não chega; o neto usa o mesmo esqueleto.
-const COR = { pele: '#8a5235', camisa: '#e9dfcb', listra: '#4f7c9a', calca: '#d9cbb0', chapeu: '#c8a86a', cabelo: '#1d1411' }
+const COR_PADRAO = { pele: '#8a5235', camisa: '#e9dfcb', listra: '#4f7c9a', calca: '#d9cbb0', chapeu: '#c8a86a', cabelo: '#1d1411' }
 
-export function criarBoneco() {
+// cores: troca qualquer cor do boneco (pele, camisa, listra, calca, chapeu, cabelo): a mesma base
+// serve para o jogador e para a gente da cidade
+export function criarBoneco(cores = {}) {
+  const COR = { ...COR_PADRAO, ...cores }
   const { raizOsso, ossos, esqueleto } = criarEsqueleto()
   const raiz = new THREE.Group()
   raiz.add(raizOsso)

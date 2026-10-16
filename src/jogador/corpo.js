@@ -59,5 +59,5 @@ export async function carregarCorpo() {
   animador.rosto = criarRosto(boneco.ossos.get('Head'))
   animador.molas = criarMolas(boneco.ossos)
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
-  return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto }
+  return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto, clipes: r.clipes }
 }

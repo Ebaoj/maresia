@@ -16,6 +16,7 @@ import { criarFachadas } from './mundo/fachadas.js'
 import { criarRua } from './mundo/rua.js'
 import { criarArvores } from './mundo/arvores.js'
 import { criarPessoas } from './mundo/pessoas.js'
+import { criarAtores } from './mundo/atores.js'
 import { criarHorizonte } from './mundo/horizonte.js'
 import { criarMarcos } from './mundo/marcos.js'
 import { criarPraia } from './mundo/praia.js'
@@ -107,9 +108,15 @@ async function iniciar() {
   const z0 = linhaCosta(x0) + larguraPraia(x0) + 3.5
   const inicio = new THREE.Vector3(x0, alturaChao(x0, z0), z0)
   const jogador = new Jogador(cena, cfg, inicio, -Math.PI / 2)
+  let atores = null
   // corpo novo (esqueleto padrão + mocap do Mixamo): carrega em segundo plano e substitui o boneco antigo
   if (cfg.personagem.corpoNovo) {
-    carregarCorpo().then((c) => { if (c) jogador.trocarCorpo(c) }).catch((e) => console.error('Corpo novo:', e))
+    carregarCorpo().then((c) => {
+      if (!c) return
+      jogador.trocarCorpo(c)
+      // a gente mais próxima vira ator animado, com os mesmos movimentos (mundo/atores.js)
+      atores = criarAtores(cena, pessoas, c.clipes, { passadaAndar: c.passadas.andar || 1.4 })
+    }).catch((e) => console.error('Corpo novo:', e))
   }
   const cam = new CameraTerceiraPessoa(camera, canvas, cfg, Math.PI / 2)
   const interacoes = criarInteracoes({ jogador, fisica, lugares, camera })
@@ -195,6 +202,7 @@ async function iniciar() {
     const paleta = ceu.atualizar(cfg.tempo.hora, centroSombra, dt, cfg)
     horizonte.atualizar(paleta)
     pessoas.atualizar(dt, t)
+    atores?.atualizar(dt, jogador.pos)
     mar.atualizar(jogador.pos)
     grama.atualizar(jogador.pos, camera)
     terreno.atualizar(camera)

@@ -69,6 +69,10 @@ export function criarPessoas(cena, grade) {
   const emPe = tipos.filter((t) => !t.sentada)
   const sentadas = tipos.filter((t) => t.sentada)
   const andando = []
+  // registro de todo mundo de pé (parado ou andando), para os atores animados (atores.js) ocuparem o
+  // lugar dos mais próximos do jogador
+  const registro = []
+  const deFigura = (t, m) => { registro.push({ tipo: t, idx: t.lista.length, matriz: m, estado: 'parado' }); t.lista.push(m) }
 
   const longeDoRio = (x, z) => Math.abs(x - rioX(z)) > RIO_MEIA_LARGURA * 2
   // gente nas vilas de jangadeiros e na Praia Formosa (perto do porto)
@@ -81,8 +85,8 @@ export function criarPessoas(cena, grade) {
     const z0 = linhaCosta(x) + larguraPraia(x)
     if (!longeDoRio(x, z0)) continue
     const t = rnd.escolha(emPe)
-    andando.push({ tipo: t, idx: t.lista.length, x, faixa: rnd.entre(1.5, LARG_CALCADAO - 1.5), vel: rnd.entre(0.9, 1.5) * (rnd.chance(0.5) ? 1 : -1), ini: x - rnd.entre(15, 35), fim: x + rnd.entre(15, 35), fase: rnd.entre(0, 6) })
-    t.lista.push(new THREE.Matrix4())
+    registro.push(andando[andando.push({ tipo: t, idx: t.lista.length, x, faixa: rnd.entre(1.5, LARG_CALCADAO - 1.5), vel: rnd.entre(0.9, 1.5) * (rnd.chance(0.5) ? 1 : -1), ini: x - rnd.entre(15, 35), fim: x + rnd.entre(15, 35), fase: rnd.entre(0, 6), estado: 'andar', matriz: new THREE.Matrix4() }) - 1])
+    t.lista.push(andando[andando.length - 1].matriz)
   }
   // andando pelas calçadas da cidade, ao longo das ruas da grade de Herbster
   const [ox, oz] = grade.origem
@@ -103,8 +107,8 @@ export function criarPessoas(cena, grade) {
     const [x, z] = naGrade(dir, k, t, lado)
     if (!ruaViva(x, z)) continue
     const tp = rnd.escolha(emPe)
-    andando.push({ tipo: tp, idx: tp.lista.length, grade: true, dir, k, lado, t, vel: rnd.entre(0.8, 1.4) * (rnd.chance(0.5) ? 1 : -1), ini: t - rnd.entre(20, 60), fim: t + rnd.entre(20, 60), fase: rnd.entre(0, 6) })
-    tp.lista.push(new THREE.Matrix4())
+    registro.push(andando[andando.push({ tipo: tp, idx: tp.lista.length, grade: true, dir, k, lado, t, vel: rnd.entre(0.8, 1.4) * (rnd.chance(0.5) ? 1 : -1), ini: t - rnd.entre(20, 60), fim: t + rnd.entre(20, 60), fase: rnd.entre(0, 6), estado: 'andar', matriz: new THREE.Matrix4() }) - 1])
+    tp.lista.push(andando[andando.length - 1].matriz)
     i++
   }
   // conversando na porta, em grupinhos
@@ -117,7 +121,7 @@ export function criarPessoas(cena, grade) {
       const px = x + Math.cos(a) * 0.7
       const pz = z + Math.sin(a) * 0.7
       const yaw = Math.atan2(x - px, z - pz)
-      rnd.escolha(emPe).lista.push(new THREE.Matrix4().compose(new THREE.Vector3(px, alturaChao(px, pz) + 0.02, pz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(1, 1, 1)))
+      deFigura(rnd.escolha(emPe), new THREE.Matrix4().compose(new THREE.Vector3(px, alturaChao(px, pz) + 0.02, pz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(1, 1, 1)))
     }
     g++
   }
@@ -146,7 +150,7 @@ export function criarPessoas(cena, grade) {
       if (!ocupacao.livre(px, pz, 0.3, 0.3)) continue
       const yaw = Math.atan2(x - px, z - pz)
       const y = naPraia ? alturaTerreno(px, pz) : NIVEL_CIDADE + 0.05
-      rnd.escolha(emPe).lista.push(new THREE.Matrix4().compose(new THREE.Vector3(px, y, pz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(1, 1, 1)))
+      deFigura(rnd.escolha(emPe), new THREE.Matrix4().compose(new THREE.Vector3(px, y, pz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(1, 1, 1)))
     }
   }
 
@@ -167,7 +171,15 @@ export function criarPessoas(cena, grade) {
   const um = new THREE.Vector3(1, 1, 1)
   const Y = new THREE.Vector3(0, 1, 0)
   let acumulado = 0
+  const ZERO = new THREE.Matrix4().makeScale(0, 0, 0)
   return {
+    registro,
+    // um ator animado ocupa (ou devolve) o lugar desta pessoa: a figura simples some ou volta
+    ocupar(r, ator) {
+      r.ator = ator
+      r.tipo.malha.setMatrixAt(r.idx, ator ? ZERO : r.matriz)
+      r.tipo.malha.instanceMatrix.needsUpdate = true
+    },
     atualizar(dt, tempo) {
       // só reposiciona 12 vezes por segundo: caminhada "em 2"
       acumulado += dt
@@ -184,7 +196,8 @@ export function criarPessoas(cena, grade) {
           p.set(x, alturaChao(x, z) + 0.02 + balanco, z)
           const e = a.dir === 0 ? grade.ex : grade.ez
           q.setFromAxisAngle(Y, Math.atan2(e[0] * Math.sign(a.vel), e[1] * Math.sign(a.vel)))
-          a.tipo.malha.setMatrixAt(a.idx, new THREE.Matrix4().compose(p, q, um))
+          a.matriz.compose(p, q, um)
+          a.tipo.malha.setMatrixAt(a.idx, a.ator ? ZERO : a.matriz)
           tocados.add(a.tipo.malha)
           continue
         }
@@ -194,7 +207,8 @@ export function criarPessoas(cena, grade) {
         const balanco = Math.abs(Math.sin(tempo * 7 + a.fase)) * 0.06
         p.set(a.x, NIVEL_CIDADE + 0.05 + balanco, z)
         q.setFromAxisAngle(Y, a.vel > 0 ? Math.PI / 2 : -Math.PI / 2)
-        a.tipo.malha.setMatrixAt(a.idx, new THREE.Matrix4().compose(p, q, um))
+        a.matriz.compose(p, q, um)
+        a.tipo.malha.setMatrixAt(a.idx, a.ator ? ZERO : a.matriz)
         tocados.add(a.tipo.malha)
       }
       for (const m of tocados) m.instanceMatrix.needsUpdate = true
