@@ -26,23 +26,28 @@ export function criarNadoCrawl() {
   }
   const gravar = (nome, quat, f) => quat.toArray(por(nome), f * 4)
   const duracao = CICLO * CICLOS
-  // respiração: um sino em volta de cada momento de respirar (lado: +1 direita, -1 esquerda)
+  // respiração: um sino em volta de cada momento de respirar; o lado é o do ombro que está em cima
+  // (+1 esquerda, quando o braço esquerdo volta por cima; -1 direita)
   const respiracoes = [[CICLO * 0.75, 1], [CICLO * 2.25, -1]]
   for (let f = 0; f < n; f++) {
     const t = (f / (n - 1)) * duracao
     tempos[f] = t
     const fase = (t / CICLO) * Math.PI * 2 // ângulo da braçada esquerda; a direita vem meio ciclo depois
-    // o corpo rola para o lado do braço que está puxando debaixo d'água
-    const rolar = 0.45 * Math.sin(fase)
-    gravar('Hips', q(X, Math.PI / 2).multiply(q(Y, rolar)), f)
-    gravar('Spine', q(Y, -rolar * 0.25), f)
-    gravar('Spine1', q(Y, -rolar * 0.15), f)
-    gravar('Spine2', new THREE.Quaternion(), f)
-    // cabeça: olhando para o fundo, um pouco à frente; vira de lado para respirar
+    // jogo de tronco: o corpo rola em volta do próprio eixo, afundando o ombro do braço que puxa e
+    // levantando o do braço que volta. O quadril rola pouco (~20°) e cada gomo da coluna soma mais,
+    // até os ombros chegarem a ~45°. O peito fica virado para o lado do ombro que está em cima.
+    const R = -Math.sin(fase) // R = -1 no meio da puxada do esquerdo (ombro esquerdo afunda), +1 no do direito
+    gravar('Hips', q(X, Math.PI / 2).multiply(q(Y, 0.35 * R)), f)
+    gravar('Spine', q(Y, 0.15 * R), f)
+    gravar('Spine1', q(Y, 0.15 * R), f)
+    gravar('Spine2', q(Y, 0.15 * R), f)
+    // cabeça: desfaz o rolar dos ombros para continuar olhando o fundo, um pouco à frente; para respirar
+    // gira junto com o rolar, para o lado do ombro que está em cima, até a boca sair da água (~100°
+    // do fundo no total: ~45° do tronco e ~55° do pescoço)
     let virar = 0
     for (const [tr, lado] of respiracoes) virar += lado * Math.exp(-(((t - tr) / 0.22) ** 2))
     gravar('Neck', q(X, -0.25), f)
-    gravar('Head', q(Y, virar * 1.2 - rolar * 0.6).multiply(q(X, -0.1)), f)
+    gravar('Head', q(Y, -0.72 * R + virar * 1.6).multiply(q(X, -0.1)), f)
     // braços: o ombro gira em volta do eixo lateral do corpo. 0 = esticado à frente (acima da cabeça),
     // π/2 = apontando para o fundo (puxando), π = junto do quadril, 3π/2 = voltando por cima d'água
     for (const [L, sinal, desloc] of [['Left', 1, 0], ['Right', -1, Math.PI]]) {
