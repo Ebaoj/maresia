@@ -1,0 +1,34 @@
+[
+ {
+  "nome": "base-v1/f80-s141",
+  "semente": 141,
+  "n": 1,
+  "referencia": "saida/neto-v7/folha-neto-final.png",
+  "forca": 0.8,
+  "prompt": "Hand-inked graphic novel character base model sheet for 3D modeling, thick variable ink lines, flat cel shading, plain cream paper background. The same character drawn four times side by side, standing, full body: front view, side profile, three-quarter view and back view, consistent proportions. Provisional design of an original lanky 15-year-old boy from Fortaleza, 1932, dark brown skin, short tightly coiled black afro hair, NO HAT, long limbs, long neck, big hands and big bare feet, mature teenage face. He wears only a plain sleeveless off-white cotton undershirt and simple loose off-white cotton shorts down to mid-thigh, barefoot, no accessories. Arms held slightly away from the body, relaxed neutral standing pose, simple clean shapes."
+ },
+ {
+  "nome": "base-v1/f80-s142",
+  "semente": 142,
+  "n": 1,
+  "referencia": "saida/neto-v7/folha-neto-final.png",
+  "forca": 0.8,
+  "prompt": "Hand-inked graphic novel character base model sheet for 3D modeling, thick variable ink lines, flat cel shading, plain cream paper background. The same character drawn four times side by side, standing, full body: front view, side profile, three-quarter view and back view, consistent proportions. Provisional design of an original lanky 15-year-old boy from Fortaleza, 1932, dark brown skin, short tightly coiled black afro hair, NO HAT, long limbs, long neck, big hands and big bare feet, mature teenage face. He wears only a plain sleeveless off-white cotton undershirt and simple loose off-white cotton shorts down to mid-thigh, barefoot, no accessories. Arms held slightly away from the body, relaxed neutral standing pose, simple clean shapes."
+ },
+ {
+  "nome": "base-v1/f90-s141",
+  "semente": 141,
+  "n": 1,
+  "referencia": "saida/neto-v7/folha-neto-final.png",
+  "forca": 0.9,
+  "prompt": "Hand-inked graphic novel character base model sheet for 3D modeling, thick variable ink lines, flat cel shading, plain cream paper background. The same character drawn four times side by side, standing, full body: front view, side profile, three-quarter view and back view, consistent proportions. Provisional design of an original lanky 15-year-old boy from Fortaleza, 1932, dark brown skin, short tightly coiled black afro hair, NO HAT, long limbs, long neck, big hands and big bare feet, mature teenage face. He wears only a plain sleeveless off-white cotton undershirt and simple loose off-white cotton shorts down to mid-thigh, barefoot, no accessories. Arms held slightly away from the body, relaxed neutral standing pose, simple clean shapes."
+ },
+ {
+  "nome": "base-v1/f90-s142",
+  "semente": 142,
+  "n": 1,
+  "referencia": "saida/neto-v7/folha-neto-final.png",
+  "forca": 0.9,
+  "prompt": "Hand-inked graphic novel character base model sheet for 3D modeling, thick variable ink lines, flat cel shading, plain cream paper background. The same character drawn four times side by side, standing, full body: front view, side profile, three-quarter view and back view, consistent proportions. Provisional design of an original lanky 15-year-old boy from Fortaleza, 1932, dark brown skin, short tightly coiled black afro hair, NO HAT, long limbs, long neck, big hands and big bare feet, mature teenage face. He wears only a plain sleeveless off-white cotton undershirt and simple loose off-white cotton shorts down to mid-thigh, barefoot, no accessories. Arms held slightly away from the body, relaxed neutral standing pose, simple clean shapes."
+ }
+]
