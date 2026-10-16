@@ -3,9 +3,14 @@ import { globais } from './globais.js'
 
 // Toon: a luz vira poucas faixas em vez de degradê contínuo, como pintura de animação.
 let _gradiente = null
+// degraus do toon: 2 = luz e sombra chapadas (Messenger); 5 = o antigo. Definido uma vez no início.
+const PASSOS = { 2: [0.5, 1.0], 3: [0.45, 0.75, 1.0], 5: [0.42, 0.58, 0.74, 0.9, 1.0] }
+let _tons = 5
+export function definirTonsLuz(n) { _tons = PASSOS[n] ? n : 5 }
+
 export function gradienteToon() {
   if (_gradiente) return _gradiente
-  const passos = [0.42, 0.58, 0.74, 0.9, 1.0]
+  const passos = PASSOS[_tons]
   const dados = new Uint8Array(passos.map((v) => Math.round(v * 255)))
   const tex = new THREE.DataTexture(dados, passos.length, 1, THREE.RedFormat)
   tex.minFilter = THREE.NearestFilter

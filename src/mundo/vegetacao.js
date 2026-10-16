@@ -30,8 +30,10 @@ function geometriaTronco() {
   const pos = []
   const cor = []
   const idx = []
-  const marrom = new THREE.Color('#9a7656')
-  const anel = new THREE.Color('#6e4f39')
+  // tronco do coqueiro gigante: cinza-pardo claro, fino (~35 cm na base), anéis um pouco mais escuros
+  // (fotos de Platt, 1935: os troncos leem claros contra a copa)
+  const marrom = new THREE.Color('#a59a86')
+  const anel = new THREE.Color('#8a7f6c')
   for (let i = 0; i <= aneis; i++) {
     const t = i / aneis
     const p = curva.getPointAt(t)
@@ -39,7 +41,7 @@ function geometriaTronco() {
     const lado = new THREE.Vector3(0, 0, 1)
     const frente = new THREE.Vector3().crossVectors(tg, lado).normalize()
     // os anéis do tronco do coqueiro
-    const r = (0.3 - 0.11 * t) * (1 + 0.1 * ((i % 2) === 0 ? 1 : -0.4))
+    const r = (0.19 - 0.06 * t + 0.08 * Math.max(0, 0.12 - t) / 0.12) * (1 + 0.08 * ((i % 2) === 0 ? 1 : -0.4)) // pé alargado
     const c = i % 2 === 0 ? anel : marrom
     for (let j = 0; j <= lados; j++) {
       const a = (j / lados) * Math.PI * 2

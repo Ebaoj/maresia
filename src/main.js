@@ -23,6 +23,7 @@ import { criarCoqueiros } from './mundo/vegetacao.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
 import { criarVilas } from './mundo/vilas.js'
+import { criarObjetosFatia } from './mundo/fatia-objetos.js'
 import { criarMapa } from './ui/mapa.js'
 import { trechosJogo } from './mundo/fortaleza1932.js'
 import { criarToque } from './mundo/toque.js'
@@ -31,6 +32,7 @@ import { criarFisica } from './mundo/fisica.js'
 import { distCosta as distCostaAreia, larguraPraia as larguraPraiaAreia } from './mundo/mapa.js'
 import { Jogador } from './jogador/controle.js'
 import { carregarCorpo } from './jogador/corpo.js'
+import { definirTonsLuz } from './materiais.js'
 import { CameraTerceiraPessoa } from './jogador/camera.js'
 import { criarInteracoes } from './jogador/interacoes.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
@@ -39,6 +41,7 @@ import { criarPainel } from './ui/painel.js'
 import { criarSom } from './audio.js'
 
 const cfg = carregarConfig()
+definirTonsLuz(cfg.estilo.tonsLuz) // antes de qualquer material ser criado
 const canvas = document.getElementById('tela')
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
 renderer.shadowMap.enabled = true
@@ -82,6 +85,8 @@ async function iniciar() {
   const marcos = criarMarcos(cena)
   const praia = criarPraia(cena)
   const casasPalha = criarVilas(cena)
+  const nObjetosFatia = criarObjetosFatia(cena, casasPalha) // fatia vertical: densidade na altura do personagem
+  void nObjetosFatia
   const lugares = criarRua(cena, predios, grade)
   marcar('rua')
   criarArvores(cena, predios, grade)

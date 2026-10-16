@@ -89,6 +89,10 @@ export function criarPainel(cfg) {
   mask.add(e, 'brilhoEmPontos', 0, 1, 0.01).name('brilho em pontos')
   mask.add(e, 'distanciaReticula', 30, 800, 5).name('pontos e hachura até (m)')
 
+  const fat = gui.addFolder('Fatia vertical')
+  fat.add(cfg.fatia, 'travar').name('prender o jogador na fatia')
+  est.add(e, 'tonsLuz', [2, 3, 5]).name('degraus de luz (recarregar)')
+
   const p = gui.addFolder('Personagem')
   p.add(cfg.personagem, 'velocidade', 1, 10, 0.1).name('andar (m/s)')
   p.add(cfg.personagem, 'corrida', 2, 20, 0.1).name('correr (m/s)')

@@ -6,6 +6,7 @@ import { criarPersonagem, aplicarPose } from './personagem.js'
 import { alturaChao, resolverColisoes } from '../mundo/colisao.js'
 import { linhaCosta, LIMITES, distCosta, larguraPraia } from '../mundo/mapa.js'
 import { lerpAngulo, clamp } from '../utils.js'
+import { prenderNaFatia } from '../mundo/fatia.js'
 
 const PROFUNDIDADE_NADO = 1.15
 const ALTURA_BOIANDO = -1.05
@@ -144,6 +145,8 @@ export class Jogador {
     nova.x = clamp(nova.x, LIMITES.x0 + 15, LIMITES.x1 - 15)
     nova.z = clamp(nova.z, linhaCosta(nova.x) - 150, LIMITES.z1 - 40)
     resolverColisoes(nova, 0.35)
+    // fatia vertical: enquanto ela é trabalhada, o jogador não sai dela (mundo/fatia.js)
+    if (this.cfg.fatia?.travar) prenderNaFatia(nova)
 
     const chao = alturaChao(nova.x, nova.z, this.pos.y)
     const prof = -chao

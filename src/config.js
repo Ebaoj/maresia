@@ -60,6 +60,7 @@ export const PADRAO = {
     distanciaReticula: 120,  // pontos e hachura somem até essa distância (m), contra cintilação ao longe
     // época (direção de arte): 0 = 1932, presente em quadrinho baixo; 1 = 1881, memória impressa em cinco tintas
     memoria: 0,
+    tonsLuz: 5,            // degraus do toon (5 = o do quadrinho; 2 = chapado, só para testar); recarregar
   },
   personagem: {
     velocidade: 4.5,
@@ -75,9 +76,9 @@ export const PADRAO = {
     inclinar: true,        // o corpo inclina na curva e na arrancada
   },
   camera: {
-    distancia: 7.5,
-    altura: 1.5,
-    fov: 55,
+    distancia: 5.0,        // fatia: câmera mais perto e mais baixa, composta como ilustração
+    altura: 1.0,
+    fov: 50,
     inclinacaoCorrida: 0.05,
   },
   grama: {
@@ -111,6 +112,9 @@ export const PADRAO = {
     resolucaoSombra: 4096, // 4096 nítida, 2048 mais leve (a sombra é o maior custo do quadro)
     nevoaPerto: 140,
     nevoaLonge: 900,
+  },
+  fatia: {
+    travar: true,          // prende o jogador na fatia vertical da Praia do Peixe (mundo/fatia.js)
   },
   desempenho: {
     resolucao: 1.25,
