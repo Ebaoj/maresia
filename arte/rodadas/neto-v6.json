@@ -1,0 +1,36 @@
+[
+ {
+  "nome": "neto-v6/neto-retoque-a",
+  "semente": 81,
+  "n": 1,
+  "referencia": "saida/neto-v5/neto-ref70/neto-ref70-2.png",
+  "mascara": "entradas/mascara-neto-v6.png",
+  "forca": 0.85,
+  "prompt": "Hand-inked graphic novel character model sheet, thick variable ink lines, flat cel shading with light halftone dots in the shadows, limited palette of faded period cotton colors, on plain cream paper background. The same character drawn four times side by side, standing, full body: front view, side profile, three-quarter view and back view. Provisional design of an original lanky 15-year-old boy from a fishing village in Fortaleza, 1932, dark brown skin, short coiled afro hair, wide straw hat, open faded pinkish brown cotton shirt with rolled sleeves, warm reddish-brown mangrove-dyed trousers rolled to the shin with neat patches, rope at the waist, barefoot. Seen from the back: plain pink shirt back, dark indigo cloth knotted on the left upper arm, nothing across the back. In the side views he holds a small stitched paper notebook with a soft cardboard cover, no spiral, in his right hand."
+ },
+ {
+  "nome": "neto-v6/neto-retoque-b",
+  "semente": 82,
+  "n": 1,
+  "referencia": "saida/neto-v5/neto-ref70/neto-ref70-2.png",
+  "mascara": "entradas/mascara-neto-v6.png",
+  "forca": 0.85,
+  "prompt": "Hand-inked graphic novel character model sheet, thick variable ink lines, flat cel shading with light halftone dots in the shadows, limited palette of faded period cotton colors, on plain cream paper background. The same character drawn four times side by side, standing, full body: front view, side profile, three-quarter view and back view. Provisional design of an original lanky 15-year-old boy from a fishing village in Fortaleza, 1932, dark brown skin, short coiled afro hair, wide straw hat, open faded pinkish brown cotton shirt with rolled sleeves, warm reddish-brown mangrove-dyed trousers rolled to the shin with neat patches, rope at the waist, barefoot. Seen from the back: plain pink shirt back, dark indigo cloth knotted on the left upper arm, nothing across the back. In the side views he holds a small stitched paper notebook with a soft cardboard cover, no spiral, in his right hand."
+ },
+ {
+  "nome": "neto-v6/avo-f80",
+  "semente": 91,
+  "n": 2,
+  "referencia": "entradas/silhueta-avo.png",
+  "forca": 0.8,
+  "prompt": "Elderly fisherman with a strongly hunched rounded upper back, head jutting forward and low, shoulders rolled forward, slightly bent knees. Provisional design of an original 66-year-old raft fisherman from Fortaleza, 1932, the same dark brown skin tone as his grandson (#AE6940), lean wiry old body from a life at sea, thin arms, no belly, short white beard, calm dignified wrinkled face, large knobby weathered hands hanging in front of his body. Very old woven straw hat with a drooping frayed brim. Shirt open at the chest, worn faded dirty cream cotton, sleeves rolled. Warm reddish-brown mangrove-dyed trousers rolled up to the shin, rope tied at the waist, neat patches, barefoot. The same character drawn three times side by side: front view, side profile view and back view, full body. Hand-inked graphic novel character model sheet, thick variable ink lines, flat cel shading with light halftone dots in the shadows, limited palette of faded period cotton colors, on plain cream paper background. "
+ },
+ {
+  "nome": "neto-v6/avo-f88",
+  "semente": 92,
+  "n": 2,
+  "referencia": "entradas/silhueta-avo.png",
+  "forca": 0.88,
+  "prompt": "Elderly fisherman with a strongly hunched rounded upper back, head jutting forward and low, shoulders rolled forward, slightly bent knees. Provisional design of an original 66-year-old raft fisherman from Fortaleza, 1932, the same dark brown skin tone as his grandson (#AE6940), lean wiry old body from a life at sea, thin arms, no belly, short white beard, calm dignified wrinkled face, large knobby weathered hands hanging in front of his body. Very old woven straw hat with a drooping frayed brim. Shirt open at the chest, worn faded dirty cream cotton, sleeves rolled. Warm reddish-brown mangrove-dyed trousers rolled up to the shin, rope tied at the waist, neat patches, barefoot. The same character drawn three times side by side: front view, side profile view and back view, full body. Hand-inked graphic novel character model sheet, thick variable ink lines, flat cel shading with light halftone dots in the shadows, limited palette of faded period cotton colors, on plain cream paper background. "
+ }
+]

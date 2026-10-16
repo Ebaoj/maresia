@@ -1,0 +1,26 @@
+[
+ {
+  "nome": "neto-v4/neto",
+  "semente": 41,
+  "n": 4,
+  "prompt": "Hand-inked graphic novel character model sheet, thick variable ink lines, flat cel shading with light halftone dots in the shadows, limited palette of faded period cotton colors, on plain cream paper background. The same character drawn three times side by side, standing, full body, front view, side profile view and back view, consistent design across the three views. Provisional design of an original lanky 15-year-old boy from a fishing village in Fortaleza, 1932, apprentice raft fisherman, dark brown skin, short tightly coiled afro hair. Long limbs, long neck, big hands and big bare feet, mature teenage face, quiet and gentle. His grandfather's wide woven straw hat, a little too big, pushed back on his head. Open faded pinkish brown cotton shirt with rolled sleeves; long dark mangrove-brown cotton trousers (#8A5A3C) rolled up to the shin; thin rope tied at the waist, no belt buckle; small neatly sewn patches; barefoot. A deep faded indigo, dark navy blue cloth tied around his upper arm. He holds a small open notebook in one hand, reading it. "
+ },
+ {
+  "nome": "neto-v4/avo",
+  "semente": 41,
+  "n": 4,
+  "prompt": "Hand-inked graphic novel character model sheet, thick variable ink lines, flat cel shading with light halftone dots in the shadows, limited palette of faded period cotton colors, on plain cream paper background. The same character drawn three times side by side, standing, full body, front view, side profile view and back view, consistent design across the three views. Provisional design of an original 66-year-old raft fisherman, the boy's grandfather, dark brown skin. Stooped elderly fisherman, rounded upper back, head forward, bent like a curved mast, short and broad, large weathered hands and large bare feet, short white beard, calm dignified wrinkled face. Old worn woven straw hat. Open pale sun-bleached cotton shirt with rolled sleeves; long mangrove-brown trousers rolled up to the shin, rope tied at the waist; neat patches; barefoot. "
+ },
+ {
+  "nome": "neto-v4/clima-leitor",
+  "semente": 7,
+  "n": 2,
+  "prompt": "Hand-inked graphic novel illustration, thick variable ink lines, flat cel shading, halftone dots in the shadows, limited palette of whitewash, sand, faded mangrove brown and sea turquoise, one deep faded indigo accent. Fortaleza, 1932, late afternoon. A lanky 15-year-old boy with dark brown skin and short coiled afro hair, wide straw hat pushed back, open pinkish brown shirt, long dark mangrove-brown trousers rolled to the shin, barefoot, a dark navy indigo cloth tied on his upper arm, sits on the sand beside a long wooden oar, a small notebook open on his knee, reading quietly. Sea and sky behind him. Introspective and gentle."
+ },
+ {
+  "nome": "neto-v4/clima-jangada",
+  "semente": 7,
+  "n": 2,
+  "prompt": "Hand-inked graphic novel illustration, thick variable ink lines, flat cel shading, halftone dots in the shadows, limited palette of whitewash, sand, faded mangrove brown and sea turquoise, one deep faded indigo accent. Fortaleza, 1932, late afternoon. A lanky 15-year-old boy with dark brown skin in an oversized straw hat, open pinkish brown shirt, long dark mangrove-brown trousers rolled to the shin, barefoot, dark navy indigo cloth at his arm, helps his stooped old grandfather with a short white beard push a traditional Brazilian jangada: a flat raft of five or six thick round logs lashed side by side, no hull, no sides, no boat shape, sitting almost flush with the sand; a plank bench across the logs with the mast passing through it near the front; a tall triangular sail made of sewn strips of off-white cotton, stained brownish, with a wooden boom; a large flat paddle-shaped steering oar at the back; resting on short palm-trunk rollers on the sand up the beach. Quiet, dignified, wind in the cloth."
+ }
+]

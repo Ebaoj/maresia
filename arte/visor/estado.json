@@ -1,0 +1,15 @@
+{
+ "texto": "Gerando de novo o 3D do neto com mais detalhe (malha 75% menos simplificada, 25 passos, textura 2048) para corrigir o rosto. Leva uns 4 minutos.",
+ "glb": "saida/3d/rig/neto-esqueleto.glb",
+ "imagens": [
+  {
+   "arquivo": "saida/3d/rig/rosto-close.png",
+   "legenda": "Close da cabeça: com textura (em cima) e só a forma (embaixo)"
+  },
+  {
+   "arquivo": "saida/3d/rig/poses.png",
+   "legenda": "Teste de esqueleto: repouso, andar, corcunda do avô, braços"
+  }
+ ],
+ "atualizado": "16:20:18"
+}

@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+
+# gerado ou pesado demais para o git (ficam só no disco)
+docs/capturas/video/
+arte/.venv/
+arte/saida/
+__pycache__/

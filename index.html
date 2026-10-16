@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maresia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Patrick+Hand&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/estilo.css" />
+  </head>
+  <body>
+    <canvas id="tela"></canvas>
+
+    <div id="carregando">
+      <div class="quadro-titulo">MARESIA</div>
+      <p>desenhando a cidade…</p>
+    </div>
+
+    <div id="hud">
+      <div id="titulo" class="legenda legenda-titulo">
+        <strong>MARESIA</strong>
+        <span>um pedaço de Fortaleza, Recife e Rio</span>
+      </div>
+      <div id="legendas"></div>
+      <div id="onomatopeias"></div>
+      <div id="ajuda">
+        <b>WASD</b> andar · <b>Shift</b> correr · <b>Espaço</b> pular · <b>arrastar</b> girar câmera · <b>roda</b> zoom<br />
+        <b>E</b> ação (sentar, pegar, arremessar) · <b>Z/C</b> girar câmera<br />
+        <b>H</b> painel · <b>M</b> som · <b>T</b> avançar a hora
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
