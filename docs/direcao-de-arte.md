@@ -297,6 +297,10 @@ no fim).
   - Uma **marca que liga os dois**: uma cicatriz de linha na mão ou um jeito de amarrar a corda
     (ficção). O jogador reconhece o velho no menino por ela.
   - Em 1881 ele é desenhado na paleta de tinta como todo mundo; só a marca é destacada.
+- **Etnia do neto: pardo** (decisão do Joabe, 16/10/2026, transmitida pela sessão do personagem):
+  ascendência indígena, africana e portuguesa, pele castanho-média quente, cabelo castanho-escuro a
+  preto, grosso e levemente ondulado. O avô acompanha a mesma família na pele e no cabelo. O neto
+  recomeça do zero com nova folha; as folhas `neto-v7` deixam de ser candidatas.
 - **Folhas candidatas a finais (16/10/2026, sessão do personagem):** `arte/saida/neto-v7/folha-neto-final.png`
   e `folha-avo-final.png`, no traço do jogo (o Joabe recusou ver o personagem em render 3D: quebra a
   imersão). Neto na direção "leitor": em pé, caderninho costurado na mão, anil no braço esquerdo.
@@ -339,7 +343,7 @@ no fim).
 
 ## 9. Perguntas em aberto (ficam para a construção da narrativa)
 
-O Joabe decidiu em 16/10 que as quatro são da narrativa e serão respondidas quando ela for construída. Até lá, a arte não fixa nome, etnia nem gênero dos protagonistas.
+O Joabe decidiu em 16/10 que as quatro são da narrativa e serão respondidas quando ela for construída. **Já decidido:** o neto é pardo (16/10/2026), e o avô acompanha. Nome e gênero seguem em aberto.
 
 1. Neto e avô: nomes, e se são negros, caboclos ou brancos. A pesquisa mostra os grevistas como
    grupo misto; isso é escolha da história.
