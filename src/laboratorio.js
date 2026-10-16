@@ -9,6 +9,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { criarBoneco } from './jogador/esqueleto.js'
 import { carregarMovimentosMixamo } from './jogador/retarget.js'
 import { Animador } from './jogador/animador.js'
+import { carregarNeto } from './jogador/neto.js'
+import { criarAdaptador } from './jogador/corpo.js'
 import { criarNadoCrawl } from './jogador/nado-crawl.js'
 
 const MOVIMENTOS = [
@@ -66,12 +68,15 @@ function chao(x, z) {
 
 const boneco = criarBoneco()
 cena.add(boneco.raiz)
+// ?neto na URL: o corpo mostrado é o neto (os movimentos continuam preparados no boneco)
+const COM_NETO = new URLSearchParams(location.search).has('neto')
+let corpoVisivel = boneco.raiz
 const esqueletoVisivel = new THREE.SkeletonHelper(boneco.raiz)
 esqueletoVisivel.visible = false
 cena.add(esqueletoVisivel)
 
 const cfg = {
-  andar: 1.6, correr: 4.2, ik: true, inclinar: true, em2: true, fps: 12, esqueleto: false,
+  andar: 1.6, correr: 4.2, bracosJuntos: 0.6, acompanhar: true, ik: true, inclinar: true, em2: true, fps: 12, esqueleto: false,
   original: true, piloto: false, raioPiloto: 3, sentado: false, carregando: false, nadando: false,
 }
 const estado = { pos: new THREE.Vector3(), vel: new THREE.Vector3(), velY: 0, noAr: false, yaw: 0, tempo: 0 }
@@ -112,7 +117,20 @@ async function iniciar() {
   linhas.push(`passada natural: andar ${passadas.andar?.toFixed(2) ?? '?'} m/s, correr ${passadas.correr?.toFixed(2) ?? '?'} m/s`)
   linhas.push('WASD anda · Shift corre · Espaço pula · F senta · G carrega · R nada · arrastar gira a câmera')
   info.textContent = linhas.join('\n')
-  if (Object.keys(clipes).length) animador = new Animador({ raiz: boneco.raiz, ossos: boneco.ossos }, clipes, passadas)
+  if (COM_NETO) {
+    const neto = await carregarNeto()
+    if (neto) {
+      const adaptar = criarAdaptador(neto)
+      const clipesNeto = Object.fromEntries(Object.entries(clipes).map(([k, c]) => [k, adaptar(c)]))
+      boneco.raiz.visible = false
+      cena.add(neto.raiz)
+      corpoVisivel = neto.raiz
+      animador = new Animador({ raiz: neto.raiz, ossos: neto.ossos, eixos: neto.eixos }, clipesNeto, passadas)
+      linhas.push('corpo: neto')
+      info.textContent = linhas.join('\n')
+    }
+  }
+  if (!animador && Object.keys(clipes).length) animador = new Animador({ raiz: boneco.raiz, ossos: boneco.ossos }, clipes, passadas)
   window.lab.clipes = clipes
   window.lab.passadas = passadas
   window.lab.animador = animador
@@ -123,6 +141,7 @@ function montarPainel() {
   const gui = new GUI({ title: 'corpo' })
   gui.add(cfg, 'andar', 0.8, 6, 0.1).name('velocidade andando (m/s)')
   gui.add(cfg, 'correr', 2, 10, 0.1).name('velocidade correndo (m/s)')
+  gui.add(cfg, 'bracosJuntos', 0, 1, 0.05).name('braços junto ao corpo')
   gui.add(cfg, 'ik').name('pé no chão (IK)')
   gui.add(cfg, 'inclinar').name('inclinar na curva')
   gui.add(cfg, 'em2').name('animação em 2')
@@ -189,10 +208,10 @@ function passo(dt, entrada = null) {
     // sobe degrau sem pulo e desce com suavidade (o corpo; o pé quem resolve é o IK)
     estado.pos.y += (h - estado.pos.y) * (1 - Math.exp(-dt * 14))
   }
-  boneco.raiz.position.copy(estado.pos)
-  boneco.raiz.rotation.y = estado.yaw
+  corpoVisivel.position.copy(estado.pos)
+  corpoVisivel.rotation.y = estado.yaw
   if (animador) {
-    Object.assign(animador.opcoes, { ik: cfg.ik, inclinar: cfg.inclinar, em2: cfg.em2, fps: cfg.fps })
+    Object.assign(animador.opcoes, { ik: cfg.ik, inclinar: cfg.inclinar, em2: cfg.em2, fps: cfg.fps, bracosJuntos: cfg.bracosJuntos })
     animador.passadas.andar ??= 1.4
     animador.atualizar(dt, {
       vel, velY: estado.velY, noAr: estado.noAr, sentado: cfg.sentado, nadando: cfg.nadando,
@@ -200,6 +219,11 @@ function passo(dt, entrada = null) {
     })
   }
   if (mixerOriginal) mixerOriginal.update(dt)
+  // o Y Bot acompanha o corpo, 1,4 m ao lado, para comparar o mesmo movimento lado a lado
+  if (original && cfg.acompanhar) {
+    original.position.set(estado.pos.x - Math.cos(estado.yaw) * 1.4, estado.pos.y, estado.pos.z + Math.sin(estado.yaw) * 1.4)
+    original.rotation.y = estado.yaw
+  }
   if (original) original.visible = cfg.original
   esqueletoVisivel.visible = cfg.esqueleto
   // câmera acompanha

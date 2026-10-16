@@ -245,7 +245,9 @@ export class Animador {
     else if (s.sentado) alvo.sentado = 1
     else if (s.nadando) alvo[s.vel > 0.6 && this.tem('nadar') ? 'nadar' : 'boiar'] = 1
     else if (s.noAr) alvo[s.velY > 0 && this.tem('pulo-subida') ? 'pulo-subida' : 'pulo-queda'] = 1
-    else if (this.mm && this.opcoes.mm && !s.carregando && s.traj) this.casar(DT, s, alvo)
+    // parado de vez (sem pedir movimento): o "Breathing Idle", de braços soltos. O "idle" do pacote, que
+    // o motion matching escolhia, deixa os braços em posição de sentido (o Joabe estranhou, 16/10)
+    else if (this.mm && this.opcoes.mm && !s.carregando && s.traj && !(s.vel < 0.25 && (s.velPedida || 0) < 0.1 && this.tem('parado'))) this.casar(DT, s, alvo)
     else loc(s.vel, s.carregando && this.tem('carregar-andando') ? 'carregar-andando' : 'andar')
     if (this.mm && !alvo[this.mm.chave]) this.mm.tocando = false
 

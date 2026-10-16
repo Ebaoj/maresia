@@ -98,7 +98,22 @@ export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
     quadrilEsquerda: local(ossos.get('Hips'), new THREE.Vector3(1, 0, 0)),
     abaChapeu: new THREE.Vector3(-0.17, topo - 0.09 - pc.y, 0.07).applyQuaternion(inv), // aba do lado direito, um pouco à frente
   }
-  return { raiz, ossos, esqueleto: malhas[0].skeleton, malhas, eixos, ancorasRosto: liso ? ancorasDoRosto(raiz, cabeca, malhas) : null }
+  let ancorasRosto = null
+  if (liso) ancorasRosto = (await ancorasMedidas(cabeca)) || ancorasDoRosto(raiz, cabeca, malhas)
+  return { raiz, ossos, esqueleto: malhas[0].skeleton, malhas, eixos, ancorasRosto }
+}
+
+// âncoras medidas pela sessão do personagem no próprio modelo (pontos da pele à frente dos olhos e da
+// boca, mundo em repouso): arte/finais/neto-mpfb-sem-rosto-ancoras.json
+async function ancorasMedidas(cabeca) {
+  try {
+    const r = await fetch('/arte/finais/neto-mpfb-sem-rosto-ancoras.json')
+    if (!r.ok || (r.headers.get('content-type') || '').includes('html')) return null
+    const a = await r.json()
+    const inv = cabeca.matrixWorld.clone().invert()
+    const local = (p) => new THREE.Vector3(...p).add(new THREE.Vector3(0, 0, 0.003)).applyMatrix4(inv).toArray() // 3 mm para fora
+    return { olho: local(a.olho_esquerdo.superficie), boca: local(a.boca.superficie), tamOlho: 0.042, tamBoca: 0.05, curva: 0.3 }
+  } catch { return null }
 }
 
 // Mão relaxada: os movimentos vêm do esqueleto padrão, que não tem dedos, e a pose em T deixa a mão

@@ -27,7 +27,7 @@ const NOMES = [
 
 // Converte clipes do esqueleto padrão para outro modelo (o neto): um esqueleto padrão novo, em repouso,
 // é a fonte; o alvo é o modelo, também em repouso. Mesmo conversor dos movimentos do Mixamo.
-function criarAdaptador(alvo) {
+export function criarAdaptador(alvo) {
   const { raizOsso, ossos } = criarEsqueleto()
   const raiz = new THREE.Group()
   raiz.add(raizOsso)
