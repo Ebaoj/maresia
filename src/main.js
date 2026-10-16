@@ -22,6 +22,7 @@ import { criarPraia } from './mundo/praia.js'
 import { criarCoqueiros } from './mundo/vegetacao.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
+import { criarVilas } from './mundo/vilas.js'
 import { trechosJogo } from './mundo/fortaleza1932.js'
 import { criarToque } from './mundo/toque.js'
 import { criarAreia } from './mundo/areia.js'
@@ -78,13 +79,14 @@ async function iniciar() {
   const cenografia = criarCenografia(cena, predios.filter((p) => p.tipo === 'casario'))
   const marcos = criarMarcos(cena)
   const praia = criarPraia(cena)
+  criarVilas(cena)
   const lugares = criarRua(cena, predios, grade)
   marcar('rua')
   criarArvores(cena, predios, grade)
   marcar('arvores')
   const { coqueiros } = criarCoqueiros(cena, cfg)
   marcar('coqueiros')
-  const pessoas = criarPessoas(cena)
+  const pessoas = criarPessoas(cena, grade)
   const horizonte = criarHorizonte(cena)
   const grama = criarGrama(cena, mapaAltura, cfg, toque.publico)
   marcar('grama')

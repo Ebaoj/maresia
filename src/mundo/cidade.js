@@ -78,7 +78,8 @@ function paraMundo(cx, cz, lx, lz) {
 }
 
 function casa(lote, x, z, w, d, rot, frente, alturaMin, alturaMax, cores) {
-  if (!ocupacao.livre(x, z, w / 2, d / 2, rot)) return
+  // casas geminadas: testa só o miolo do lote (a vizinha colada não pode ser recusada pela folga dela)
+  if (!ocupacao.livre(x, z, Math.max(0.5, w / 2 - 1), Math.max(0.5, d / 2 - 1), rot)) return
   if (Math.abs(x - rioX(z)) < RIO_MEIA_LARGURA * 2 + d / 2) return
   if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 2) return
   for (const l of lagoasJogo) if (Math.hypot((x - l.x) / (l.rx + 8), (z - l.z) / (l.rz + 8)) < 1.3) return
@@ -138,9 +139,9 @@ function cidade(casario, simples) {
       const dens = densidadeLotes(cx, cz)
       if (dens < 0.12) continue
       const dCentro = Math.hypot(cx - PFX, cz - PFZ)
-      const cheia = Math.min(0.95, 0.25 + dens * 1.1)
+      const cheia = Math.min(0.97, 0.55 + dens * 0.9)
       if (dCentro < 330) quadra(casario, cx, cz, cheia, 6.5, 12, CORES_CASARIO)
-      else quadra(simples, cx, cz, cheia * 0.85, 2.9, dCentro < 520 ? 7 : 4.2, CORES_SIMPLES)
+      else quadra(simples, cx, cz, cheia * 0.92, 2.9, dCentro < 520 ? 7 : 4.2, CORES_SIMPLES)
       quadras.push({ cx, cz, reservada: false })
     }
   }

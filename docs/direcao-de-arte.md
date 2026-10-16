@@ -302,6 +302,17 @@ no fim).
   imersão). Neto na direção "leitor": em pé, caderninho costurado na mão, anil no braço esquerdo.
   A curvatura do avô não sai no gerador de imagem; vai no 3D (painel de intenção na folha).
   Etnia, nome e gênero seguem provisórios.
+- **Figurino revisado pela pesquisa** (`docs/figurino.md`, seção 9, 16/10/2026):
+  - **Chapéu:** o documentado (Percy Lau, IBGE 1941) é de palha de carnaúba, **copa alta e aba larga
+    mole, levantada nas bordas**, às vezes com oleado por cima. O cônico das folhas está errado.
+  - **Calça:** sem bolsos traseiros chapados (lembram jeans; sem fonte).
+  - **Cintura:** cordão sem fonte para jangadeiro; o carregador do porto em 1935 usa cinto de couro
+    (foto de Platt). Decisão do Joabe.
+  - **Licenças narrativas registradas** (sem registro de época): bolso da camisa, pano anil no braço,
+    caderninho.
+  - **Confirmado:** algodãozinho tinto de mangue, murici e cajueiro ("cor de couro"), camisa de manga
+    comprida aberta no peito, calça arregaçada, pé descalço. Avô: algodãozinho tinto como orgulho do
+    ofício; samburá, cabaça a tiracolo e cachimbo.
 - **Cores de material do personagem** (medidas na folha final; conferir sob a luz toon):
   pele `#B26E41`, camisa `#C38D7E`, calça `#7E4A3A` (avô também), anil `#324F58`,
   palha `#EEC184`, cordão `#B8A058`.
