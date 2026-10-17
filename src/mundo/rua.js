@@ -13,6 +13,7 @@ import { LIMITES, densidadeLotes } from './mapa.js'
 import { alturaTerreno } from './terreno.js'
 import { toon, toonVertice, texturaCanvas, pintar, gradienteToon, texturizar } from '../materiais.js'
 import { globais } from '../globais.js'
+import { ref } from '../render/gpu/comum.js'
 import { adicionarCaixa, adicionarCirculo } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { criarAleatorio } from '../utils.js'
@@ -326,6 +327,22 @@ function varais(cena, predios) {
         transformed.x += sin(uTempoR * 2.1 + fase) * 0.05 * solto;`)
   }
   pintar(matRoupa, 'roupa-pintada')
+  // a mesma conta no modo webgpu (motor F2, KAN-68)
+  matRoupa.userData.tsl = {
+    nome: 'roupa-varal',
+    posicao({ W, instancia }) {
+      const { vec3, float, sin, positionLocal } = W
+      const t = ref(globais.uTempo)
+      const p = positionLocal
+      // presa no alto: quanto mais embaixo, mais o pano voa
+      const solto = float(0.325).sub(p.y)
+      const fase = instancia ? instancia.element(3).x.mul(0.7).add(instancia.element(3).z.mul(0.3)) : float(0.0)
+      return vec3(
+        p.x.add(sin(t.mul(2.1).add(fase)).mul(0.05).mul(solto)),
+        p.y,
+        p.z.add(sin(t.mul(3.2).add(fase).add(p.x.mul(4.0))).mul(0.16).mul(solto)))
+    },
+  }
   instanciar(cena, geoRoupa, matRoupa, roupas, cores, 'roupas', { sombra: false })
 }
 

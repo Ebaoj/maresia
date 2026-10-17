@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { globais } from '../globais.js'
 import { linhaCosta, rioX } from './mapa.js'
 import { SAIDA_LUZ } from '../materiais.js'
+import { amostraAlvo, funcoes } from '../render/gpu/comum.js'
 
 const vert = /* glsl */ `
 varying vec3 vMundo;
@@ -86,6 +87,61 @@ void main() {
   gLuz = vec4(0.8, reflexo * 1.5 + crista * 0.8, 0.0, 1.0);
 }`
 
+// O mar em TSL, para o modo webgpu (motor F2, KAN-68): as mesmas contas de frag
+function marTsl({ W, ref }, u) {
+  const { vec2, vec3, vec4, float, max, mix, step, smoothstep, fract, sin, pow, dot, normalize, reflect, length, abs,
+    texture, positionWorld, cameraPosition } = W
+  const { ruido } = funcoes()
+  const U = {}
+  for (const k in u) if (!k.startsWith('t')) U[k] = ref(u[k])
+  const vMundo = positionWorld
+  const uv = vMundo.xz.sub(U.uMapa.xy).div(U.uMapa.z).add(0.5).div(U.uMapaTam)
+  const dentro = step(0.0, uv.x).mul(step(uv.x, 1.0)).mul(step(0.0, uv.y)).mul(step(uv.y, 1.0))
+  const alt = mix(-14.0, texture(u.tAltura.value, uv).x, dentro)
+  const prof = max(0.0, alt.negate())
+  const raso = float(1.0).sub(smoothstep(0.0, 7.0, prof))
+  let cor = mix(U.uCorFundo, U.uCorRaso, raso)
+  // ondas chapadas (duas manchas de ruído andando)
+  const t = U.uTempo
+  const n = ruido(vMundo.xz.mul(0.045).add(vec2(t.mul(0.05), t.mul(0.03))))
+  const n2 = ruido(vMundo.xz.mul(0.11).sub(vec2(t.mul(0.08), 0.0)))
+  const faixa = step(0.62, fract(n.mul(2.0).add(n2.mul(0.6)).add(t.mul(0.04))))
+  cor = mix(cor, cor.mul(1.18).add(0.03), faixa.mul(0.6).mul(U.uOndas))
+  // rio
+  const rio = U.uRio.mul(step(1.0, vMundo.z.sub(U.uCostaRio))).mul(float(1.0).sub(step(60.0, abs(vMundo.x.sub(U.uRioX))))).mul(dentro)
+  cor = mix(cor, mix(U.uCorFundo, vec3(0.05, 0.42, 0.36), 0.7), rio.mul(0.75))
+  // linhas de espuma chegando na praia
+  const chegando = fract(prof.mul(0.55).sub(t.mul(0.25)).add(n.mul(0.4)))
+  const tracejado = step(0.38, ruido(vMundo.xz.mul(vec2(0.18, 0.5)).add(vec2(t.mul(0.1), 0.0))))
+  const espuma = step(chegando, 0.05).mul(tracejado).mul(float(1.0).sub(smoothstep(1.0, 3.2, prof))).mul(U.uOndas).mul(float(1.0).sub(rio))
+  const borda = float(1.0).sub(smoothstep(0.05, sin(t.mul(1.3).add(vMundo.x.mul(0.07))).mul(0.15).add(0.35), prof))
+  cor = mix(cor, U.uCorEspuma, max(espuma, borda.mul(dentro)))
+  // ondinhas de quem entrou na água
+  const uvO = vMundo.xz.sub(U.uToqueCentro).div(U.uToqueArea).add(0.5)
+  const dentroO = uvO.x.greaterThan(0.0).and(uvO.x.lessThan(1.0)).and(uvO.y.greaterThan(0.0)).and(uvO.y.lessThan(1.0))
+  const ondinha = dentroO.select(amostraAlvo(u.tOnda, uvO).x, float(0.0))
+  const crista = smoothstep(0.04, 0.08, ondinha).mul(float(1.0).sub(smoothstep(0.22, 0.4, ondinha)))
+  cor = mix(cor, U.uCorEspuma, crista.mul(0.85))
+  cor = cor.mul(float(1.0).sub(smoothstep(0.03, 0.14, ondinha.negate()).mul(0.18)))
+  // brilho do sol
+  const v = normalize(cameraPosition.sub(vMundo))
+  const r = reflect(v.negate(), vec3(0.0, 1.0, 0.0))
+  const brilho = pow(max(dot(r, normalize(U.uSolDir)), 0.0), 60.0)
+  const tracos = step(0.55, ruido(vec2(vMundo.x.mul(0.6), vMundo.z.mul(0.15).add(t.mul(0.6)))))
+  const reflexo = step(0.35, brilho).mul(tracos).mul(float(1.0).sub(U.uNoite))
+  cor = cor.add(U.uSolCor.mul(reflexo).mul(0.9))
+  // luz: ambiente + sol
+  const luz = max(dot(vec3(0.0, 1.0, 0.0), normalize(U.uSolDir)), 0.0)
+  cor = cor.mul(U.uAmbiente.mul(1.6).add(U.uSolCor.mul(luz).mul(0.55).mul(float(1.0).sub(U.uNoite))))
+  const dist = length(cameraPosition.sub(vMundo))
+  cor = mix(cor, U.uNevoaCor, smoothstep(U.uNevoaPerto, U.uNevoaLonge, dist))
+  const m = new W.MeshBasicNodeMaterial({ fog: false })
+  m.colorNode = cor
+  // o mar é sempre "iluminado"; os reflexos do sol contam como brilho (viram pontos)
+  m.mrtNode = W.mrt({ gLuz: vec4(0.8, reflexo.mul(1.5).add(crista.mul(0.8)), 0.0, 1.0) })
+  return m
+}
+
 export function criarMar(cena, mapaAltura, cfg, toque) {
   const uniformes = {
     tAltura: { value: mapaAltura.textura },
@@ -111,6 +167,7 @@ export function criarMar(cena, mapaAltura, cfg, toque) {
   const geo = new THREE.PlaneGeometry(5000, 5000, 1, 1)
   geo.rotateX(-Math.PI / 2)
   const mar = new THREE.Mesh(geo, new THREE.ShaderMaterial({ uniforms: uniformes, vertexShader: vert, fragmentShader: frag }))
+  mar.material.userData.tsl = { nome: 'mar', material: (ctx) => marTsl(ctx, uniformes) }
   mar.position.y = 0
   mar.name = 'mar'
   cena.add(mar)

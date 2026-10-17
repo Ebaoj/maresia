@@ -46,6 +46,23 @@ Trazer espécies nativas da Mata Atlântica, modeladas em 3D no estilo do jogo, 
 - **Liga com o resto:** os bichos reagem ao jogador e ao vento (gerador de efeitos) e têm som próprio (trilha motivada). As árvores entram no sistema de vegetação já existente.
 - **Cuidado:** cada espécie no lugar certo. Mico-leão-dourado é do Rio; no Recife, sagui e mangue. Vale uma pesquisa curta de onde cada uma ocorre antes de modelar.
 
+### Mar com ondas de verdade (como o Tidewater)
+*Registrado em 17/10/2026. Ticket KAN-69 (RASCUNHO). Pesquisa completa em `docs/pesquisa-tecnica-threejs.md`.*
+
+Trocar o mar de faixas que andam por um mar calculado na placa de vídeo a cada quadro (FFT de oceano), a técnica
+que o Tidewater usa no mesmo three.js:
+- **Ondas a partir do vento.** O vento alísio de Fortaleza vira o "espectro" das ondas: mais vento, mar mais crespo.
+  Liga direto com o gerador de vento (ideia acima).
+- **4 escalas sobrepostas.** Mar aberto, marola e detalhe perto da câmera, sem o padrão se repetir.
+- **Espuma onde a onda dobra.** Nasce na crista e some devagar, deixando rastro. Em faixas chapadas de Arcane.
+- **Ondas quebrando na praia**, subindo na areia e deixando a areia molhada.
+- **Jangadas boiando nas ondas certas**, lendo a altura do mar de volta.
+- O desenho continua pintado: a FFT dá o formato e o movimento, a cor segue em faixas como hoje.
+- Fica mais simples e rápido no WebGPU (compute). No WebGL dá, mas pelo caminho antigo e mais lento.
+
+Outros aprendizados da mesma pesquisa: subir o three de r170 para a atual, suavização entre quadros (TAA) e testar
+a curva de tom AgX.
+
 ## Pendências técnicas
 
 - **Fase B: retícula e hachura presas ao mundo.** Ainda escorregam quando a câmera anda para frente. Ver `docs/pesquisa-referencias.md`.

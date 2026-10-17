@@ -120,6 +120,17 @@ function injetar(material, tex, largura) {
   const chave = material.customProgramCacheKey?.() || ''
   material.customProgramCacheKey = () => chave + '|roupa-jolt'
   material.needsUpdate = true
+  // a mesma conta no modo webgpu (motor F2, KAN-68), depois do esqueleto
+  ;(material.userData.tslEsqueleto ||= []).push(({ W }, pos) => {
+    const { vec2, vec4, int, ivec2, float, normalize, textureLoad, attribute, normalLocal } = W
+    const desl = (i) => {
+      const k = int(i.add(0.5))
+      return textureLoad(tex, ivec2(k.mod(int(largura)), k.div(int(largura)))).xyz
+    }
+    const aI = attribute('aRoupaI', 'vec4'), aP = attribute('aRoupaP', 'vec4')
+    const soma = desl(aI.x).mul(aP.x).add(desl(aI.y).mul(aP.y)).add(desl(aI.z).mul(aP.z)).add(desl(aI.w).mul(aP.w))
+    return pos.add(soma).sub(normalize(normalLocal).mul(attribute('aRoupaDentro', 'float')))
+  })
 }
 
 const suave = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }

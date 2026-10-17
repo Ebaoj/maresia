@@ -8,6 +8,7 @@
 import * as THREE from 'three'
 import { SAIDA_LUZ } from '../materiais.js'
 import { criarAleatorio } from '../utils.js'
+import { modulo, ref, funcoes } from '../render/gpu/comum.js'
 
 const MAX = 3000
 
@@ -51,19 +52,68 @@ void main() {
   gLuz = vec4(0.9, 0.0, 0.0, m * vAlfa);
 }`
 
+// Modo webgpu (motor F2, KAN-68): o WebGPU não desenha ponto com tamanho (gl_PointSize). Cada grão vira um
+// quadrado (cópia de um quadrado-base) do mesmo tamanho na tela, com a mesma conta e o mesmo teto de tamanho
+// que o WebGL impõe ao ponto; o fragmento é o mesmo, com gl_PointCoord tirado do canto do quadrado.
+function tetoPontoWebgl() {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2')
+    const teto = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return teto
+  } catch { return 511 }
+}
+
+function particulasTsl(W, uEscalaPx) {
+  const { Fn, vec2, vec3, vec4, float, max, min, clamp, mix, length, atan2, smoothstep, attribute, positionGeometry,
+    modelViewMatrix, cameraProjectionMatrix, screenSize, varying, Discard } = W
+  const { ruido } = funcoes()
+  const teto = float(tetoPontoWebgl())
+  const m = new W.MeshBasicNodeMaterial({ fog: false })
+  const canto = varying(positionGeometry.xy)
+  m.vertexNode = Fn(() => {
+    const mv = modelViewMatrix.mul(vec4(attribute('aPos', 'vec3'), 1.0))
+    const clip = cameraProjectionMatrix.mul(mv)
+    const tamPx = min(max(1.0, attribute('aTam', 'float').mul(ref(uEscalaPx)).div(max(mv.z.negate(), 0.1))), teto)
+    const desl = positionGeometry.xy.mul(tamPx).mul(2.0).div(screenSize).mul(clip.w)
+    return vec4(clip.xy.add(desl), clip.z, clip.w)
+  })()
+  const alfa = attribute('aAlfa', 'float'), semente = attribute('aSemente', 'float')
+  // gl_PointCoord - 0.5: x para a direita, y para baixo
+  const p = vec2(canto.x, canto.y.negate())
+  const borda = ruido(vec2(atan2(p.y, p.x).mul(1.6).add(semente.mul(7.0)), semente.mul(3.0))).sub(0.5).mul(2.0).mul(0.08).add(0.42)
+  const mk = float(1.0).sub(smoothstep(borda.mul(0.55), borda, length(p)))
+  const a = mk.mul(alfa)
+  m.colorNode = Fn(() => {
+    Discard(a.lessThan(0.01))
+    // luz de cima: a parte de cima do grão mais clara, a de baixo na cor da sombra
+    const cor = mix(attribute('aCorSombra', 'vec3'), attribute('aCorLuz', 'vec3'), smoothstep(0.25, -0.25, p.y))
+    return vec4(cor, a)
+  })()
+  m.mrtNode = W.mrt({ gLuz: vec4(0.9, 0.0, 0.0, a) })
+  return m
+}
+
 export function criarParticulas(cena, renderer, camera) {
-  const geo = new THREE.BufferGeometry()
+  const W = modulo()
+  const geo = W ? new THREE.InstancedBufferGeometry() : new THREE.BufferGeometry()
+  const A = (arr, n) => (W ? new THREE.InstancedBufferAttribute(arr, n) : new THREE.BufferAttribute(arr, n))
   const pos = new Float32Array(MAX * 3)
   const tam = new Float32Array(MAX), alfa = new Float32Array(MAX), sem = new Float32Array(MAX)
   const corL = new Float32Array(MAX * 3), corS = new Float32Array(MAX * 3)
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage))
-  geo.setAttribute('aTam', new THREE.BufferAttribute(tam, 1).setUsage(THREE.DynamicDrawUsage))
-  geo.setAttribute('aAlfa', new THREE.BufferAttribute(alfa, 1).setUsage(THREE.DynamicDrawUsage))
-  geo.setAttribute('aSemente', new THREE.BufferAttribute(sem, 1))
-  geo.setAttribute('aCorLuz', new THREE.BufferAttribute(corL, 3))
-  geo.setAttribute('aCorSombra', new THREE.BufferAttribute(corS, 3))
+  geo.setAttribute(W ? 'aPos' : 'position', A(pos, 3).setUsage(THREE.DynamicDrawUsage))
+  geo.setAttribute('aTam', A(tam, 1).setUsage(THREE.DynamicDrawUsage))
+  geo.setAttribute('aAlfa', A(alfa, 1).setUsage(THREE.DynamicDrawUsage))
+  geo.setAttribute('aSemente', A(sem, 1))
+  geo.setAttribute('aCorLuz', A(corL, 3))
+  geo.setAttribute('aCorSombra', A(corS, 3))
+  if (W) {
+    geo.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, 0.5, 0], 3))
+    geo.setIndex([0, 1, 2, 0, 2, 3])
+    geo.instanceCount = MAX
+  }
   const uEscalaPx = { value: 800 }
-  const mat = new THREE.ShaderMaterial({
+  const mat = W ? particulasTsl(W, uEscalaPx) : new THREE.ShaderMaterial({
     uniforms: { uEscalaPx }, vertexShader: vert, fragmentShader: frag,
     transparent: true, depthWrite: false, depthTest: true,
     // a cor mistura; o alfa de destino (peso do traço no filtro) fica intacto
@@ -72,7 +122,9 @@ export function criarParticulas(cena, renderer, camera) {
     blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
   })
   mat.userData.luzMRT = true
-  const pontos = new THREE.Points(geo, mat)
+  if (W) Object.assign(mat, { transparent: true, depthWrite: false, depthTest: true, blending: THREE.CustomBlending,
+    blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneMinusSrcAlphaFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor })
+  const pontos = W ? new THREE.Mesh(geo, mat) : new THREE.Points(geo, mat)
   pontos.frustumCulled = false
   pontos.renderOrder = 5
   cena.add(pontos)
@@ -187,7 +239,7 @@ export function criarParticulas(cena, renderer, camera) {
         tam[i] = tam0[i] * (1 + (cresce - 1) * Math.sqrt(v))
         alfa[i] = alfa0[i] * Math.min(1, v * 8) * (1 - v) * (1 - v * 0.3)
       }
-      geo.attributes.position.needsUpdate = true
+      ;(geo.attributes.aPos || geo.attributes.position).needsUpdate = true
       geo.attributes.aTam.needsUpdate = true
       geo.attributes.aAlfa.needsUpdate = true
     },

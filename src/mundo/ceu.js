@@ -126,6 +126,81 @@ void main() {
   gLuz = vec4(1.0, 0.0, 0.0, 1.0);
 }`
 
+// O céu em TSL, para o modo webgpu (motor F2, KAN-68): as mesmas contas de vertCeu e fragCeu
+function ceuTsl({ W, ref }, u) {
+  const { Fn, vec2, vec3, vec4, float, max, pow, mix, clamp, dot, normalize, smoothstep, sin, floor, fract, step, atan2,
+    positionLocal, cameraProjectionMatrix, modelViewMatrix, varying } = W
+  const U = {}
+  for (const k in u) U[k] = ref(u[k])
+  const hash = (p) => fract(sin(dot(p, vec3(127.1, 311.7, 74.7))).mul(43758.5453))
+  const h2 = Fn(([p0]) => {
+    const p = fract(p0.mul(vec2(123.34, 456.21))).toVar()
+    p.addAssign(dot(p, p.add(45.32)))
+    return fract(p.x.mul(p.y))
+  }).setLayout({ name: 'ceuH2', type: 'float', inputs: [{ name: 'p', type: 'vec2' }] })
+  const vn = Fn(([p]) => {
+    const i = floor(p), f = fract(p)
+    const uu = f.mul(f).mul(float(3.0).sub(f.mul(2.0)))
+    return mix(mix(h2(i), h2(i.add(vec2(1, 0))), uu.x), mix(h2(i.add(vec2(0, 1))), h2(i.add(vec2(1, 1))), uu.x), uu.y)
+  }).setLayout({ name: 'ceuVn', type: 'float', inputs: [{ name: 'p', type: 'vec2' }] })
+  const vDir = varying(normalize(positionLocal))
+  const m = new W.MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false })
+  // gl_Position = p.xyww: o céu fica no fundo da profundidade
+  m.vertexNode = Fn(() => {
+    const p = cameraProjectionMatrix.mul(modelViewMatrix).mul(vec4(positionLocal, 1.0))
+    return vec4(p.x, p.y, p.w, p.w)
+  })()
+  m.colorNode = Fn(() => {
+    const d = normalize(vDir)
+    const y = max(d.y, 0.0)
+    const cor = mix(U.uHor, U.uTopo, pow(y, 0.55)).toVar()
+    W.If(U.uArcane.greaterThan(0.5), () => {
+      // CÉU PINTADO (visual Arcane)
+      const az = atan2(d.z, d.x).add(U.uTempo.mul(0.002))
+      const yP = pow(y, 0.6)
+      const largo = vn(vec2(az.mul(1.1), yP.mul(9.0)))
+      const fino = vn(vec2(az.mul(4.5), yP.mul(38.0)).add(5.0))
+      const traco = largo.mul(0.7).add(fino.mul(0.3))
+      const t = clamp(pow(y, 0.55).add(traco.sub(0.5).mul(0.42).mul(U.uArcCeu)), 0.0, 1.0)
+      cor.assign(mix(U.uHor, U.uTopo, t))
+      const tempT = vn(vec2(az.mul(0.8), yP.mul(6.0)).add(21.0)).sub(0.5).mul(0.16).mul(U.uArcCeu)
+      cor.mulAssign(vec3(float(1.0).add(tempT), 1.0, float(1.0).sub(tempT)))
+      const sA = dot(d, normalize(U.uSolDir))
+      cor.assign(mix(cor, U.uSolCor.mul(1.05), smoothstep(0.55, 1.0, sA).mul(0.38).mul(float(1.0).sub(U.uNoite)).mul(U.uArcCeu)))
+      // nuvens de pincel
+      const faixaN = smoothstep(0.02, 0.12, y).mul(float(1.0).sub(smoothstep(0.32, 0.55, y)))
+      const nN = vn(vec2(az.mul(1.6), y.mul(9.0)).add(11.0)).mul(0.65).add(vn(vec2(az.mul(5.0), y.mul(30.0)).add(3.0)).mul(0.35))
+      const nuvem = smoothstep(0.58, 0.7, nN).mul(faixaN).mul(U.uArcCeu)
+      const ladoSol = dot(normalize(vec2(d.x, d.z)), normalize(vec2(U.uSolDir.x, U.uSolDir.z))).mul(0.5).add(0.5)
+      const topoN = smoothstep(0.55, 0.85, vn(vec2(az.mul(1.6), y.mul(9.0).add(0.6)).add(11.0)))
+      const corNuvemLuz = mix(U.uHor, U.uSolCor, 0.55).mul(1.12)
+      const corNuvemSombra = mix(U.uTopo, U.uHor, 0.55).mul(0.92)
+      const corNuvem = mix(corNuvemSombra, corNuvemLuz, clamp(ladoSol.mul(0.6).add(topoN.mul(0.5)), 0.0, 1.0))
+      cor.assign(mix(cor, mix(corNuvem, U.uTopo.mul(0.6), U.uNoite.mul(0.7)), nuvem.mul(0.85)))
+    }).Else(() => {
+      const faixas = floor(pow(y, 0.55).mul(7.0)).div(7.0)
+      cor.assign(mix(cor, mix(U.uHor, U.uTopo, faixas), 0.35))
+    })
+    // sol
+    const s = dot(d, normalize(U.uSolDir))
+    const disco = smoothstep(0.9975, 0.9985, s)
+    const halo = smoothstep(0.96, 0.999, s).mul(0.35)
+    const dia = float(1.0).sub(U.uNoite)
+    cor.addAssign(U.uSolCor.mul(1.6).mul(disco).mul(dia).add(U.uSolCor.mul(halo).mul(dia)))
+    // lua (do lado oposto) e estrelas
+    const l = dot(d, normalize(U.uSolDir.negate().add(vec3(0.0, 0.0, -0.3))))
+    cor.addAssign(vec3(0.95, 0.92, 1.0).mul(smoothstep(0.9985, 0.9992, l)).mul(U.uNoite))
+    const g = floor(d.mul(220.0))
+    const estrela = step(0.9965, hash(g)).mul(smoothstep(0.05, 0.3, d.y))
+    const pisca = sin(U.uTempo.mul(3.0).add(hash(g.add(3.0)).mul(30.0))).mul(0.4).add(0.6)
+    cor.addAssign(vec3(1.0, 0.95, 0.85).mul(estrela).mul(pisca).mul(U.uNoite))
+    // abaixo do horizonte: cor do horizonte (o mar cobre)
+    return d.y.lessThan(0.0).select(U.uHor, cor)
+  })()
+  m.mrtNode = W.mrt({ gLuz: vec4(1.0, 0.0, 0.0, 1.0) })
+  return m
+}
+
 export function criarCeu(cena) {
   const uniformes = {
     uTopo: { value: new THREE.Color() },
@@ -147,6 +222,7 @@ export function criarCeu(cena) {
       depthWrite: false,
     })
   )
+  ceu.material.userData.tsl = { nome: 'ceu', material: (ctx) => ceuTsl(ctx, uniformes) }
   ceu.frustumCulled = false
   ceu.renderOrder = -10
   ceu.userData.semNormal = true

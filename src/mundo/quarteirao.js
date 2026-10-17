@@ -18,6 +18,7 @@ import { CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarDeck } from './colisao.js'
 import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { criarAleatorio } from '../utils.js'
+import { ref } from '../render/gpu/comum.js'
 
 // rua de referência da fatia vertical (z ≈ 152, x -72 a -36): bom lugar para comparar com os filmes
 export const FATIA = { x0: -73, x1: -35, z0: 134, z1: 170 }
@@ -370,7 +371,104 @@ function materialReboco(desgaste) {
         }`)
   }
   mat.customProgramCacheKey = () => 'reboco-casas'
+  mat.userData.tsl = rebocoTsl(desgaste)
   return texturizar(pintar(mat, 'reboco-casas'), { topo: 'cal', lado: 'cal', tam: 2.5, contraste: 2.5 }) // reboco caiado pintado (visual Arcane)
+}
+
+// Reboco e telhas em TSL, para o modo webgpu (motor F2, KAN-68): as mesmas contas, com a posição no mundo
+// tirada como no GLSL (modelMatrix * posição crua, sem a matriz da cópia)
+function rebocoTsl(desgaste) {
+  let V = null
+  const vars = (W) => V || (V = { mundo: W.varyingProperty('vec3', 'vMundoQ'), normal: W.varyingProperty('vec3', 'vNormalQ'), chao: W.varyingProperty('float', 'vChaoQ') })
+  const uTaipa = { value: new THREE.Color(CAL.taipa) }
+  return {
+    nome: 'reboco',
+    posicao({ W }) {
+      const v = vars(W)
+      v.mundo.assign(W.modelWorldMatrix.mul(W.vec4(W.positionLocal, 1.0)).xyz)
+      v.normal.assign(W.attribute('normal', 'vec3'))
+      v.chao.assign(W.attribute('aChao', 'float'))
+      return W.positionLocal
+    },
+    cor({ W }, rgb0) {
+      const { Fn, vec2, vec3, float, abs, floor, fract, sin, dot, mix, smoothstep, If } = W
+      const v = vars(W)
+      const hashQ = (p) => fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))).mul(43758.5453))
+      const ruidoQ = (p) => {
+        const i = floor(p)
+        const f0 = fract(p)
+        const f = f0.mul(f0).mul(float(3.0).sub(f0.mul(2.0)))
+        return mix(mix(hashQ(vec3(i, 1.0)), hashQ(vec3(i.add(vec2(1, 0)), 1.0)), f.x), mix(hashQ(vec3(i.add(vec2(0, 1)), 1.0)), hashQ(vec3(i.add(vec2(1, 1)), 1.0)), f.x), f.y)
+      }
+      const taipa = ref(uTaipa)
+      return Fn(() => {
+        const rgb = vec3(rgb0).toVar()
+        If(abs(v.normal.y).lessThan(0.5), () => {
+          const hq = v.mundo.y.sub(v.chao)
+          const uq = v.mundo.x.add(v.mundo.z)
+          // pinceladas de caiação: faixas largas da broxa
+          const broxa = ruidoQ(vec2(uq.mul(0.9).add(hq.mul(0.35)), hq.mul(5.5))).mul(0.6).add(ruidoQ(vec2(uq.mul(4.0), hq.mul(1.2).sub(uq.mul(0.6)))).mul(0.4))
+          rgb.mulAssign(broxa.mul(0.1).add(0.95))
+          rgb.mulAssign(mix(vec3(0.9, 0.9, 0.95), vec3(1.04, 1.02, 0.97), smoothstep(0.0, 7.0, hq)))
+          // salitre
+          const alt = ruidoQ(vec2(uq.mul(0.5), 0.0)).mul(0.9).add(0.6)
+          rgb.mulAssign(mix(vec3(0.76, 0.78, 0.7), vec3(1.0), smoothstep(alt.mul(0.5), alt, hq)))
+          // cal descascada
+          const n = ruidoQ(vec2(uq.mul(0.22), hq.mul(0.3))).mul(0.65).add(ruidoQ(vec2(uq.mul(1.6), hq.mul(1.9))).mul(0.35))
+          const lim = float(mix(0.84, 0.7, desgaste)).add(smoothstep(0.3, 3.5, hq).mul(0.2))
+          const casca = smoothstep(lim, lim.add(0.015), n)
+          const fiada = smoothstep(0.82, 0.9, fract(hq.mul(6.5))).mul(0.25)
+          const miolo = taipa.mul(ruidoQ(vec2(uq.mul(5.0), hq.mul(5.0))).mul(0.2).add(0.88)).mul(float(1.0).sub(fiada))
+          const aro = smoothstep(lim.sub(0.035), lim.sub(0.005), n).mul(float(1.0).sub(casca))
+          const hy = hq.add(0.06)
+          const ny = ruidoQ(vec2(uq.mul(0.22), hy.mul(0.3))).mul(0.65).add(ruidoQ(vec2(uq.mul(1.6), hy.mul(1.9))).mul(0.35))
+          const sombraAro = casca.mul(float(1.0).sub(smoothstep(lim, lim.add(0.015), ny)))
+          rgb.assign(mix(rgb, miolo, casca))
+          rgb.assign(mix(rgb, rgb.mul(1.08).add(0.03), aro))
+          rgb.mulAssign(float(1.0).sub(sombraAro.mul(0.35)))
+          // escorrido vertical de chuva
+          rgb.mulAssign(float(1.0).sub(smoothstep(0.6, 0.9, ruidoQ(vec2(uq.mul(3.0), hq.mul(0.25)))).mul(0.07)))
+        })
+        return rgb
+      })()
+    },
+  }
+}
+
+function telhasTsl() {
+  let V = null
+  const vars = (W) => V || (V = { mundo: W.varyingProperty('vec3', 'vMundoT'), norm: W.varyingProperty('vec3', 'vNormT') })
+  return {
+    nome: 'telhas',
+    posicao({ W }) {
+      const { mat3, normalize, modelWorldMatrix, attribute, vec4, positionLocal } = W
+      const v = vars(W)
+      const m = modelWorldMatrix
+      v.mundo.assign(m.mul(vec4(positionLocal, 1.0)).xyz)
+      v.norm.assign(normalize(mat3(m.element(0).xyz, m.element(1).xyz, m.element(2).xyz).mul(attribute('normal', 'vec3'))))
+      return positionLocal
+    },
+    cor({ W }, rgb) {
+      const { vec2, vec3, float, floor, fract, sin, dot, normalize, mix, smoothstep, step } = W
+      const v = vars(W)
+      const hashT = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453))
+      const desce = normalize(v.norm.xz.add(vec2(1e-4)))
+      const lado = vec2(desce.y.negate(), desce.x)
+      const u = dot(v.mundo.xz, lado).div(0.23)
+      const vv = dot(v.mundo.xz, desce).div(0.42).add(v.mundo.y.mul(0.6))
+      const coluna = floor(u)
+      const capa = coluna.sub(floor(coluna.div(2.0)).mul(2.0)) // mod do GLSL
+      const fu = fract(u)
+      const curva = sin(fu.mul(3.14159))
+      const tom = hashT(vec2(coluna, floor(vv.add(capa.mul(0.5))))).mul(0.2).add(0.9)
+      const t0 = rgb.mul(tom)
+      const t1 = t0.mul(mix(curva.mul(0.18).add(0.7), curva.mul(0.22).add(0.9), capa))
+      const t2 = t1.mul(float(1.0).sub(smoothstep(0.82, 0.98, fract(vv.add(capa.mul(0.5)))).mul(0.28)))
+      const limo = hashT(floor(v.mundo.xz.mul(0.7))).mul(smoothstep(0.4, 0.0, v.norm.y.sub(0.75)))
+      const t = mix(t2, t2.mul(vec3(0.72, 0.74, 0.62)), limo.mul(0.35))
+      return mix(rgb, t, step(0.35, v.norm.y))
+    },
+  }
 }
 
 const TAM_BLOCO = TAM_LOD // o mesmo bloco das caixas de longe (registrarLonge acha a caixa pelo bloco)
@@ -406,6 +504,7 @@ function materialTelhas() {
         diffuseColor.rgb = mix(diffuseColor.rgb, t, step(0.35, vNormT.y));`)
   }
   mat.customProgramCacheKey = () => 'telhas-1932'
+  mat.userData.tsl = telhasTsl()
   return texturizar(pintar(mat, 'telhas-1932'), { topo: 'telha', lado: 'telha', tam: 1.5 }) // telha canal pintada (visual Arcane)
 }
 

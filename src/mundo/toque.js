@@ -10,6 +10,7 @@
 // grade). Quem entra, nada ou cai na água solta uma gota; o anel se espalha e some.
 
 import * as THREE from 'three'
+import { modulo, ref, amostraAlvo, uvTela, criarAlvo, criarPasse } from '../render/gpu/comum.js'
 
 const TAM = 256
 export const AREA_TOQUE = 64
@@ -73,10 +74,71 @@ void main() {
   gl_FragColor = vec4(clamp(h, -2.0, 2.0), c.r, 0.0, 1.0);
 }`
 
+// Os mesmos dois passes em TSL, para o modo webgpu (motor F2, KAN-68): contas linha a linha do GLSL acima
+function toqueTsl(uT) {
+  const W = modulo()
+  const { Fn, vec2, vec4, float, exp, length, smoothstep, max, mix, normalize, Loop, If, Break, Continue, uniformArray } = W
+  const pts = uniformArray(uT.uPts.value, 'vec4')
+  const vel = uniformArray(uT.uVel.value, 'vec4')
+  return Fn(() => {
+    const vUv = uvTela()
+    const xz = ref(uT.uCentro).add(vUv.sub(0.5).mul(ref(uT.uArea)))
+    const uvAnt = vUv.add(ref(uT.uDesloc))
+    const dentro = uvAnt.x.greaterThan(0.0).and(uvAnt.x.lessThan(1.0)).and(uvAnt.y.greaterThan(0.0)).and(uvAnt.y.lessThan(1.0))
+    const v = dentro.select(amostraAlvo(uT.tAnterior, uvAnt), vec4(0.0)).toVar()
+    // a grama volta a ficar de pé aos poucos
+    v.mulAssign(exp(ref(uT.uDt).negate().mul(ref(uT.uRecupera))))
+    Loop(MAX, ({ i }) => {
+      If(i.toFloat().greaterThanEqual(ref(uT.uN)), () => { Break() })
+      const p = pts.element(i)
+      const d = xz.sub(p.xy)
+      const dist = length(d)
+      const k = float(1.0).sub(smoothstep(p.z.mul(0.4), p.z, dist)).mul(p.w)
+      If(k.lessThanEqual(0.001), () => { Continue() })
+      // empurra para longe do centro, puxando um pouco na direção do movimento
+      const fora = d.div(max(dist, 1e-3))
+      const mov = vel.element(i).xy
+      const dir = normalize(fora.add(mov.mul(0.35)).add(vec2(1e-4)))
+      const novo = dir.mul(k)
+      If(length(novo).greaterThan(length(v.xy)), () => { v.assign(vec4(mix(v.xy, novo, 0.6), v.z, v.w)) })
+      v.assign(vec4(v.xy, max(v.z, k), v.w))
+    })
+    return v
+  })()
+}
+
+function ondaTsl(uO) {
+  const W = modulo()
+  const { Fn, vec2, vec4, float, length, smoothstep, clamp, Loop, If, Break, uniformArray } = W
+  const gotas = uniformArray(uO.uGotas.value, 'vec4')
+  const ler = (uv0) => {
+    const uv = uv0.add(ref(uO.uDesloc))
+    const fora = uv.x.lessThanEqual(0.0).or(uv.x.greaterThanEqual(1.0)).or(uv.y.lessThanEqual(0.0)).or(uv.y.greaterThanEqual(1.0))
+    return fora.select(vec2(0.0), amostraAlvo(uO.tAnterior, uv).xy)
+  }
+  return Fn(() => {
+    const vUv = uvTela()
+    const texel = ref(uO.uTexel)
+    // r = altura agora, g = altura no quadro anterior
+    const c = ler(vUv)
+    const viz = ler(vUv.add(vec2(texel.x, 0.0))).x.add(ler(vUv.sub(vec2(texel.x, 0.0))).x)
+      .add(ler(vUv.add(vec2(0.0, texel.y))).x).add(ler(vUv.sub(vec2(0.0, texel.y))).x)
+    const h = viz.mul(0.5).sub(c.y).mul(ref(uO.uAmortece)).toVar()
+    const xz = ref(uO.uCentro).add(vUv.sub(0.5).mul(ref(uO.uArea)))
+    Loop(MAX, ({ i }) => {
+      If(i.toFloat().greaterThanEqual(ref(uO.uNG)), () => { Break() })
+      const g = gotas.element(i)
+      const d = length(xz.sub(g.xy))
+      h.addAssign(float(1.0).sub(smoothstep(0.0, g.z, d)).mul(g.w))
+    })
+    return vec4(clamp(h, -2.0, 2.0), c.x, 0.0, 1.0)
+  })()
+}
+
 export function criarToque(renderer, mapaAltura, cfg) {
   const opc = { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false }
-  const toque = [new THREE.WebGLRenderTarget(TAM, TAM, opc), new THREE.WebGLRenderTarget(TAM, TAM, opc)]
-  const onda = [new THREE.WebGLRenderTarget(TAM, TAM, opc), new THREE.WebGLRenderTarget(TAM, TAM, opc)]
+  const toque = [criarAlvo(THREE, TAM, TAM, opc), criarAlvo(THREE, TAM, TAM, opc)]
+  const onda = [criarAlvo(THREE, TAM, TAM, opc), criarAlvo(THREE, TAM, TAM, opc)]
   let it = 0
   let io = 0
 
@@ -92,14 +154,8 @@ export function criarToque(renderer, mapaAltura, cfg) {
     tAnterior: { value: null }, uDesloc: { value: new THREE.Vector2() }, uCentro: { value: new THREE.Vector2() }, uArea: { value: AREA_TOQUE },
     uTexel: { value: new THREE.Vector2(1 / TAM, 1 / TAM) }, uGotas: { value: gotas }, uNG: { value: 0 }, uAmortece: { value: 0.985 },
   }
-  const mat = (frag, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, depthTest: false, depthWrite: false })
-  const matToque = mat(fragToque, uT)
-  const matOnda = mat(fragOnda, uO)
-  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), matToque)
-  quad.frustumCulled = false
-  const cena = new THREE.Scene()
-  cena.add(quad)
-  const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+  const passeToque = criarPasse(THREE, { uniforms: uT, vertexShader: vert, fragmentShader: fragToque, tsl: () => toqueTsl(uT) })
+  const passeOnda = criarPasse(THREE, { uniforms: uO, vertexShader: vert, fragmentShader: fragOnda, tsl: () => ondaTsl(uO) })
 
   // o que os outros shaders leem
   const publico = {
@@ -151,9 +207,7 @@ export function criarToque(renderer, mapaAltura, cfg) {
       uT.uDt.value = dt
       uT.uRecupera.value = cfg.interacao.recuperaGrama
       uT.tAnterior.value = toque[it].texture
-      quad.material = matToque
-      r.setRenderTarget(toque[1 - it])
-      r.render(cena, cam)
+      passeToque.desenhar(r, toque[1 - it])
       it = 1 - it
       publico.tToque.value = toque[it].texture
       fila = []
@@ -170,9 +224,7 @@ export function criarToque(renderer, mapaAltura, cfg) {
         uO.uCentro.value.copy(centro)
         uO.uAmortece.value = cfg.interacao.amorteceOnda
         uO.tAnterior.value = onda[io].texture
-        quad.material = matOnda
-        r.setRenderTarget(onda[1 - io])
-        r.render(cena, cam)
+        passeOnda.desenhar(r, onda[1 - io])
         io = 1 - io
         primeiro = false
       }

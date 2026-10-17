@@ -21,6 +21,19 @@ function materialRetícula(cor, densidade) {
   }
   luzFixa(m, 0.9)
   m.customProgramCacheKey = () => 'luz-fixa-reticula' // não pode dividir programa com os outros luzFixa
+  // a mesma retícula no modo webgpu (motor F2, KAN-68); gl_FragCoord do WebGL tem origem embaixo
+  m.userData.tsl = {
+    nome: 'multiplos-reticula',
+    fragmento({ W, ref, material }) {
+      const { Fn, vec2, length, fract, screenCoordinate, screenSize, materialColor, Discard } = W
+      material.colorNode = Fn(() => {
+        const fc = vec2(screenCoordinate.x, screenSize.y.sub(screenCoordinate.y))
+        const g = vec2(fc.x.mul(0.7071).add(fc.y.mul(0.7071)), fc.x.mul(-0.7071).add(fc.y.mul(0.7071))).div(5.0)
+        Discard(length(fract(g).sub(0.5)).greaterThan(ref(densidade).mul(0.72)))
+        return materialColor
+      })()
+    },
+  }
   return m
 }
 

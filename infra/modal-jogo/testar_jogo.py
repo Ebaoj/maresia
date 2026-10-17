@@ -23,7 +23,9 @@ app = modal.App("maresia-testes")
 imagem_testes = imagem.add_local_python_source("jogo", "cdp")
 
 ORDEM = ["semErros", "pesParados", "poseCongelada", "meiaVolta", "meiaVoltaRapida", "meiaVoltaInterrompida", "sentarLevantar",
-         "modoWebgpu"]
+         "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo", "modoWebgpu"]
+# KAN-68: cenários que também rodam com o jogo aberto no WebGPU (dentro de modoWebgpu)
+CENARIOS_WEBGPU = ["semErros", "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo"]
 # cenários que recarregam a página com outra configuração: rodam aqui, em Python, e por último
 CENARIOS_PYTHON = {}
 
@@ -50,8 +52,25 @@ def modo_webgpu(cdp):
         r = {"erro": str(e)[:300]}
     ok = bool(r) and not r.get("erro") and r.get("webgpuRenderer") and r.get("backend") == "webgpu" and (r.get("quadros3s") or 0) > 30 \
         and (r.get("shadersQuebrados") or 0) == 0
+    motivo = "" if ok else "o modo webgpu não abriu no WebGPU de verdade"
+    # R1 do KAN-68: nada pode ficar sem versão no WebGPU (cor de reserva)
+    if ok and r.get("faltaPortar"):
+        ok = False
+        motivo = "peça sem versão no WebGPU: " + ", ".join(f.get("peca", "?") for f in r["faltaPortar"])
+    # os mesmos cenários de cópias, sombras e areia, agora no WebGPU (KAN-68)
+    if ok:
+        r["cenarios"] = {}
+        for nome in CENARIOS_WEBGPU:
+            try:
+                c = cdp.js(f"import('/testes/jogo/cenarios.js').then(m => m.cenarios.{nome}(window.maresia))")
+            except Exception as e:
+                c = {"ok": False, "motivo": f"o cenário quebrou: {e}"[:300]}
+            r["cenarios"][nome] = c
+            if not (c or {}).get("ok"):
+                ok = False
+                motivo = f"no WebGPU, {nome}: {(c or {}).get('motivo', '')}"
     mudar_config(cdp, {"desempenho": {"renderizador": "webgl"}})
-    return {"ok": ok, "medidas": r, "motivo": "" if ok else "o modo webgpu não abriu no WebGPU de verdade"}
+    return {"ok": ok, "medidas": r, "motivo": motivo}
 
 
 CENARIOS_PYTHON["modoWebgpu"] = modo_webgpu

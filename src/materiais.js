@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { globais } from './globais.js'
+import { ref } from './render/gpu/comum.js'
 
 // Toon: a luz vira poucas faixas em vez de degradê contínuo, como pintura de animação.
 let _gradiente = null
@@ -184,6 +185,10 @@ export function pintar(mat, chave) {
   }
   mat.customProgramCacheKey = () => chave
   mat.userData.luzMRT = true
+  // código GLSL próprio somado antes do pintar (fachada, vento...): no WebGPU precisa da versão em TSL
+  // (mat.userData.tsl), senão vai para a lista "falta portar" (render/renderizador.js)
+  mat.userData.extraGlsl = anterior !== THREE.Material.prototype.onBeforeCompile
+  mat.userData.obcPintar = mat.onBeforeCompile // quem trocar depois (roupa, pano) soma código ao pintar
   return mat
 }
 
@@ -229,6 +234,8 @@ export function luzFixa(mat, luz = 1, brilho = { value: 0 }) {
   }
   mat.customProgramCacheKey = () => 'luz-fixa'
   mat.userData.luzMRT = true
+  mat.userData.luzFixa = u // o WebGPU escreve a mesma saída de luz com estes valores
+  mat.userData.extraGlsl = anterior !== THREE.Material.prototype.onBeforeCompile
   return mat
 }
 
@@ -473,9 +480,175 @@ export function materialPredio({
       )
   }
   mat.userData.uniformes = u // para depurar e medir pelo console
+  mat.userData.tsl = predioTsl(u)
   // reboco e telha pintados também na versão de longe do casario (visual Arcane); a chave de cache vem
   // de pintar e ganha a textura, mas cada lote mantém os próprios uniforms
   return texturizar(pintar(mat, 'predio-pintado'), { topo: 'telha', lado: 'cal', tam: 2.5, contraste: 2.5 })
+}
+
+// A fachada do prédio em TSL, para o modo webgpu (motor F2, KAN-68): as mesmas contas do GLSL acima
+function predioTsl(u) {
+  let V = null
+  const vars = (W) => V || (V = {
+    local: W.varyingProperty('vec3', 'vLocal'), normLocal: W.varyingProperty('vec3', 'vNormLocal'),
+    escala: W.varyingProperty('vec3', 'vEscala'), inst: W.varyingProperty('float', 'vInst'),
+    janela: W.property('float', 'janelaLuz'),
+  })
+  return {
+    nome: 'predio',
+    posicao({ W, instancia }) {
+      const { vec3, float, fract, sin, length, max, positionLocal, attribute, instanceIndex } = W
+      const v = vars(W)
+      const p = positionLocal
+      v.local.assign(p)
+      v.normLocal.assign(attribute('normal', 'vec3'))
+      const esc = instancia ? vec3(length(instancia.element(0).xyz), length(instancia.element(1).xyz), length(instancia.element(2).xyz)) : vec3(1.0)
+      const inst = instancia ? instanceIndex.toFloat() : float(0.0)
+      v.escala.assign(esc)
+      v.inst.assign(inst)
+      // parede levemente torta e barriguda, como feita à mão
+      const torto = ref(u.uTorto)
+      const incl = fract(sin(inst.mul(12.9898)).mul(43758.5453)).sub(0.5).mul(2.0)
+      const x1 = p.x.add(incl.mul(torto).mul(p.y).mul(esc.y.div(max(esc.x, 0.1))).mul(0.02))
+      const k = float(1.0).add(torto.mul(0.025).mul(sin(p.y.mul(3.1416))))
+      return vec3(x1.mul(k), p.y, p.z.mul(k))
+    },
+    cor({ W }, rgb0) {
+      const { Fn, If, vec2, vec3, float, abs, floor, fract, sin, dot, mix, max, step, sign, smoothstep } = W
+      const v = vars(W)
+      const U = {}
+      for (const k in u) U[k] = ref(u[k])
+      const hashJanela = (p) => fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))).mul(43758.5453))
+      const ruidoParede = (p, semente) => {
+        const i = floor(p)
+        const f0 = fract(p)
+        const f = f0.mul(f0).mul(float(3.0).sub(f0.mul(2.0)))
+        const a = hashJanela(vec3(i, semente)), b = hashJanela(vec3(i.add(vec2(1.0, 0.0)), semente))
+        const c = hashJanela(vec3(i.add(vec2(0.0, 1.0)), semente)), d = hashJanela(vec3(i.add(vec2(1.0, 1.0)), semente))
+        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y)
+      }
+      const tres = (q, a, b, c) => q.lessThan(0.34).select(a, q.lessThan(0.67).select(b, c))
+      return Fn(() => {
+        const rgb = vec3(rgb0).toVar()
+        v.janela.assign(0.0)
+        const nl = v.normLocal, vl = v.local, esc = v.escala, vInst = v.inst
+        If(nl.y.greaterThan(0.5), () => {
+          rgb.assign(U.uTelhado)
+        }).ElseIf(nl.y.greaterThan(-0.5), () => {
+          const ladoX = abs(nl.x).greaterThan(0.5)
+          const largura = ladoX.select(esc.z, esc.x)
+          const uu = ladoX.select(vl.z, vl.x).mul(largura).add(largura.mul(0.5))
+          const vv = vl.y.mul(esc.y)
+          const lado = ladoX.select(sign(nl.x), sign(nl.z).mul(2.0))
+          const inicio = max(U.uTerreo, U.uLoja)
+          const colunas = max(1.0, floor(largura.div(U.uCelula.x)))
+          const util = max(0.5, esc.y.sub(inicio).sub(0.7))
+          const andares = max(1.0, floor(util.div(U.uCelula.y)))
+          const g = vec2(uu.div(largura.div(colunas)), vv.sub(inicio).div(util.div(andares)))
+          const f = fract(g)
+          const id = floor(g)
+          const valido = step(0.0, g.y).mul(step(g.y, andares)).mul(step(0.0, g.x)).mul(step(g.x, colunas))
+          const mx = U.uMargem.x, my = U.uMargem.y
+          const topo = float(1.0).sub(my.mul(0.6))
+          const dentro = step(mx, f.x).mul(step(f.x, float(1.0).sub(mx))).mul(step(my, f.y)).mul(step(f.y, topo))
+          const mold = step(mx.sub(0.06), f.x).mul(step(f.x, float(1.0).sub(mx).add(0.06))).mul(step(my.sub(0.05), f.y)).mul(step(f.y, topo.add(0.05)))
+          const peitoril = step(mx.sub(0.1), f.x).mul(step(f.x, float(1.0).sub(mx).add(0.1))).mul(step(my.sub(0.1), f.y)).mul(step(f.y, my.sub(0.04)))
+          const sombraPeitoril = step(mx.sub(0.1), f.x).mul(step(f.x, float(1.0).sub(mx).add(0.1))).mul(step(my.sub(0.18), f.y)).mul(step(f.y, my.sub(0.1)))
+          const faixa = step(f.y, U.uFaixaAltura).mul(valido)
+          rgb.assign(mix(rgb, U.uFaixa, faixa))
+          rgb.mulAssign(float(1.0).sub(sombraPeitoril.mul(valido).mul(0.18)))
+          rgb.assign(mix(rgb, U.uMoldura, max(mold, peitoril).mul(valido)))
+          const j = dentro.mul(valido)
+          const sorteio = hashJanela(vec3(id, vInst.mul(1.37).add(lado)))
+          const sorteio2 = hashJanela(vec3(id, vInst.mul(2.11).add(lado).add(5.0)))
+          const cortina = sorteio2.greaterThan(0.75).and(f.y.greaterThan(mix(my, topo, 0.55)))
+          const vidro = cortina.select(mix(U.uVidro, vec3(0.9, 0.55, 0.35), 0.6), U.uVidro)
+          rgb.assign(mix(rgb, vidro, j))
+          v.janela.assign(j.mul(step(float(1.0).sub(U.uChance), sorteio)))
+          If(j.greaterThan(0.5).and(U.uMadeira.greaterThan(0.5)), () => {
+            // 1932: folhas de madeira pintadas; fechadas, entreabertas ou abertas para a penumbra
+            const qual = fract(vInst.mul(0.618).add(lado.mul(0.13)))
+            const cf = tres(qual, U.uVen1, U.uVen2, U.uVen3)
+            const xf = f.x.sub(mx).div(float(1.0).sub(mx.mul(2.0)))
+            const yf = f.y.sub(my).div(topo.sub(my))
+            const fx2 = fract(xf.mul(2.0))
+            const almofada = step(0.12, fx2).mul(step(fx2, 0.88)).mul(step(0.1, yf)).mul(step(yf, 0.46))
+              .add(step(0.12, fx2).mul(step(fx2, 0.88)).mul(step(0.54, yf)).mul(step(yf, 0.9)))
+            const folha0 = cf.mul(mix(1.0, 0.86, almofada))
+            const folha1 = folha0.mul(float(1.0).sub(step(abs(xf.sub(0.5)), 0.015).mul(0.35)))
+            const folha = mix(folha1, folha1.mul(1.18).add(0.04), step(0.68, ruidoParede(vec2(xf.mul(6.0), yf.mul(9.0)), vInst.add(id.x.mul(3.1)))).mul(0.6))
+            const abre = sorteio2.lessThan(0.55).select(float(0.0), sorteio2.lessThan(0.85).select(fract(sorteio2.mul(13.0)).mul(0.12).add(0.12), float(0.5)))
+            const vao = step(abs(xf.sub(0.5)), abre)
+            const penumbra = U.uVidro.mul(mix(0.8, 1.15, yf))
+            rgb.assign(mix(folha, penumbra, vao))
+            v.janela.mulAssign(mix(0.15, 1.0, vao))
+          }).ElseIf(j.greaterThan(0.5).and(sorteio2.lessThan(U.uVenezianas)), () => {
+            // veneziana de madeira, às vezes entreaberta
+            const cv = mix(U.uVen1, U.uVen2, step(0.5, fract(vInst.mul(0.618))))
+            const ripa = step(0.45, fract(f.y.mul(16.0)))
+            const fresta = fract(sorteio2.mul(7.0)).mul(0.14).add(0.04)
+            rgb.assign(abs(f.x.sub(0.5)).lessThan(fresta).select(U.uVidro, cv.mul(mix(0.78, 1.0, ripa))))
+            v.janela.mulAssign(0.35)
+          })
+          // térreo de loja: portas largas, interior escuro, verga clara
+          If(U.uLoja.greaterThan(0.0).and(vv.lessThan(U.uLoja)), () => {
+            const colL = max(1.0, floor(largura.div(3.6)))
+            const gx = uu.div(largura.div(colL))
+            const fx = fract(gx)
+            const abertura = step(0.1, fx).mul(step(fx, 0.9)).mul(step(vv, U.uLoja.sub(0.9)))
+            const verga = step(0.06, fx).mul(step(fx, 0.94)).mul(step(U.uLoja.sub(0.9), vv)).mul(step(vv, U.uLoja.sub(0.6)))
+            const vaoLoja = vec3(U.uInterior).toVar()
+            If(U.uMadeira.greaterThan(0.5), () => {
+              const sorteioL = hashJanela(vec3(floor(gx), vInst, lado.add(4.0)))
+              const qualL = fract(vInst.mul(0.618).add(floor(gx).mul(0.31)))
+              const cp = tres(qualL, U.uVen1, U.uVen2, U.uVen3)
+              const xl = fx.sub(0.1).div(0.8)
+              const tabua = step(0.5, fract(xl.mul(7.0)))
+              const porta = cp.mul(mix(0.9, 1.0, tabua)).mul(float(1.0).sub(step(abs(xl.sub(0.5)), 0.012).mul(0.35)))
+              const abertaL = sorteioL.lessThan(0.6).select(float(0.36), sorteioL.lessThan(0.8).select(float(0.12), float(0.0)))
+              vaoLoja.assign(mix(porta, U.uInterior.mul(mix(1.5, 1.0, smoothstep(0.0, U.uLoja.sub(0.9), vv))), step(abs(xl.sub(0.5)), abertaL)))
+            })
+            rgb.assign(mix(rgb, vaoLoja, abertura))
+            rgb.assign(mix(rgb, U.uMoldura, verga))
+            v.janela.assign(max(v.janela, abertura.mul(step(0.35, hashJanela(vec3(floor(gx), vInst, lado.add(9.0)))))))
+          })
+          // platibanda clara no topo
+          rgb.assign(mix(rgb, U.uFaixa, step(esc.y.sub(0.5), vv).mul(U.uCornija)))
+          // barrado: faixa pintada na base em parte dos prédios
+          const temBarra = step(hashJanela(vec3(vInst, 3.3, 1.7)), U.uBarra)
+          const qualB = fract(vInst.mul(0.618))
+          const corBarra = tres(qualB, U.uVen1, U.uVen2, U.uVen3).mul(0.92)
+          const alturaBarra = hashJanela(vec3(vInst, 7.0, 2.0)).mul(0.25).add(0.85)
+          const naBarra = temBarra.mul(step(vv, alturaBarra)).mul(step(U.uLoja, 0.01))
+          rgb.assign(mix(rgb, corBarra, naBarra))
+          rgb.mulAssign(float(1.0).sub(temBarra.mul(step(alturaBarra, vv)).mul(step(vv, alturaBarra.add(0.06))).mul(step(U.uLoja, 0.01)).mul(0.25)))
+          If(U.uDesgaste.greaterThan(0.0), () => {
+            const semente = vInst.mul(0.37).add(lado)
+            // salitre: mancha esverdeada e escura subindo da base
+            const alturaSal = ruidoParede(vec2(uu.mul(0.45), 0.0), semente).mul(U.uDesgaste).mul(1.1).add(0.35)
+            const sal = float(1.0).sub(smoothstep(alturaSal.mul(0.55), alturaSal, vv))
+            rgb.assign(mix(rgb, rgb.mul(vec3(0.74, 0.76, 0.68)), sal.mul(0.85)))
+            // cal descascada: a taipa aparece em placas
+            const n = ruidoParede(vec2(uu.mul(0.35), vv.mul(0.5)), semente.add(11.0)).mul(0.75).add(ruidoParede(vec2(uu.mul(2.2), vv.mul(2.6)), semente.add(23.0)).mul(0.25))
+            const limiar = mix(0.9, 0.76, U.uDesgaste).add(smoothstep(0.3, 3.0, vv).mul(0.16))
+            const casca = smoothstep(limiar, limiar.add(0.02), n).mul(float(1.0).sub(j)).mul(float(1.0).sub(naBarra))
+            const bordaCasca = smoothstep(limiar.sub(0.03), limiar, n).mul(float(1.0).sub(casca)).mul(float(1.0).sub(j))
+            rgb.assign(mix(rgb, U.uTaipa, casca))
+            rgb.mulAssign(float(1.0).sub(bordaCasca.mul(0.12)))
+            // escorrido abaixo dos peitoris
+            const escorre = step(mx, f.x).mul(step(f.x, float(1.0).sub(mx))).mul(step(f.y, my.sub(0.1))).mul(step(my.sub(0.55), f.y)).mul(valido)
+            rgb.mulAssign(float(1.0).sub(escorre.mul(ruidoParede(vec2(f.x.mul(14.0), id.x.add(id.y.mul(7.0))), semente)).mul(U.uDesgaste).mul(0.1)))
+          })
+          // base mais escura (sujeira e oclusão)
+          rgb.mulAssign(mix(0.78, 1.0, smoothstep(0.0, 3.5, vv)))
+        })
+        return rgb
+      })()
+    },
+    emissivo({ W }, emissivo) {
+      return emissivo.add(ref(u.uLuz).mul(vars(W).janela).mul(ref(u.uNoite)).mul(1.6))
+    },
+  }
 }
 
 // Textura feita em código, num canvas, sem baixar imagem nenhuma.

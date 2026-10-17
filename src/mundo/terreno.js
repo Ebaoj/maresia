@@ -6,6 +6,7 @@ import {
 import { lagoasJogo, lugaresJogo } from './fortaleza1932.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
 import { congelar } from './congelar.js'
+import { ref } from '../render/gpu/comum.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
 export const NX = Math.round((x1 - x0) / passo) + 1
@@ -316,8 +317,56 @@ function materialTerreno() {
           diffuseColor.rgb = mix(diffuseColor.rgb, mix(diffuseColor.rgb * 0.92, c, longe), vPiso);
         }`)
   }
+  mat.userData.tsl = terrenoTsl()
   // textura pintada (visual Arcane): a mesma da areia fina, senão o quadrado de 24 m em volta do jogador emenda
   return texturizar(pintar(mat, 'terreno-pintado'), { topo: 'areia', lado: 'pedra', tam: 3, contraste: 1.4, massa: 0.9 })
+}
+
+// O mesmo trecho de cor em TSL, para o modo webgpu (motor F2, KAN-68)
+function terrenoTsl() {
+  return {
+    nome: 'terreno',
+    cor({ W }, rgb0) {
+      const { Fn, vec2, vec3, float, abs, max, floor, fract, sin, dot, sqrt, smoothstep, mix, step, distance, If, Loop, int,
+        attribute, positionWorld, cameraPosition, Discard } = W
+      const hPav = (p) => fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453))
+      return Fn(() => {
+        const vPiso = attribute('aPiso', 'float')
+        const vAreia = attribute('aAreia', 'float')
+        const rgb = vec3(rgb0).toVar()
+        // dentro do quadrado da areia fina, quem desenha a praia é ela
+        const dA = abs(positionWorld.xz.sub(ref(uAreiaTerreno.uAreiaCentro)))
+        Discard(vAreia.greaterThan(0.7).and(max(dA.x, dA.y).lessThan(ref(uAreiaTerreno.uAreiaMeia))))
+        If(vPiso.greaterThan(0.01), () => {
+          // pedra tosca de 1932: células irregulares (voronoi), cada pedra com seu tom
+          const q = positionWorld.xz.mul(3.8)
+          const iq = floor(q), fq = fract(q)
+          const d1 = float(8.0).toVar(), d2 = float(8.0).toVar(), idp = vec2(0.0).toVar()
+          Loop({ start: int(-1), end: int(1), condition: '<=', name: 'j' }, ({ j }) => {
+            Loop({ start: int(-1), end: int(1), condition: '<=', name: 'i' }, ({ i }) => {
+              const g = vec2(i.toFloat(), j.toFloat())
+              const o = vec2(hPav(iq.add(g)), hPav(iq.add(g).add(17.3))).mul(0.8).add(0.1)
+              const r = g.add(o).sub(fq)
+              const d = dot(r, r)
+              If(d.lessThan(d1), () => { d2.assign(d1); d1.assign(d); idp.assign(iq.add(g)) })
+                .ElseIf(d.lessThan(d2), () => { d2.assign(d) })
+            })
+          })
+          const borda = sqrt(d2).sub(sqrt(d1))
+          const pedra = smoothstep(0.04, 0.14, borda)
+          const tom = hPav(idp.add(3.1))
+          const baseP = mix(rgb, vec3(dot(rgb, vec3(0.3, 0.59, 0.11))).mul(vec3(1.02, 0.98, 0.93)), 0.45)
+          const c = baseP.mul(mix(0.74, 1.14, tom)).mul(mix(vec3(1.0), vec3(1.06, 0.97, 0.88), step(0.72, hPav(idp.add(9.7))))).toVar()
+          c.mulAssign(float(1.0).add(smoothstep(0.14, 0.4, borda).mul(0.1)).sub(0.06)) // centro abaulado
+          const junta = mix(c.mul(0.5), vec3(0.72, 0.62, 0.48), 0.45)
+          c.assign(mix(junta, c, pedra))
+          const longe = float(1.0).sub(smoothstep(25.0, 70.0, distance(cameraPosition, positionWorld)))
+          rgb.assign(mix(rgb, mix(rgb.mul(0.92), c, longe), vPiso))
+        })
+        return rgb
+      })()
+    },
+  }
 }
 
 // O mesmo mapa de alturas vira uma textura para a GPU:

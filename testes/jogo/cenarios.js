@@ -108,6 +108,20 @@ async function meiaVoltaRapida(m, intervalo) {
            erroFinal: +Math.abs(embrulhar(y[y.length - 1] - esperado)).toFixed(2) }
 }
 
+// A luz dos materiais pintados segue a hora do jogo: à noite a luz direta quase some e não sobra sombra para medir
+// (na suíte o jogo roda no relógio de verdade). Meio-dia fixo durante o teste, e a hora volta no fim.
+async function comLuzDoDia(m, f) {
+  const antes = { hora: m.cfg.tempo.hora, pausado: m.cfg.tempo.pausado }
+  m.cfg.tempo.hora = 12
+  m.cfg.tempo.pausado = true
+  for (let i = 0; i < 3; i++) m.passo(1 / 60, true)
+  try {
+    return await f()
+  } finally {
+    Object.assign(m.cfg.tempo, antes)
+  }
+}
+
 export const cenarios = {
   // Regressão d25888b (16/10/2026): frente e trás seguidos emendavam meia-volta em meia-volta, e o corpo
   // ficava girando de um lado para o outro. Cada troca tem de dar uma meia-volta só e assentar.
@@ -292,6 +306,318 @@ export const cenarios = {
     }
     const ok = medidas.every((x) => x.deriva < 0.03)
     return { ok, medidas, motivo: ok ? '' : 'com a pose congelada, a postura acumula e o corpo afunda' }
+  },
+
+  // Regressão KAN-68 (17/10/2026): no WebGPU, blocos de cópias com uma cópia só (instanciarEmBlocos deixa
+  // vários assim) com o mesmo material saíam todos no lugar de um deles, até com formas diferentes. O three monta o shader uma
+  // vez para eles (só separa por objeto com count > 1) e a matriz das cópias ia junto. Na foto justa, a casa
+  // de palha grande sumia da praia. Desenha três desses lado a lado e confere que os três aparecem (o primeiro
+  // objeto de um material ganha chave própria, porque montar o shader muda o material; do segundo em diante dividem).
+  async copiasUnicas(m) {
+    const THREE = await import('three')
+    const { pintar } = await import('/src/materiais.js')
+    const r = m.renderer
+    // o módulo do WebGPU e a troca de materiais vêm do jogo (importar de novo aqui pode dar outra instância)
+    const W = m.gpu?.W || null
+    if (m.webgpu && !W) return { ok: false, motivo: 'modo webgpu sem maresia.gpu (módulo e troca de materiais do jogo)' }
+    const cena = new THREE.Scene()
+    cena.add(new THREE.AmbientLight('#ffffff', 3))
+    const geo = new THREE.BoxGeometry(1.5, 1.5, 1.5)
+    const mat = pintar(new THREE.MeshToonMaterial({ color: '#ff2020' }), 'teste-copias-unicas')
+    for (const x of [-3, 0, 3]) {
+      const im = new THREE.InstancedMesh(geo, mat, 1)
+      im.setMatrixAt(0, new THREE.Matrix4().makeTranslation(x, 0, 0))
+      cena.add(im)
+    }
+    const cam = new THREE.OrthographicCamera(-4, 4, 2, -2, 0.1, 20)
+    cam.position.set(0, 0, 10)
+    cam.updateMatrixWorld()
+    const L = 64, A = 32
+    const rt = W ? new W.RenderTarget(L, A, { count: 2 }) : new THREE.WebGLRenderTarget(L, A)
+    if (W) { rt.textures[0].name = 'output'; rt.textures[1].name = 'gLuz'; m.gpu.preparar(cena) }
+    const cor = r.getClearColor(new THREE.Color()), alfa = r.getClearAlpha()
+    r.setRenderTarget(rt)
+    if (W) r.setMRT(W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) }))
+    r.setClearColor(0x000000, 1)
+    r.clear()
+    r.render(cena, cam)
+    let px
+    if (W) { r.setMRT(null); px = await r.readRenderTargetPixelsAsync(rt, 0, 0, L, A) } else {
+      px = new Uint8Array(L * A * 4)
+      r.readRenderTargetPixels(rt, 0, 0, L, A, px)
+    }
+    r.setRenderTarget(null)
+    r.setClearColor(cor, alfa)
+    rt.dispose()
+    // vermelho no meio de cada caixa (x = -3, 0 e 3 viram as colunas 8, 32 e 56; a linha do meio é a 16)
+    const vermelho = (c) => px[(16 * L + c) * 4]
+    const medidas = { esquerda: vermelho(8), meio: vermelho(32), direita: vermelho(56) }
+    const ok = medidas.esquerda > 20 && medidas.meio > 20 && medidas.direita > 20
+    return { ok, medidas, motivo: ok ? '' : 'cópia única saiu no lugar de outra (falta caixa desenhada)' }
+  },
+
+  // Regressão KAN-68 (17/10/2026): no passe de sombra o WebGPU troca o material de cada objeto por um genérico,
+  // e (1) blocos com uma cópia só projetavam sombra todos no lugar de um deles e (2) folha com recorte
+  // (alphaTest, como as dos coqueiros) projetava o retângulo inteiro. O WebGL faz certo nos dois. Cena pequena
+  // vista de cima: três caixas de uma cópia com o sol de lado (sombra 1 m ao lado de cada uma) e uma folha toda
+  // transparente, que não pode fazer sombra. (3) Bloco que nasce vazio e cresce depois (bolas, cocos) também
+  // tem de fazer a sombra de cada cópia. (4) Face de um lado só virada para o sol não faz sombra (como no WebGL).
+  async sombrasCopias(m) {
+    return comLuzDoDia(m, async () => {
+      const THREE = await import('three')
+      const { pintar } = await import('/src/materiais.js')
+      const r = m.renderer
+      const W = m.gpu?.W || null
+      if (m.webgpu && !W) return { ok: false, motivo: 'modo webgpu sem maresia.gpu (módulo e troca de materiais do jogo)' }
+      const cena = new THREE.Scene()
+      cena.add(new THREE.AmbientLight('#ffffff', 1))
+      const sol = new THREE.DirectionalLight('#ffffff', 2.5)
+      sol.position.set(4, 8, 0)
+      sol.castShadow = true
+      sol.shadow.mapSize.set(512, 512)
+      Object.assign(sol.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: 0.5, far: 20 })
+      sol.shadow.camera.updateProjectionMatrix()
+      cena.add(sol, sol.target)
+      const chao = new THREE.Mesh(new THREE.PlaneGeometry(10, 6).rotateX(-Math.PI / 2), pintar(new THREE.MeshToonMaterial({ color: '#ffffff' }), 'teste-sombra-chao'))
+      chao.receiveShadow = true
+      cena.add(chao)
+      const geo = new THREE.BoxGeometry(0.8, 0.8, 0.8)
+      const mat = pintar(new THREE.MeshToonMaterial({ color: '#ff2020' }), 'teste-sombra-caixa')
+      for (const x of [-2, 1, 4]) {
+        const im = new THREE.InstancedMesh(geo, mat, 1)
+        im.setMatrixAt(0, new THREE.Matrix4().makeTranslation(x, 2, -1))
+        im.castShadow = true
+        cena.add(im)
+      }
+      // folha toda transparente (alphaMap zerado): o recorte tem de valer na sombra também
+      const zero = new THREE.DataTexture(new Uint8Array(4 * 4 * 4), 4, 4)
+      zero.needsUpdate = true
+      const folha = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4).rotateX(-Math.PI / 2),
+        pintar(new THREE.MeshToonMaterial({ color: '#20ff20', alphaMap: zero, alphaTest: 0.5, side: THREE.DoubleSide }), 'teste-sombra-folha'))
+      folha.position.set(1, 2, 1)
+      folha.castShadow = true
+      cena.add(folha)
+      // tampa de um lado só virada para o sol: o WebGL desenha a sombra pelo lado de trás das faces, então ela não
+      // faz sombra no chão; o WebGPU tem de dar o mesmo (shadowSide invertido)
+      const tampa = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8).rotateX(-Math.PI / 2), mat)
+      tampa.position.set(3, 2, 0)
+      tampa.castShadow = true
+      cena.add(tampa)
+      // bloco que nasce vazio e ganha duas caixas depois do primeiro desenho (como bolas e cocos)
+      const crescem = new THREE.InstancedMesh(geo, mat, 8)
+      crescem.count = 0
+      crescem.castShadow = true
+      crescem.frustumCulled = false
+      cena.add(crescem)
+      const cam = new THREE.OrthographicCamera(-4, 4, 2, -2, 0.1, 30)
+      cam.position.set(0, 10, 0)
+      cam.up.set(0, 0, -1)
+      cam.lookAt(0, 0, 0)
+      cam.updateMatrixWorld()
+      const L = 64, A = 32
+      const rt = W ? new W.RenderTarget(L, A, { count: 2 }) : new THREE.WebGLRenderTarget(L, A)
+      if (W) { rt.textures[0].name = 'output'; rt.textures[1].name = 'gLuz'; m.gpu.preparar(cena) } else r.shadowMap.needsUpdate = true
+      const cor = r.getClearColor(new THREE.Color()), alfa = r.getClearAlpha()
+      r.setRenderTarget(rt)
+      if (W) r.setMRT(W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) }))
+      r.setClearColor(0x000000, 1)
+      // o primeiro desenho com o bloco vazio; mais dois depois (no WebGPU o mapa de sombra só existe depois do
+      // primeiro desenho)
+      for (let i = 0; i < 3; i++) {
+        if (i === 1) {
+          crescem.setMatrixAt(0, new THREE.Matrix4().makeTranslation(-2, 2, 1))
+          crescem.setMatrixAt(1, new THREE.Matrix4().makeTranslation(3.5, 2, 1))
+          crescem.count = 2
+          crescem.instanceMatrix.needsUpdate = true
+          if (W) m.gpu.preparar(cena); else r.shadowMap.needsUpdate = true
+        }
+        r.clear()
+        r.render(cena, cam)
+      }
+      let px
+      if (W) { r.setMRT(null); px = await r.readRenderTargetPixelsAsync(rt, 0, 0, L, A) } else {
+        px = new Uint8Array(L * A * 4)
+        r.readRenderTargetPixels(rt, 0, 0, L, A, px)
+      }
+      r.setRenderTarget(null)
+      r.setClearColor(cor, alfa)
+      rt.dispose()
+      sol.shadow.dispose()
+      // ponto do chão (x, z) -> pixel; no WebGPU a linha 0 fica em cima, no WebGL embaixo
+      const brilho = (x, z) => {
+        const c = Math.round((x + 4) / 8 * L), yN = -z / 2
+        const l = Math.min(A - 1, Math.round(W ? (1 - yN) / 2 * A : (yN + 1) / 2 * A))
+        const i = (l * L + c) * 4
+        return px[i] + px[i + 1] + px[i + 2]
+      }
+      const aceso = brilho(-1, 0)
+      const medidas = { aceso, sombras: [-3, 0, 3].map((x) => brilho(x, -1)), soboFolha: brilho(0, 1), crescem: [-3, 2.5].map((x) => brilho(x, 1)), soboTampa: brilho(2, 0) }
+      const ok = aceso > 60 && [...medidas.sombras, ...medidas.crescem].every((b) => b < aceso * 0.8) && medidas.soboFolha > aceso * 0.9 && medidas.soboTampa > aceso * 0.9
+      return { ok, medidas, motivo: ok ? '' : 'sombra de cópia fora do lugar, folha recortada ou face de um lado só fazendo sombra' }
+    })
+  },
+
+  // Regressão KAN-68 (17/10/2026): bolas, cocos e poeira mudam de quantidade de cópias durante o jogo (nascem
+  // com zero). No WebGPU a lista de matrizes ficava do tamanho do primeiro desenho e o shader não é remontado
+  // quando a quantidade muda; e dois blocos que começam com zero e dividem material (bolas e cocos) dividiam
+  // também as matrizes. Desenha dois blocos assim com zero cópias, depois põe três cópias em cada um e confere
+  // as seis caixas.
+  async copiasQueCrescem(m) {
+    const THREE = await import('three')
+    const { pintar } = await import('/src/materiais.js')
+    const r = m.renderer
+    const W = m.gpu?.W || null
+    if (m.webgpu && !W) return { ok: false, motivo: 'modo webgpu sem maresia.gpu (módulo e troca de materiais do jogo)' }
+    const cena = new THREE.Scene()
+    cena.add(new THREE.AmbientLight('#ffffff', 3))
+    const mat = pintar(new THREE.MeshToonMaterial({ color: '#ff2020' }), 'teste-copias-crescem')
+    const blocos = [0.9, -0.9].map(() => {
+      const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat, 8)
+      im.count = 0
+      im.frustumCulled = false
+      cena.add(im)
+      return im
+    })
+    const cam = new THREE.OrthographicCamera(-4, 4, 2, -2, 0.1, 20)
+    cam.position.set(0, 0, 10)
+    cam.updateMatrixWorld()
+    const L = 64, A = 32
+    const rt = W ? new W.RenderTarget(L, A, { count: 2 }) : new THREE.WebGLRenderTarget(L, A)
+    if (W) { rt.textures[0].name = 'output'; rt.textures[1].name = 'gLuz' }
+    const cor = r.getClearColor(new THREE.Color()), alfa = r.getClearAlpha()
+    const desenhar = () => {
+      if (W) m.gpu.preparar(cena)
+      r.setRenderTarget(rt)
+      if (W) r.setMRT(W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) }))
+      r.setClearColor(0x000000, 1)
+      r.clear()
+      r.render(cena, cam)
+      if (W) r.setMRT(null)
+    }
+    desenhar()
+    // três cópias em cada bloco: em cima x = -3, 0, 3; embaixo x = -2, 1, 3.5 (y = 0,9 e -0,9)
+    const xs = [[-3, 0, 3], [-2, 1, 3.5]]
+    blocos.forEach((im, b) => {
+      xs[b].forEach((x, i) => im.setMatrixAt(i, new THREE.Matrix4().makeTranslation(x, b ? -0.9 : 0.9, 0)))
+      im.count = 3
+      im.instanceMatrix.needsUpdate = true
+    })
+    desenhar()
+    let px
+    if (W) px = await r.readRenderTargetPixelsAsync(rt, 0, 0, L, A)
+    else { px = new Uint8Array(L * A * 4); r.readRenderTargetPixels(rt, 0, 0, L, A, px) }
+    r.setRenderTarget(null)
+    r.setClearColor(cor, alfa)
+    rt.dispose()
+    // ponto (x, y) da cena -> pixel; no WebGPU a linha 0 fica em cima, no WebGL embaixo
+    const vermelho = (x, y) => {
+      const c = Math.round((x + 4) / 8 * L), yN = y / 2
+      const l = Math.min(A - 1, Math.round(W ? (1 - yN) / 2 * A : (yN + 1) / 2 * A))
+      return px[(l * L + c) * 4]
+    }
+    const medidas = { cima: xs[0].map((x) => vermelho(x, 0.9)), baixo: xs[1].map((x) => vermelho(x, -0.9)) }
+    const ok = [...medidas.cima, ...medidas.baixo].every((v) => v > 20)
+    return { ok, medidas, motivo: ok ? '' : 'cópia que nasceu depois do primeiro desenho saiu fora do lugar' }
+  },
+
+  // Regressão KAN-68 (17/10/2026): no WebGPU a atualização do toque e da areia ficou desligada desde a fase 1
+  // (main.js), mesmo depois de os passes estarem portados: sem pegada, sem rastro, e a malha fina da areia não
+  // acompanhava o jogador. Marca a areia ao lado do jogador, avança uns quadros e confere que o buffer da areia
+  // mudou.
+  async pegadasNaAreia(m) {
+    const THREE = await import('three')
+    let alvo = null
+    m.cena.traverse((o) => { if (!alvo && o.name && o.name.startsWith('fatia-peixe')) alvo = o })
+    if (!alvo) return { ok: false, motivo: 'não achei a barraca de peixe (lugar de areia)' }
+    alvo.updateWorldMatrix(true, false)
+    const p = new THREE.Vector3()
+    if (alvo.isInstancedMesh) { const mi = new THREE.Matrix4(); alvo.getMatrixAt(0, mi); p.setFromMatrixPosition(alvo.matrixWorld.clone().multiply(mi)) } else p.setFromMatrixPosition(alvo.matrixWorld)
+    m.irPara(p.x - 1.1, p.z + 2.6)
+    const ler = async () => {
+      const rt = m.areia._buffer()
+      const L = rt.width, A = rt.height
+      if (m.webgpu) return m.renderer.readRenderTargetPixelsAsync(rt, 0, 0, L, A)
+      const b = new Uint16Array(L * A * 4)
+      m.renderer.readRenderTargetPixels(rt, 0, 0, L, A, b)
+      return b
+    }
+    for (let i = 0; i < 10; i++) m.passo(1 / 60, true)
+    const antes = await ler()
+    const j = m.jogador.pos
+    m.areia.marcar(j.x + 1, j.z, 0.5, 0.2)
+    for (let i = 0; i < 6; i++) m.passo(1 / 60, true)
+    const depois = await ler()
+    // a marca tem de aparecer no lugar dela: o buffer cobre AREA m em volta do jogador (u ao longo de x, v ao longo
+    // de z); a marca fica 1 m a leste, na linha do meio (que é a mesma com a imagem virada ou não)
+    const rt = m.areia._buffer()
+    const L = rt.width, AREA = 24
+    const cx = Math.round((1 / AREA + 0.5) * L), cy = Math.round(0.5 * L), raio = Math.max(2, Math.round(0.5 / AREA * L))
+    let mudou = 0, naMarca = 0
+    for (let y = 0; y < L; y++) {
+      for (let x = 0; x < L; x++) {
+        const i = (y * L + x) * 4
+        if (antes[i] === depois[i]) continue
+        mudou++
+        if (Math.abs(x - cx) <= raio && Math.abs(y - cy) <= raio) naMarca++
+      }
+    }
+    const ok = naMarca >= 3
+    return { ok, medidas: { texelsQueMudaram: mudou, naMarca }, motivo: ok ? '' : 'a marca não chegou ao buffer da areia no lugar dela (toque e areia não atualizam)' }
+  },
+
+  // Regressão KAN-68 (17/10/2026, revisão de contexto limpo): no WebGPU a versão do material copiava opacidade e
+  // textura uma vez só, na troca. O que o jogo muda depois no material original não chegava ao desenho: o facho do
+  // farol (marcos.js muda opacity todo quadro) ficava apagado e a expressão do rosto (rosto.js troca o map dos
+  // olhos e da boca) congelava. Um plano luzFixa: opacidade 0 e textura vermelha no primeiro desenho; depois
+  // opacidade 1 e textura verde. O segundo desenho tem de sair verde.
+  async propriedadeEmJogo(m) {
+    const THREE = await import('three')
+    const { luzFixa } = await import('/src/materiais.js')
+    const r = m.renderer
+    const W = m.gpu?.W || null
+    if (m.webgpu && !W) return { ok: false, motivo: 'modo webgpu sem maresia.gpu (módulo e troca de materiais do jogo)' }
+    // 64x64: linha de 256 bytes, o alinhamento que o WebGPU pede para enviar textura (2x2 dava erro de envio)
+    const tex = (cor) => {
+      const d = new Uint8Array(64 * 64 * 4)
+      for (let i = 0; i < d.length; i += 4) d.set([...cor, 255], i)
+      const t = new THREE.DataTexture(d, 64, 64)
+      t.needsUpdate = true
+      return t
+    }
+    const vermelha = tex([255, 0, 0]), verde = tex([0, 255, 0])
+    const mat = luzFixa(new THREE.MeshBasicMaterial({ map: vermelha, transparent: true, opacity: 0, depthWrite: false }), 0)
+    const cena = new THREE.Scene()
+    cena.add(new THREE.Mesh(new THREE.PlaneGeometry(4, 4), mat))
+    const cam = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.1, 20)
+    cam.position.set(0, 0, 10)
+    cam.updateMatrixWorld()
+    const L = 64, A = 64 // 64 de largura: a leitura de volta do WebGPU no three 0.170 não alinha linha menor
+    const rt = W ? new W.RenderTarget(L, A, { count: 2 }) : new THREE.WebGLRenderTarget(L, A)
+    if (W) { rt.textures[0].name = 'output'; rt.textures[1].name = 'gLuz' }
+    const cor = r.getClearColor(new THREE.Color()), alfa = r.getClearAlpha()
+    const desenhar = () => {
+      if (W) m.gpu.preparar(cena)
+      r.setRenderTarget(rt)
+      if (W) r.setMRT(W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) }))
+      r.setClearColor(0x000000, 1)
+      r.clear()
+      r.render(cena, cam)
+      if (W) r.setMRT(null)
+    }
+    desenhar()
+    mat.opacity = 1
+    mat.map = verde
+    desenhar()
+    let px
+    if (W) px = await r.readRenderTargetPixelsAsync(rt, 0, 0, L, A)
+    else { px = new Uint8Array(L * A * 4); r.readRenderTargetPixels(rt, 0, 0, L, A, px) }
+    r.setRenderTarget(null)
+    r.setClearColor(cor, alfa)
+    rt.dispose()
+    const i = (32 * L + 32) * 4
+    const medidas = { r: px[i], g: px[i + 1], b: px[i + 2] }
+    const ok = medidas.g > 150 && medidas.r < 80
+    return { ok, medidas, motivo: ok ? '' : 'mudança de opacidade ou de textura no material original não chegou ao desenho' }
   },
 
   // O mínimo de toda mudança: o jogo carregou sem shader quebrado (os erros de console o executor junta)

@@ -14,6 +14,7 @@ import { adicionarCirculo } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { criarAleatorio } from '../utils.js'
 import { globais } from '../globais.js'
+import { ref } from '../render/gpu/comum.js'
 import { instanciarEmBlocos } from './blocos.js'
 
 const rnd = criarAleatorio(99)
@@ -197,6 +198,24 @@ function balancarCopa(mat, cfg) {
         transformed.y += sin(uTempoV * 1.7 + fase + ponta * 0.6) * 0.07 * ponta * rajada * uVentoPalm;
         transformed.x += sin(uTempoV * 1.3 + fase) * 0.05 * ponta * rajada * uVentoPalm;
         transformed.z += cos(uTempoV * 1.1 + fase) * 0.05 * ponta * rajada * uVentoPalm;`)
+  }
+  // a mesma conta no modo webgpu (motor F2, KAN-68)
+  mat.userData.tsl = {
+    nome: 'copa-vento',
+    posicao({ W, instancia }) {
+      const { vec2, vec3, max, length, sin, cos, positionLocal } = W
+      const t = ref(u.uTempoV), vento = ref(u.uVentoPalm)
+      const p = positionLocal
+      const baseV = instancia ? instancia.element(3).xyz : vec3(0.0)
+      const ponta = max(0.0, length(p.xz.sub(vec2(1.9, 0.0))).sub(0.6))
+      const fase = baseV.x.mul(0.13).add(baseV.z.mul(0.07))
+      const rajada = sin(t.mul(0.35).add(baseV.x.mul(0.01))).mul(0.4).add(0.6)
+      const k = ponta.mul(rajada).mul(vento)
+      return vec3(
+        p.x.add(sin(t.mul(1.3).add(fase)).mul(0.05).mul(k)),
+        p.y.add(sin(t.mul(1.7).add(fase).add(ponta.mul(0.6))).mul(0.07).mul(k)),
+        p.z.add(cos(t.mul(1.1).add(fase)).mul(0.05).mul(k)))
+    },
   }
   return mat
 }

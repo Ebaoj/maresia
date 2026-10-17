@@ -104,6 +104,13 @@ function injetar(material, uniforme) {
   const chave = material.customProgramCacheKey?.() || ''
   material.customProgramCacheKey = () => chave + '|pano'
   material.needsUpdate = true
+  // a mesma conta no modo webgpu (motor F2, KAN-68), depois do esqueleto
+  ;(material.userData.tslEsqueleto ||= []).push(({ W }, pos) => {
+    const { int, attribute, uniformArray } = W
+    const arr = uniformArray(uniforme.value, 'vec3')
+    const aI = attribute('aPanoI', 'vec2'), aW = attribute('aPanoW', 'vec2')
+    return pos.add(arr.element(int(aI.x)).mul(aW.x)).add(arr.element(int(aI.y)).mul(aW.y))
+  })
 }
 
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }

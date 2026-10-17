@@ -497,6 +497,13 @@ export class Aranhaverso {
   }
 
   render(tempo, velocidadeJogador) {
+    this.atualizar(tempo, velocidadeJogador)
+    this.desenhar()
+  }
+
+  // Todos os valores do filtro e dos globais do visual (Arcane, pincel), a partir do cfg. O modo webgpu
+  // (aranhaverso-gpu.js) chama só esta parte e desenha com os mesmos objetos de uniform.
+  atualizar(tempo, velocidadeJogador) {
     const e = this.cfg.estilo
     const u = this.uTela
     const r = this.renderer
@@ -623,6 +630,12 @@ export class Aranhaverso {
     u.uVelocidade.value = this.velocidade
     this.globais.uPincel.value = e.pincel
     this.globais.uPincelEscala.value = e.pincelEscala
+  }
+
+  desenhar() {
+    const e = this.cfg.estilo
+    const r = this.renderer
+    const cam = this.camera
 
     // 1. cena (sombra recalculada em todo quadro: quadro alternado deixava a sombra travada)
     r.shadowMap.needsUpdate = true

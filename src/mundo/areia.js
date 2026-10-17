@@ -16,6 +16,8 @@ import * as THREE from 'three'
 import { gradienteToon, pintar, texturizar, toon } from '../materiais.js'
 import { uAreiaTerreno } from './terreno.js'
 import { distCosta, larguraPraia } from './mapa.js'
+import { criarAleatorio } from '../utils.js'
+import { modulo, ref, amostraAlvo, uvTela, criarAlvo, criarPasse } from '../render/gpu/comum.js'
 
 const LONGE = new THREE.Vector2(1e6, 1e6)
 
@@ -99,9 +101,115 @@ vec2 afunda(vec2 xz) {
 float superficie(vec2 xz) { vec2 a = afunda(xz); return alturaPraia(xz) + 0.02 - a.r + a.g; }
 `
 
+// Modo webgpu (motor F2, KAN-68): o passe de afundamento e a malha fina em TSL, contas linha a linha do GLSL
+function afundaTsl(uA) {
+  const W = modulo()
+  const { Fn, vec2, vec4, float, exp, length, smoothstep, mix, min, max, step, cos, sin, texture, Loop, If, Break, uniformArray } = W
+  const marcas = uniformArray(uA.uMarcas.value, 'vec4')
+  const formas = uniformArray(uA.uForma.value, 'vec4')
+  const uMapa = ref(uA.uMapa)
+  return Fn(() => {
+    const vUv = uvTela()
+    const xz = ref(uA.uCentro).add(vUv.sub(0.5).mul(ref(uA.uArea)))
+    const uvAnt = vUv.add(ref(uA.uDesloc))
+    const dentro = uvAnt.x.greaterThan(0.0).and(uvAnt.x.lessThan(1.0)).and(uvAnt.y.greaterThan(0.0)).and(uvAnt.y.lessThan(1.0))
+    const v = dentro.select(amostraAlvo(uA.tAnterior, uvAnt), vec4(0.0)).toVar()
+    // perto da água a areia está molhada e o mar alisa as marcas rápido
+    const h = texture(uA.tAltura.value, xz.sub(uMapa.xy).div(uMapa.z).add(0.5).div(ref(uA.uMapaTam))).x
+    const molhada = float(1.0).sub(smoothstep(0.08, 0.35, h))
+    const fator = exp(ref(uA.uDt).negate().mul(mix(ref(uA.uSecaRecupera), ref(uA.uMolhadaRecupera), molhada)))
+    v.assign(vec4(v.xy.mul(fator), v.z, v.w))
+    Loop(MAX, ({ i }) => {
+      If(i.toFloat().greaterThanEqual(ref(uA.uN)), () => { Break() })
+      const mk = marcas.element(i)
+      const fo = formas.element(i)
+      const d = xz.sub(mk.xy)
+      const c = cos(mk.z), s = sin(mk.z)
+      const p = vec2(c.mul(d.x).sub(s.mul(d.y)), s.mul(d.x).add(c.mul(d.y))).toVar()
+      const dist = float(0.0).toVar()
+      If(fo.x.lessThan(0.5), () => {
+        p.assign(vec2(p.x.mul(fo.z), p.y)) // pé esquerdo espelhado
+        const frente = length(vec2(p.x.sub(0.012).div(0.085), p.y.sub(0.06).div(0.135)))
+        const calc = length(vec2(p.x.div(0.065), p.y.add(0.11).div(0.072)))
+        dist.assign(min(frente, calc))
+      }).Else(() => {
+        dist.assign(length(d).div(fo.y))
+      })
+      const prof = mk.w.mul(mix(1.0, 0.45, molhada))
+      const buraco = float(1.0).sub(smoothstep(0.65, 1.0, dist)).mul(prof)
+      const borda = smoothstep(0.95, 1.25, dist).mul(float(1.0).sub(smoothstep(1.25, 1.9, dist))).mul(prof).mul(0.35)
+      const r = max(v.x, buraco)
+      const g = max(v.y.mul(float(1.0).sub(step(0.001, buraco))), borda)
+      v.assign(vec4(r, g, v.z, v.w))
+    })
+    return v
+  })()
+}
+
+// A malha fina no WebGPU: posição e normal no vértice, a normal da luz e a cor no fragmento (mesmas contas
+// de GLSL_VERTICE, GLSL_FRAGMENTO e dos trechos injetados)
+function malhaTsl(uM) {
+  // as três passagens do vértice para o fragmento (o mesmo nó nos dois lados, senão vira duas)
+  let V = null
+  const vars = (W) => V || (V = { altura: W.varyingProperty('float', 'vAlturaA'), praia: W.varyingProperty('float', 'vPraia'), fundo: W.varyingProperty('float', 'vFundo') })
+  return {
+    nome: 'areia-fina',
+    posicao({ W }) {
+      const { Fn, vec2, vec3, normalize, texture, positionGeometry, normalLocal } = W
+      const v = vars(W)
+      const uMapa = ref(uM.uMapa), uMapaTam = ref(uM.uMapaTam)
+      const alturaPraia = (xz) => texture(uM.tAltura.value, xz.sub(uMapa.xy).div(uMapa.z).add(0.5).div(uMapaTam)).x
+      const praiaEm = (xz) => texture(uM.tAltura.value, xz.sub(uMapa.xy).div(uMapa.z).add(0.5).div(uMapaTam)).z
+      const afunda = (xz) => {
+        const uv = xz.sub(ref(uM.uCentroA)).div(ref(uM.uAreaA)).add(0.5)
+        const fora = uv.x.lessThanEqual(0.0).or(uv.x.greaterThanEqual(1.0)).or(uv.y.lessThanEqual(0.0)).or(uv.y.greaterThanEqual(1.0))
+        return fora.select(vec2(0.0), amostraAlvo(uM.tAfunda, uv).xy)
+      }
+      const superficie = (xz) => { const a = afunda(xz); return alturaPraia(xz).add(0.02).sub(a.x).add(a.y) }
+      return Fn(() => {
+        const xzA = positionGeometry.xz.add(ref(uM.uCentroA))
+        const e = ref(uM.uPasso).mul(0.5)
+        const hx = superficie(xzA.add(vec2(e, 0.0))).sub(superficie(xzA.sub(vec2(e, 0.0))))
+        const hz = superficie(xzA.add(vec2(0.0, e))).sub(superficie(xzA.sub(vec2(0.0, e))))
+        normalLocal.assign(normalize(vec3(hx.negate(), e.mul(2.0), hz.negate())))
+        v.altura.assign(alturaPraia(xzA))
+        v.praia.assign(praiaEm(xzA))
+        v.fundo.assign(afunda(xzA).x)
+        return vec3(xzA.x, superficie(xzA), xzA.y)
+      })()
+    },
+    // normal da luz pela altura no fragmento (a parede da pegada sai do mapa de 2,3 cm, não da malha)
+    normal({ W }) {
+      const { vec2, vec3, vec4, normalize, texture, positionWorld, cameraViewMatrix } = W
+      const uMapa = ref(uM.uMapaF), uMapaTam = ref(uM.uMapaTamF)
+      const superficieF = (xz) => {
+        const h = texture(uM.tAlturaF.value, xz.sub(uMapa.xy).div(uMapa.z).add(0.5).div(uMapaTam)).x
+        const uv = xz.sub(ref(uM.uCentroF)).div(ref(uM.uAreaF)).add(0.5)
+        const fora = uv.x.lessThanEqual(0.0).or(uv.x.greaterThanEqual(1.0)).or(uv.y.lessThanEqual(0.0)).or(uv.y.greaterThanEqual(1.0))
+        const a = fora.select(vec2(0.0), amostraAlvo(uM.tAfundaF, uv).xy)
+        return h.sub(a.x).add(a.y)
+      }
+      const eF = ref(uM.uAreaF).div(TAM)
+      const xzF = positionWorld.xz
+      const hxF = superficieF(xzF.add(vec2(eF, 0.0))).sub(superficieF(xzF.sub(vec2(eF, 0.0))))
+      const hzF = superficieF(xzF.add(vec2(0.0, eF))).sub(superficieF(xzF.sub(vec2(0.0, eF))))
+      return normalize(cameraViewMatrix.mul(vec4(normalize(vec3(hxF.negate(), eF.mul(2.0), hzF.negate())), 0.0)).xyz)
+    },
+    cor({ W }, rgb) {
+      const { mix, smoothstep, Discard } = W
+      const v = vars(W)
+      // só onde é praia; fora dela o chão de sempre aparece
+      Discard(v.praia.lessThan(0.3))
+      const base = mix(ref(uM.uMolhada), ref(uM.uSeca), smoothstep(0.0, 0.22, v.altura))
+      // dentro da pegada a areia está compactada e um pouco mais escura
+      return mix(base, ref(uM.uFundo), smoothstep(0.004, 0.04, v.fundo).mul(0.55))
+    },
+  }
+}
+
 export function criarAreia(cena, renderer, mapaAltura, cfg) {
   const opc = { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false }
-  const rts = [new THREE.WebGLRenderTarget(TAM, TAM, opc), new THREE.WebGLRenderTarget(TAM, TAM, opc)]
+  const rts = [criarAlvo(THREE, TAM, TAM, opc), criarAlvo(THREE, TAM, TAM, opc)]
   let ia = 0
   const marcas = Array.from({ length: MAX }, () => new THREE.Vector4())
   const formas = Array.from({ length: MAX }, () => new THREE.Vector4())
@@ -110,14 +218,7 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
     uCentro: { value: new THREE.Vector2() }, uDesloc: { value: new THREE.Vector2() }, uArea: { value: AREA_AREIA }, uDt: { value: 0 },
     uSecaRecupera: { value: 0.01 }, uMolhadaRecupera: { value: 0.6 }, uMarcas: { value: marcas }, uForma: { value: formas }, uN: { value: 0 },
   }
-  const quad = new THREE.Mesh(
-    new THREE.PlaneGeometry(2, 2),
-    new THREE.ShaderMaterial({ uniforms: uA, vertexShader: vertQuad, fragmentShader: fragAfunda, depthTest: false, depthWrite: false })
-  )
-  quad.frustumCulled = false
-  const cenaQuad = new THREE.Scene()
-  cenaQuad.add(quad)
-  const camQuad = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+  const passeAfunda = criarPasse(THREE, { uniforms: uA, vertexShader: vertQuad, fragmentShader: fragAfunda, tsl: () => afundaTsl(uA) })
 
   // malha fina de areia
   const uM = {
@@ -165,6 +266,7 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
         diffuseColor.rgb = mix(diffuseColor.rgb, uFundo, smoothstep(0.004, 0.04, vFundo) * 0.55);`)
   }
   pintar(mat, 'areia-pintada')
+  mat.userData.tsl = malhaTsl(uM)
   texturizar(mat, { topo: 'areia', lado: 'pedra', tam: 3, contraste: 1.4, massa: 0.9 }) // igual ao terreno (terreno.js)
   const malha = new THREE.Mesh(geo, mat)
   malha.frustumCulled = false
@@ -181,6 +283,7 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
   poeira.userData.peso = 0.45
   cena.add(poeira)
   const nuvens = []
+  const rndPo = criarAleatorio(73) // sorteio com semente: a foto justa (KAN-68) e a regra do projeto
   const mtx = new THREE.Matrix4()
   let acPo = 0
 
@@ -202,8 +305,8 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
     poeira(x, y, z, qtd = 3) {
       for (let i = 0; i < qtd; i++) {
         if (nuvens.length >= MAXP) nuvens.shift()
-        const a = Math.random() * Math.PI * 2
-        nuvens.push({ x: x + Math.cos(a) * 0.15, y: y + 0.08, z: z + Math.sin(a) * 0.15, vx: Math.cos(a) * 0.6, vz: Math.sin(a) * 0.6, idade: 0, vida: 0.55 + Math.random() * 0.25 })
+        const a = rndPo.proximo() * Math.PI * 2
+        nuvens.push({ x: x + Math.cos(a) * 0.15, y: y + 0.08, z: z + Math.sin(a) * 0.15, vx: Math.cos(a) * 0.6, vz: Math.sin(a) * 0.6, idade: 0, vida: 0.55 + rndPo.proximo() * 0.25 })
       }
     },
     atualizar(dt, jogador) {
@@ -230,8 +333,7 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
       uA.tAnterior.value = rts[ia].texture
       const r = renderer
       const alvo = r.getRenderTarget()
-      r.setRenderTarget(rts[1 - ia])
-      r.render(cenaQuad, camQuad)
+      passeAfunda.desenhar(r, rts[1 - ia])
       r.setRenderTarget(alvo)
       ia = 1 - ia
 

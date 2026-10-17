@@ -9,7 +9,7 @@ import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno } from './mundo/terreno.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
-import { criarRenderizador, prepararCenaWebgpu, quadroWebgpu } from './render/renderizador.js'
+import { criarRenderizador, prepararCenaWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
 import { definirTamBloco } from './mundo/blocos.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
@@ -44,6 +44,7 @@ import { CameraTerceiraPessoa } from './jogador/camera.js'
 import { criarInteracoes } from './jogador/interacoes.js'
 import { carregarAvo } from './jogador/avo.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
+import { AranhaversoGpu } from './pos/aranhaverso-gpu.js'
 import { criarHud } from './ui/hud.js'
 import { criarPainel } from './ui/painel.js'
 import { criarSom } from './audio.js'
@@ -119,19 +120,20 @@ async function iniciar() {
   const inicio = new THREE.Vector3(x0, alturaChao(x0, z0), z0)
   const jogador = new Jogador(cena, cfg, inicio, -Math.PI / 2)
   let atores = null
+  const carregamentos = [] // modelos em segundo plano (a foto justa espera todos)
   // corpo novo (esqueleto padrão + mocap do Mixamo): carrega em segundo plano e substitui o boneco antigo
   if (cfg.personagem.corpoNovo) {
-    carregarCorpo({ modelo: cfg.personagem.modeloJogador, chapeu: cfg.personagem.chapeu, rostoDesenhado: cfg.personagem.rostoNeto, estiloRosto: cfg.personagem.estiloRostoNeto, ombros: cfg.personagem.ombros, folgaCamisa: cfg.personagem.folgaCamisa, roupaJolt: cfg.personagem.roupaJolt }).then((c) => {
+    carregamentos.push(carregarCorpo({ modelo: cfg.personagem.modeloJogador, chapeu: cfg.personagem.chapeu, rostoDesenhado: cfg.personagem.rostoNeto, estiloRosto: cfg.personagem.estiloRostoNeto, ombros: cfg.personagem.ombros, folgaCamisa: cfg.personagem.folgaCamisa, roupaJolt: cfg.personagem.roupaJolt }).then((c) => {
       if (!c) return
       jogador.trocarCorpo(c)
       // a gente mais próxima vira ator animado, com os mesmos movimentos (mundo/atores.js)
       atores = criarAtores(cena, pessoas, c.clipes, { passadaAndar: c.passadas.andar || 1.4 })
-    }).catch((e) => console.error('Corpo novo:', e))
+    }).catch((e) => console.error('Corpo novo:', e)))
   }
   // o avô parado perto de onde o jogo começa, de frente para o neto (para julgar o modelo com o filtro)
   let avo = null
   if (cfg.personagem.avo) {
-    carregarAvo({ movimento: cfg.personagem.avoMovimento, rostoDesenhado: cfg.personagem.rostoAvo, estiloRosto: cfg.personagem.estiloRostoNeto }).then((a) => {
+    carregamentos.push(carregarAvo({ movimento: cfg.personagem.avoMovimento, rostoDesenhado: cfg.personagem.rostoAvo, estiloRosto: cfg.personagem.estiloRostoNeto }).then((a) => {
       if (!a) return
       const x = inicio.x - 2.6, z = inicio.z + 0.9
       a.raiz.position.set(x, alturaChao(x, z), z)
@@ -139,13 +141,13 @@ async function iniciar() {
       cena.add(a.raiz)
       avo = a
       if (window.maresia) window.maresia.avo = a
-    }).catch((e) => console.error('Avô:', e))
+    }).catch((e) => console.error('Avô:', e)))
   }
   // segundo avô para comparar (o do Tripo), 1,2 m ao lado do primeiro
   let avo2 = null
   if (cfg.personagem.avoTripo) {
     // o do Tripo vem de coluna reta (17/10/2026): a postura de velho vem só do movimento
-    carregarAvo({ movimento: cfg.personagem.avoTripoMovimento, arquivo: '/arte/finais/avo-tripo.glb' }).then((a) => {
+    carregamentos.push(carregarAvo({ movimento: cfg.personagem.avoTripoMovimento, arquivo: '/arte/finais/avo-tripo.glb' }).then((a) => {
       if (!a) return
       const x = inicio.x - 2.6, z = inicio.z + 2.1
       a.raiz.position.set(x, alturaChao(x, z), z)
@@ -153,7 +155,7 @@ async function iniciar() {
       cena.add(a.raiz)
       avo2 = a
       if (window.maresia) window.maresia.avo2 = a
-    }).catch((e) => console.error('Avô do Tripo:', e))
+    }).catch((e) => console.error('Avô do Tripo:', e)))
   }
   const cam = new CameraTerceiraPessoa(camera, canvas, cfg, Math.PI / 2)
   const interacoes = criarInteracoes({ jogador, fisica, lugares, camera })
@@ -163,16 +165,11 @@ async function iniciar() {
   let esperaBorrifo = 0
   const ondaFila = [] // jatos de uma onda quebrando, um atrás do outro
   const VENTO_FX = new THREE.Vector3(-1, 0, -0.35).normalize()
-  // no modo webgpu ainda não há pós: a cena é desenhada direto (o resto entra na fase 2 do motor)
+  // filtro de quadrinho: o mesmo nos dois renderizadores (no webgpu, as passadas em TSL)
   const pos = webgpu
-    ? { render() { quadroWebgpu(); renderer.render(cena, camera) }, tamanho() {}, coletarExcecoes() {} }
+    ? new AranhaversoGpu(renderer, cena, camera, cfg, globais)
     : new Aranhaverso(renderer, cena, camera, cfg, globais)
   pos.coletarExcecoes()
-  if (webgpu) {
-    prepararCenaWebgpu(cena)
-    setInterval(() => prepararCenaWebgpu(cena), 2000) // o que chega depois (corpo do jogador, partículas)
-  }
-  if (webgpu) window.__shadersQuebrados = [] // o WebGPU não expõe a lista de programas do WebGL
   if (import.meta.env.DEV && !webgpu) {
     // todo material da cena precisa escrever a saída de luz (gLuz); avisa se algum esqueceu
     const faltando = new Set()
@@ -234,10 +231,14 @@ async function iniciar() {
   let t = 0
 
   const estatistica = { msQuadro: 16 }
-  const controle = { pausado: false } // o gravador pausa o laço e chama passo() com tempo fixo
+  // o gravador pausa o laço e chama passo() com tempo fixo. Com ?foto na URL o jogo já abre pausado: a foto
+  // justa (debug/foto-justa.js) roda a mesma sequência de passos fixos nos dois renderizadores, então o mundo
+  // (partículas, ondas, animação) fica no mesmo estado nas duas fotos
+  const controle = { pausado: new URLSearchParams(location.search).has('foto') }
 
-  // Um passo da simulação + desenho. dt em segundos.
-  function passo(dt) {
+  // Um passo da simulação + desenho. dt em segundos. desenhar = false: só simula (a foto justa avança o mundo
+  // sem gastar desenho)
+  function passo(dt, desenhar = true) {
     t += dt
     globais.uTempo.value = t
     if (!cfg.tempo.pausado) cfg.tempo.hora = (cfg.tempo.hora + (dt * cfg.tempo.velocidade) / 60) % 24
@@ -323,14 +324,14 @@ async function iniciar() {
     globais.uVentoPalm.value = cfg.interacao.ventoCoqueiros
     interacoes.atualizar()
     fisica.atualizar(dt, jogador)
-    if (!webgpu) { // os passes de toque e de areia desenham com shader próprio (fase 2 no WebGPU)
-      toque.atualizar(dt, pj)
-      areia.atualizar(dt, pj)
-    }
+    toque.atualizar(dt, pj)
+    areia.atualizar(dt, pj)
     hud.atualizar(dt, jogador)
     mapa.atualizar(jogador)
     som.atualizar(distCosta(jogador.pos.x, jogador.pos.z), jogador.pos.y)
 
+    if (!desenhar) return
+    if (webgpu) prepararCenaWebgpu(cena) // material novo já sai com a versão do WebGPU no primeiro desenho
     pos.render(t, jogador.velHoriz)
   }
 
@@ -338,12 +339,13 @@ async function iniciar() {
   function quadro() {
     requestAnimationFrame(quadro)
     contadorFps.quadro()
-    if (window.__primeiroQuadroMs === undefined) window.__primeiroQuadroMs = Math.round(performance.now()) // KAN-67 R3
     const real = relogio.getDelta()
     estatistica.msQuadro += (real * 1000 - estatistica.msQuadro) * 0.05
     if (controle.pausado) return
     if (Math.min(cfg.desempenho.resolucao, devicePixelRatio || 1) !== resolucao) redimensionar()
     passo(Math.min(real, 1 / 20))
+    // tempo até o primeiro quadro desenhado de verdade (com os shaders montados), para comparar renderizadores
+    if (window.__primeiroQuadroMs === undefined) window.__primeiroQuadroMs = Math.round(performance.now())
   }
   quadro()
 
@@ -358,9 +360,21 @@ async function iniciar() {
     cfg.tempo.hora = hora
   }
   window.__tempos = tempos
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS }
+  // tamanho fixo do desenho (foto justa): mesma resolução nos dois renderizadores, sem depender da janela
+  const tamanhoFixo = (w, h) => {
+    if (!w) { redimensionar(); return }
+    renderer.setPixelRatio(1)
+    renderer.setSize(w, h, false)
+    camera.aspect = w / h
+    camera.updateProjectionMatrix()
+    pos.tamanho(w, h, 1)
+  }
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, webgpu, pronto: Promise.allSettled(carregamentos),
+    // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
+    gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
   if (import.meta.env.DEV) import('./debug/medidor.js').then((g) => g.instalar(window.maresia))
+  if (import.meta.env.DEV) import('./debug/foto-justa.js').then((g) => g.instalar(window.maresia))
 }
 
 iniciar()

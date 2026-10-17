@@ -17,6 +17,7 @@ import { globais } from '../globais.js'
 import { criarAleatorio } from '../utils.js'
 import { gradienteToon, pintar } from '../materiais.js'
 import { resumoRetangulo } from './terreno.js'
+import { ref, amostraAlvo, funcoes } from '../render/gpu/comum.js'
 
 const BLOCOS = 8
 
@@ -79,6 +80,75 @@ const GLSL_POSICAO = /* glsl */ `
   vAltG = h;
   vTomG = ruidoG(xz * 0.06);
 `
+
+// As mesmas contas de GLSL_POSICAO e do fragmento, para o modo webgpu (motor F2, KAN-68)
+function gramaTsl(u) {
+  let V = null
+  const vars = (W) => V || (V = { alt: W.varyingProperty('float', 'vAltG'), tom: W.varyingProperty('float', 'vTomG') })
+  return {
+    nome: 'grama',
+    posicao({ W }) {
+      const { Fn, vec2, vec3, vec4, float, floor, fract, length, smoothstep, mix, step, cos, sin, normalize, sign, dot,
+        texture, attribute, positionLocal, normalLocal, cameraPosition } = W
+      const { ruido } = funcoes()
+      const v = vars(W)
+      const R = {}
+      for (const k in u) if (!k.startsWith('t')) R[k] = ref(u[k])
+      // mod do GLSL (x - y * floor(x / y)): o % do WGSL trunca e erra nos negativos
+      const modGl = (x, y) => x.sub(y.mul(floor(x.div(y))))
+      return Fn(() => {
+        const aOffset = attribute('aOffset', 'vec2')
+        const aRand = attribute('aRand', 'float')
+        const rel = modGl(aOffset.sub(R.uCentro).add(R.uLado.mul(0.5)), R.uLado).sub(R.uLado.mul(0.5))
+        const xz = R.uCentro.add(rel)
+        const mg = texture(u.tAltura.value, xz.sub(R.uMapa.xy).div(R.uMapa.z).add(0.5).div(R.uMapaTam))
+        // LOD: perto da câmera todas as folhas; longe só uma fração, mais largas
+        const dCam = length(xz.sub(cameraPosition.xz))
+        const lod = smoothstep(R.uLodPerto, R.uLado.mul(0.5), dCam)
+        const manter = mix(1.0, R.uFracaoLonge, lod)
+        const vivo = step(aRand, mg.y).mul(step(fract(aRand.mul(91.7)), manter))
+        const borda = float(1.0).sub(smoothstep(0.7, 1.0, length(rel).div(R.uLado.mul(0.5))))
+        const varA = fract(aRand.mul(7.31))
+        const varL = fract(aRand.mul(3.17))
+        const tufo = step(0.93, fract(aRand.mul(53.1)))
+        const alt = R.uAltura.mul(float(0.45).add(varA.mul(1.1)).add(tufo.mul(0.6))).mul(vivo).mul(borda).toVar()
+        const larg = R.uLargura.mul(float(0.5).add(varL.mul(1.1))).mul(mix(1.0, R.uLargLonge, lod))
+        // direção da folha: sorteada, puxada para ficar de frente para a câmera
+        const ang = fract(aRand.mul(13.7)).mul(6.2831)
+        const dirAleat = vec2(cos(ang), sin(ang))
+        const paraCam = normalize(cameraPosition.xz.sub(xz).add(vec2(1e-4)))
+        const perp0 = vec2(paraCam.y.negate(), paraCam.x)
+        const perpCam = perp0.mul(sign(dot(dirAleat, perp0).add(1e-4)))
+        const dirLat = normalize(mix(dirAleat, perpCam, R.uVirarCamera).add(vec2(1e-4)))
+        const lat = dirLat.mul(positionLocal.x).mul(larg)
+        const h = positionLocal.y
+        const n = ruido(xz.mul(R.uVentoEscala).add(vec2(R.uTempoG.mul(R.uVentoVel), R.uTempoG.mul(R.uVentoVel).mul(0.6))))
+        const curva = normalize(vec2(1.0, 0.45)).mul(n.mul(0.9).add(0.15)).mul(R.uVentoForca).toVar()
+        // mapa de toque: quem passou por aqui deitou a grama nessa direção
+        const uvT = xz.sub(R.uToqueCentro).div(R.uToqueArea).add(0.5)
+        const dentro = uvT.x.greaterThan(0.0).and(uvT.x.lessThan(1.0)).and(uvT.y.greaterThan(0.0)).and(uvT.y.lessThan(1.0))
+        const tq = dentro.select(amostraAlvo(u.tToque, uvT), vec4(0.0))
+        curva.addAssign(tq.xy.mul(1.7))
+        alt.mulAssign(float(1.0).sub(tq.z.mul(0.45)))
+        const deslocar = curva.mul(h).mul(h).mul(alt)
+        // normal para cima: a folha acende igual ao chão em volta
+        normalLocal.assign(vec3(0.0, 1.0, 0.0))
+        v.alt.assign(h)
+        v.tom.assign(ruido(xz.mul(0.06)))
+        return vec3(xz.x.add(lat.x).add(deslocar.x), mg.x.add(h.mul(alt).mul(float(1.0).sub(length(curva).mul(0.3).mul(h)))), xz.y.add(lat.y).add(deslocar.y))
+      })()
+    },
+    // as duas faces da folha usam a mesma normal (senão o verso fica escuro)
+    normal({ W }) { return W.normalView },
+    cor({ W }) {
+      const { mix, floor } = W
+      const v = vars(W)
+      // degradê em 3 faixas chapadas da base escura à ponta clara
+      const faixaG = floor(v.alt.mul(3.0).add(0.5)).div(3.0)
+      return mix(mix(ref(u.uBase1), ref(u.uBase2), v.tom), mix(ref(u.uPonta1), ref(u.uPonta2), v.tom), faixaG)
+    },
+  }
+}
 
 function geometriaFolha() {
   // 3 níveis + ponta, afinando para cima
@@ -152,6 +222,7 @@ export function criarGrama(cena, mapaAltura, cfg, toque) {
       .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\nnormal = normalize(vNormal);')
   }
   pintar(material, 'grama-pintada')
+  material.userData.tsl = gramaTsl(u)
 
   const folha = geometriaFolha()
   const grupo = new THREE.Group()
