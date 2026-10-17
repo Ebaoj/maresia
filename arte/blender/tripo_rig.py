@@ -34,6 +34,17 @@ ativar(malha)
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 bm = bmesh.new(); bm.from_mesh(malha.data)
 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)   # costuras de UV vinham soltas
+ilhas = 0; vistos = set()
+for v0 in bm.verts:   # pedaços soltos (partes do Tripo: roupa, cabelo...)
+    if v0.index in vistos: continue
+    ilhas += 1; pilha = [v0]; vistos.add(v0.index); tam = 0
+    while pilha:
+        v = pilha.pop(); tam += 1
+        for e in v.link_edges:
+            o = e.other_vert(v)
+            if o.index not in vistos: vistos.add(o.index); pilha.append(o)
+    if tam > 2000: print("PEDACO", ilhas, tam, "pontos")
+print("PEDACOS", ilhas)
 bm.to_mesh(malha.data); bm.free()
 dec = malha.modifiers.new("reduz", "DECIMATE"); dec.ratio = min(1.0, FACES / len(malha.data.polygons))
 bpy.ops.object.modifier_apply(modifier="reduz")
