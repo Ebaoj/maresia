@@ -159,7 +159,9 @@ export class Animador {
     // ele emendava uma meia-volta na outra e ficava oscilando de lado sem encarar nenhuma direção
     const angulo = (a) => Math.atan2(Math.sin(a), Math.cos(a))
     const mudouPedido = mm.trava && s.yawPedido != null && mm.trava.yawPedido != null && Math.abs(angulo(s.yawPedido - mm.trava.yawPedido)) > 1.2
-    const travado = mm.trava && mm.trava.chave === mm.chave && fAtual < mm.trava.ate && !fimDoClipe && !mudouPedido
+    // sem clipe tocando, o giro acabou: com atual nulo o quadro lido era 0, "antes do fim", e a trava nunca
+    // soltava (S curto, soltar, S de novo: andava a 30% com a pose congelada no fim da volta e afundava)
+    const travado = !!atual && mm.trava && mm.trava.chave === mm.chave && fAtual < mm.trava.ate && !fimDoClipe && !mudouPedido
     if (!travado) mm.trava = null
     if (mudouPedido) { mm.espera = 0; mm.semGiro = 0.7 }
     // logo depois de desistir de um giro, nada de outra volta do mocap (lenta, ~1 s): o controle vira rápido
@@ -323,7 +325,8 @@ export class Animador {
     // o motion matching escolhia, deixa os braços em posição de sentido (o Joabe estranhou, 16/10)
     else if (this.mm && this.opcoes.mm && !s.carregando && s.traj && !(s.vel < 0.25 && (s.velPedida || 0) < 0.1 && this.tem('parado'))) this.casar(DT, s, alvo)
     else loc(s.vel, s.carregando && this.tem('carregar-andando') ? 'carregar-andando' : 'andar')
-    if (this.mm && !alvo[this.mm.chave]) this.mm.tocando = false
+    // saiu do motion matching (parou, sentou, pulou...): o giro que estava travado acaba junto
+    if (this.mm && !alvo[this.mm.chave]) { this.mm.tocando = false; this.mm.trava = null }
 
     // troca suave entre movimentos (pesos andam para o alvo) e o que não existe cai no "parado"
     let soma = 0

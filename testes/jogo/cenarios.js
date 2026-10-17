@@ -234,6 +234,34 @@ export const cenarios = {
     return { ok: ruins.length === 0, medidas, motivo: ruins.length ? 'meia-volta a mais depois da última tecla' : '' }
   },
 
+  // Regressão (17/10/2026, vídeo IMG_3554 do Joabe): parado, S rápido começa a meia-volta; soltar antes do
+  // fim e apertar S de novo (mesmo pedido) deixava a trava do giro presa. Ele andava a 30% da velocidade
+  // com a pose congelada no fim da volta ("anda parado sem animação") e ia afundando.
+  async meiaVoltaInterrompida(m) {
+    const t = m.teclas
+    const j = m.jogador
+    soltarTudo(t)
+    m.irPara(340, 20, 0)
+    await esperar(2000)
+    t.tras = true
+    await esperar(350)
+    t.tras = false
+    await esperar(1200)
+    t.tras = true
+    await esperar(2500)
+    const q = osso(m, 'Hips')
+    if (!q) { soltarTudo(t); return { ok: false, motivo: 'sem osso do quadril' } }
+    const antes = q.quaternion.clone()
+    const girando = !!j.animador.girando
+    const vel = j.velHoriz
+    await esperar(500)
+    const poseMudou = 1 - Math.abs(antes.dot(q.quaternion))
+    soltarTudo(t)
+    const medidas = { girando, vel: +vel.toFixed(2), poseMudou: +poseMudou.toFixed(5) }
+    const ok = !girando && vel > 1.0 && poseMudou > 1e-5
+    return { ok, medidas, motivo: ok ? '' : 'meia-volta interrompida deixou o giro preso' }
+  },
+
   // O mínimo de toda mudança: o jogo carregou sem shader quebrado (os erros de console o executor junta)
   async semErros() {
     const quebrados = (window.__shadersQuebrados || []).length
