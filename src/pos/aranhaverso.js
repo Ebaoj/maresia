@@ -464,6 +464,7 @@ export class Aranhaverso {
     gl.uArcPincel.value = e.arcPincel
     gl.uArcCorSombra.value.set(e.arcCorSombra)
     gl.uArcNiveis.value.set(e.arcNivelSombra, e.arcNivelMeio, e.arcNivelLuz)
+    gl.uTexForca.value = e.arcTextura
     u.uTempo.value = Math.floor(tempo * e.fpsTraco) / e.fpsTraco
     u.uNear.value = cam.near
     u.uFar.value = cam.far

@@ -11,7 +11,7 @@
 
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { toonVertice } from '../materiais.js'
+import { texturizar, toonVertice } from '../materiais.js'
 import { ruido } from './mapa.js'
 
 function colorir(geo, hex, fn = null) {
@@ -133,6 +133,6 @@ export function geometriaJangada({ semente = 0, idade = 0.4, naAreia = false } =
 
 let _mat = null
 export function materialJangada() {
-  if (!_mat) _mat = toonVertice({ side: THREE.DoubleSide })
+  if (!_mat) _mat = texturizar(toonVertice({ side: THREE.DoubleSide }), { topo: 'madeira', lado: 'madeira', tam: 1.2 }) // pau de piúba gasto de sal (visual Arcane)
   return _mat
 }

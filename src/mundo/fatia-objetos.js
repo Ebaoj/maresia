@@ -6,7 +6,7 @@
 
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { toonVertice } from '../materiais.js'
+import { texturizar, toonVertice } from '../materiais.js'
 import { alturaTerreno } from './terreno.js'
 import { linhaCosta, larguraPraia, ruido } from './mapa.js'
 import { adicionarCaixa, adicionarCirculo } from './colisao.js'
@@ -260,7 +260,7 @@ export function criarObjetosFatia(cena, casasPalha) {
     else if (ocupacao.livre(x, z, 1.4, 0.4, 0)) ok = pôr('peixe', peixeSecando, x, z, rnd.entre(-0.5, 0.5), { caixa: [1.1, 0.1] })
     if (ok) ocupacao.marcar(x, z, 0.6, 0.6)
   }
-  const mat = toonVertice({ side: THREE.DoubleSide })
+  const mat = texturizar(toonVertice({ side: THREE.DoubleSide }), { topo: 'madeira', lado: 'madeira', tam: 0.8 }) // visual Arcane
   let n = 0
   for (const [nome, t] of tipos) {
     if (!t.mats.length) continue

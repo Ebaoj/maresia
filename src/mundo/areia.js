@@ -13,7 +13,7 @@
 // Bônus: poeirinha em nuvenzinhas quando se corre na areia seca, animada "em 2".
 
 import * as THREE from 'three'
-import { gradienteToon, pintar, toon } from '../materiais.js'
+import { gradienteToon, pintar, texturizar, toon } from '../materiais.js'
 import { uAreiaTerreno } from './terreno.js'
 import { distCosta, larguraPraia } from './mapa.js'
 
@@ -165,6 +165,7 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
         diffuseColor.rgb = mix(diffuseColor.rgb, uFundo, smoothstep(0.004, 0.04, vFundo) * 0.55);`)
   }
   pintar(mat, 'areia-pintada')
+  texturizar(mat, { topo: 'areia', lado: 'pedra', tam: 3 }) // igual ao terreno (terreno.js)
   const malha = new THREE.Mesh(geo, mat)
   malha.frustumCulled = false
   malha.receiveShadow = true

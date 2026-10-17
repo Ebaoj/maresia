@@ -22,6 +22,7 @@ export const PADRAO = {
     arcLinha: 0.7,         // contorno só na silhueta, na cor do objeto escurecida
     arcSaturacao: 1.05,
     arcGrao: 0.04,
+    arcTextura: 1.0,       // força das texturas pintadas do mundo (areia, palha, madeira; public/texturas)
     espessuraLinha: 1.3,
     limiarProfundidade: 0.07,
     limiarNormal: 0.55,

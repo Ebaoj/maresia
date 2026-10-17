@@ -13,7 +13,7 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { linhaCosta, larguraPraia, rioX, RIO_MEIA_LARGURA } from './mapa.js'
 import { alturaTerreno } from './terreno.js'
-import { toonVertice } from '../materiais.js'
+import { texturizar, toonVertice } from '../materiais.js'
 import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { instanciarEmBlocos } from './blocos.js'
@@ -347,7 +347,8 @@ export function criarVilas(cena) {
     }
   }
 
-  const mat = toonVertice({ side: THREE.DoubleSide })
+  // textura pintada (visual Arcane): palha no que olha para cima (cobertura), tábua nas paredes e varas
+  const mat = texturizar(toonVertice({ side: THREE.DoubleSide }), { topo: 'palha', lado: 'madeira', tam: 1.6 })
   for (const t of tipos) {
     if (!t.mats.length) continue
     instanciarEmBlocos(cena, t.geo, mat, t.mats, null, { nome: 'casas-de-palha', solido: true })

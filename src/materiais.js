@@ -59,6 +59,15 @@ export function pintar(mat, chave) {
     sh.uniforms.uCorLamp = globais.uCorLamp
     sh.uniforms.uNoiteL = globais.uNoite
     for (const k of ['uArcane', 'uArcLim', 'uArcSuave', 'uArcPincel', 'uArcCorSombra', 'uArcNiveis']) sh.uniforms[k] = globais[k]
+    const tp = mat.userData.texPintada
+    if (tp) {
+      sh.defines = { ...(sh.defines || {}), TEX_PINTADA: '' }
+      sh.uniforms.tTexTopo = { value: tp.topo }
+      sh.uniforms.tTexLado = { value: tp.lado }
+      sh.uniforms.uTexTam = { value: tp.tam }
+      sh.uniforms.uTexForca = globais.uTexForca
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tTexTopo; uniform sampler2D tTexLado; uniform float uTexTam; uniform float uTexForca;')
+    }
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vPMundo; varying vec3 vNMundo;')
       .replace(
@@ -119,7 +128,20 @@ export function pintar(mat, chave) {
       )
       .replace(
         '#include <normal_fragment_begin>',
-        `{
+        `
+        #ifdef TEX_PINTADA
+        {
+          // textura pintada (visual Arcane): detalhe projetado no mundo pelos três eixos, que multiplica a
+          // cor do material (média 1: mantém a paleta, acrescenta pincelada, desgaste e sujeira)
+          vec3 nT = normalize(vNMundo);
+          vec3 wT = pow(abs(nT), vec3(4.0));
+          wT /= (wT.x + wT.y + wT.z + 1e-4);
+          vec3 pT = vPMundo / uTexTam;
+          vec3 detT = texture2D(tTexLado, pT.zy).rgb * wT.x + texture2D(tTexTopo, pT.xz).rgb * wT.y + texture2D(tTexLado, pT.xy).rgb * wT.z;
+          diffuseColor.rgb *= mix(vec3(1.0), detT * 2.0, uTexForca * uArcane);
+        }
+        #endif
+        {
           float bp = pincelada(vPMundo, normalize(vNMundo));
           diffuseColor.rgb *= 1.0 + (bp - 0.5) * uPincel;
           float tom = vP(vPMundo.xz * 0.02 + vPMundo.y * 0.013);
@@ -130,6 +152,31 @@ export function pintar(mat, chave) {
   }
   mat.customProgramCacheKey = () => chave
   mat.userData.luzMRT = true
+  return mat
+}
+
+// Texturas pintadas do mundo (visual Arcane): geradas no ComfyUI, tornadas contínuas por
+// arte/texturas/costurar.py e normalizadas para média 0,5 em cada canal (no shader viram média 1 e
+// multiplicam a cor do material). Ficam em public/texturas/<nome>.jpg.
+const _texturas = new Map()
+export function texturaPintada(nome) {
+  if (!_texturas.has(nome)) {
+    const t = new THREE.TextureLoader().load(`/texturas/${nome}.jpg`)
+    t.wrapS = t.wrapT = THREE.RepeatWrapping
+    t.colorSpace = THREE.NoColorSpace // valores crus: é detalhe, não cor
+    t.anisotropy = 4
+    _texturas.set(nome, t)
+  }
+  return _texturas.get(nome)
+}
+
+// Liga a textura pintada num material que passa por pintar(): "topo" no que olha para cima (chão,
+// telhado), "lado" nas paredes; tam = quantos metros cobre uma repetição. Chamar antes do primeiro desenho.
+export function texturizar(mat, { topo, lado = topo, tam = 2 }) {
+  mat.userData.texPintada = { topo: texturaPintada(topo), lado: texturaPintada(lado), tam }
+  const chave = mat.customProgramCacheKey?.() || ''
+  mat.customProgramCacheKey = () => `${chave}|tex:${topo}:${lado}`
+  mat.needsUpdate = true
   return mat
 }
 

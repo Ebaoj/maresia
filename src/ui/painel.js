@@ -37,6 +37,7 @@ export function criarPainel(cfg) {
   arc.add(e, 'arcLinha', 0, 1, 0.01).name('contorno da silhueta')
   arc.add(e, 'arcSaturacao', 0, 2, 0.01).name('saturação')
   arc.add(e, 'arcGrao', 0, 0.2, 0.005).name('grão de filme')
+  arc.add(e, 'arcTextura', 0, 2, 0.05).name('textura pintada do mundo')
   const est = gui.addFolder('Estética (quadrinho)')
   const epoca = gui.addFolder('Época')
   epoca.add(e, 'memoria', 0, 1, 0.01).name('1932 → 1881 (memória)').listen()

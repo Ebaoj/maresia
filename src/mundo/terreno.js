@@ -4,7 +4,7 @@ import {
   FIM_AVENIDA, densidadeGrama, rioX, RIO_MEIA_LARGURA, densidadeLotes,
 } from './mapa.js'
 import { lagoasJogo, lugaresJogo } from './fortaleza1932.js'
-import { gradienteToon, pintar } from '../materiais.js'
+import { gradienteToon, pintar, texturizar } from '../materiais.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
 export const NX = Math.round((x1 - x0) / passo) + 1
@@ -315,7 +315,8 @@ function materialTerreno() {
           diffuseColor.rgb = mix(diffuseColor.rgb, mix(diffuseColor.rgb * 0.92, c, longe), vPiso);
         }`)
   }
-  return pintar(mat, 'terreno-pintado')
+  // textura pintada (visual Arcane): a mesma da areia fina, senão o quadrado de 24 m em volta do jogador emenda
+  return texturizar(pintar(mat, 'terreno-pintado'), { topo: 'areia', lado: 'pedra', tam: 3 })
 }
 
 // O mesmo mapa de alturas vira uma textura para a GPU:
