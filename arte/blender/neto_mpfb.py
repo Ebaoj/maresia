@@ -291,6 +291,7 @@ if VARIANTE in ("ativos", "limpo"):
 CAMISA = os.environ.get("NETO_CAMISA", "listrada")
 BARRA = float(os.environ.get("NETO_BARRA_CAMISA", "0.075"))   # barra da camisa abaixo da pelve
 MANGA = float(os.environ.get("NETO_MANGA", "0.5"))
+DECOTE = bool(os.environ.get("NETO_DECOTE"))   # camisa aberta no peito (sem: abotoada até em cima)
 FOLGADA = float(os.environ.get("NETO_CAMISA_FOLGADA", "0"))   # passadas de alisamento da camisa (0 = justa, como no neto)   # manga comprida arregaçada: fração do antebraço coberta
 def roupa():
     """Camisa de malha listrada e calça clara arregaçada, feitas da própria malha do corpo (seguem o esqueleto)."""
@@ -322,7 +323,7 @@ def roupa():
             if w_ante[i] > 0.5:   # manga comprida arregaçada até o meio do antebraço
                 return CAMISA == "escura" and dist_seg(v, El, H)[1] < MANGA
             if w_braco[i] > 0.5: return True                              # manga até o cotovelo
-            if CAMISA == "escura" and v[1] < Yn and abs(v[0]) < (v[2] - (Zn - 0.11)) * 0.35: return False   # aberta no peito (decote em V)
+            if CAMISA == "escura" and DECOTE and v[1] < Yn and abs(v[0]) < (v[2] - (Zn - 0.11)) * 0.35: return False   # aberta no peito (decote em V)
             return abs(v[0]) < abs(S[0]) * 1.05 and Zp - 0.095 < v[2] < Zn + 0.01
         # calça
         if w_ante[i] > 0.3 or w_braco[i] > 0.3: return False
@@ -330,7 +331,7 @@ def roupa():
     pecas = {}
     cor_camisa = _hex_lin(os.environ.get("NETO_COR_CAMISA", "#5c3d2e"))[:3] if CAMISA == "escura" else None   # tinta de mangue escura e gasta
     folga_camisa = float(os.environ.get("NETO_FOLGA_CAMISA", "0.016" if CAMISA == "escura" else "0.026"))
-    folga_calca = 0.010 if CAMISA == "escura" else 0.019
+    folga_calca = float(os.environ.get("NETO_FOLGA_CALCA", "0.010" if CAMISA == "escura" else "0.019"))
     for peca, folga, cor in (("camisa", folga_camisa, cor_camisa), ("calca", folga_calca, (0.80, 0.74, 0.62))):
         me2 = corpo.data.copy(); ob = corpo.copy(); ob.data = me2; ob.name = peca
         bpy.context.scene.collection.objects.link(ob)
@@ -347,7 +348,7 @@ def roupa():
         else: cortar(Zp - BARRA, True); cortar(Zn - 0.005, False)
         bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if v.is_boundary and Zp - 0.07 < v.co.z < Zn - 0.01 and not (peca == "calca" and v.co.z < barra + 0.005)],
                               factor=0.7, use_axis_x=True, use_axis_y=True, use_axis_z=True)  # borda sem serrilha (menos nos cortes retos)
-        if peca == "camisa" and FOLGADA:   # algodão largo: alisa a anatomia (peito, costela) antes de afastar do corpo
+        if FOLGADA:   # algodão largo: alisa a anatomia (peito, costela) antes de afastar do corpo
             for _ in range(int(FOLGADA)):
                 bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if not v.is_boundary], factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
         if peca == "camisa":  # malha mais fina para as listras não serrilharem
@@ -358,7 +359,7 @@ def roupa():
             if peca == "camisa" and v.co.z < Zp - 0.02: extra = (Zp - 0.02 - v.co.z) * 0.25      # barra solta
             if peca == "calca" and v.co.z < barra + 0.035: extra = 0.012 if CAMISA != "escura" else 0.004   # barra dobrada
             v.co += v.normal * (folga + extra)
-        if peca == "camisa" and FOLGADA:   # nada do corpo atravessa o pano: distância mínima da pele
+        if FOLGADA:   # nada do corpo atravessa o pano: distância mínima da pele
             from mathutils.bvhtree import BVHTree
             if "_bvh" not in pecas:
                 ids = set(_grupo_idx("body").tolist())
@@ -637,8 +638,70 @@ def barba_fios(nucleo, zl, zt, cb_y, N):
     m.materials.append(mt)
     print(f"BARBA fios: {N} mechas + {NB if tb else 0} no bigode ({len(tb)} triângulos), {len(verts)} pontos, {len(faces)} faces")
     return ob
+def cabelo_fios(base, N):
+    """Cabelo fio a fio por cima do cabelo do pacote (que vira o fundo): mechas curtas penteadas para trás,
+    caindo nos lados, meio desgrenhadas. Cada mecha segue o osso de onde nasce."""
+    from mathutils.kdtree import KDTree
+    rng = np.random.default_rng(66)
+    me = base.data; me.calc_loop_triangles()
+    tris = [t for t in me.loop_triangles if t.normal.z > -0.3]   # nada por baixo da touca
+    areas = np.array([t.area for t in tris]); areas /= areas.sum()
+    kd = KDTree(len(me.vertices))
+    for v in me.vertices: kd.insert(v.co, v.index)
+    kd.balance()
+    nomes = {g.index: g.name for g in base.vertex_groups}
+    raiz_c, ponta_c = np.array(_hex_lin("#bdb7ac")[:3]), np.array(_hex_lin("#efebe3")[:3])
+    verts, faces, cores, pesos = [], [], [], []
+    for k in rng.choice(len(tris), size=N, p=areas):
+        t = tris[k]; a, b_ = rng.random(2)
+        if a + b_ > 1: a, b_ = 1 - a, 1 - b_
+        A, B_, C = (me.vertices[i].co for i in t.vertices)
+        p = A + (B_ - A) * a + (C - A) * b_; n = t.normal.copy()
+        lado = min(abs(p.x) / 0.07, 1)
+        alvo = Vector((math.copysign(0.25 * lado, p.x), 1.0, -0.4 - 0.9 * lado))   # para trás e, nos lados, para baixo
+        d = (alvo - n * alvo.dot(n)).normalized() + n * 0.04; d.normalize()
+        L = rng.uniform(0.02, 0.045); S = 6; passo = L / S; w0 = rng.uniform(0.002, 0.0045)
+        lat = d.cross(n)
+        if lat.length < 1e-6: lat = Vector((1, 0, 0))
+        lat.normalize()
+        tint = rng.uniform(-0.04, 0.03); q = p - n * 0.0005; base_i = len(verts)
+        for s in range(S + 1):
+            u = s / S; w = w0 * (1 - u) ** 0.8 + 0.0003
+            verts += [tuple(q - lat * w / 2), tuple(q + lat * w / 2)]
+            c = raiz_c * (1 - u) + ponta_c * u + tint; cores += [c, c]
+            if s < S:
+                faces.append((base_i + 2 * s, base_i + 2 * s + 1, base_i + 2 * s + 3, base_i + 2 * s + 2))
+                d = (d - n * 0.16 + Vector((0, 0, -0.05)) + Vector(rng.normal(0, 0.05, 3))).normalized()   # curva junto com a cabeça
+                q = q + d * passo
+        _, vi, _ = kd.find(p)
+        pesos += [[(nomes[g.group], g.weight) for g in me.vertices[vi].groups if g.weight > 0.01]] * (2 * (S + 1))
+    m = bpy.data.meshes.new("cabelo-fios"); m.from_pydata(verts, [], faces); m.update()
+    ob = base.copy(); ob.data = m; ob.name = "cabelo-fios"
+    bpy.context.scene.collection.objects.link(ob)
+    for md in list(ob.modifiers):
+        if md.type != "ARMATURE": ob.modifiers.remove(md)
+    ob.vertex_groups.clear(); grupos = {}
+    for i, gs in enumerate(pesos):
+        for nome, w in gs:
+            if nome not in grupos: grupos[nome] = ob.vertex_groups.new(name=nome)
+            grupos[nome].add([i], w, "REPLACE")
+    attr = m.color_attributes.new("Col", "BYTE_COLOR", "CORNER")
+    lv = np.empty(len(m.loops), dtype=np.int64); m.loops.foreach_get("vertex_index", lv)
+    C_ = np.clip(np.array(cores), 0, 1); rgba = np.ones((len(m.loops), 4)); rgba[:, :3] = C_[lv]
+    attr.data.foreach_set("color", rgba.ravel())
+    mt = bpy.data.materials.new("cabelo-fios"); mt.use_nodes = True; mt.use_backface_culling = False
+    bs = mt.node_tree.nodes["Principled BSDF"]; bs.inputs["Roughness"].default_value = 1
+    vc = mt.node_tree.nodes.new("ShaderNodeVertexColor"); vc.layer_name = "Col"
+    mt.node_tree.links.new(vc.outputs["Color"], bs.inputs["Base Color"])
+    m.materials.append(mt)
+    base.data.materials[0].node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = _hex_lin("#a39d92")   # fundo mais escuro: dá profundidade
+    print(f"CABELO fios: {N} mechas, {len(faces)} faces")
+    return ob
+
 if os.environ.get("NETO_BARBA"):
     BARBA = barba()
+if os.environ.get("NETO_CABELO_FIOS"):
+    CABELO_FIOS = cabelo_fios(cabelo, int(os.environ["NETO_CABELO_FIOS"]))
 
 if os.environ.get("NETO_TPOSE"):
     # pose T reta: braço, antebraço, mão e dedos num eixo X horizontal; pernas retas; pés para a frente.

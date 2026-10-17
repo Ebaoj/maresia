@@ -40,12 +40,12 @@
   "nose-volume-incr": 0.25,
   "mouth-lowerlip-volume-decr": 0.25,
   "chin-prominent-incr": 0.2,
-  "l-hand-scale-incr": 0.45,
-  "r-hand-scale-incr": 0.45,
-  "l-hand-fingers-diameter-incr": 0.4,
-  "r-hand-fingers-diameter-incr": 0.4,
-  "l-foot-scale-incr": 0.4,
-  "r-foot-scale-incr": 0.4,
+  "l-hand-scale-incr": 0.55,
+  "r-hand-scale-incr": 0.55,
+  "l-hand-fingers-diameter-incr": 0.6,
+  "r-hand-fingers-diameter-incr": 0.6,
+  "l-foot-scale-incr": 0.45,
+  "r-foot-scale-incr": 0.45,
   "head-fat-decr": 0.3,
   "eyebrows-trans-down": 0.15,
   "torso-scale-horiz-decr": 0.3,
@@ -82,6 +82,10 @@
   "l-upperarm-shoulder-muscle-decr": 0.5,
   "r-upperarm-shoulder-muscle-decr": 0.5,
   "torso-muscle-dorsi-decr": 0.4,
-  "measure-shoulder-dist-decr": 0.2
+  "measure-shoulder-dist-decr": 0.2,
+  "l-foot-scale-horiz-incr": 0.5,
+  "r-foot-scale-horiz-incr": 0.5,
+  "measure-wrist-circ-incr": 0.25,
+  "measure-ankle-circ-incr": 0.2
  }
 }
