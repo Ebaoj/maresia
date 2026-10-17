@@ -259,8 +259,24 @@ function olhosMinimos({ forma = 'ponto', sobr = 9, tam = 1, alto = 1, brilhos = 
     aberto: (g) => { s(g, [[44, 40], [64, 36], [84, 40]]); olho(g) },
     fechado: (g) => { s(g, [[44, 42], [64, 38], [84, 42]]); tremido(g, [[46, 72], [64, 76], [82, 72]], 9) },
     feliz: (g) => { s(g, [[44, 34], [64, 30], [84, 34]]); tremido(g, arco(64, 80, 18, 12, Math.PI * 1.1, Math.PI * 1.9, 10), 10) },
-    susto: (g) => { s(g, [[44, 26], [64, 22], [84, 26]]); tremido(g, arco(64, 70, 14 * t, 16 * t, 0, Math.PI * 2, 16), 7) },
-    determinado: (g) => { s(g, [[40, 40], [64, 50], [88, 46]]); olho(g, 74, 0.65) },
+    // susto: sobrancelha lá em cima e arqueada, olho arregalado (contorno grande) com pupila pequena
+    susto: (g) => {
+      s(g, [[42, 26], [64, 16], [86, 24]])
+      encher(g, arco(64, 70, 17 * t, 20 * t, 0, Math.PI * 2, 20), BRANCO)
+      tremido(g, arco(64, 70, 17 * t, 20 * t, 0, Math.PI * 2, 20), 6)
+      bola(g, 64, 72, 6.5 * t)
+      if (forma === 'brilho') bola(g, 61, 68, 2.4 * t, '#fff')
+    },
+    // determinado: a ponta de dentro da sobrancelha (x pequeno, lado do nariz) desce; o olho fica
+    // apertado, com a pálpebra de cima reta cortando o ponto
+    determinado: (g) => {
+      olho(g, 76)
+      g.save(); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000'
+      g.beginPath(); g.moveTo(30, 40); g.lineTo(98, 40); g.lineTo(98, 69); g.lineTo(30, 63); g.closePath(); g.fill(); g.restore()
+      g.fillStyle = TINTA
+      tremido(g, [[44, 63], [64, 65], [86, 68]], 6)
+      s(g, [[38, 54], [62, 45], [88, 36]]) // a sobrancelha por último: o corte acima apagaria
+    },
     triste: (g) => { s(g, [[42, 30], [64, 36], [86, 46]]); olho(g, 78) },
   }
 }
