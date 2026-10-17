@@ -53,8 +53,11 @@ case "${1:-}" in
     # pedia uma senha que não existe. Quem chega no DCV já passou pelo túnel SSH com a chave
     ssh_ 'export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; gsettings set org.gnome.desktop.screensaver lock-enabled false; gsettings set org.gnome.desktop.session idle-delay 0; sudo loginctl unlock-sessions'
     # Chrome em tela cheia na área de trabalho da máquina (a sessão do DCV), na placa NVIDIA
-    # sem trava de 60 (vsync); pkill pelo nome do processo (com -f, o padrão casava com o próprio comando)
-    ssh -f -n -i $PEM ubuntu@$(ip_maquina) 'pkill -x chrome; sleep 2; DISPLAY=:0 XAUTHORITY=/run/user/1000/gdm/Xauthority setsid nohup google-chrome --no-first-run --no-default-browser-check --ignore-gpu-blocklist --disable-gpu-vsync --disable-frame-rate-limit --enable-unsafe-webgpu --remote-debugging-port=9222 --disable-features=Translate --lang=pt-BR --start-fullscreen --user-data-dir=/home/ubuntu/.chrome-maresia http://localhost:5195/ > /tmp/chrome.log 2>&1 < /dev/null &'
+    # sem trava de 60 (vsync); pkill pelo nome do processo (com -f, o padrão casava com o próprio comando).
+    # Janela inteira no Vulkan (as mesmas opções do Modal): no X11 com NVIDIA, o WebGPU (Vulkan) passando a imagem
+    # para a janela montada em OpenGL derrubava o processo da placa a cada abertura (KAN-68, 17/10/2026; o Chrome só
+    # oferece WebGPU com NVIDIA no Linux com Wayland)
+    ssh -f -n -i $PEM ubuntu@$(ip_maquina) 'pkill -x chrome; sleep 2; DISPLAY=:0 XAUTHORITY=/run/user/1000/gdm/Xauthority setsid nohup google-chrome --use-angle=vulkan --enable-features=Vulkan --disable-vulkan-surface --no-first-run --no-default-browser-check --ignore-gpu-blocklist --disable-gpu-vsync --disable-frame-rate-limit --enable-unsafe-webgpu --remote-debugging-port=9222 --disable-features=Translate --lang=pt-BR --start-fullscreen --user-data-dir=/home/ubuntu/.chrome-maresia http://localhost:5195/ > /tmp/chrome.log 2>&1 < /dev/null &'
     echo "jogo enviado e aberto no Chrome da máquina (http://localhost:5195); veja com ./maquina.sh abrir"
     ;;
   abrir)
