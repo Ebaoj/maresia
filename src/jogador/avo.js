@@ -7,8 +7,11 @@
 import * as THREE from 'three'
 import { carregar, ossosPorNome, carregarMovimentosMixamo } from './retarget.js'
 import { toon, toonVertice } from '../materiais.js'
+import { criarRosto } from './rosto.js'
 
 export const ARQUIVO_AVO = '/arte/finais/avo-mpfb.glb'
+// rosto liso (órbitas tampadas, sem cílios), para olhos e sobrancelhas desenhados; a boca fica sob o bigode
+export const ARQUIVO_AVO_SEM_ROSTO = '/arte/finais/avo-mpfb-sem-rosto.glb'
 
 const PERSONAGEM = { opacity: 0.5, blending: THREE.NoBlending, semCache: true } // alfa 0,5: traço de personagem
 const COR = { cabelo: '#cfcac1', pelos: '#bdb6ab', labios: '#7d4a3c', pele: '#8a5638' }
@@ -32,9 +35,15 @@ function materialPara(malha) {
 
 // movimento: 'parado' (a curvatura vem só do modelo) ou 'velho-parado' (o do Mixamo, que curva de novo
 // por cima da coluna já curvada do repouso)
-export async function carregarAvo({ movimento = 'parado' } = {}) {
+export async function carregarAvo({ movimento = 'parado', rostoDesenhado = true, estiloRosto = 'minimo-brilho' } = {}) {
   let g
-  try { g = await carregar(ARQUIVO_AVO) } catch (e) { console.warn('Avô: não carregou', e); return null }
+  let liso = false
+  if (rostoDesenhado) {
+    try { g = await carregar(ARQUIVO_AVO_SEM_ROSTO); liso = true } catch { console.info('Avô: a versão de rosto liso não carregou; uso a normal') }
+  }
+  if (!g) {
+    try { g = await carregar(ARQUIVO_AVO) } catch (e) { console.warn('Avô: não carregou', e); return null }
+  }
   const raiz = g.raiz
   const malhas = []
   raiz.traverse((o) => {
@@ -46,6 +55,16 @@ export async function carregarAvo({ movimento = 'parado' } = {}) {
     malhas.push(o)
   })
   const ossos = ossosPorNome(raiz)
+  // rosto desenhado: olhos com a sobrancelha no mesmo desenho (a sobrancelha do modelo sai, senão fica
+  // dupla) e sem boca. Âncoras medidas antes de qualquer pose
+  let rosto = null
+  if (liso) {
+    const a = await ancorasAvo(ossos.get('Head'), raiz)
+    if (a) {
+      for (const m of malhas) if (/eyebrow/i.test(m.name) || /eyebrow/i.test(m.material?.name || '')) m.visible = false
+      rosto = criarRosto(ossos.get('Head'), a, estiloRosto)
+    }
+  }
   const r = await carregarMovimentosMixamo({ alvo: { raiz, ossos }, pasta: '/animacoes/mixamo/', nomes: [movimento] })
   const mixer = new THREE.AnimationMixer(raiz)
   const clipe = r.clipes[movimento]
@@ -67,6 +86,24 @@ export async function carregarAvo({ movimento = 'parado' } = {}) {
       const d = acumulado - (acumulado % passo)
       acumulado %= passo
       mixer.update(d)
+      rosto?.atualizar(d, { vel: 0, yaw: grupo.rotation.y })
     },
+    rosto,
   }
+}
+
+// âncoras medidas pela sessão do personagem (pontos da pele à frente dos olhos, mundo em repouso):
+// arte/finais/avo-mpfb-sem-rosto-ancoras.json. Devolve no espaço do osso Head, como rosto.js pede. O olho
+// do avô fica a ±2,8 cm do meio (o do neto a ±3,5): o desenho encolhe na mesma proporção
+async function ancorasAvo(cabeca, raiz) {
+  try {
+    const r = await fetch('/arte/finais/avo-mpfb-sem-rosto-ancoras.json')
+    if (!r.ok || (r.headers.get('content-type') || '').includes('html')) return null
+    const a = await r.json()
+    raiz.updateMatrixWorld(true)
+    const inv = cabeca.matrixWorld.clone().invert()
+    const local = (p, dz) => new THREE.Vector3(...p).add(new THREE.Vector3(0, 0, dz)).applyMatrix4(inv).toArray()
+    const prop = Math.abs(a.olho_esquerdo.superficie[0]) / 0.0348
+    return { olho: local(a.olho_esquerdo.superficie, 0.012), boca: [0, 0, 0], tamOlho: 0.042 * prop, tamBoca: 0.05, curva: 0.3, semBoca: true }
+  } catch { return null }
 }

@@ -411,7 +411,7 @@ function plano(tex, w, h) {
 }
 
 // ancoras (espaço do osso Head): olhos [x, y, z] (o esquerdo; o direito é espelhado), boca [x, y, z],
-// tamanho do olho e da boca em metros, e o quanto inclinar para acompanhar a curva da cabeça
+// tamanho do olho e da boca em metros, o quanto inclinar para acompanhar a curva da cabeça e semBoca
 export function criarRosto(cabeca, ancoras = {}, estiloInicial = 'atual') {
   const A = {
     olho: [0.046, 0.118, 0.12], boca: [0, 0.045, 0.116], tamOlho: 0.078, tamBoca: 0.085, curva: 0.4, ...ancoras,
@@ -440,6 +440,7 @@ export function criarRosto(cabeca, ancoras = {}, estiloInicial = 'atual') {
   const boca = plano(T.bocas.neutra, A.tamBoca, A.tamBoca)
   boca.position.set(...A.boca)
   boca.rotation.x = -0.25
+  boca.visible = !A.semBoca // o avô: o bigode cobre a boca, ela não é desenhada (decisão do Joabe, 17/10/2026)
   cabeca.add(boca)
   const aplicarEscala = () => {
     // o desenho cresce em volta da âncora; o olho sobe um pouco para a sobrancelha caber na testa

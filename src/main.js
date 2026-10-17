@@ -122,7 +122,7 @@ async function iniciar() {
   // o avô parado perto de onde o jogo começa, de frente para o neto (para julgar o modelo com o filtro)
   let avo = null
   if (cfg.personagem.avo) {
-    carregarAvo({ movimento: cfg.personagem.avoMovimento }).then((a) => {
+    carregarAvo({ movimento: cfg.personagem.avoMovimento, rostoDesenhado: cfg.personagem.rostoAvo, estiloRosto: cfg.personagem.estiloRostoNeto }).then((a) => {
       if (!a) return
       const x = inicio.x - 2.6, z = inicio.z + 0.9
       a.raiz.position.set(x, alturaChao(x, z), z)
