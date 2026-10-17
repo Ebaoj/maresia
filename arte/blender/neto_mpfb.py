@@ -76,6 +76,7 @@ if OLHOS_K:
     ch = corpo.shape_key_add(name="olhos_maiores", from_mix=False)
     ch.data.foreach_set("co", (b + (novo - P)).ravel()); ch.value = 1.0
 SEM_ROSTO = bool(os.environ.get("NETO_SEM_ROSTO"))
+MANTER_BOCA = bool(os.environ.get("NETO_MANTER_BOCA"))   # avô: a boca fica debaixo do bigode, sem alisar nem recortar
 if SEM_ROSTO:
     # rosto liso para o desenho 2D: órbitas rasas e boca contínua (suavização local em volta de olhos e boca)
     b, P = _mistura(); novo = P.copy()
@@ -92,7 +93,7 @@ if SEM_ROSTO:
     peso[[i for i in range(len(P)) if i not in corpo_s]] = 0
     # boca lisa: pele contínua da base do nariz ao queixo. Entre as duas fatias, uma superfície Hermite
     # (valor e inclinação do perfil original nas bordas) substitui os lábios; o interior da boca vai para trás dela.
-    bi = np.array(sorted(corpo_s)); B = P[bi]
+    bi = np.array(sorted(corpo_s)) if not MANTER_BOCA else np.array([], dtype=int); B = P[sorted(corpo_s)]
     frente_lim = cb[1] + 0.03
     def frente_y(z, x=0.0, tx=0.0025, tz=0.0016):
         sel = B[(np.abs(B[:, 0] - x) < tx) & (np.abs(B[:, 2] - z) < tz) & (B[:, 1] < frente_lim)]
@@ -256,7 +257,7 @@ m_cab.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 1
 cabelo.data.materials.append(m_cab)
 if VARIANTE in ("ativos", "limpo"):
     SOB = os.environ.get("NETO_SOBRANCELHA", "eyebrow009")
-    sob = None if SEM_ROSTO else ativo(f"eyebrows/{SOB}/{SOB}.mhclo", "Eyebrows")
+    sob = None if (SEM_ROSTO and not os.environ.get("NETO_SOB_SEM_ROSTO")) else ativo(f"eyebrows/{SOB}/{SOB}.mhclo", "Eyebrows")
     GROSSURA = float(os.environ.get("NETO_SOB_GROSSURA", "1.6"))
     if sob is not None and GROSSURA != 1.0:  # engrossa cada sobrancelha em volta do próprio centro e desce um pouco
         n_s = len(sob.data.vertices); c_s = np.empty(n_s * 3); sob.data.vertices.foreach_get("co", c_s); c_s = c_s.reshape(n_s, 3)
@@ -288,11 +289,14 @@ if VARIANTE in ("ativos", "limpo"):
             olhos.name = "tampao-olhos"; olhos.data.materials.clear(); olhos.data.materials.append(m_pele)
 
 CAMISA = os.environ.get("NETO_CAMISA", "listrada")
+BARRA = float(os.environ.get("NETO_BARRA_CAMISA", "0.075"))   # barra da camisa abaixo da pelve
+MANGA = float(os.environ.get("NETO_MANGA", "0.5"))
+FOLGADA = float(os.environ.get("NETO_CAMISA_FOLGADA", "0"))   # passadas de alisamento da camisa (0 = justa, como no neto)   # manga comprida arregaçada: fração do antebraço coberta
 def roupa():
     """Camisa de malha listrada e calça clara arregaçada, feitas da própria malha do corpo (seguem o esqueleto)."""
     b, P = _mistura()
     J = lambda g: P[_grupo_idx(g)].mean(0)
-    Zp, Zn = J("joint-pelvis")[2], J("joint-neck")[2]
+    Zp, Zn = J("joint-pelvis")[2], J("joint-neck")[2]; Yn = J("joint-neck")[1]
     corpo_set = set(_grupo_idx("body").tolist())
     def dist_seg(v, a, c):
         ab = c - a; t = np.clip(np.dot(v - a, ab) / np.dot(ab, ab), 0, 1); return np.linalg.norm(v - (a + t * ab)), t
@@ -316,15 +320,16 @@ def roupa():
         v = P[i]; l = "l" if v[0] > 0 else "r"; S, El, H = braco[l]
         if peca == "camisa":
             if w_ante[i] > 0.5:   # manga comprida arregaçada até o meio do antebraço
-                return CAMISA == "escura" and dist_seg(v, El, H)[1] < 0.5
+                return CAMISA == "escura" and dist_seg(v, El, H)[1] < MANGA
             if w_braco[i] > 0.5: return True                              # manga até o cotovelo
+            if CAMISA == "escura" and v[1] < Yn and abs(v[0]) < (v[2] - (Zn - 0.11)) * 0.35: return False   # aberta no peito (decote em V)
             return abs(v[0]) < abs(S[0]) * 1.05 and Zp - 0.095 < v[2] < Zn + 0.01
         # calça
         if w_ante[i] > 0.3 or w_braco[i] > 0.3: return False
         return barra - 0.03 < v[2] < Zp + (0.02 if CAMISA == "escura" else 0.07)
     pecas = {}
-    cor_camisa = _hex_lin("#5c3d2e")[:3] if CAMISA == "escura" else None   # tinta de mangue escura e gasta
-    folga_camisa = 0.016 if CAMISA == "escura" else 0.026
+    cor_camisa = _hex_lin(os.environ.get("NETO_COR_CAMISA", "#5c3d2e"))[:3] if CAMISA == "escura" else None   # tinta de mangue escura e gasta
+    folga_camisa = float(os.environ.get("NETO_FOLGA_CAMISA", "0.016" if CAMISA == "escura" else "0.026"))
     folga_calca = 0.010 if CAMISA == "escura" else 0.019
     for peca, folga, cor in (("camisa", folga_camisa, cor_camisa), ("calca", folga_calca, (0.80, 0.74, 0.62))):
         me2 = corpo.data.copy(); ob = corpo.copy(); ob.data = me2; ob.name = peca
@@ -339,9 +344,12 @@ def roupa():
             g = bm.verts[:] + bm.edges[:] + bm.faces[:]
             bmesh.ops.bisect_plane(bm, geom=g, dist=1e-6, plane_co=(0, 0, z), plane_no=(0, 0, 1 if manter_acima else -1), clear_inner=True)
         if peca == "calca": cortar(barra, True)
-        else: cortar(Zp - 0.075, True); cortar(Zn - 0.005, False)
+        else: cortar(Zp - BARRA, True); cortar(Zn - 0.005, False)
         bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if v.is_boundary and Zp - 0.07 < v.co.z < Zn - 0.01 and not (peca == "calca" and v.co.z < barra + 0.005)],
                               factor=0.7, use_axis_x=True, use_axis_y=True, use_axis_z=True)  # borda sem serrilha (menos nos cortes retos)
+        if peca == "camisa" and FOLGADA:   # algodão largo: alisa a anatomia (peito, costela) antes de afastar do corpo
+            for _ in range(int(FOLGADA)):
+                bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if not v.is_boundary], factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
         if peca == "camisa":  # malha mais fina para as listras não serrilharem
             bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=2, use_grid_fill=True)
         bm.normal_update()
@@ -350,6 +358,21 @@ def roupa():
             if peca == "camisa" and v.co.z < Zp - 0.02: extra = (Zp - 0.02 - v.co.z) * 0.25      # barra solta
             if peca == "calca" and v.co.z < barra + 0.035: extra = 0.012 if CAMISA != "escura" else 0.004   # barra dobrada
             v.co += v.normal * (folga + extra)
+        if peca == "camisa" and FOLGADA:   # nada do corpo atravessa o pano: distância mínima da pele
+            from mathutils.bvhtree import BVHTree
+            if "_bvh" not in pecas:
+                ids = set(_grupo_idx("body").tolist())
+                fz = [tuple(p_.vertices) for p_ in corpo.data.polygons if all(i in ids for i in p_.vertices)]
+                pecas["_bvh"] = BVHTree.FromPolygons([tuple(c) for c in P], fz)
+            bvh = pecas["_bvh"]
+            for v in bm.verts:
+                loc, nrm, _, dist = bvh.find_nearest(v.co)
+                if loc is None: continue
+                fora = (v.co - loc).dot(nrm) > 0
+                if not fora or dist < 0.006:   # só onde a pele atravessa ou encosta
+                    v.co = loc + nrm * 0.008
+            for _ in range(4):
+                bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if not v.is_boundary], factor=0.4, use_axis_x=True, use_axis_y=True, use_axis_z=True)
         bm.to_mesh(me2); bm.free()
         sol = ob.modifiers.new("espessura", "SOLIDIFY"); sol.thickness = 0.005; sol.offset = 1
         me2.materials.clear()
@@ -368,6 +391,7 @@ def roupa():
             mt.node_tree.links.new(vc.outputs["Color"], bs.inputs["Base Color"])
         me2.materials.append(mt)
         pecas[peca] = ob
+    pecas.pop("_bvh", None)
     return pecas
 if os.environ.get("NETO_ROUPA"):
     ROUPAS = roupa()
@@ -721,7 +745,7 @@ if os.environ.get("NETO_TPOSE"):
             ob.data.vertices.foreach_set("co", L_.ravel()); ob.data.update()
             print("TRAPEZIO", ob.name, "mexeu", int(((e_ * wz) > 1e-4).sum()), "pontos, máx", round(float((e_ * wz).max()) * 100, 1), "cm")
 
-if SEM_ROSTO:
+if SEM_ROSTO and not MANTER_BOCA:
     # recorta lábios e interior da boca e tampa com pele nova encostada na superfície lisa (sem linha de junção)
     bm_ = bmesh.new(); bm_.from_mesh(corpo.data)
     dl = bm_.verts.layers.deform.verify()
@@ -749,12 +773,26 @@ if SEM_ROSTO:
         for v in novos:
             viz_ = [e.other_vert(v) for e in v.link_edges]
             if viz_: v.co.x, v.co.z = sum(u.co.x for u in viz_) / len(viz_), sum(u.co.z for u in viz_) / len(viz_)
+    pert = {}
     for v in novos:
         v.co.y = alvo(v.co.x, min(max(v.co.z, z_bot), z_top))
-        perto = min(ref, key=lambda u: (u.co - v.co).length_squared)
+        perto = min(ref, key=lambda u: (u.co - v.co).length_squared); pert[v] = perto
         v[dl].clear()
         for g_, w_ in perto[dl].items(): v[dl][g_] = w_
         v[dl][gi_body] = 1.0
+    cl = bm_.loops.layers.color.get("Col")
+    if cl is not None:   # pele pintada (barba): as faces novas herdam a cor do vizinho original, senão saem pretas
+        cor_v = {}
+        for v in bm_.verts:
+            for l in v.link_loops:
+                c = l[cl]
+                if c[0] + c[1] + c[2] > 0.002: cor_v[v] = tuple(c); break
+        for f in bm_.faces:
+            for l in f.loops:
+                c = l[cl]
+                if c[0] + c[1] + c[2] <= 0.002:
+                    nova = cor_v.get(l.vert) or cor_v.get(pert.get(l.vert))
+                    if nova: l[cl] = nova
     bm_.normal_update()
     bm_.to_mesh(corpo.data); bm_.free(); corpo.data.update()
     print(f"BOCA recortada: {len(faces_fora)} faces fora, {len(novos)} pontos novos de pele")
@@ -902,9 +940,30 @@ if SEM_ROSTO:
         perto = [q for q in pts if abs(q.x - c.x) < raio and abs(q.z - c.z) < raio and q.y < c.y]
         return min(perto, key=lambda q: q.y) if perto else c
     anc = {}
-    for nome, g in (("olho_esquerdo", "joint-l-eye"), ("olho_direito", "joint-r-eye"), ("boca", "lips")):
+    for nome, g in (("olho_esquerdo", "joint-l-eye"), ("olho_direito", "joint-r-eye")) + ((("boca", "lips"),) if not MANTER_BOCA else ()):
         c = ponto_grupo(g); f = frente_de(c)
         anc[nome] = {"centro": gltf(c), "superficie": gltf(f)}
+    def pontos_mundo(ob):
+        dep = bpy.context.evaluated_depsgraph_get(); oe = ob.evaluated_get(dep); m_ = oe.to_mesh()
+        pts = [oe.matrix_world @ v.co for v in m_.vertices]; oe.to_mesh_clear(); return pts
+    sob_ob = next((o for o in bpy.context.scene.objects if o.type == "MESH" and "eyebrow" in o.name), None)
+    if sob_ob:   # sobrancelhas: centro e ponta de dentro/fora de cada lado
+        P_ = pontos_mundo(sob_ob)
+        for nome, lado in (("sobrancelha_esquerda", 1), ("sobrancelha_direita", -1)):
+            Q = [q for q in P_ if q.x * lado > 0]
+            if Q:
+                c = sum(Q, Vector()) / len(Q)
+                anc[nome] = {"centro": gltf(c), "dentro": gltf(min(Q, key=lambda q: abs(q.x))), "fora": gltf(max(Q, key=lambda q: abs(q.x)))}
+    fios = bpy.data.objects.get("barba-fios")
+    if fios and not MANTER_BOCA:   # onde o pelo começa: a boca desenhada não deve cair em cima dele
+        P_ = pontos_mundo(fios)
+        meio = [q for q in P_ if abs(q.x) < 0.006]
+        if meio: anc["bigode_topo"] = gltf(max(meio, key=lambda q: q.z))   # no meio, embaixo do nariz
+        for nome, lado in (("barba_topo_esquerda", 1), ("barba_topo_direita", -1)):
+            Q = [q for q in P_ if q.x * lado > 0.045]
+            if Q: anc[nome] = gltf(max(Q, key=lambda q: q.z))
+        anc["barba_ponta"] = gltf(min(P_, key=lambda q: q.z))
+        anc["nota"] = "bigode cobre a boca: desenhar a boca só quando aparecer (fala, riso, susto), por cima do bigode"
     import json as _j
     _j.dump(anc, open(f"{SAIDA}/ancoras.json", "w"), indent=1); print("ANCORAS", _j.dumps(anc))
 print("PRONTO", VARIANTE, "escala", round(k, 3))
