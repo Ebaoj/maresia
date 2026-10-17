@@ -23,7 +23,8 @@ async def main():
         else:
             imagem, saida = a[0], a[1]
             VERSAO = os.environ.get("TRIPO_VERSAO", "P2-20260801")   # o padrão do SDK (v2.5) é bem pior
-            try:   # o modelo novo talvez aceite partes e textura juntas
+            try:   # o modelo novo talvez aceite partes e textura juntas (P2 aceita, mas devolve uma peça só)
+                if os.environ.get("TRIPO_DOIS_PASSOS"): raise RuntimeError("dois passos pedidos")
                 base = await c.image_to_model(image=imagem, model_version=VERSAO, generate_parts=True, texture=True, pbr=False,
                                               texture_quality="detailed", geometry_quality="detailed")
                 print("partes+textura num pedido só:", base); t = await esperar(c, base, "modelo")
