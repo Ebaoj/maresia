@@ -71,14 +71,15 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
   // tudo acima é preparado no esqueleto padrão; o corpo que aparece pode ser outro modelo
   let alvo = { raiz: boneco.raiz, ossos: boneco.ossos, esqueleto: boneco.esqueleto }
   let adaptar = (c) => c
-  if (modelo === 'neto') {
-    const neto = await carregarNeto({ chapeu, semRosto: rostoDesenhado, ombros, folgaCamisa })
+  if (modelo === 'neto' || modelo === 'neto-tripo') {
+    const tripo = modelo === 'neto-tripo'
+    const neto = await carregarNeto(tripo ? { arquivo: '/arte/finais/neto-tripo.glb', ombros: 1 } : { chapeu, semRosto: rostoDesenhado, ombros, folgaCamisa })
     if (neto) { alvo = neto; adaptar = criarAdaptador(neto) } else console.warn('Corpo: o neto não carregou; fica o boneco')
   }
   // tecido solto: prepara antes de qualquer pose (precisa do repouso)
   // roupa: pano de verdade no Jolt (roupa.js) ou as molas só nas bordas (pano.js); o Jolt não carregou, ficam as molas
   let pano = null
-  if (alvo.malhas && modelo === 'neto') {
+  if (alvo.malhas && modelo === 'neto') { // o do Tripo tem a roupa grudada no corpo, sem peças para o pano
     if (roupaJolt) pano = await criarRoupa(alvo.malhas).catch((e) => { console.warn('Roupa no Jolt falhou; ficam as molas', e); return null })
     if (!pano) pano = criarPano(alvo.malhas)
   }
@@ -103,7 +104,7 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
   // clipes no esqueleto padrão: a gente da cidade (atores.js) usa o boneco
   animador.pano = pano
-  animador.dobras = modelo === 'neto' && alvo.malhas ? criarDobras(raiz, alvo.ossos) : null
+  animador.dobras = modelo.startsWith('neto') && alvo.malhas ? criarDobras(raiz, alvo.ossos) : null
   animador.dobrasPano = pano?.tipo === 'jolt' ? criarDobrasPano(raiz, pano.pecas) : null // onde o pano do Jolt amassa
   return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto, clipes: r.clipes, pano }
 }

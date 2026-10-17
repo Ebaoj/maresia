@@ -120,7 +120,7 @@ export function criarPainel(cfg) {
   p.add(cfg.personagem, 'fpsPose', 4, 60, 1).name('poses por segundo')
   p.add(cfg.personagem, 'posicaoEm2').name('corpo todo "em 2"')
   p.add(cfg.personagem, 'corpoNovo').name('corpo novo (mocap; recarregar)')
-  p.add(cfg.personagem, 'modelo', ['neto', 'boneco']).name('modelo do jogador (recarregar)')
+  p.add(cfg.personagem, 'modelo', ['neto', 'neto-tripo', 'boneco']).name('modelo do jogador (recarregar)')
   p.add(cfg.personagem, 'chapeu').name('chapéu no neto (recarregar)')
   p.add(cfg.personagem, 'ombros', 0.6, 1.1, 0.01).name('largura dos ombros (recarregar)')
   p.add(cfg.personagem, 'folgaCamisa', 0, 0.05, 0.002).name('folga da camisa (recarregar)')

@@ -19,6 +19,12 @@ const PERSONAGEM = { opacity: 0.5, blending: THREE.NoBlending, semCache: true } 
 
 function materialPara(malha) {
   const nome = (malha.material?.name || malha.name).toLowerCase()
+  if (malha.material?.map && !malha.geometry.attributes.color && malha.geometry.attributes.position.count > 5000) {
+    // modelo inteiro numa textura pintada (Tripo): a textura é a cor
+    const map = malha.material.map
+    map.colorSpace = THREE.SRGBColorSpace
+    return toon('#ffffff', { ...PERSONAGEM, map })
+  }
   if (nome.includes('camisa')) return toonVertice({ opacity: 0.5, blending: THREE.NoBlending }) // listras nos vértices
   if (nome.includes('labio')) return toon(COR.labios, PERSONAGEM)
   if (nome.includes('calca')) return toon(COR.calca, PERSONAGEM)
@@ -54,10 +60,13 @@ function chapeuDePalha() {
 // chapeu: false tira o chapéu (decisão do Joabe em 16/10/2026: o neto anda sem chapéu)
 // ombros: encolhe a clavícula (1 = como veio do modelo). O modelo tem 36 cm entre os ombros, proporção
 // de adulto; um menino de 14 anos fica perto de 33 cm (o Joabe achou largo, 16/10/2026)
-export async function carregarNeto({ chapeu = false, semRosto = false, ombros = 0.9, folgaCamisa = 0.012 } = {}) {
+// arquivo: outro modelo do neto (o do Tripo, 17/10/2026: uma malha com roupa e rosto pintados na textura)
+export async function carregarNeto({ chapeu = false, semRosto = false, ombros = 0.9, folgaCamisa = 0.012, arquivo = null } = {}) {
   let g
   let liso = false
-  if (semRosto) {
+  if (arquivo) {
+    try { g = await carregar(arquivo) } catch (e) { console.warn('Neto: não carregou', arquivo, e); return null }
+  } else if (semRosto) {
     try { g = await carregar(ARQUIVO_NETO_SEM_ROSTO); liso = true } catch { console.info('Neto: a versão de rosto liso ainda não existe; uso a normal') }
   }
   if (!g) {
