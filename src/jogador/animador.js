@@ -242,6 +242,25 @@ export class Animador {
     return g
   }
 
+  // quanto do sentar ou do levantar já aconteceu (0 a 1), pela altura do quadril no próprio movimento;
+  // null se o movimento não está tocando. O controle usa isso para levar o corpo do banco para a frente
+  // (e de volta) no mesmo tempo da animação, que foi convertida "no lugar"
+  progressoQuadril(nome) {
+    const a = this.acoes[nome]
+    if (!a || this.umaVez !== nome) return null
+    const c = a.getClip()
+    const tr = c.tracks.find((t) => t.name.endsWith('Hips.position'))
+    if (!tr) return Math.min(1, a.time / c.duration)
+    const T = tr.times, V = tr.values, n = T.length
+    let i = 0
+    while (i < n - 1 && T[i + 1] < a.time) i++
+    const j = Math.min(n - 1, i + 1)
+    const f = j > i ? THREE.MathUtils.clamp((a.time - T[i]) / (T[j] - T[i]), 0, 1) : 0
+    const y = V[i * 3 + 1] + (V[j * 3 + 1] - V[i * 3 + 1]) * f
+    const y0 = V[1], y1 = V[(n - 1) * 3 + 1]
+    return Math.abs(y1 - y0) < 1e-4 ? 1 : THREE.MathUtils.clamp((y - y0) / (y1 - y0), 0, 1)
+  }
+
   disparar(nome) {
     const a = this.acoes[nome]
     if (!a) return

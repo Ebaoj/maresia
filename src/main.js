@@ -267,7 +267,7 @@ async function iniciar() {
     cfg.tempo.hora = hora
   }
   window.__tempos = tempos
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama }
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
   if (import.meta.env.DEV) import('./debug/medidor.js').then((g) => g.instalar(window.maresia))
 }

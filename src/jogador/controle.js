@@ -33,6 +33,7 @@ export class Jogador {
     this.velHoriz = 0
     this.velDesejada = new THREE.Vector3()
     this.sentado = null // banco onde está sentado
+    this.trocaBanco = null // sentando ou levantando (andarNoBanco)
     this.carregando = null // objeto que está segurando
     this.afundado = 0
     this.naAreiaSeca = false
@@ -111,21 +112,54 @@ export class Jogador {
     this.pediuPulo = true
   }
 
+  // Sentar e levantar acompanham a animação: o movimento do Mixamo foi convertido "no lugar", então o
+  // corpo é levado pelo controle no tempo da descida (e da subida) do quadril. Antes ele ia direto para o
+  // banco e sentava parado, e ao levantar pulava 70 cm para a frente: parecia teleporte.
+  frenteDoBanco(b, d) {
+    const x = b.x + Math.sin(b.yaw) * d, z = b.z + Math.cos(b.yaw) * d
+    return new THREE.Vector3(x, alturaChao(x, z, b.y + 0.4), z)
+  }
+
   sentar(banco) {
     this.sentado = banco
-    this.pos.set(banco.x, banco.y, banco.z)
     this.vel.set(0, 0, 0)
+    this.velDesejada.set(0, 0, 0)
     this.yawAlvo = banco.yaw
-    this.yawVisual = banco.yaw
+    this.trocaBanco = { tipo: 'sentar', frente: this.frenteDoBanco(banco, 0.45), banco: new THREE.Vector3(banco.x, banco.y, banco.z), yaw: banco.yaw, t: 0, visto: false }
   }
 
   levantar() {
     const b = this.sentado
     if (!b) return
     this.sentado = null
-    // um passo para a frente, para sair do banco
-    this.pos.x += Math.sin(b.yaw) * 0.7
-    this.pos.z += Math.cos(b.yaw) * 0.7
+    this.vel.set(0, 0, 0)
+    this.velDesejada.set(0, 0, 0)
+    this.trocaBanco = { tipo: 'levantar', de: this.pos.clone(), frente: this.frenteDoBanco(b, 0.6), yaw: b.yaw, t: 0, visto: false }
+  }
+
+  // a transição do banco, a cada quadro (dentro de atualizarSentado)
+  andarNoBanco(dt) {
+    const tb = this.trocaBanco
+    tb.t += dt
+    const pr = this.animador ? this.animador.progressoQuadril(tb.tipo) : 1
+    if (pr != null) tb.visto = true
+    const fim = !this.animador || tb.t > 3.5 || (tb.visto && pr == null) || (pr != null && pr >= (tb.tipo === 'sentar' ? 0.999 : 0.92))
+    if (tb.tipo === 'sentar') {
+      if (!tb.visto || pr < 0.02) {
+        // ainda de pé: vai para a frente do banco e vira de costas para ele
+        const k = 1 - Math.exp(-dt * 8)
+        this.pos.lerp(tb.frente, k)
+        this.yawVisual = lerpAngulo(this.yawVisual, tb.yaw, k)
+      } else {
+        this.pos.lerpVectors(tb.frente, tb.banco, pr)
+        this.yawVisual = tb.yaw
+      }
+      if (fim) { this.pos.copy(tb.banco); this.yawVisual = tb.yaw; this.trocaBanco = null }
+    } else {
+      this.pos.lerpVectors(tb.de, tb.frente, pr ?? 0)
+      this.yawVisual = this.yawAlvo = tb.yaw
+      if (fim) { this.pos.copy(tb.frente); this.trocaBanco = null }
+    }
   }
 
   update(dt, teclas, yawCamera) {
@@ -134,9 +168,10 @@ export class Jogador {
     this.tempo += dt
     this.esperaTchibum -= dt
 
-    if (this.sentado) {
-      if (teclas.frente || teclas.tras || teclas.esquerda || teclas.direita) this.levantar()
-      else return this.atualizarSentado(dt, cfg)
+    if (this.sentado || this.trocaBanco) {
+      // levanta com qualquer tecla, mas só depois de ter sentado; no meio da transição as teclas esperam
+      if (this.sentado && !this.trocaBanco && (teclas.frente || teclas.tras || teclas.esquerda || teclas.direita)) this.levantar()
+      return this.atualizarSentado(dt, cfg)
     }
 
     // direção relativa à câmera
@@ -309,6 +344,7 @@ export class Jogador {
 
   // sentado: posição fixa no banco, pose "em 2" como sempre
   atualizarSentado(dt, cfg) {
+    if (this.trocaBanco) this.andarNoBanco(dt)
     this.velHoriz = 0
     this.noChao = true
     this.acPose += dt
