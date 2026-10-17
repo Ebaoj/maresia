@@ -174,8 +174,12 @@ export function criarCeu(cena) {
     const p = paletaDaHora(hora)
     const dirSol = direcaoSol(hora)
     const deDia = dirSol.y > 0
+    // a luz que projeta sombra anda em passos (a cada cfg.mundo.passoSombraMin minutos de jogo, ~1°): com o
+    // sol girando um pouco a cada quadro, o mapa de sombra girava junto e a borda das sombras tremia
+    const passoH = Math.max(0, cfg.mundo.passoSombraMin ?? 4) / 60
+    const dirSolS = passoH > 0 ? direcaoSol(Math.round(hora / passoH) * passoH) : dirSol
     // de noite a luz principal vira a lua
-    const dirLuz = deDia ? dirSol.clone() : new THREE.Vector3(-dirSol.x, -dirSol.y, -0.3).normalize()
+    const dirLuz = deDia ? dirSolS.clone() : new THREE.Vector3(-dirSolS.x, -dirSolS.y, -0.3).normalize()
     // truque de cenário: a luz nunca fica rasante demais, senão o chão inteiro cai na sombra
     dirLuz.y = Math.max(dirLuz.y, 0.42)
     dirLuz.normalize()

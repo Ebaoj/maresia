@@ -476,6 +476,13 @@ export class Aranhaverso {
     gl.uArcCorSombra.value.set(e.arcCorSombra)
     gl.uArcNiveis.value.set(e.arcNivelSombra, e.arcNivelMeio, e.arcNivelLuz)
     gl.uTexForca.value = e.arcTextura
+    // sombra suave no visual Arcane: com a borda pintada dura, o PCF comum virava degraus (cara de baixa
+    // resolução); o soft dá uma linha lisa. Trocar o tipo pede recompilar os materiais
+    const tipoSombra = arc ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap
+    if (this.renderer.shadowMap.type !== tipoSombra) {
+      this.renderer.shadowMap.type = tipoSombra
+      this.cena.traverse((o) => { if (o.material) for (const mt of [].concat(o.material)) mt.needsUpdate = true })
+    }
     gl.uArcRim.value = arc ? e.arcRecorte : 0
     gl.uArcCeu.value = e.arcCeu
     u.uTempo.value = Math.floor(tempo * e.fpsTraco) / e.fpsTraco

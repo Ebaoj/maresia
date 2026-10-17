@@ -13,7 +13,7 @@ export const PADRAO = {
     visual: 'arcane',
     arcSombra: 0.38,       // abaixo disso de luz, a faixa de sombra
     arcLuz: 0.72,          // acima disso, a faixa de luz; entre as duas, o meio-tom
-    arcSuave: 0.05,        // largura da passagem entre as faixas
+    arcSuave: 0.08,        // largura da passagem entre as faixas
     arcPincel: 0.35,       // quanto a pincelada recorta a borda das faixas
     arcCorSombra: '#4f5fa8', // sombra fria, com luz rebatida do céu
     arcNivelSombra: 0.34,
@@ -149,6 +149,7 @@ export const PADRAO = {
     ondas: 1.0,
   },
   mundo: {
+    passoSombraMin: 4,     // a luz da sombra anda em passos de N minutos de jogo (~1° a cada 4): sem isso a borda das sombras treme; 0 = contínuo
     sombras: true,
     resolucaoSombra: 4096, // 4096 nítida, 2048 mais leve (a sombra é o maior custo do quadro)
     nevoaPerto: 140,

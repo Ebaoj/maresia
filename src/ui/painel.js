@@ -181,6 +181,7 @@ export function criarPainel(cfg) {
   const mundo = gui.addFolder('Mundo e desempenho')
   mundo.add(cfg.mundo, 'sombras')
   mundo.add(cfg.mundo, 'resolucaoSombra', [1024, 2048, 4096]).name('qualidade da sombra')
+  mundo.add(cfg.mundo, 'passoSombraMin', 0, 15, 1).name('sombra anda em passos (min)')
   mundo.add(cfg.mundo, 'nevoaPerto', 10, 600, 1).name('névoa começa (m)')
   mundo.add(cfg.mundo, 'nevoaLonge', 100, 2000, 1).name('névoa total (m)')
   mundo.add(cfg.desempenho, 'resolucao', 0.5, 2, 0.05).name('resolução')
