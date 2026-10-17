@@ -71,8 +71,8 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
   // tudo acima é preparado no esqueleto padrão; o corpo que aparece pode ser outro modelo
   let alvo = { raiz: boneco.raiz, ossos: boneco.ossos, esqueleto: boneco.esqueleto }
   let adaptar = (c) => c
-  if (modelo === 'neto' || modelo.startsWith('neto-tripo')) {
-    const arquivo = { 'neto-tripo': '/arte/finais/neto-tripo.glb', 'neto-tripo-partes': '/arte/finais/neto-tripo-partes.glb', 'neto-tripo-p2': '/arte/finais/neto-tripo-p2.glb' }[modelo]
+  if (modelo.startsWith('neto')) {
+    const arquivo = { 'neto-tripo': '/arte/finais/neto-tripo.glb', 'neto-tripo-partes': '/arte/finais/neto-tripo-partes.glb', 'neto-tripo-p2': '/arte/finais/neto-tripo-p2.glb', 'neto-vestido': '/arte/finais/neto-vestido.glb' }[modelo]
     const neto = await carregarNeto(arquivo ? { arquivo, ombros: 1 } : { chapeu, semRosto: rostoDesenhado, ombros, folgaCamisa })
     if (neto) { alvo = neto; adaptar = criarAdaptador(neto) } else console.warn('Corpo: o neto não carregou; fica o boneco')
   }
