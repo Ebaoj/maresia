@@ -307,6 +307,13 @@ no fim).
   - Gestos lentos e exatos: amarra um nó sem olhar.
   - Silhueta baixa e larga, ancorada no chão.
   - Fala pouco. Na paleta, é o personagem mais desbotado, como a cal velha.
+  - **Modelo (17/10/2026, escolhas do Joabe):** barba longa e reta, cheia nas laterais, ponta arredondada,
+    feita fio a fio, com **bigode de morsa cobrindo a boca** (arte/finais/avo-mpfb.glb). No jogo, os fios usam o
+    traço leve do cenário (com o de personagem, viravam um emaranhado de nanquim) e o movimento parado comum (a
+    coluna já vem curvada no modelo; o "velho parado" do Mixamo curvava de novo por cima).
+  - **Rosto:** como o do neto, liso no modelo e desenhado em 2D, **mas só olhos e sobrancelhas: a boca não é
+    desenhada**, o bigode cobre de vez (decisão do Joabe, 17/10/2026). A emoção fica nos olhos, nas
+    sobrancelhas e no corpo.
 - **Avô jovem, 1881, ~15 anos.**
   - Mesma idade do neto em 1932, então as silhuetas se espelham.
   - Sem chapéu, ou com chapéu novo de palha clara. Roupa mais crua, corpo mais seco.
