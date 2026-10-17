@@ -20,6 +20,12 @@ const COR = { cabelo: '#cfcac1', pelos: '#bdb6ab', labios: '#7d4a3c', pele: '#8a
 // vértices (a barba pintada na pele se desfaz na borda), os fios da barba são fitas de uma face só
 function materialPara(malha) {
   const nome = (malha.material?.name || '').toLowerCase()
+  if (malha.material?.map && !malha.geometry.attributes.color && malha.geometry.attributes.position.count > 5000) {
+    // modelo inteiro numa textura pintada (Tripo): a textura é a cor
+    const map = malha.material.map
+    map.colorSpace = THREE.SRGBColorSpace
+    return toon('#ffffff', { ...PERSONAGEM, map })
+  }
   const cores = !!malha.geometry.attributes.color
   // fios: traço de cenário (alfa 1, o mais leve): com o peso de personagem cada fita ganhava contorno e a
   // barba virava um emaranhado azul de nanquim (17/10/2026)
@@ -35,10 +41,15 @@ function materialPara(malha) {
 
 // movimento: 'parado' (a curvatura vem só do modelo) ou 'velho-parado' (o do Mixamo, que curva de novo
 // por cima da coluna já curvada do repouso)
-export async function carregarAvo({ movimento = 'parado', rostoDesenhado = true, estiloRosto = 'minimo-brilho' } = {}) {
+// arquivo: outro modelo do avô para comparar (o do Tripo, 17/10/2026: uma malha com textura pintada, sem
+// cor nos vértices; vira toon com a textura como cor, sem metal nem aspereza)
+export async function carregarAvo({ movimento = 'parado', rostoDesenhado = true, estiloRosto = 'minimo-brilho', arquivo = null } = {}) {
   let g
   let liso = false
-  if (rostoDesenhado) {
+  if (arquivo) {
+    try { g = await carregar(arquivo) } catch (e) { console.warn('Avô: não carregou', arquivo, e); return null }
+    rostoDesenhado = false
+  } else if (rostoDesenhado) {
     try { g = await carregar(ARQUIVO_AVO_SEM_ROSTO); liso = true } catch { console.info('Avô: a versão de rosto liso não carregou; uso a normal') }
   }
   if (!g) {

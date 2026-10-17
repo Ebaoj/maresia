@@ -132,6 +132,19 @@ async function iniciar() {
       if (window.maresia) window.maresia.avo = a
     }).catch((e) => console.error('Avô:', e))
   }
+  // segundo avô para comparar (o do Tripo), 1,2 m ao lado do primeiro
+  let avo2 = null
+  if (cfg.personagem.avoTripo) {
+    carregarAvo({ movimento: cfg.personagem.avoMovimento, arquivo: '/arte/finais/avo-tripo.glb' }).then((a) => {
+      if (!a) return
+      const x = inicio.x - 2.6, z = inicio.z + 2.1
+      a.raiz.position.set(x, alturaChao(x, z), z)
+      a.raiz.rotation.y = Math.PI / 2
+      cena.add(a.raiz)
+      avo2 = a
+      if (window.maresia) window.maresia.avo2 = a
+    }).catch((e) => console.error('Avô do Tripo:', e))
+  }
   const cam = new CameraTerceiraPessoa(camera, canvas, cfg, Math.PI / 2)
   const interacoes = criarInteracoes({ jogador, fisica, lugares, camera })
   const pos = new Aranhaverso(renderer, cena, camera, cfg, globais)
@@ -218,6 +231,7 @@ async function iniciar() {
     pessoas.atualizar(dt, t)
     atores?.atualizar(dt, jogador.pos)
     avo?.atualizar(dt, cfg.personagem.fpsPose)
+    avo2?.atualizar(dt, cfg.personagem.fpsPose)
     mar.atualizar(jogador.pos)
     grama.atualizar(jogador.pos, camera)
     terreno.atualizar(camera)
