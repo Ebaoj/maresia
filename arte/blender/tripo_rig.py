@@ -20,8 +20,7 @@ cena = bpy.context.scene
 
 for o in list(bpy.data.objects): bpy.data.objects.remove(o, do_unlink=True)
 bpy.ops.import_scene.gltf(filepath=ENTRADA)
-malha = next(o for o in cena.objects if o.type == "MESH")
-NOME = os.environ.get("TRIPO_NOME", os.path.basename(SAIDA).split("-")[0]); malha.name = NOME; malha.data.name = NOME   # "avo", "neto"...
+NOME = os.environ.get("TRIPO_NOME", os.path.basename(SAIDA).split("-")[0])   # "avo", "neto"...
 
 
 def ativar(ob):
@@ -29,36 +28,56 @@ def ativar(ob):
     ob.select_set(True); bpy.context.view_layer.objects.active = ob
 
 
-# ---- 1) limpeza, redução, escala, frente
-ativar(malha)
-bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-bm = bmesh.new(); bm.from_mesh(malha.data)
-bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)   # costuras de UV vinham soltas
-ilhas = 0; vistos = set()
-for v0 in bm.verts:   # pedaços soltos (partes do Tripo: roupa, cabelo...)
-    if v0.index in vistos: continue
-    ilhas += 1; pilha = [v0]; vistos.add(v0.index); tam = 0
-    while pilha:
-        v = pilha.pop(); tam += 1
-        for e in v.link_edges:
-            o = e.other_vert(v)
-            if o.index not in vistos: vistos.add(o.index); pilha.append(o)
-    if tam > 2000: print("PEDACO", ilhas, tam, "pontos")
-print("PEDACOS", ilhas)
-bm.to_mesh(malha.data); bm.free()
-dec = malha.modifiers.new("reduz", "DECIMATE"); dec.ratio = min(1.0, FACES / len(malha.data.polygons))
-bpy.ops.object.modifier_apply(modifier="reduz")
-P = np.array([v.co[:] for v in malha.data.vertices])
-k = ALTURA / (P[:, 2].max() - P[:, 2].min())
-centro = np.array([(P[:, 0].max() + P[:, 0].min()) / 2, (P[:, 1].max() + P[:, 1].min()) / 2, P[:, 2].min()])
-P = (P - centro) * k
+# ---- 1) limpeza, redução, escala, frente (uma malha só ou o modelo em partes do Tripo)
+pecas = [o for o in cena.objects if o.type == "MESH"]
+for o in pecas:
+    if o.parent:   # partes vêm penduradas num vazio "ROOT": solta mantendo a posição
+        mw = o.matrix_world.copy(); o.parent = None; o.matrix_world = mw
+    ativar(o); bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    bm = bmesh.new(); bm.from_mesh(o.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)   # costuras de UV vinham soltas
+    bm.to_mesh(o.data); bm.free()
+for o in list(cena.objects):
+    if o.type == "EMPTY": bpy.data.objects.remove(o, do_unlink=True)
+total = sum(len(o.data.polygons) for o in pecas)
+for o in pecas:
+    ativar(o); dec = o.modifiers.new("reduz", "DECIMATE"); dec.ratio = min(1.0, FACES / total)
+    bpy.ops.object.modifier_apply(modifier="reduz")
+todos = np.concatenate([np.array([v.co[:] for v in o.data.vertices]) for o in pecas])
+k = ALTURA / (todos[:, 2].max() - todos[:, 2].min())
+centro = np.array([(todos[:, 0].max() + todos[:, 0].min()) / 2, (todos[:, 1].max() + todos[:, 1].min()) / 2, todos[:, 2].min()])
+T = (todos - centro) * k
 # frente: para onde apontam os dedos dos pés (o pé passa muito mais da canela na frente que atrás)
-pe = P[P[:, 2] < 0.03 * ALTURA]; canela = P[(P[:, 2] > 0.08 * ALTURA) & (P[:, 2] < 0.12 * ALTURA)]
-cy = np.median(canela[:, 1])
-if pe[:, 1].max() - cy > cy - pe[:, 1].min():
-    P[:, 0] *= -1; P[:, 1] *= -1   # gira 180° em Z: frente para -Y
-malha.data.vertices.foreach_set("co", P.ravel()); malha.data.update()
-print(f"MALHA {len(malha.data.vertices)} pontos, {len(malha.data.polygons)} faces, escala {k:.3f}")
+pe = T[T[:, 2] < 0.03 * ALTURA]; canela = T[(T[:, 2] > 0.08 * ALTURA) & (T[:, 2] < 0.12 * ALTURA)]
+cy = np.median(canela[:, 1]); virar = pe[:, 1].max() - cy > cy - pe[:, 1].min()
+for o in pecas:
+    Q = (np.array([v.co[:] for v in o.data.vertices]) - centro) * k
+    if virar: Q[:, 0] *= -1; Q[:, 1] *= -1   # gira 180° em Z: frente para -Y
+    o.data.vertices.foreach_set("co", Q.ravel()); o.data.update()
+P = np.concatenate([np.array([v.co[:] for v in o.data.vertices]) for o in pecas])
+# partes: agrupa em corpo (pele e cabelo), camisa e calça, pela posição de cada peça
+if len(pecas) > 1:
+    z_meio = ALTURA * 0.5
+    def grupo(o):
+        Q = np.array([v.co[:] for v in o.data.vertices]); zmin, zmax = Q[:, 2].min(), Q[:, 2].max(); xmax = np.abs(Q[:, 0]).max()
+        if zmax > 0.92 * ALTURA or zmin < 0.02 * ALTURA: return "corpo"                    # cabeça, pés
+        if xmax > 0.22 * ALTURA and zmin < 0.55 * ALTURA: return "corpo"                    # mãos e antebraços (vão mais longe que a manga)
+        if 0.45 * ALTURA < zmin and zmax < 0.92 * ALTURA and Q[:, 2].mean() > 0.78 * ALTURA and xmax < 0.06 * ALTURA: return "corpo"   # pescoço
+        if zmax < 0.62 * ALTURA: return "calca"                                             # pernas da calça e barras
+        return "camisa"                                                                     # tronco e mangas
+    grupos = {}
+    for o in pecas: grupos.setdefault(grupo(o), []).append(o)
+    pecas = []
+    for g, obs in grupos.items():
+        for o in cena.objects: o.select_set(False)
+        for o in obs: o.select_set(True)
+        bpy.context.view_layer.objects.active = obs[0]; bpy.ops.object.join()
+        obs[0].name = obs[0].data.name = f"{NOME}-{g}"; pecas.append(obs[0])
+        print("GRUPO", g, len(obs), "peças", len(obs[0].data.polygons), "faces")
+else:
+    pecas[0].name = pecas[0].data.name = NOME
+malha = pecas[0]
+print(f"MALHA {len(P)} pontos, {sum(len(o.data.polygons) for o in pecas)} faces, escala {k:.3f}, {len(pecas)} objetos")
 for im in bpy.data.images:
     if im.size[0] > TEX: im.scale(TEX, TEX)
 
@@ -190,9 +209,10 @@ print("ESQUELETO", len(arm.bones), "ossos")
 for b in arm.bones:
     if b.name.endswith(("HeadTop_End", "Toe_End")) or "4" == b.name[-1]: b.use_deform = False
 for o in cena.objects: o.select_set(False)
-malha.select_set(True); rig.select_set(True); bpy.context.view_layer.objects.active = rig
+for o in pecas: o.select_set(True)
+rig.select_set(True); bpy.context.view_layer.objects.active = rig
 bpy.ops.object.parent_set(type="ARMATURE_AUTO")
-sem = sum(1 for v in malha.data.vertices if not v.groups)
+sem = sum(1 for o in pecas for v in o.data.vertices if not v.groups)
 print("PESOS", len(malha.vertex_groups), "grupos;", sem, "pontos sem peso")
 
 # ---- 4) pose T reta (+ costas curvadas), aplicada como repouso
@@ -220,16 +240,17 @@ for lado, sx in (("Left", 1), ("Right", -1)):
     for i in (1, 2, 3): alinhar(f"{lado}HandThumb{i}", (sx * 0.7, -0.7, 0))
 bpy.context.view_layer.update(); bpy.ops.object.mode_set(mode="OBJECT")
 # aplica: a malha guarda a deformação e o esqueleto toma a pose como repouso
-ativar(malha)
-mod = next(m for m in malha.modifiers if m.type == "ARMATURE")
-bpy.ops.object.modifier_copy(modifier=mod.name)
-bpy.ops.object.modifier_apply(modifier=mod.name)
+for o in pecas:
+    ativar(o)
+    mod = next(m for m in o.modifiers if m.type == "ARMATURE")
+    bpy.ops.object.modifier_copy(modifier=mod.name)
+    bpy.ops.object.modifier_apply(modifier=mod.name)
 ativar(rig); bpy.ops.object.mode_set(mode="POSE"); bpy.ops.pose.armature_apply(selected=False); bpy.ops.object.mode_set(mode="OBJECT")
 print("TPOSE aplicada")
 
 # ---- exporta e renderiza
 bpy.ops.wm.save_as_mainfile(filepath=f"{SAIDA}.blend")
-for o in cena.objects: o.select_set(o in (malha, rig))
+for o in cena.objects: o.select_set(o in pecas or o == rig)
 bpy.ops.export_scene.gltf(filepath=f"{SAIDA}.glb", export_format="GLB", use_selection=True, export_apply=False,
                           export_image_format="JPEG")
 cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam")); cena.collection.objects.link(cam); cena.camera = cam
