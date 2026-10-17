@@ -52,7 +52,9 @@ function chapeuDePalha() {
 }
 
 // chapeu: false tira o chapéu (decisão do Joabe em 16/10/2026: o neto anda sem chapéu)
-export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
+// ombros: encolhe a clavícula (1 = como veio do modelo). O modelo tem 36 cm entre os ombros, proporção
+// de adulto; um menino de 14 anos fica perto de 33 cm (o Joabe achou largo, 16/10/2026)
+export async function carregarNeto({ chapeu = false, semRosto = false, ombros = 0.9, folgaCamisa = 0.012 } = {}) {
   let g
   let liso = false
   if (semRosto) {
@@ -91,6 +93,13 @@ export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
     ossos.set('Chapeu', pivo)
   }
   relaxarMaos(ossos)
+  apertarCamisa(malhas, folgaCamisa)
+  // clavícula mais curta: o braço vem para dentro; o braço volta à escala 1 para não encolher junto
+  for (const L of ['Left', 'Right']) {
+    const cl = ossos.get(L + 'Shoulder'), br = ossos.get(L + 'Arm')
+    if (cl && br && ombros !== 1) { cl.scale.setScalar(ombros); br.scale.setScalar(1 / ombros) }
+  }
+  raiz.updateMatrixWorld(true)
   // eixos do repouso, no espaço local de cada osso (o animador não pode supor como o modelo foi montado)
   const local = (osso, v) => v.clone().applyQuaternion(osso.getWorldQuaternion(new THREE.Quaternion()).invert())
   const eixos = {
@@ -102,6 +111,55 @@ export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
   if (liso) aplainarBoca(malhas)
   if (liso) ancorasRosto = (await ancorasMedidas(cabeca, malhas)) || ancorasDoRosto(raiz, cabeca, malhas)
   return { raiz, ossos, esqueleto: malhas[0].skeleton, malhas, eixos, ancorasRosto }
+}
+
+// A manga da camisa sai reta e larga como caixa (sobra ~3,5 cm além do braço no ombro) e alarga a
+// silhueta. No repouso, cada vértice da camisa no ombro e na manga que está mais longe da pele do que
+// "folga" é puxado para a pele até ficar a "folga" dela. Feito uma vez, nos vértices da malha.
+function apertarCamisa(malhas, folga) {
+  if (!folga) return
+  const camisa = malhas.find((m) => /camisa/i.test(m.material?.name || m.name))
+  const pele = malhas.find((m) => /^(Human|base)$/i.test(m.name))
+  if (!camisa || !pele) return
+  for (const m of [camisa, pele]) { m.updateMatrixWorld(true); m.skeleton.update() }
+  const v = new THREE.Vector3()
+  // pele do tronco e dos braços, em grade de 3 cm para achar o vizinho mais perto rápido
+  const grade = new Map()
+  const chave = (x, y, z) => `${Math.floor(x / 0.03)},${Math.floor(y / 0.03)},${Math.floor(z / 0.03)}`
+  const pp = pele.geometry.attributes.position
+  for (let i = 0; i < pp.count; i++) {
+    pele.getVertexPosition(i, v).applyMatrix4(pele.matrixWorld)
+    if (v.y < 0.95) continue
+    const k = chave(v.x, v.y, v.z)
+    if (!grade.has(k)) grade.set(k, [])
+    grade.get(k).push(v.clone())
+  }
+  const perto = (w) => {
+    let melhor = null, d = Infinity
+    const [cx, cy, cz] = [Math.floor(w.x / 0.03), Math.floor(w.y / 0.03), Math.floor(w.z / 0.03)]
+    for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (let c = -2; c <= 2; c++) {
+      for (const q of grade.get(`${cx + a},${cy + b},${cz + c}`) || []) { const dd = q.distanceToSquared(w); if (dd < d) { d = dd; melhor = q } }
+    }
+    return melhor
+  }
+  const pc = camisa.geometry.attributes.position
+  const inv = new THREE.Matrix3().setFromMatrix4(camisa.matrixWorld).invert()
+  let n = 0
+  for (let i = 0; i < pc.count; i++) {
+    const w = camisa.getVertexPosition(i, v).applyMatrix4(camisa.matrixWorld).clone()
+    if (w.y < 1.12 || Math.abs(w.x) < 0.11) continue // só ombro e manga
+    const q = perto(w)
+    if (!q) continue
+    const d = w.distanceTo(q)
+    if (d <= folga) continue
+    const alvo = q.clone().addScaledVector(w.clone().sub(q).normalize(), folga)
+    const delta = alvo.sub(w).applyMatrix3(inv)
+    pc.setXYZ(i, pc.getX(i) + delta.x, pc.getY(i) + delta.y, pc.getZ(i) + delta.z)
+    n++
+  }
+  pc.needsUpdate = true
+  camisa.geometry.computeVertexNormals()
+  return n
 }
 
 // Rosto liso: os lábios ainda têm volume, e o filtro de quadrinho contorna esse volume (fica uma "lente"

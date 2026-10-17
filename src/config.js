@@ -72,6 +72,8 @@ export const PADRAO = {
     corpoNovo: true,       // esqueleto padrão com os movimentos do Mixamo (jogador/corpo.js); desligado = boneco antigo
     modelo: 'neto',        // corpo do jogador: 'neto' (arte/finais/neto-mpfb.glb) ou 'boneco' (cápsulas, para testes); recarregar
     chapeu: false,         // chapéu de palha no neto (o Joabe tirou em 16/10/2026); recarregar
+    ombros: 0.9,           // largura dos ombros do neto (1 = como veio do modelo, largo de adulto); recarregar
+    folgaCamisa: 0.012,    // folga máxima da camisa sobre a pele no ombro e na manga, em metros (0 = como veio); recarregar
     rostoDesenhado: false, // neto de rosto liso com olhos e boca desenhados em 2D (rosto.js); recarregar
     estiloRosto: 'minimo-brilho', // desenho do rosto (rosto.js, ESTILOS); o Joabe gostou do mínimo brilho (16/10/2026)
     velocidadeNova: 1.8,   // com o corpo novo: gente de verdade anda a ~1,4 m/s e corre a ~3,5 m/s
