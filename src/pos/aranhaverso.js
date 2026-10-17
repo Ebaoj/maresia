@@ -107,7 +107,7 @@ uniform float uDesfoque; uniform float uFoco; uniform float uVelocidade;
 uniform float uOclusao; uniform float uBrilho; uniform vec2 uDesloc;
 uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uniform float uMaresia;
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
-uniform float uArcane; uniform float uArcLinha; uniform float uArcContraste; uniform float uArcExposicao;
+uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
 ${COMUM}
@@ -346,6 +346,46 @@ void main() {
     cor = mix(cor, vec3(1.0), raia * smoothstep(0.38, 0.75, rv) * uVelocidade * 0.55);
   }
 
+  // 11. reflexo de lente (lens flare): olhando para o sol, a lente faz uma faixa horizontal atravessando
+  // o sol (anamórfica, de cinema), um brilho em volta dele, fantasmas coloridos na linha do sol ao centro
+  // e um anel. Só com o sol à vista: some quando algo tapa o sol (profundidade em volta dele)
+  if (uFlare > 0.001 && uSolTela.z > 0.5) {
+    vec2 sp = uSolTela.xy;
+    float vis = 0.0;
+    for (int i = -2; i <= 2; i++) for (int k = -2; k <= 2; k++) {
+      vec2 q = sp + vec2(float(i), float(k)) * 0.007;
+      vis += (q.x > 0.0 && q.x < 1.0 && q.y > 0.0 && q.y < 1.0) ? step(uFar * 0.9, distancia(q)) : 0.0;
+    }
+    vis /= 25.0;
+    if (vis > 0.0) {
+      float asp = uRes.x / uRes.y;
+      vec2 dc2 = vec2(0.5) - sp; // do sol para o centro
+      vec3 fl = vec3(0.0);
+      // fantasmas: discos de tamanhos e tons diferentes ao longo da linha (e além do centro)
+      for (int g = 0; g < 6; g++) {
+        float fg = float(g);
+        float t = 0.35 + fg * 0.33 + fg * fg * 0.03;
+        float tam = 0.025 + 0.03 * fract(fg * 0.618 + 0.3) + (g == 3 ? 0.05 : 0.0);
+        vec3 tom = mix(vec3(0.55, 0.85, 1.0), vec3(1.0, 0.65, 0.35), fract(fg * 0.37));
+        float r = length((uv - (sp + dc2 * t)) * vec2(asp, 1.0));
+        float disco = smoothstep(tam, tam * 0.55, r) * (0.06 + 0.05 * fract(fg * 0.71));
+        float aro = smoothstep(tam * 0.12, 0.0, abs(r - tam)) * 0.05; // borda mais marcada, como íris
+        fl += tom * (disco + aro);
+      }
+      // anel grande em volta do centro, com borda de arco-íris
+      float rc = length((uv - 0.5) * vec2(asp, 1.0));
+      float anel = smoothstep(0.03, 0.0, abs(rc - 0.42)) * 0.05;
+      fl += anel * mix(vec3(1.0, 0.5, 0.3), vec3(0.4, 0.7, 1.0), smoothstep(0.39, 0.45, rc));
+      // faixa anamórfica e brilho no sol
+      float dx = abs(uv.x - sp.x) * asp, dy = abs(uv.y - sp.y);
+      float faixa = exp(-dy * 160.0) * exp(-dx * 1.8) * 0.45;
+      float rs = length((uv - sp) * vec2(asp, 1.0));
+      float brilhoS = exp(-rs * 7.0) * 0.3;
+      fl += uCorFlare * (faixa + brilhoS) + uCorFlare * fl * 0.6;
+      cor += fl * vis * uFlare;
+    }
+  }
+
   // 11. vinheta
   cor *= 1.0 - uVinheta * smoothstep(0.45, 1.05, rv);
   gl_FragColor = vec4(clamp(cor, 0.0, 1.0), 1.0);
@@ -418,6 +458,7 @@ export class Aranhaverso {
       uNevoaCor: { value: new THREE.Color() }, uNevoaDens: { value: 0.002 }, uNevoaQueda: { value: 0.05 }, uMaresia: { value: 0.006 },
       uMemoria: { value: 0 }, uMemPapel: v3(), uMemTinta: v3(), uMemAnil: v3(), uMemUrucum: v3(), uMemOcre: v3(),
       uCorSombra: v3(), uTomSombra: { value: 0.3 }, uCorLuz: v3(), uTomLuz: { value: 0.2 },
+      uSolTela: { value: new THREE.Vector3() }, uFlare: { value: 0 }, uCorFlare: { value: new THREE.Color(1, 0.8, 0.6) },
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
     }
 
@@ -485,6 +526,20 @@ export class Aranhaverso {
     }
     gl.uArcRim.value = arc ? e.arcRecorte : 0
     gl.uArcCeu.value = e.arcCeu
+    // sol na tela, para o reflexo de lente: só quando está na frente da câmera
+    {
+      const dirS = this.globais.uSolDir.value
+      const frenteCam = new THREE.Vector3()
+      cam.getWorldDirection(frenteCam)
+      const ps = cam.position.clone().addScaledVector(dirS, 1500).project(cam)
+      const naFrente = dirS.dot(frenteCam) > 0.05 && Math.abs(ps.x) < 1.3 && Math.abs(ps.y) < 1.3
+      u.uSolTela.value.set((ps.x + 1) / 2, (ps.y + 1) / 2, naFrente ? 1 : 0)
+      // mais forte com o sol baixo (fim de tarde, manhã); nada à noite
+      const baixo = 1 - THREE.MathUtils.smoothstep(dirS.y, 0.25, 0.75)
+      const deDia = THREE.MathUtils.smoothstep(dirS.y, -0.02, 0.06) * (1 - this.globais.uNoite.value)
+      u.uFlare.value = (e.reflexoLente ?? 0) * deDia * (0.45 + 0.55 * baixo)
+      u.uCorFlare.value.copy(this.globais.uSolCor.value)
+    }
     u.uTempo.value = Math.floor(tempo * e.fpsTraco) / e.fpsTraco
     u.uNear.value = cam.near
     u.uFar.value = cam.far

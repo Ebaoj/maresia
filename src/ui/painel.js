@@ -38,6 +38,7 @@ export function criarPainel(cfg) {
   arc.add(e, 'arcSaturacao', 0, 2, 0.01).name('saturação')
   arc.add(e, 'arcGrao', 0, 0.2, 0.005).name('grão de filme')
   arc.add(e, 'arcTextura', 0, 2, 0.05).name('textura pintada do mundo')
+  arc.add(e, 'reflexoLente', 0, 3, 0.05).name('reflexo de lente (sol)')
   arc.add(e, 'arcRecorte', 0, 2, 0.05).name('luz de recorte')
   arc.add(e, 'arcAr', 0, 4, 0.05).name('profundidade de ar')
   arc.add(e, 'arcCeu', 0, 2, 0.05).name('céu pintado')

@@ -25,6 +25,7 @@ export const PADRAO = {
     arcContraste: 1.18,    // gradação: contraste (curva em S) e exposição, menos lavado
     arcExposicao: 0.93,
     arcTextura: 1.0,
+    reflexoLente: 1.0,     // lens flare quando a câmera olha para o sol (fantasmas, faixa anamórfica, anel); 0 desliga
     arcRecorte: 0.6,       // luz de recorte quente nas bordas contra o sol
     arcAr: 1.8,            // profundidade de ar: o fundo se separa em camadas frias (multiplica névoa e maresia)
     arcCeu: 1.0,           // céu pintado: pinceladas longas e nuvens de pincel (0 = céu liso)       // força das texturas pintadas do mundo (areia, palha, madeira; public/texturas)
