@@ -15,7 +15,7 @@ Como funciona, para caber no navegador:
 
 | Fase | O que | Estado |
 |---|---|---|
-| 1 | Motor: Jolt no jogo, a camisa e a calça do neto como pano de verdade (pano invisível + deslocamento), presas ao esqueleto por região, anteparo do corpo, vento. Liga e desliga no painel contra as molas. Custo medido e vídeo | feito (16/10): camisa 1.004 → ~700 pontos e calça ~650 (grade de 4,5 cm, grupos separados por osso para não rasgar na virilha), 4 iterações; ~1,7 ms por quadro (o Jolt ~1 ms). Liga no painel ('roupa no Jolt') |
+| 1 | Motor: Jolt no jogo, a camisa e a calça do neto como pano de verdade (pano invisível + deslocamento), presas ao esqueleto por região, anteparo do corpo, vento. Liga e desliga no painel contra as molas. Custo medido e vídeo | feito (16/10): camisa com 800 pontos e calça com 548 (grade de 4,5 cm, grupos separados por osso para não rasgar na virilha), 4 iterações; ~2 ms por quadro. Liga no painel ('roupa no Jolt') |
 | 2 | Peça sobre peça: camisa por fora da calça sem atravessar, braço e coxa sem atravessar a barra na corrida; dobras desenhadas lendo o pano novo | parcial (16/10): a calça debaixo da camisa fica presa e 1,5 cm para dentro, a camisa ganha sempre. Falta: braço e coxa contra a barra, dobras |
 | 3 | Guarda-roupa: formato de peça (glb no esqueleto padrão + mapa do que é solto), trocar a peça no painel com o jogo rodando, esconder a pele debaixo da roupa | |
 | 4 | Roupas de 1932 com a sessão do personagem (biblioteca CC0 do MakeHuman): camisa de botão, calça de brim arregaçada, vestido, chapéu de palha | |
