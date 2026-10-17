@@ -119,18 +119,22 @@ for lado, nome in ((1, "Left"),):
     linha = np.array(linha)
     ponta = P[np.argmax(P[:, 0] * lado)]                      # ponta dos dedos (o mais afastado)
     # ombro: logo acima da axila, 3,5 cm para dentro da borda de fora do deltoide
-    # ombro: sobe pela reta do braço (centro das fatias abaixo da axila) até ficar 4,5 cm abaixo da
-    # superfície de cima do ombro naquele ponto (a junta fica dentro do deltoide)
-    cx = np.polyfit(linha[:, 2], linha[:, 0], 1); cyf = np.polyfit(linha[:, 2], linha[:, 1], 1)
-    ombro = None
-    for z in np.arange(z_axila, z_axila + 0.3, 0.003):
-        x, y = np.polyval(cx, z), np.polyval(cyf, z)
-        col = P[(np.abs(P[:, 0] - x) < 0.012) & (P[:, 2] > z_axila)]   # só o alto do ombro, não o próprio braço
-        if not len(col): continue
-        if z >= col[:, 2].max() - 0.045 * H / 1.5:
-            ombro = np.array([x, y, z]); break
-    if ombro is None: ombro = np.array([np.polyval(cx, z_axila), np.polyval(cyf, z_axila), z_axila + 0.045 * H / 1.5])
-    print("OMBRO z_axila", round(float(z_axila), 3), "ombro", [round(float(c), 3) for c in ombro])
+    # ombro: na lateral do tronco, no topo da cava. Largura do tronco medida logo abaixo da axila
+    # (onde tronco e braço ainda são pedaços separados); a junta fica ~3 cm para fora dela.
+    larg = []
+    for zt_ in np.arange(z_axila - 0.12 * H / 1.5, z_axila - 0.02, 0.01):
+        segs = segmentos_x(fatia(zt_, 0.01, lado=lado), gap=0.03)   # malha reduzida tem vãos de 1 a 2 cm
+        if len(segs) >= 2: larg.append(np.abs(segs[0][:, 0]).max())
+    w_t = max(larg) if larg else 0.1 * H
+    x_o = w_t + 0.03 * H / 1.5
+    faixa_o = P[(P[:, 0] * lado > x_o + 0.01) & (P[:, 0] * lado < x_o + 0.045) & (P[:, 2] > z_axila - 0.05) & (P[:, 2] < z_axila + 0.2)]
+    topo_o = faixa_o[:, 2].max()   # alto do deltoide, um pouco para fora (perto do pescoço o trapézio sobe)
+    # a junta fica ~5 cm abaixo do alto do ombro, mas sempre de 3 a 7 cm acima da axila
+    # (ombro de velho sobe com o trapézio e puxaria a junta para cima)
+    z_o = min(max(topo_o - 0.05 * H / 1.5, z_axila + 0.03 * H / 1.5), z_axila + 0.07 * H / 1.5)
+    viz_o = P[(np.abs(P[:, 0] - lado * x_o) < 0.02) & (np.abs(P[:, 2] - z_o) < 0.03)]
+    ombro = np.array([lado * x_o, viz_o[:, 1].mean() if len(viz_o) else 0.0, z_o])
+    print("OMBRO z_axila", round(float(z_axila), 3), "tronco", round(float(w_t), 3), "topo", round(float(topo_o), 3), "ombro", [round(float(c), 3) for c in ombro])
     comp = np.linalg.norm(ponta - ombro); mao = 0.20 * comp     # mão grande: ~1/5 do braço até a ponta
     punho = ombro + (ponta - ombro) * (1 - mao / comp)
     cotovelo = ombro + (punho - ombro) * 0.5
