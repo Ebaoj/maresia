@@ -203,6 +203,9 @@ function peixeSecando() {
 
 // ---------- distribuição ----------
 
+// onde ficam os fogareiros (a fumaça desenhada sai deles, efeitos2d.js)
+export const FOGAREIROS = []
+
 export function criarObjetosFatia(cena, casasPalha) {
   const tipos = new Map()
   const por = (nome, fabrica) => {
@@ -213,6 +216,7 @@ export function criarObjetosFatia(cena, casasPalha) {
   const pôr = (nome, fabrica, x, z, rot, { raio = 0, caixa = null, escala = 1 } = {}) => {
     if (!dentroDaFatia(x, z)) return false
     const t = por(nome, fabrica)
+    if (nome === 'fogareiro') FOGAREIROS.push(new THREE.Vector3(x, alturaTerreno(x, z), z))
     t.mats.push(new THREE.Matrix4().compose(V(x, alturaTerreno(x, z) - 0.02, z), new THREE.Quaternion().setFromAxisAngle(Y, rot), V(escala, escala, escala)))
     if (raio) adicionarCirculo(x, z, raio)
     if (caixa) adicionarCaixa(x, z, caixa[0], caixa[1], rot)

@@ -24,7 +24,9 @@ import { criarCoqueiros } from './mundo/vegetacao.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
 import { criarVilas } from './mundo/vilas.js'
-import { criarObjetosFatia } from './mundo/fatia-objetos.js'
+import { criarObjetosFatia, FOGAREIROS } from './mundo/fatia-objetos.js'
+import { criarEfeitos2d } from './mundo/efeitos2d.js'
+import { criarAleatorio } from './utils.js'
 import { criarMapa } from './ui/mapa.js'
 import { trechosJogo } from './mundo/fortaleza1932.js'
 import { criarToque } from './mundo/toque.js'
@@ -148,6 +150,12 @@ async function iniciar() {
   }
   const cam = new CameraTerceiraPessoa(camera, canvas, cfg, Math.PI / 2)
   const interacoes = criarInteracoes({ jogador, fisica, lugares, camera })
+  // efeitos 2D desenhados (visual Arcane): poeira, fumaça dos fogareiros, borrifo da arrebentação
+  const efeitos = criarEfeitos2d(cena)
+  const rndFx = criarAleatorio(41)
+  let esperaFumaca = 0, esperaBorrifo = 0
+  const ondaFila = [] // jatos de uma onda quebrando, um atrás do outro
+  const VENTO_FX = new THREE.Vector3(-1, 0, -0.35).normalize()
   const pos = new Aranhaverso(renderer, cena, camera, cfg, globais)
   pos.coletarExcecoes()
   if (import.meta.env.DEV) {
@@ -258,12 +266,51 @@ async function iniciar() {
       if (ev.tipo === 'pisada') {
         const correndo = jogador.velHoriz > (jogador.animador ? cfg.personagem.corridaNova * 0.75 : 6)
         areia.pisar(ev.pos.x, ev.pos.z, ev.yaw, ev.lado, correndo ? 1.25 : 1)
-        if (correndo && jogador.naAreiaSeca) areia.poeira(ev.pos.x, pj.y, ev.pos.z, 3)
+        if (correndo && jogador.naAreiaSeca) {
+          if (cfg.estilo.visual === 'arcane') efeitos.emitir('poeira', new THREE.Vector3(ev.pos.x, pj.y + 0.18, ev.pos.z), { tam: 0.55, vida: 0.55, vel: new THREE.Vector3(-jogador.vel.x * 0.15, 0.25, -jogador.vel.z * 0.15) })
+          else areia.poeira(ev.pos.x, pj.y, ev.pos.z, 3)
+        }
+      }
+      if (ev.tipo === 'pouso' && jogador.naAreiaSeca && cfg.estilo.visual === 'arcane') {
+        for (const s of [-1, 1]) efeitos.emitir('poeira', new THREE.Vector3(ev.pos.x + s * 0.3, ev.pos.y + 0.2, ev.pos.z), { tam: 0.8, vida: 0.66, vel: new THREE.Vector3(s * 0.5, 0.3, 0) })
       }
       if (ev.tipo === 'tchibum' || ev.tipo === 'chuá') toque.gota(ev.pos.x, ev.pos.z, 0.9, ev.tipo === 'tchibum' ? 0.9 : 0.6)
       if (TEXTO[ev.tipo]) hud.onomatopeia(TEXTO[ev.tipo], ev.pos)
     }
     jogador.eventos.length = 0
+    // fumaça dos fogareiros perto (sobe devagar e vai com o vento) e borrifo na arrebentação
+    esperaFumaca -= dt
+    if (esperaFumaca <= 0) {
+      esperaFumaca = 0.32
+      for (const f of FOGAREIROS) {
+        if (f.distanceToSquared(pj) > 45 * 45) continue
+        const v = VENTO_FX.clone().multiplyScalar(0.35 * cfg.interacao.ventoCoqueiros).add(new THREE.Vector3(0, 0.45, 0))
+        efeitos.emitir('fumaca', f.clone().add(new THREE.Vector3(rndFx.entre(-0.05, 0.05), 0.42, rndFx.entre(-0.05, 0.05))), { tam: rndFx.entre(0.35, 0.55), vida: 1.4, vel: v, gira: rndFx.entre(-0.3, 0.3) })
+      }
+    }
+    // arrebentação: de tempos em tempos uma onda quebra num trecho de 3 a 5 m perto do jogador e solta
+    // jatos em sequência ao longo dele
+    esperaBorrifo -= dt
+    if (esperaBorrifo <= 0) {
+      esperaBorrifo = rndFx.entre(0.8, 1.6)
+      const x0 = pj.x + rndFx.entre(-7, 7)
+      const zC = linhaCosta(x0)
+      if (Math.abs(zC - pj.z) < 30) {
+        const dz = rndFx.entre(0.8, 2.2)
+        for (let k = 0; k < 5; k++) {
+          const x = x0 + (k - 2) * rndFx.entre(0.7, 1.0)
+          ondaFila.push({ t: k * 0.07, pos: new THREE.Vector3(x, 0.4, linhaCosta(x) - dz) })
+        }
+      }
+    }
+    for (let i = ondaFila.length - 1; i >= 0; i--) {
+      const o = ondaFila[i]
+      o.t -= dt
+      if (o.t > 0) continue
+      efeitos.emitir('borrifo', o.pos, { tam: rndFx.entre(0.8, 1.4), vida: 0.6, vel: new THREE.Vector3(0, 0.8, 0.5), gira: rndFx.entre(-0.4, 0.4) })
+      ondaFila.splice(i, 1)
+    }
+    efeitos.atualizar(dt)
     globais.uVentoPalm.value = cfg.interacao.ventoCoqueiros
     interacoes.atualizar()
     fisica.atualizar(dt, jogador)
@@ -297,7 +344,7 @@ async function iniciar() {
     cfg.tempo.hora = hora
   }
   window.__tempos = tempos
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares }
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, efeitos, fogareiros: FOGAREIROS }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
   if (import.meta.env.DEV) import('./debug/medidor.js').then((g) => g.instalar(window.maresia))
 }

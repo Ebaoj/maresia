@@ -69,7 +69,8 @@ export class Jogador {
     })
     // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo
     const forca = Math.max(clamp((this.velHoriz - cfg.corridaNova * 0.8) / (cfg.corridaNova * 0.3), 0, 1), this.noChao || this.nadando ? 0 : 0.5)
-    this.multiplos?.atualizar(forca * cfg.multiplos)
+    // no visual Arcane não há cópias em retícula (são linguagem de quadrinho do Aranhaverso)
+    this.multiplos?.atualizar(this.cfg.estilo.visual === 'arcane' ? 0 : forca * cfg.multiplos)
     const y = this.pos.y
     a.atualizar(dt, {
       vel: this.velHoriz,
