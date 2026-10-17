@@ -59,6 +59,51 @@ imagem = (
 )
 
 
+# Contador na tela (injetado pelo _porteiro na página do KasmVNC): quadros novos que o navegador mostra por
+# segundo (compara a imagem a cada quadro de tela, em miniatura; imagem parada não conta) e o FPS do jogo no
+# servidor (o _medir, a cada 20 s)
+CONTADOR_JS = r"""(() => {
+  const caixa = document.createElement('div');
+  caixa.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:2147483647;' +
+    'pointer-events:none;font:600 13px/1.3 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.6);' +
+    'padding:4px 10px;border-radius:6px;white-space:nowrap';
+  caixa.textContent = 'medindo...';
+  const por = () => document.body.appendChild(caixa);
+  if (document.body) por(); else document.addEventListener("DOMContentLoaded", por);
+  const mini = document.createElement('canvas'); mini.width = 32; mini.height = 18;
+  const ctx = mini.getContext('2d', { willReadFrequently: true });
+  let anterior = null, novos = 0, t0 = performance.now(), servidor = '';
+  const quadro = () => {
+    let tela = null;
+    for (const c of document.querySelectorAll('canvas')) if (!tela || c.width * c.height > tela.width * tela.height) tela = c;
+    if (tela && tela.width > 64) {
+      ctx.drawImage(tela, 0, 0, 32, 18);
+      const d = ctx.getImageData(0, 0, 32, 18).data;
+      let h = 0;
+      for (let i = 0; i < d.length; i += 4) h = (h * 31 + d[i] + d[i + 1] * 7 + d[i + 2] * 13) | 0;
+      if (anterior !== null && h !== anterior) novos++;
+      anterior = h;
+    }
+    const t = performance.now();
+    if (t - t0 >= 1000) {
+      caixa.textContent = 'recebendo ' + Math.round(novos * 1000 / (t - t0)) + ' FPS' + servidor;
+      novos = 0; t0 = t;
+    }
+    requestAnimationFrame(quadro);
+  };
+  requestAnimationFrame(quadro);
+  const buscar = async () => {
+    try {
+      const m = await (await fetch('/__fps-servidor', { cache: 'no-store' })).json();
+      servidor = m.fps_jogo ? ' \u00b7 jogo no servidor ' + Math.round(m.fps_jogo) + ' FPS' : '';
+    } catch (e) { /* segue sem o número do servidor */ }
+  };
+  buscar(); setInterval(buscar, 5000);
+})();
+"""
+_ultima_medida = {}
+
+
 def _bg(c):
     return subprocess.Popen(c, shell=True)
 
@@ -93,6 +138,32 @@ async def _porteiro(senha):
         finally:
             para.close()
 
+    async def responder(w, tipo, corpo):
+        w.write(f"HTTP/1.1 200 OK\r\nContent-Type: {tipo}\r\nCache-Control: no-store\r\nContent-Length: {len(corpo)}\r\n"
+                f"Connection: close\r\n\r\n".encode() + corpo)
+        await w.drain()
+        w.close()
+
+    async def pagina_com_contador(pedido, linhas, w):
+        # a página do KasmVNC inteira, sem compressão, com o <script> do contador antes do </body>
+        tirar = ("authorization:", "connection:", "keep-alive:", "accept-encoding:")
+        linhas = [l for l in linhas if not l.lower().startswith(tirar)] + [f"Authorization: Basic {basica}", "Connection: close"]
+        dr, dw = await asyncio.open_connection("127.0.0.1", KASM_DENTRO)
+        dw.write(("\r\n".join([pedido, *linhas]) + "\r\n\r\n").encode("latin-1"))
+        resposta = await dr.read(-1)
+        dw.close()
+        cab, _, corpo = resposta.partition(b"\r\n\r\n")
+        cab_linhas = cab.decode("latin-1").split("\r\n")
+        if any(l.lower().startswith("transfer-encoding:") for l in cab_linhas) or b"</body>" not in corpo:
+            w.write(resposta)  # formato inesperado: entrega como veio, sem contador
+        else:
+            corpo = corpo.replace(b"</body>", b'<script src="/__fps.js"></script></body>', 1)
+            cab_linhas = [l for l in cab_linhas if not l.lower().startswith("content-length:")]
+            cab_linhas.append(f"Content-Length: {len(corpo)}")
+            w.write(("\r\n".join(cab_linhas) + "\r\n\r\n").encode("latin-1") + corpo)
+        await w.drain()
+        w.close()
+
     async def atender(r, w):
         try:
             cab = (await r.readuntil(b"\r\n\r\n")).decode("latin-1").split("\r\n")[:-2]
@@ -116,7 +187,16 @@ async def _porteiro(senha):
             await w.drain()
             w.close()
             return
+        if partes.path == "/__fps.js":
+            await responder(w, "application/javascript; charset=utf-8", CONTADOR_JS.encode())
+            return
+        if partes.path == "/__fps-servidor":
+            await responder(w, "application/json", json.dumps({"fps_jogo": _ultima_medida.get("fps_jogo")}).encode())
+            return
         websocket = any(l.lower().startswith("upgrade:") for l in linhas)
+        if not websocket and partes.path in ("/", "/index.html"):
+            await pagina_com_contador(pedido, linhas, w)
+            return
         # uma conexão por pedido (fora o websocket), para cada pedido passar por aqui e levar a autenticação
         tirar = ("authorization:",) if websocket else ("authorization:", "connection:", "keep-alive:")
         linhas = [l for l in linhas if not l.lower().startswith(tirar)] + [f"Authorization: Basic {basica}"]
@@ -181,7 +261,9 @@ def _cpu_transmissao():
 def _medir(chave, parar):
     while not parar.is_set():
         try:
-            estado[f"medida-{chave}"] = {"fps_jogo": _fps_jogo(), "cpu": _cpu_transmissao(), "t": time.time()}
+            medida = {"fps_jogo": _fps_jogo(), "cpu": _cpu_transmissao(), "t": time.time()}
+            _ultima_medida.update(medida)
+            estado[f"medida-{chave}"] = medida
         except Exception as e:  # o jogo ainda carregando, por exemplo
             estado[f"medida-{chave}"] = {"erro": str(e)[:120], "t": time.time()}
         parar.wait(20)
@@ -241,13 +323,13 @@ def main(servidor: str = "kasm", abrir: bool = True, minutos: int = 58):
     if not url:
         print("não subiu; veja os logs no painel do Modal")
         return
+    # o link completo fica também num arquivo só do Mac (testes/, fora do git), para conferência automática;
+    # nunca no terminal
+    destino = Path(__file__).parent / "testes" / f"link-{servidor}.txt"
+    destino.parent.mkdir(exist_ok=True)
+    destino.write_text(link(servidor, url, senha))
     if abrir:
         webbrowser.open(link(servidor, url, senha))
-    else:
-        # para teste automático: o link completo fica num arquivo só do Mac, nunca no terminal
-        destino = Path(__file__).parent / "testes" / f"link-{servidor}.txt"
-        destino.parent.mkdir(exist_ok=True)
-        destino.write_text(link(servidor, url, senha))
     print(f"sessão aberta ({servidor}, {url}). Para encerrar: ./modal.sh app stop {app.app_id}", flush=True)
     vista = None
     while True:
