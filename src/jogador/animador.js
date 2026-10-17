@@ -155,8 +155,16 @@ export class Animador {
     mm.espera -= DT
     const fimDoClipe = atual && !entAtual.loop && fAtual >= entAtual.n - 3
     // giro em andamento (meia-volta, virar no lugar): vai até perto do fim sem trocar
-    const travado = mm.trava && mm.trava.chave === mm.chave && fAtual < mm.trava.ate && !fimDoClipe
+    // o pedido virou no meio do giro (frente, trás, frente...): solta a trava e procura de novo, senão
+    // ele emendava uma meia-volta na outra e ficava oscilando de lado sem encarar nenhuma direção
+    const angulo = (a) => Math.atan2(Math.sin(a), Math.cos(a))
+    const mudouPedido = mm.trava && s.yawPedido != null && mm.trava.yawPedido != null && Math.abs(angulo(s.yawPedido - mm.trava.yawPedido)) > 1.2
+    const travado = mm.trava && mm.trava.chave === mm.chave && fAtual < mm.trava.ate && !fimDoClipe && !mudouPedido
     if (!travado) mm.trava = null
+    if (mudouPedido) { mm.espera = 0; mm.semGiro = 0.7 }
+    // logo depois de desistir de um giro, nada de outra volta do mocap (lenta, ~1 s): o controle vira rápido
+    mm.semGiro = Math.max(0, (mm.semGiro || 0) - DT)
+    const faltaGiro = s.yawPedido != null ? Math.abs(angulo(s.yawPedido - s.yaw)) : Math.PI
     if (!travado && (!atual || mm.espera <= 0 || fimDoClipe)) {
       mm.espera = 0.1 // procura 10 vezes por segundo
       const pose = atual ? this.banco.linha(atual.userData.e, fAtual) : this.banco.linha(0, 0)
@@ -165,7 +173,11 @@ export class Animador {
       const vinhaCorrendo = entAtual && entAtual.ritmo === 'corrida'
       const correndo = (s.velPedida || 0) > 3 || (vinhaCorrendo && s.vel > 0.8 && (s.velPedida || 0) < 0.5)
       const r = this.banco.buscar(pose, s.traj, (e) => {
-        const rit = this.banco.entradas[e].ritmo
+        const ent = this.banco.entradas[e]
+        // meia-volta só quando falta girar perto de meia volta (a menos que isso o giro passava do ponto)
+        if (/volta/.test(ent.nome) && faltaGiro < 2.2) return false
+        if (/volta|virar/.test(ent.nome) && mm.semGiro > 0) return false
+        const rit = ent.ritmo
         return rit === 'livre' || (correndo ? rit === 'corrida' : rit === 'andar')
       })
       const custoAtual = atual ? this.banco.custoDe(atual.userData.e, fAtual, r.q) : Infinity
@@ -191,7 +203,7 @@ export class Animador {
           // mesmo sentido do clipe: se o clipe gira para o outro lado, completa a volta por ele
           if (Math.sign(falta) !== Math.sign(giroClipe) && Math.abs(falta) > 2.6) falta += Math.sign(giroClipe) * Math.PI * 2
           const escala = Math.abs(giroClipe) > 0.2 ? THREE.MathUtils.clamp(falta / giroClipe, 0.6, 1.4) : 1
-          mm.trava = { chave, ate: r.f + Math.floor((ent.n - r.f) * 0.85), escala }
+          mm.trava = { chave, ate: r.f + Math.floor((ent.n - r.f) * 0.85), escala, yawPedido: s.yawPedido }
         }
       }
     }
@@ -220,6 +232,8 @@ export class Animador {
 
   // durante um giro travado, o controle não corrige a direção (quem gira é a animação)
   get girando() { return !!(this.mm?.trava && this.mm.trava.chave === this.mm.chave) }
+  // desistiu de um giro no meio (frente, trás, frente...): o controle vira depressa para o pedido
+  get virarRapido() { return (this.mm?.semGiro || 0) > 0 }
 
   // o controle lê e zera o giro acumulado
   consumirGiro() {

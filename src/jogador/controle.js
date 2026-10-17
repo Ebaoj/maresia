@@ -268,7 +268,11 @@ export class Jogador {
         // lugar), e o controle só corrige o desvio aos poucos
         const giro = this.animador.consumirGiro()
         this.yawVisual += giro
-        if (!this.animador.girando) this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 3))
+        if (this.animador.virarRapido) {
+          // desistiu do giro no meio: vira depressa, mas no máximo ~45° por desenho (sem estalo)
+          const d = Math.atan2(Math.sin(this.yawAlvo - this.yawVisual), Math.cos(this.yawAlvo - this.yawVisual))
+          this.yawVisual += THREE.MathUtils.clamp(d * (1 - Math.exp(-passo * 8)), -0.8, 0.8)
+        } else if (!this.animador.girando) this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 3))
       } else {
         this.animador?.consumirGiro()
         // meia-volta saindo do parado: o motion matching ainda não assumiu (está entrando na mistura);
