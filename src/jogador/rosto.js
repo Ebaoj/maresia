@@ -187,7 +187,7 @@ const ESTILOS = {
       triste: (g) => { tremido(g, [[42, 30], [64, 36], [86, 46]], 9); g.beginPath(); g.ellipse(64, 78, 10, 13, 0, 0, Math.PI * 2); g.fill() },
     },
     bocas: {
-      neutra: (g) => tremido(g, [[46, 64], [82, 64]], 8),
+      neutra: (g) => tremido(g, [[44, 61], [54, 65], [64, 66], [74, 65], [84, 61]], 8), // cantos levemente para cima
       sorriso: (g) => tremido(g, arco(64, 54, 18, 14, Math.PI * 0.15, Math.PI * 0.85, 10), 9),
       aberta: (g) => { g.beginPath(); g.ellipse(64, 64, 11, 13, 0, 0, Math.PI * 2); g.fill() },
       o: (g) => tremido(g, arco(64, 64, 8, 10, 0, Math.PI * 2, 12), 7),
@@ -256,7 +256,8 @@ function olhosMinimos({ forma = 'ponto', sobr = 9, tam = 1, alto = 1, brilhos = 
   }
   const s = (g, pts) => (sobr > 10 ? pincel(g, pts, sobr * 0.5, sobr * 1.3) : tremido(g, pts, sobr))
   return {
-    aberto: (g) => { s(g, [[44, 40], [64, 36], [84, 40]]); olho(g) },
+    // neutro calmo: a ponta de fora da sobrancelha sobe um pouco (caída para fora lia como tristeza, subida demais lia como bravo)
+    aberto: (g) => { s(g, [[44, 37], [64, 33], [86, 34]]); olho(g) },
     fechado: (g) => { s(g, [[44, 42], [64, 38], [84, 42]]); tremido(g, [[46, 72], [64, 76], [82, 72]], 9) },
     feliz: (g) => { s(g, [[44, 34], [64, 30], [84, 34]]); tremido(g, arco(64, 80, 18, 12, Math.PI * 1.1, Math.PI * 1.9, 10), 10) },
     // susto: sobrancelha lá em cima e arqueada, olho arregalado (contorno grande) com pupila pequena
