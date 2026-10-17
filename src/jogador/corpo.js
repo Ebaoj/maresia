@@ -43,7 +43,7 @@ export function criarAdaptador(alvo) {
 }
 
 // modelo: 'neto' (o personagem da história) ou 'boneco' (o de cápsulas, para testes)
-export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false, estiloRosto = 'aranhaverso' } = {}) {
+export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false, estiloRosto = 'minimo-brilho' } = {}) {
   const boneco = criarBoneco()
   const r = await carregarMovimentosMixamo({
     alvo: { ossos: boneco.ossos, raiz: boneco.raiz }, pasta: '/animacoes/mixamo/', nomes: [...NOMES, ...Object.keys(BANCO)],

@@ -73,7 +73,7 @@ export const PADRAO = {
     modelo: 'neto',        // corpo do jogador: 'neto' (arte/finais/neto-mpfb.glb) ou 'boneco' (cápsulas, para testes); recarregar
     chapeu: false,         // chapéu de palha no neto (o Joabe tirou em 16/10/2026); recarregar
     rostoDesenhado: false, // neto de rosto liso com olhos e boca desenhados em 2D (rosto.js); recarregar
-    estiloRosto: 'aranhaverso', // desenho do rosto: atual, aranhaverso, grande, gato, minimo (rosto.js)
+    estiloRosto: 'minimo-brilho', // desenho do rosto (rosto.js, ESTILOS); o Joabe gostou do mínimo brilho (16/10/2026)
     velocidadeNova: 1.8,   // com o corpo novo: gente de verdade anda a ~1,4 m/s e corre a ~3,5 m/s
     corridaNova: 4.5,
     peNoChao: true,        // IK: cada pé pisa no chão de verdade (ladeira, degrau, duna)

@@ -242,11 +242,17 @@ function olhosGato({ iris = '#4a2c1a', irisR = 28, cilios = true, brilhoR = 9, p
 }
 
 // mínimo, parametrizado: forma do olho ('ponto', 'feijao' vertical, 'brilho' com reflexo), sobrancelha
-function olhosMinimos({ forma = 'ponto', sobr = 9, tam = 1 }) {
+// alto: quanto o ponto é mais alto que largo; brilhos: 1 ou 2 reflexos; cor: tinta ou castanho
+function olhosMinimos({ forma = 'ponto', sobr = 9, tam = 1, alto = 1, brilhos = 1, cor = TINTA }) {
   const t = tam
   const olho = (g, y = 72, k = 1) => {
-    if (forma === 'feijao') { g.beginPath(); g.ellipse(64, y, 9 * t, 19 * t * k, 0, 0, Math.PI * 2); g.fill() } else { g.beginPath(); g.ellipse(64, y, 11 * t, 15 * t * k, 0, 0, Math.PI * 2); g.fill() }
-    if (forma === 'brilho') bola(g, 60, y - 6 * t, 4 * t, '#fff')
+    g.fillStyle = cor
+    if (forma === 'feijao') { g.beginPath(); g.ellipse(64, y, 9 * t, 19 * t * k, 0, 0, Math.PI * 2); g.fill() } else { g.beginPath(); g.ellipse(64, y, 11 * t, 15 * t * k * alto, 0, 0, Math.PI * 2); g.fill() }
+    g.fillStyle = TINTA
+    if (forma === 'brilho') {
+      bola(g, 60, y - 6 * t * alto, 4 * t, '#fff')
+      if (brilhos > 1) bola(g, 68, y + 6 * t * alto, 2 * t, '#fff')
+    }
   }
   const s = (g, pts) => (sobr > 10 ? pincel(g, pts, sobr * 0.5, sobr * 1.3) : tremido(g, pts, sobr))
   return {
@@ -273,6 +279,18 @@ Object.assign(ESTILOS, {
   // mínimo com brilho no olho, um pouco maior
   'minimo-brilho': { escalaOlho: 1.6, escalaBoca: 1.2, olhos: olhosMinimos({ forma: 'brilho', tam: 1.25 }), bocas: ESTILOS.minimo.bocas },
 })
+// variações do mínimo brilho (o escolhido, 16/10/2026); "triste-oval" leva a tristeza do grande oval
+const ovalTriste = olhosGrandes({ rx: 24, ry: 34, irisR: 22, pupila: 0.45, brilhoR: 7 }).triste
+const mb = (o, extra = {}) => ({ escalaOlho: 1.6, escalaBoca: 1.2, olhos: { ...olhosMinimos({ forma: 'brilho', tam: 1.25, ...o }), ...extra }, bocas: ESTILOS.minimo.bocas })
+Object.assign(ESTILOS, {
+  'brilho-alto': mb({ alto: 1.35 }),
+  'brilho-maior': mb({ tam: 1.55 }),
+  'brilho-duplo': mb({ brilhos: 2, alto: 1.15 }),
+  'brilho-castanho': mb({ cor: '#3a2418', brilhos: 2, alto: 1.15 }),
+  'brilho-sobrancelha': mb({ sobr: 12, alto: 1.15 }),
+  'brilho-triste-oval': mb({ alto: 1.15 }, { triste: ovalTriste }),
+})
+
 // o mínimo original não tinha "triste"? tem; garante que todo estilo tenha todas as expressões
 for (const e of Object.values(ESTILOS)) for (const k of Object.keys(ESTILOS.atual.olhos)) if (!e.olhos[k]) e.olhos[k] = e.olhos.aberto
 export const ESTILOS_ROSTO = Object.keys(ESTILOS)

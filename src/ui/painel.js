@@ -104,7 +104,7 @@ export function criarPainel(cfg) {
   p.add(cfg.personagem, 'modelo', ['neto', 'boneco']).name('modelo do jogador (recarregar)')
   p.add(cfg.personagem, 'chapeu').name('chapéu no neto (recarregar)')
   p.add(cfg.personagem, 'rostoDesenhado').name('rosto desenhado no neto (recarregar)')
-  p.add(cfg.personagem, 'estiloRosto', ['atual', 'aranhaverso', 'grande', 'grande-mel', 'grande-oval', 'gato', 'gato-ambar', 'gato-palpebra', 'minimo', 'minimo-feijao', 'minimo-brilho']).name('estilo do rosto desenhado').onChange((v) => window.maresia?.jogador?.animador?.rosto?.estilo(v))
+  p.add(cfg.personagem, 'estiloRosto', ['atual', 'aranhaverso', 'grande', 'grande-mel', 'grande-oval', 'gato', 'gato-ambar', 'gato-palpebra', 'minimo', 'minimo-feijao', 'minimo-brilho', 'brilho-alto', 'brilho-maior', 'brilho-duplo', 'brilho-castanho', 'brilho-sobrancelha', 'brilho-triste-oval']).name('estilo do rosto desenhado').onChange((v) => window.maresia?.jogador?.animador?.rosto?.estilo(v))
   p.add(cfg.personagem, 'velocidadeNova', 0.8, 10, 0.1).name('corpo novo: andar (m/s)')
   p.add(cfg.personagem, 'corridaNova', 2, 15, 0.1).name('corpo novo: correr (m/s)')
   p.add(cfg.personagem, 'peNoChao').name('corpo novo: pé no chão (IK)')
