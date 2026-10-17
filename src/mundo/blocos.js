@@ -3,6 +3,7 @@
 // ou fora da área da sombra; com uma malha só cobrindo o mapa, nada era pulado.
 
 import * as THREE from 'three'
+import { congelar } from './congelar.js'
 import { solidosCamera } from './solidos.js'
 
 const p = new THREE.Vector3()
@@ -31,7 +32,7 @@ export function instanciarEmBlocos(cena, geo, material, matrizes, cores = null, 
     if (peso !== undefined) im.userData.peso = peso
     if (semNormal) im.userData.semNormal = true
     if (solido) solidosCamera.push(im)
-    cena.add(im)
+    cena.add(congelar(im))
     malhas.push(im)
   }
   return malhas

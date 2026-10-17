@@ -5,6 +5,7 @@ import {
 } from './mapa.js'
 import { lagoasJogo, lugaresJogo } from './fortaleza1932.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
+import { congelar } from './congelar.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
 export const NX = Math.round((x1 - x0) / passo) + 1
@@ -243,12 +244,12 @@ export function criarTerreno(cena) {
       const perto = montar(i0, j0, lado, 1, false)
       const longe = montar(i0, j0, lado, 4, true)
       longe.visible = false
-      grupo.add(perto, longe)
+      grupo.add(congelar(perto), congelar(longe))
       pedacos.push({ perto, longe, cx: x0 + (i0 + lado / 2) * passo, cz: z0 + (j0 + lado / 2) * passo, ehPerto: true })
       void n
     }
   }
-  cena.add(grupo)
+  cena.add(congelar(grupo))
   // tempo de cada parte (para medir o carregamento no console: window.__tTerreno)
   window.__tTerreno = { alturas: Math.round(t1 - t0), coresEGrama: Math.round(t2 - t1), pedacos: Math.round(performance.now() - t2) }
 

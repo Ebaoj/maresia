@@ -7,6 +7,7 @@ import { carregarConfig } from './config.js'
 import { globais } from './globais.js'
 import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno } from './mundo/terreno.js'
+import { congelar } from './mundo/congelar.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
 import { criarMar } from './mundo/mar.js'
@@ -52,7 +53,8 @@ renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFShadowMap // borda nítida, combina com o toon
 renderer.shadowMap.autoUpdate = false
 
-const cena = new THREE.Scene()
+// a cena nunca se move; congelada, ela para de obrigar todos os filhos a refazer a matriz do mundo
+const cena = congelar(new THREE.Scene())
 const camera = new THREE.PerspectiveCamera(cfg.camera.fov, innerWidth / innerHeight, 0.3, 6000)
 
 const teclas = { frente: false, tras: false, esquerda: false, direita: false, correr: false, girarEsq: false, girarDir: false }
