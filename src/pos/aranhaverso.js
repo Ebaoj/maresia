@@ -107,7 +107,7 @@ uniform float uDesfoque; uniform float uFoco; uniform float uVelocidade;
 uniform float uOclusao; uniform float uBrilho; uniform vec2 uDesloc;
 uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uniform float uMaresia;
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
-uniform float uArcane; uniform float uArcLinha;
+uniform float uArcane; uniform float uArcLinha; uniform float uArcContraste; uniform float uArcExposicao;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
 ${COMUM}
@@ -206,6 +206,13 @@ void main() {
   cor += bri * mix(1.0, pB * 2.2, uBloomPontos);
 
   cor = paraSRGB(cor * uExposicao);
+  if (uArcane > 0.5) {
+    // gradação (visual Arcane): menos lavado, sombras mais fundas; curva em S na luminância, o matiz fica
+    float Lg = dot(cor, vec3(0.299, 0.587, 0.114));
+    float Ln = clamp((Lg * uArcExposicao - 0.5) * uArcContraste + 0.5, 0.0, 1.0);
+    Ln = mix(Ln, Ln * Ln * (3.0 - 2.0 * Ln), 0.35);
+    cor *= Ln / max(Lg, 1e-3);
+  }
   float L = dot(cor, vec3(0.299, 0.587, 0.114));
 
   // 5. sombra fria e luz quente
@@ -409,7 +416,7 @@ export class Aranhaverso {
       uNevoaCor: { value: new THREE.Color() }, uNevoaDens: { value: 0.002 }, uNevoaQueda: { value: 0.05 }, uMaresia: { value: 0.006 },
       uMemoria: { value: 0 }, uMemPapel: v3(), uMemTinta: v3(), uMemAnil: v3(), uMemUrucum: v3(), uMemOcre: v3(),
       uCorSombra: v3(), uTomSombra: { value: 0.3 }, uCorLuz: v3(), uTomLuz: { value: 0.2 },
-      uArcane: { value: 0 }, uArcLinha: { value: 0.7 },
+      uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
     }
 
     const shader = (frag, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, depthTest: false, depthWrite: false })
@@ -457,6 +464,8 @@ export class Aranhaverso {
     const arc = e.visual === 'arcane'
     u.uArcane.value = arc ? 1 : 0
     u.uArcLinha.value = e.arcLinha
+    u.uArcContraste.value = e.arcContraste
+    u.uArcExposicao.value = e.arcExposicao
     const gl = this.globais
     gl.uArcane.value = arc ? 1 : 0
     gl.uArcLim.value.set(e.arcSombra, e.arcLuz)

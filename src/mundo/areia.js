@@ -165,7 +165,7 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
         diffuseColor.rgb = mix(diffuseColor.rgb, uFundo, smoothstep(0.004, 0.04, vFundo) * 0.55);`)
   }
   pintar(mat, 'areia-pintada')
-  texturizar(mat, { topo: 'areia', lado: 'pedra', tam: 3 }) // igual ao terreno (terreno.js)
+  texturizar(mat, { topo: 'areia', lado: 'pedra', tam: 3, contraste: 1.4, massa: 0.9 }) // igual ao terreno (terreno.js)
   const malha = new THREE.Mesh(geo, mat)
   malha.frustumCulled = false
   malha.receiveShadow = true

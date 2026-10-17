@@ -65,8 +65,10 @@ export function pintar(mat, chave) {
       sh.uniforms.tTexTopo = { value: tp.topo }
       sh.uniforms.tTexLado = { value: tp.lado }
       sh.uniforms.uTexTam = { value: tp.tam }
+      sh.uniforms.uTexContraste = { value: tp.contraste }
+      sh.uniforms.uTexMassa = { value: tp.massa }
       sh.uniforms.uTexForca = globais.uTexForca
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tTexTopo; uniform sampler2D tTexLado; uniform float uTexTam; uniform float uTexForca;')
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tTexTopo; uniform sampler2D tTexLado; uniform float uTexTam; uniform float uTexForca; uniform float uTexContraste; uniform float uTexMassa;')
     }
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vPMundo; varying vec3 vNMundo;')
@@ -138,7 +140,14 @@ export function pintar(mat, chave) {
           wT /= (wT.x + wT.y + wT.z + 1e-4);
           vec3 pT = vPMundo / uTexTam;
           vec3 detT = texture2D(tTexLado, pT.zy).rgb * wT.x + texture2D(tTexTopo, pT.xz).rgb * wT.y + texture2D(tTexLado, pT.xy).rgb * wT.z;
-          diffuseColor.rgb *= mix(vec3(1.0), detT * 2.0, uTexForca * uArcane);
+          // massa: a mesma textura 9 vezes maior e girada dá manchas grandes de valor (como numa pintura de
+          // cenário) e esconde a repetição
+          vec3 pM = vPMundo / (uTexTam * 9.0);
+          vec3 macT = texture2D(tTexLado, pM.zy * mat2(0.8, -0.6, 0.6, 0.8)).rgb * wT.x + texture2D(tTexTopo, pM.xz * mat2(0.8, -0.6, 0.6, 0.8)).rgb * wT.y + texture2D(tTexLado, pM.xy * mat2(0.8, -0.6, 0.6, 0.8)).rgb * wT.z;
+          float macL = dot(macT * 2.0, vec3(0.333));
+          vec3 detN = 1.0 + (detT * 2.0 - 1.0) * uTexContraste;
+          detN *= 1.0 + (macL - 1.0) * uTexMassa;
+          diffuseColor.rgb *= mix(vec3(1.0), max(detN, vec3(0.0)), uTexForca * uArcane);
         }
         #endif
         {
@@ -172,8 +181,9 @@ export function texturaPintada(nome) {
 
 // Liga a textura pintada num material que passa por pintar(): "topo" no que olha para cima (chão,
 // telhado), "lado" nas paredes; tam = quantos metros cobre uma repetição. Chamar antes do primeiro desenho.
-export function texturizar(mat, { topo, lado = topo, tam = 2 }) {
-  mat.userData.texPintada = { topo: texturaPintada(topo), lado: texturaPintada(lado), tam }
+// contraste: quanto o detalhe da textura marca (1 = como pintada); massa: manchas grandes de valor
+export function texturizar(mat, { topo, lado = topo, tam = 2, contraste = 1, massa = 0.5 }) {
+  mat.userData.texPintada = { topo: texturaPintada(topo), lado: texturaPintada(lado), tam, contraste, massa }
   const chave = mat.customProgramCacheKey?.() || ''
   mat.customProgramCacheKey = () => `${chave}|tex:${topo}:${lado}`
   mat.needsUpdate = true
@@ -438,7 +448,9 @@ export function materialPredio({
       )
   }
   mat.userData.uniformes = u // para depurar e medir pelo console
-  return pintar(mat, 'predio-pintado')
+  // reboco e telha pintados também na versão de longe do casario (visual Arcane); a chave de cache vem
+  // de pintar e ganha a textura, mas cada lote mantém os próprios uniforms
+  return texturizar(pintar(mat, 'predio-pintado'), { topo: 'telha', lado: 'cal', tam: 2.5, contraste: 2.5 })
 }
 
 // Textura feita em código, num canvas, sem baixar imagem nenhuma.

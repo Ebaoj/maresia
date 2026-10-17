@@ -316,7 +316,7 @@ function materialTerreno() {
         }`)
   }
   // textura pintada (visual Arcane): a mesma da areia fina, senão o quadrado de 24 m em volta do jogador emenda
-  return texturizar(pintar(mat, 'terreno-pintado'), { topo: 'areia', lado: 'pedra', tam: 3 })
+  return texturizar(pintar(mat, 'terreno-pintado'), { topo: 'areia', lado: 'pedra', tam: 3, contraste: 1.4, massa: 0.9 })
 }
 
 // O mesmo mapa de alturas vira uma textura para a GPU:

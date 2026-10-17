@@ -38,6 +38,8 @@ export function criarPainel(cfg) {
   arc.add(e, 'arcSaturacao', 0, 2, 0.01).name('saturação')
   arc.add(e, 'arcGrao', 0, 0.2, 0.005).name('grão de filme')
   arc.add(e, 'arcTextura', 0, 2, 0.05).name('textura pintada do mundo')
+  arc.add(e, 'arcContraste', 0.6, 2, 0.01).name('contraste')
+  arc.add(e, 'arcExposicao', 0.5, 1.5, 0.01).name('exposição')
   const est = gui.addFolder('Estética (quadrinho)')
   const epoca = gui.addFolder('Época')
   epoca.add(e, 'memoria', 0, 1, 0.01).name('1932 → 1881 (memória)').listen()

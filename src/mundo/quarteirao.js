@@ -12,7 +12,7 @@
 
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import { pintar, gradienteToon, luzFixa } from '../materiais.js'
+import { pintar, gradienteToon, luzFixa, texturizar } from '../materiais.js'
 import { globais } from '../globais.js'
 import { CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarDeck } from './colisao.js'
@@ -370,7 +370,7 @@ function materialReboco(desgaste) {
         }`)
   }
   mat.customProgramCacheKey = () => 'reboco-casas'
-  return pintar(mat, 'reboco-casas')
+  return texturizar(pintar(mat, 'reboco-casas'), { topo: 'cal', lado: 'cal', tam: 2.5, contraste: 2.5 }) // reboco caiado pintado (visual Arcane)
 }
 
 const TAM_BLOCO = 96
@@ -406,14 +406,14 @@ function materialTelhas() {
         diffuseColor.rgb = mix(diffuseColor.rgb, t, step(0.35, vNormT.y));`)
   }
   mat.customProgramCacheKey = () => 'telhas-1932'
-  return pintar(mat, 'telhas-1932')
+  return texturizar(pintar(mat, 'telhas-1932'), { topo: 'telha', lado: 'telha', tam: 1.5 }) // telha canal pintada (visual Arcane)
 }
 
 export function criarCasas(cena, casario, morro) {
   const rnd = criarAleatorio(1932)
   const matReboco = materialReboco(0.4)
   const matRebocoMorro = materialReboco(0.85)
-  const matPecas = pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 'toon-pintado')
+  const matPecas = texturizar(pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 'toon-pintado'), { topo: 'madeira', lado: 'madeira', tam: 1 }) // portas, janelas, beirais
   const matTelhas = materialTelhas()
   const grupo = new THREE.Group()
   grupo.name = 'casas-1932'
