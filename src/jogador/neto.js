@@ -117,7 +117,8 @@ async function ancorasMedidas(cabeca, malhas) {
     // deformados pelo esqueleto: centro 7,6 cm abaixo e frente 1,6 cm adiante da superfície do olho
     // (raio contra a malha não serve: o three testa a malha antes da deformação)
     const [, yo, zo] = a.olho_esquerdo.superficie
-    const boca = [0, yo - 0.0765, zo + 0.016]
+    // o JSON foi corrigido em 16/10 (vem dos vértices dos lábios); a medida acima fica de reserva
+    const boca = yo - a.boca.superficie[1] > 0.05 ? a.boca.superficie : [0, yo - 0.0765, zo + 0.016]
     return { olho: local(a.olho_esquerdo.superficie, 0.012), boca: local(boca, 0.005), tamOlho: 0.042, tamBoca: 0.05, curva: 0.3 }
   } catch { return null }
 }
