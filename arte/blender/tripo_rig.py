@@ -50,6 +50,16 @@ for o in pecas:
     ativar(o); dec = o.modifiers.new("reduz", "DECIMATE"); dec.ratio = min(1.0, FACES / total)
     bpy.ops.object.modifier_apply(modifier="reduz")
 todos = np.concatenate([np.array([v.co[:] for v in o.data.vertices]) for o in pecas])
+# a API às vezes entrega o boneco girado 90° (braços no eixo y): põe os braços em x
+GIRA90 = np.ptp(todos[:, 1]) > 1.2 * np.ptp(todos[:, 0])
+def gira(Q):
+    if GIRA90: Q = Q.copy(); Q[:, [0, 1]] = np.stack([-Q[:, 1], Q[:, 0]], axis=1)
+    return Q
+todos = gira(todos)
+if GIRA90:
+    for o in pecas:
+        Q = gira(np.array([v.co[:] for v in o.data.vertices])); o.data.vertices.foreach_set("co", Q.ravel()); o.data.update()
+    print("GIRADO 90 graus: braços estavam no eixo y")
 k = ALTURA / (todos[:, 2].max() - todos[:, 2].min())
 centro = np.array([(todos[:, 0].max() + todos[:, 0].min()) / 2, (todos[:, 1].max() + todos[:, 1].min()) / 2, todos[:, 2].min()])
 T = (todos - centro) * k
@@ -61,7 +71,7 @@ for o in pecas:
     if virar: Q[:, 0] *= -1; Q[:, 1] *= -1   # gira 180° em Z: frente para -Y
     o.data.vertices.foreach_set("co", Q.ravel()); o.data.update()
 P = np.concatenate([np.array([v.co[:] for v in o.data.vertices]) for o in pecas])
-PA = (np.concatenate(alta) - centro) * k
+PA = (gira(np.concatenate(alta)) - centro) * k
 if virar: PA[:, 0] *= -1; PA[:, 1] *= -1
 del alta
 # partes: agrupa em corpo (pele e cabelo), camisa e calça, pela posição de cada peça
@@ -207,7 +217,7 @@ def achar_dedos(lado_n, lado):
     pun = J[lado_n + "Hand"]; pon = J[lado_n + "Ponta"]
     ax0 = (pon - pun) / np.linalg.norm(pon - pun); L0 = np.linalg.norm(pon - pun)
     rel = PA - pun; tt = rel @ ax0; perp = np.linalg.norm(rel - np.outer(tt, ax0), axis=1)
-    dentro = (tt > -0.02) & (tt < L0 * 1.3) & (perp < 0.6 * L0)
+    dentro = (tt > -0.09) & (tt < L0 * 1.3) & (perp < 0.6 * L0)
     ids = np.nonzero(dentro)[0]
     if len(ids) < 1000: return None
     loc = -np.ones(len(PA), dtype=np.int64); loc[ids] = np.arange(len(ids))
@@ -217,7 +227,7 @@ def achar_dedos(lado_n, lado):
     for (i, j), c in zip(E.tolist(), comp.tolist()): viz[i].append((j, c)); viz[j].append((i, c))
     tq = tt[ids]
     d = np.full(len(ids), np.inf); fila = []
-    for i in np.nonzero(tq < 0.0)[0]: d[i] = 0.0; fila.append((0.0, int(i)))   # fontes: a fatia do punho
+    for i in np.nonzero(tq < -0.07)[0]: d[i] = 0.0; fila.append((0.0, int(i)))   # fontes: o antebraço, bem antes do punho
     heapq.heapify(fila)
     while fila:
         dist, i = heapq.heappop(fila)
@@ -231,30 +241,36 @@ def achar_dedos(lado_n, lado):
     ordem = np.argsort(-np.where(fin, d, -1)); pontas = []
     sep = 0.012 * MAO / 0.7
     for i in ordem[:20000]:
-        if not fin[i] or d[i] < 0.35 * d[fin].max(): break
+        if not fin[i] or d[i] < 0.5 * d[fin].max(): break
         if all(np.linalg.norm(Q[i] - Q[p_]) > sep for p_ in pontas): pontas.append(int(i))
         if len(pontas) == 5: break
     if len(pontas) < 5: print("DEDOS", lado_n, "só achei", len(pontas), "pontas"); return None
+    BANDA = float(os.environ.get("TRIPO_BANDA_DEDO", "0.0022"))
     def linha(p_):
         """anéis de mesma distância, da ponta para a palma; para quando o anel alarga (palma)"""
         cs = []; c_ant = Q[p_]; larg0 = None
         for lam in np.arange(d[p_] - 0.002, 0, -0.002):
-            anel = np.nonzero(np.abs(d - lam) < 0.0012)[0]
-            anel = anel[np.linalg.norm(Q[anel] - c_ant, axis=1) < 0.015]
+            anel = np.nonzero(np.abs(d - lam) < BANDA)[0]
+            if d[p_] - lam > 0.085: break                 # dedo de menino não passa disso
+            anel = anel[np.linalg.norm(Q[anel] - c_ant, axis=1) < 0.010]   # grossura de um dedo
             if len(anel) < 3: break
             c = Q[anel].mean(0); larg = np.linalg.norm(Q[anel] - c, axis=1).max()
             if larg0 is None and len(cs) >= 3: larg0 = np.median([x[1] for x in cs])
-            if larg0 is not None and larg > 1.8 * larg0: break   # chegou à palma
+            if larg0 is not None and larg > 1.5 * larg0: break   # chegou à palma
+            if cs and np.linalg.norm(c - cs[-1][0]) > 0.006: break   # o centro saltou para outro dedo
             cs.append((c, larg)); c_ant = c
         return [c for c, _ in cs]
     linhas = {p_: linha(p_) for p_ in pontas}
+    if os.environ.get("TRIPO_DEBUG_DEDOS"):
+        np.savez(f"{os.environ['TRIPO_DEBUG_DEDOS']}-{lado_n}.npz", Q=Q, d=np.where(fin, d, -1), pontas=np.array(pontas),
+                 linhas=np.array([np.array(linhas[p_]) if len(linhas[p_]) else np.zeros((0, 3)) for p_ in pontas], dtype=object), pun=pun)
     # polegar: a ponta de menor distância ao punho (é o dedo mais curto e nasce mais perto)
     pol = min(pontas, key=lambda p_: d[p_]); outros = [p_ for p_ in pontas if p_ != pol]
     outros.sort(key=lambda p_: Q[p_][1])   # da frente (-y) para trás: indicador, médio, anelar, mínimo
     dedos = {}
     for nome_d, p_ in zip(("Thumb", "Index", "Middle", "Ring", "Pinky"), [pol] + outros):
         ln = linhas[p_]
-        if len(ln) < 3: print("DEDOS", lado_n, nome_d, "linha curta"); return None
+        if len(ln) < 2: print("DEDOS", lado_n, nome_d, "linha curta"); return None
         ponta = Q[p_]; borda = ln[-1]
         dir_ = (borda - ln[max(0, len(ln) - 4)]); dir_ = dir_ / (np.linalg.norm(dir_) + 1e-9)
         comp_ = np.linalg.norm(ponta - borda)
