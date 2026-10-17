@@ -339,6 +339,33 @@ const VAR_BRANCO = {
   brilho: brancoPeq({ pupila: 7.5, brilho: true }),
   oval: brancoPeq({ rx: 10, ry: 19, pupila: 6, py: -3 }),
 }
+// outros caminhos (o Joabe não gostou de nenhum com branco no olho, 16/10/2026)
+const aperta = (g) => { tremido(g, [[40, 30], [64, 34], [88, 30]], 9); pincel(g, [[86, 54], [50, 72], [86, 90]], 6, 12) } // "<" no olho esquerdo: aponta para o nariz
+const choque = (g) => {
+  sobrMuitoAlta(g)
+  g.beginPath(); g.ellipse(64, 78, 12, 16, 0, 0, Math.PI * 2); g.fill(); bola(g, 60, 72, 4, '#fff')
+  for (const [a, b] of [[[96, 60], [114, 50]], [[100, 78], [120, 78]], [[96, 96], [114, 106]]]) tremido(g, [a, b], 5) // tracinhos de choque
+}
+const grito = (g) => { sobrMuitoAlta(g); g.beginPath(); g.ellipse(64, 78, 15, 20, 0, 0, Math.PI * 2); g.fill(); bola(g, 59, 70, 5, '#fff') }
+const pontinho = (g) => { sobrMuitoAlta(g); bola(g, 64, 80, 6.5) }
+const BOCAS_SUSTO = {
+  cerrada: (g) => { tremido(g, [[38, 64], [48, 58], [56, 70], [64, 58], [72, 70], [80, 58], [90, 64]], 7) }, // dentes trincados
+  grito: (g) => { encher(g, arco(64, 70, 15, 22, 0, Math.PI * 2, 20), '#2a1414'); tremido(g, arco(64, 70, 15, 22, 0, Math.PI * 2, 20), 5) },
+  ondulada: (g) => tremido(g, [[40, 66], [50, 60], [60, 68], [70, 60], [80, 68], [90, 62]], 7),
+}
+const OUTROS = {
+  apertado: [aperta, BOCAS_SUSTO.cerrada],
+  grito: [grito, BOCAS_SUSTO.grito],
+  choque: [choque, bocaO],
+  nervoso: [pontinho, BOCAS_SUSTO.ondulada],
+  'apertado-grito': [aperta, BOCAS_SUSTO.grito],
+}
+for (const [k, [olho, boca]] of Object.entries(OUTROS)) {
+  const e = mb({ alto: 1, tam: 1.25 }, { susto: olho })
+  e.bocas = { ...e.bocas, o: boca }
+  ESTILOS['susto-' + k] = e
+}
+
 for (const [k, f] of Object.entries(VAR_BRANCO)) {
   const e = mb({ alto: 1, tam: 1.25 }, { susto: f })
   e.bocas = { ...e.bocas, o: bocaO }
