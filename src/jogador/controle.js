@@ -10,6 +10,7 @@ import { prenderNaFatia } from '../mundo/fatia.js'
 import { trajetoriaPedida } from './motion-matching.js'
 
 const PROFUNDIDADE_NADO = 1.15
+const VENTO = new THREE.Vector3(-1, 0, -0.35).normalize()
 const ALTURA_BOIANDO = -1.05
 
 export class Jogador {
@@ -92,7 +93,13 @@ export class Jogador {
       }),
     })
     // tecido solto: todo quadro (o pano não anda em 2: balança contínuo)
-    if (a.pano && cfg.panoSolto > 0) a.pano.atualizar(dt, { vento: this.cfg.interacao.ventoCoqueiros, forca: cfg.panoSolto })
+    if (a.pano && cfg.panoSolto > 0) {
+      // vento de Fortaleza: o alísio vem do leste-sudeste e sopra para oeste-noroeste (x oeste, z norte);
+      // forte na praia, metade para dentro da cidade
+      const naPraia = 1 - clamp((distCosta(this.pos.x, this.pos.z) - larguraPraia(this.pos.x)) / 120, 0, 0.5)
+      a.pano.atualizar(dt, { vento: this.cfg.interacao.ventoCoqueiros * naPraia * 1.6, ventoDir: VENTO, forca: cfg.panoSolto })
+    }
+    a.dobras?.atualizar(cfg.dobras)
     // pisadas do pé de verdade (o boneco antigo usava a fase do passo)
     for (const ev of a.eventos) this.eventos.push(ev)
     a.eventos.length = 0

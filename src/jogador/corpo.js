@@ -12,6 +12,7 @@ import { criarMultiplos } from './multiplos.js'
 import { criarRosto } from './rosto.js'
 import { criarMolas } from './molas.js'
 import { criarPano } from './pano.js'
+import { criarDobras } from './dobras.js'
 
 // banco do motion matching: movimentos com deslocamento (os que repetem marcados); os que não repetem
 // entram também espelhados (curva para a esquerda vira curva para a direita, etc.)
@@ -95,5 +96,6 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
   // clipes no esqueleto padrão: a gente da cidade (atores.js) usa o boneco
   animador.pano = pano
+  animador.dobras = modelo === 'neto' && alvo.malhas ? criarDobras(raiz, alvo.ossos) : null
   return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto, clipes: r.clipes, pano }
 }
