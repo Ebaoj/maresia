@@ -77,8 +77,8 @@ export const PADRAO = {
     dobras: 1.0,           // dobras do pano desenhadas no cotovelo, joelho e cintura (dobras.js); 0 desliga
     panoSolto: 1.0,        // barra da camisa, mangas e boca da calça soltas (pano.js); 0 desliga
     clavicula: 18,         // inclinação da clavícula para baixo, em graus (o neto nasce com 28 a 33°: ombro caído)
-    rostoDesenhado: false, // neto de rosto liso com olhos e boca desenhados em 2D (rosto.js); recarregar
-    estiloRosto: 'minimo-brilho', // desenho do rosto (rosto.js, ESTILOS); o Joabe gostou do mínimo brilho (16/10/2026)
+    rostoNeto: true,       // neto de rosto liso com olhos e boca desenhados em 2D (rosto.js), a escolha de 16/10/2026; desligado = rosto modelado; recarregar
+    estiloRostoNeto: 'minimo-brilho', // desenho do rosto (rosto.js, ESTILOS); o Joabe gostou do mínimo brilho (16/10/2026)
     velocidadeNova: 1.8,   // com o corpo novo: gente de verdade anda a ~1,4 m/s e corre a ~3,5 m/s
     corridaNova: 4.5,
     peNoChao: true,        // IK: cada pé pisa no chão de verdade (ladeira, degrau, duna)
