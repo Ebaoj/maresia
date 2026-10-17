@@ -295,6 +295,12 @@ no fim).
   - Tem também uma **versão sem camisa**, com a mesma calça e o mesmo chapéu.
   - Folhas candidatas (o Joabe ainda não escolheu): `arte/entradas/openai-neto-final-1.png` e `-2.png`,
     vestido e sem camisa, quatro vistas cada.
+- **Rosto do neto (16/10/2026, decisão do Joabe):** modelo de rosto liso (arte/finais/neto-mpfb-sem-rosto.glb),
+  com olhos, sobrancelhas e boca **desenhados em 2D** por cima (src/jogador/rosto.js), estilo **"mínimo brilho"**:
+  olho de ponto com um reflexo, sobrancelha de traço, boca de linha. Neutro calmo (sobrancelha quase reta,
+  cantos da boca levemente para cima). Susto à moda de Tintin e Peanuts: o olho continua ponto, a sobrancelha
+  sobe, a boca cai e **gotinhas de nanquim saltam da cabeça**; o corpo dá um tranco. Branco no olho só em
+  estilo que já tem branco no neutro. Referências em arte/entradas/referencias/rosto-susto/.
 - **Avô, 1932, ~66 anos.**
   - Costas curvas como um mastro vergado, mãos e pés grandes (o ofício), barba branca curta,
     chapéu de palha gasto, camisa aberta desbotada.
