@@ -22,7 +22,7 @@ from jogo import imagem
 app = modal.App("maresia-testes")
 imagem_testes = imagem.add_local_python_source("jogo", "cdp")
 
-ORDEM = ["semErros", "pesParados", "meiaVolta", "meiaVoltaRapida", "meiaVoltaInterrompida", "sentarLevantar"]
+ORDEM = ["semErros", "pesParados", "poseCongelada", "meiaVolta", "meiaVoltaRapida", "meiaVoltaInterrompida", "sentarLevantar"]
 # avisos de console que reprovam (regras do CLAUDE.md do projeto); os outros só aparecem no relatório
 AVISOS_QUE_REPROVAM = ("sem saída de luz", "não compilaram", "Congelado e movido")
 

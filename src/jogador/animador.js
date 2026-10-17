@@ -232,6 +232,38 @@ export class Animador {
     mm.raizAnt = { chave: mm.chave, f }
   }
 
+  // Pose pura do mixer, sem as correções de postura. O mixer do three só reescreve o osso cujo valor mudou:
+  // com a pose congelada (clipe parado, por qualquer motivo) ele não escrevia nada, e as correções (pé no
+  // chão, joelho reto, pé ancorado, olhar, molas...) se somavam quadro a quadro sobre elas mesmas, e o corpo
+  // afundava (17/10/2026). Antes do mixer, os ossos voltam à pose pura do quadro anterior; depois dele, a
+  // pose pura é guardada de novo. Assim as correções sempre partem da animação.
+  restaurarPose() {
+    const ossos = this._ossosPose
+    if (!ossos) return
+    const b = this._pose
+    for (let i = 0; i < ossos.length; i++) {
+      const o = ossos[i]
+      o.position.fromArray(b, i * 10)
+      o.quaternion.fromArray(b, i * 10 + 3)
+      o.scale.fromArray(b, i * 10 + 7)
+    }
+  }
+
+  guardarPose() {
+    if (!this._ossosPose) {
+      this._ossosPose = []
+      this.corpo.raiz.traverse((o) => { if (o.isBone) this._ossosPose.push(o) })
+      this._pose = new Float32Array(this._ossosPose.length * 10)
+    }
+    const b = this._pose
+    for (let i = 0; i < this._ossosPose.length; i++) {
+      const o = this._ossosPose[i]
+      o.position.toArray(b, i * 10)
+      o.quaternion.toArray(b, i * 10 + 3)
+      o.scale.toArray(b, i * 10 + 7)
+    }
+  }
+
   // durante um giro travado, o controle não corrige a direção (quem gira é a animação)
   get girando() { return !!(this.mm?.trava && this.mm.trava.chave === this.mm.chave) }
   // desistiu de um giro no meio (frente, trás, frente...): o controle vira depressa para o pedido
@@ -356,8 +388,10 @@ export class Animador {
       const vNado = nado.getClip().userData?.velocidade || 1.2
       nado.timeScale = THREE.MathUtils.clamp(s.vel / vNado, 0.5, 2.2)
     }
+    this.restaurarPose()
     this.mixer.update(DT) // os outros movimentos correm no tempo deles
     this.medirGiro()
+    this.guardarPose()
 
     // o nado do Mixamo é submerso: deitado, o corpo sobe até a linha d'água (o jogador boia com o quadril fundo)
     const wNado = nado?.userData.peso || 0

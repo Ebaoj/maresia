@@ -262,6 +262,38 @@ export const cenarios = {
     return { ok, medidas, motivo: ok ? '' : 'meia-volta interrompida deixou o giro preso' }
   },
 
+  // Regressão (17/10/2026): com a pose congelada (clipe parado, por qualquer motivo), o mixer do three não
+  // reescreve os ossos (só escreve o que mudou) e as correções de postura (pé no chão, joelho reto, pé
+  // ancorado) se somavam quadro a quadro sobre elas mesmas: o corpo afundava. Congela o tempo do mixer por
+  // 3 s, parado e andando, e mede quanto o quadril sai do lugar em relação ao jogador.
+  async poseCongelada(m) {
+    const j = m.jogador
+    const an = j.animador
+    soltarTudo(m.teclas)
+    m.irPara(340, 20, 0)
+    await esperar(2000)
+    const q = osso(m, 'Hips')
+    if (!q) return { ok: false, motivo: 'sem osso do quadril' }
+    const alt = () => q.getWorldPosition(j.pos.clone()).y - j.pos.y
+    const medidas = []
+    for (const [nome, teclas] of [['parado', {}], ['andando', { frente: true }]]) {
+      Object.assign(m.teclas, teclas)
+      await esperar(1200)
+      const escala = an.mixer.timeScale
+      an.mixer.timeScale = 0
+      let min = Infinity, max = -Infinity
+      const g = gravar(() => { const h = alt(); min = Math.min(min, h); max = Math.max(max, h); return h })
+      await esperar(3000)
+      g.parar()
+      an.mixer.timeScale = escala
+      soltarTudo(m.teclas)
+      medidas.push({ nome, deriva: +(max - min).toFixed(3), quadros: g.amostras.length })
+      await esperar(800)
+    }
+    const ok = medidas.every((x) => x.deriva < 0.03)
+    return { ok, medidas, motivo: ok ? '' : 'com a pose congelada, a postura acumula e o corpo afunda' }
+  },
+
   // O mínimo de toda mudança: o jogo carregou sem shader quebrado (os erros de console o executor junta)
   async semErros() {
     const quebrados = (window.__shadersQuebrados || []).length
