@@ -99,8 +99,90 @@ export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
     abaChapeu: new THREE.Vector3(-0.17, topo - 0.09 - pc.y, 0.07).applyQuaternion(inv), // aba do lado direito, um pouco à frente
   }
   let ancorasRosto = null
+  if (liso) aplainarBoca(malhas)
   if (liso) ancorasRosto = (await ancorasMedidas(cabeca, malhas)) || ancorasDoRosto(raiz, cabeca, malhas)
   return { raiz, ossos, esqueleto: malhas[0].skeleton, malhas, eixos, ancorasRosto }
+}
+
+// Rosto liso: os lábios ainda têm volume, e o filtro de quadrinho contorna esse volume (fica uma "lente"
+// de nanquim em volta da boca desenhada). Puxa os vértices da boca para a superfície que liga o nariz ao
+// queixo, interpolando a frente da pele acima e abaixo da boca. Feito no repouso, nos vértices já
+// deformados pelo esqueleto; a mudança volta para a malha original pela derivada de cada vértice.
+function aplainarBoca(malhas) {
+  const pele = malhas.find((m) => /^(Human|base)$/i.test(m.name)) || malhas.find((m) => !/camisa|calca|short|cabelo|tampao/i.test(m.name))
+  if (!pele) return
+  // boca (lábios de 1,469 a 1,493, ±3 cm) e cada olho (a amêndoa com as pálpebras, centro em ±3,9 cm)
+  const regioes = [
+    { x0: -0.044, x1: 0.044, y0: 1.455, y1: 1.508 }, // os cantos da boca vão até ±4 cm
+    { x0: 0.008, x1: 0.066, y0: 1.527, y1: 1.584 },
+    { x0: -0.066, x1: -0.008, y0: 1.527, y1: 1.584 },
+  ].map((r) => aplainar(pele, r))
+  pele.geometry.computeVertexNormals()
+  // os dois lábios (e as pálpebras) eram peças com vértices separados no mesmo lugar: as normais
+  // continuam diferentes e o filtro desenha um vinco. Cada vértice da região recebe a normal média
+  // da pele do anel em volta (a região é pequena e quase plana)
+  const nor = pele.geometry.attributes.normal
+  for (const r of regioes) {
+    if (!r) continue
+    const m = new THREE.Vector3()
+    for (const i of r.anel) m.add(new THREE.Vector3().fromBufferAttribute(nor, i))
+    m.normalize()
+    for (const i of r.alvo) nor.setXYZ(i, m.x, m.y, m.z)
+  }
+  nor.needsUpdate = true
+  // o globo do olho (pintado de pele) fica atrás da pálpebra fechada: some
+  for (const m of malhas) if (/tampao/i.test(m.name)) m.visible = false
+}
+
+function aplainar(pele, { x0, x1, y0, y1 }) {
+  pele.updateMatrixWorld(true)
+  pele.skeleton.update()
+  const pos = pele.geometry.attributes.position
+  const v = new THREE.Vector3()
+  const mundo = (i) => pele.getVertexPosition(i, v).applyMatrix4(pele.matrixWorld).clone()
+  const M = 0.008 // anel em volta da região: a pele boa que serve de referência
+  const frente = []
+  const alvo = []
+  const anel = []
+  for (let i = 0; i < pos.count; i++) {
+    const w = mundo(i)
+    if (w.z < 0.06 || w.x < x0 - M || w.x > x1 + M || w.y < y0 - M || w.y > y1 + M) continue // 6 cm: pega a parede de dentro
+    const dentroDaCaixa = w.x >= x0 && w.x <= x1 && w.y >= y0 && w.y <= y1
+    if (dentroDaCaixa) alvo.push([i, w])
+    else if (w.z > 0.11) { frente.push(w); anel.push(i) }
+  }
+  if (!frente.length || !alvo.length) return null
+  const zEm = (x, y) => { // média ponderada da pele do anel, mais peso para a mais perto
+    let s = 0, p = 0
+    for (const f of frente) { const d = (f.x - x) ** 2 + (f.y - y) ** 2; const k = 1 / (d + 1e-6) ** 2; s += f.z * k; p += k }
+    return s / p
+  }
+  const dentro = new Set()
+  for (const [i, w] of alvo) {
+    const sup = zEm(w.x, w.y)
+    // tudo vai para a superfície: o volume de fora e a parede de dentro (fecha a abertura; abaixo, os
+    // triângulos de dentro são virados para fora para pegarem luz como pele)
+    if (w.z < sup - 0.004) dentro.add(i)
+    const z0 = pos.getZ(i) // quanto o vértice anda no mundo por unidade de z da malha original
+    pos.setZ(i, z0 + 0.01)
+    const dz = (mundo(i).z - w.z) / 0.01
+    pos.setZ(i, z0)
+    if (Math.abs(dz) > 0.1) pos.setZ(i, z0 + (sup - w.z) / dz)
+  }
+  pos.needsUpdate = true
+  const idx = pele.geometry.index
+  if (idx) {
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3()
+    for (let t = 0; t < idx.count; t += 3) {
+      const i0 = idx.getX(t), i1 = idx.getX(t + 1), i2 = idx.getX(t + 2)
+      if (!dentro.has(i0) && !dentro.has(i1) && !dentro.has(i2)) continue
+      a.copy(mundo(i0)); b.copy(mundo(i1)); c.copy(mundo(i2))
+      const n = new THREE.Vector3().crossVectors(b.sub(a), c.sub(a))
+      if (n.z < 0) { idx.setX(t + 1, i2); idx.setX(t + 2, i1) }
+    }
+    idx.needsUpdate = true
+  }
+  return { anel, alvo: alvo.map(([i]) => i) }
 }
 
 // âncoras medidas pela sessão do personagem no próprio modelo (pontos da pele à frente dos olhos e da
@@ -119,7 +201,9 @@ async function ancorasMedidas(cabeca, malhas) {
     const [, yo, zo] = a.olho_esquerdo.superficie
     // o JSON foi corrigido em 16/10 (vem dos vértices dos lábios); a medida acima fica de reserva
     const boca = yo - a.boca.superficie[1] > 0.05 ? a.boca.superficie : [0, yo - 0.0765, zo + 0.016]
-    return { olho: local(a.olho_esquerdo.superficie, 0.012), boca: local(boca, 0.005), tamOlho: 0.042, tamBoca: 0.05, curva: 0.3 }
+    // a boca desenhada saía acima da linha dos lábios: desce 4 mm para o meio dela
+    const bocaAjustada = [boca[0], boca[1] - 0.004, boca[2]]
+    return { olho: local(a.olho_esquerdo.superficie, 0.012), boca: local(bocaAjustada, 0.006), tamOlho: 0.042, tamBoca: 0.05, curva: 0.3 }
   } catch { return null }
 }
 
