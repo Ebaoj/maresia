@@ -44,8 +44,13 @@ case "${1:-}" in
       --exclude node_modules --exclude .git --exclude docs/capturas --exclude 'arte/saida' --exclude 'arte/entradas' \
       --exclude 'arte/.venv' --exclude 'arte/blender' \
       $JOGO/ ubuntu@$(ip_maquina):maresia/
-    ssh_ 'cd maresia && npm ci --silent && (pkill -f "vite --port 5195" || true) && nohup npm run dev > vite.log 2>&1 &'
-    echo "jogo enviado; no Chrome da máquina: http://localhost:5195"
+    # instala na frente; o Vite sobe solto da conexão (com tudo em segundo plano, a instalação e o Vite
+    # morriam quando o SSH fechava). [v]ite: o pkill não pode casar com o próprio comando
+    ssh_ 'cd maresia && npm ci --silent && (pkill -f "[v]ite --port 5195" || true)'
+    ssh -f -n -i $PEM ubuntu@$(ip_maquina) 'cd maresia && setsid nohup npm run dev > vite.log 2>&1 < /dev/null &'
+    # Chrome em tela cheia na área de trabalho da máquina (a sessão do DCV), na placa NVIDIA
+    ssh -f -n -i $PEM ubuntu@$(ip_maquina) 'pkill -f "[c]hrome-maresia"; sleep 1; DISPLAY=:0 XAUTHORITY=/run/user/1000/gdm/Xauthority setsid nohup google-chrome --no-first-run --no-default-browser-check --ignore-gpu-blocklist --disable-features=Translate --lang=pt-BR --start-fullscreen --user-data-dir=/home/ubuntu/.chrome-maresia http://localhost:5195/ > /tmp/chrome.log 2>&1 < /dev/null &'
+    echo "jogo enviado e aberto no Chrome da máquina (http://localhost:5195); veja com ./maquina.sh abrir"
     ;;
   abrir)
     # o DCV escuta só dentro da máquina; o túnel traz para o Mac em https://localhost:8443

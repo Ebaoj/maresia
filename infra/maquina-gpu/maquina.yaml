@@ -84,6 +84,7 @@ Resources:
           [connectivity]
           web-listen-endpoints = ['127.0.0.1:8443']
           quic-listen-endpoints = []
+          enable-quic-frontend = false
           [security]
           authentication = "none"
           CONF
