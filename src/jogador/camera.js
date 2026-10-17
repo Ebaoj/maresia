@@ -3,7 +3,7 @@
 
 import * as THREE from 'three'
 import { alturaChao } from '../mundo/colisao.js'
-import { solidosCamera } from '../mundo/solidos.js'
+import { prepararSolidos, solidosCamera } from '../mundo/solidos.js'
 import { clamp } from '../utils.js'
 
 export class CameraTerceiraPessoa {
@@ -17,6 +17,8 @@ export class CameraTerceiraPessoa {
     this.corrida = 0
     this.iniciado = false
     this.raio = new THREE.Raycaster()
+    this.raio.firstHitOnly = true // só a batida mais perto conta (a BVH para no primeiro triângulo dela)
+    this._dir = new THREE.Vector3()
     this.subida = 0 // quanto a câmera sobe quando a rua aperta
     this._lado = new THREE.Vector3()
     this._cima = new THREE.Vector3()
@@ -65,9 +67,10 @@ export class CameraTerceiraPessoa {
 
     // se tiver prédio entre o personagem e a câmera, a câmera chega mais perto.
     // Um feixe de 5 raios (centro e 4 lados do tamanho da lente) evita a lente raspar na quina.
+    prepararSolidos()
     const livreEm = (pitch) => {
       const cp = Math.cos(pitch)
-      const dir = new THREE.Vector3(Math.sin(this.yaw) * cp, Math.sin(pitch), Math.cos(this.yaw) * cp)
+      const dir = this._dir.set(Math.sin(this.yaw) * cp, Math.sin(pitch), Math.cos(this.yaw) * cp)
       this._lado.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).multiplyScalar(0.35)
       this._cima.crossVectors(dir, this._lado).normalize().multiplyScalar(0.25)
       let livre = cfg.distancia
