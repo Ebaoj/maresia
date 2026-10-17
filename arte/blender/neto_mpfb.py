@@ -85,17 +85,55 @@ if SEM_ROSTO:
     peso = np.zeros(len(P))
     for c in centros:
         d = np.linalg.norm(P - c, axis=1); peso = np.maximum(peso, np.clip(1 - d / 0.03, 0, 1))
-    d = np.linalg.norm((P - cb) * np.array([0.7, 1, 1.4]), axis=1); peso = np.maximum(peso, np.clip(1 - d / 0.035, 0, 1))
     peso[[i for i in range(len(P)) if i not in corpo_s]] = 0
-    # fecha a fresta da boca: o que estiver atrás da superfície dos lábios vem para a frente dela
-    lab_i = _grupo_idx("lips"); L = P[lab_i]; lx0, lx1 = L[:, 0].min(), L[:, 0].max(); lz0, lz1 = L[:, 2].min(), L[:, 2].max()
-    for i in corpo_s:
+    # boca lisa: pele contínua da base do nariz ao queixo. Entre as duas fatias, uma superfície Hermite
+    # (valor e inclinação do perfil original nas bordas) substitui os lábios; o interior da boca vai para trás dela.
+    bi = np.array(sorted(corpo_s)); B = P[bi]
+    frente_lim = cb[1] + 0.03
+    def frente_y(z, x=0.0, tx=0.0025, tz=0.0016):
+        sel = B[(np.abs(B[:, 0] - x) < tx) & (np.abs(B[:, 2] - z) < tz) & (B[:, 1] < frente_lim)]
+        return sel[:, 1].min() if len(sel) else None
+    zs = np.arange(cb[2] - 0.05, cb[2] + 0.05, 0.001)
+    perfil = {round(z, 4): frente_y(z) for z in zs}
+    validos = [(z, y) for z, y in perfil.items() if y is not None]
+    acima = [(z, y) for z, y in validos if cb[2] + 0.006 < z < cb[2] + 0.045]
+    z_nariz = min(acima, key=lambda t: t[1])[0]                                   # ponta do nariz
+    entre = [(z, y) for z, y in validos if cb[2] + 0.004 < z < z_nariz]
+    z_sub = max(entre, key=lambda t: t[1])[0]                                     # base do nariz (mais funda)
+    abaixo = [(z, y) for z, y in validos if cb[2] - 0.045 < z < cb[2] - 0.012]
+    z_pog = min(abaixo, key=lambda t: t[1])[0]                                    # queixo (mais à frente)
+    z_top, z_bot = z_sub + 0.55 * (z_nariz - z_sub), z_pog   # começa logo abaixo da ponta do nariz: sem o vinco nariz-lábio
+    h = z_top - z_bot; W = 0.031
+    def borda(z, x, lado):
+        y0 = frente_y(z, x); y1 = frente_y(z + (0.003 if lado > 0 else -0.003), x)
+        if y0 is None or y1 is None: return None, None
+        return y0, (y1 - y0) / (0.003 if lado > 0 else -0.003)               # valor e dy/dz
+    xs_g = np.arange(-W, W + 1e-9, 0.002)
+    tab = []
+    for xg in xs_g:
+        yt, st = borda(z_top, xg, +1); yb, sb = borda(z_bot, xg, -1)
+        tab.append((xg, yt, st, yb, sb))
+    tab = [t for t in tab if None not in t]
+    def alvo(x, z):
+        k = min(range(len(tab)), key=lambda j: abs(tab[j][0] - x)); _, yt, st, yb, sb = tab[k]
+        u = (z_top - z) / h; u2, u3 = u * u, u * u * u
+        T0, T1 = 0.0, 0.0   # sem herdar inclinação: transição monótona do nariz ao queixo (não ondula)
+        return (2*u3 - 3*u2 + 1) * yt + (u3 - 2*u2 + u) * T0 + (-2*u3 + 3*u2) * yb + (u3 - u2) * T1
+    mexidos = 0
+    for i in bi:
         x, y, z = novo[i]
-        if lx0 - 0.002 < x < lx1 + 0.002 and lz0 - 0.002 < z < lz1 + 0.002:
-            perto = L[np.abs(L[:, 0] - x) < 0.004]
-            if len(perto):
-                fy = perto[:, 1].min()
-                if y > fy + 0.002 and y < fy + 0.04: novo[i, 1] = fy + 0.0015
+        if not (z_bot < z < z_top and abs(x) < W and y < cb[1] + 0.05): continue
+        yt_ = alvo(x, z)
+        wx = 1.0 if abs(x) < 0.8 * W else max(0.0, 1 - (abs(x) - 0.8 * W) / (0.2 * W)); wx = wx * wx * (3 - 2 * wx)
+        u_ = (z_top - z) / h   # emendas suaves: perto do nariz (u=0) e do queixo (u=1) a pele original volta aos poucos
+        wz = min(1.0, u_ / 0.2, (1 - u_) / 0.12); wz = max(0.0, wz); wz = wz * wz * (3 - 2 * wz)
+        wx = wx * wz
+        if y > yt_ + 0.004:   # interior da boca: logo atrás da pele nova
+            novo[i, 1] = yt_ + 0.0012
+        else:
+            novo[i, 1] = y + wx * (yt_ - y)
+        mexidos += 1
+    print(f"BOCA z_nariz={z_nariz:.4f} z_sub={z_sub:.4f} z_pog={z_pog:.4f} vertices={mexidos}")
     ativos = np.nonzero(peso > 0)[0]
     for _ in range(25):
         media = novo.copy()
@@ -337,6 +375,44 @@ if os.environ.get("NETO_TPOSE"):
         fim.use_deform = False
         bpy.ops.object.mode_set(mode="OBJECT")
     print("TPOSE aplicada")
+
+if SEM_ROSTO:
+    # recorta lábios e interior da boca e tampa com pele nova encostada na superfície lisa (sem linha de junção)
+    bm_ = bmesh.new(); bm_.from_mesh(corpo.data)
+    dl = bm_.verts.layers.deform.verify()
+    gi_body = corpo.vertex_groups["body"].index
+    def na_caixa(co):
+        return abs(co.x) < W * 0.72 and z_bot + 0.18 * h < co.z < z_top - 0.3 * h and co.y < cb[1] + 0.06
+    faces_fora = [f for f in bm_.faces if all(na_caixa(v.co) and gi_body in v[dl] for v in f.verts)]
+    bmesh.ops.delete(bm_, geom=faces_fora, context="FACES")
+    borda = [e for e in bm_.edges if len(e.link_faces) == 1 and all(abs(v.co.x) < W and z_bot - 0.01 < v.co.z < z_top + 0.01 and v.co.y < cb[1] + 0.06 for v in e.verts)]
+    for v in bm_.verts: v.tag = True   # marca os pontos que já existiam
+    res = bmesh.ops.holes_fill(bm_, edges=borda, sides=0)
+    novas = res["faces"]
+    if not novas:  # holes_fill não fecha laço aberto: cria a face direto pelas arestas de borda
+        novas = bmesh.ops.contextual_create(bm_, geom=borda)["faces"]
+    print(f"BORDA arestas={len(borda)} faces_novas={len(novas)} lados={[len(f.verts) for f in novas]}")
+    originais = {tuple(round(c, 6) for c in v.co) for v in bm_.verts}
+    frente = min(novas, key=lambda f: sum(v.co.y for v in f.verts) / len(f.verts))   # o laço da frente (lábios)
+    tri = bmesh.ops.triangulate(bm_, faces=[frente])["faces"]
+    arestas = list({e for f in tri for e in f.edges})
+    bmesh.ops.subdivide_edges(bm_, edges=arestas, cuts=2, use_grid_fill=True)
+    novos = [v for v in bm_.verts if tuple(round(c, 6) for c in v.co) not in originais]
+    ref = [v for v in bm_.verts if tuple(round(c, 6) for c in v.co) in originais and not na_caixa(v.co) and abs(v.co.x) < W + 0.01 and z_bot - 0.015 < v.co.z < z_top + 0.015 and v.co.y < cb[1] + 0.03]
+    # distribui os pontos novos e encosta na superfície lisa
+    for _ in range(30):
+        for v in novos:
+            viz_ = [e.other_vert(v) for e in v.link_edges]
+            if viz_: v.co.x, v.co.z = sum(u.co.x for u in viz_) / len(viz_), sum(u.co.z for u in viz_) / len(viz_)
+    for v in novos:
+        v.co.y = alvo(v.co.x, min(max(v.co.z, z_bot), z_top))
+        perto = min(ref, key=lambda u: (u.co - v.co).length_squared)
+        v[dl].clear()
+        for g_, w_ in perto[dl].items(): v[dl][g_] = w_
+        v[dl][gi_body] = 1.0
+    bm_.normal_update()
+    bm_.to_mesh(corpo.data); bm_.free(); corpo.data.update()
+    print(f"BOCA recortada: {len(faces_fora)} faces fora, {len(novos)} pontos novos de pele")
 
 # ---- escala para 1,68 m (pés no chão) ----
 bpy.context.view_layer.update()
