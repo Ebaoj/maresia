@@ -9,52 +9,24 @@ Uso (de arte/): ./modal.sh run ../infra/modal-jogo/perfil.py::main       (invent
 Saída completa em infra/modal-jogo/testes/perfil.json (fora do git).
 """
 import json
-import subprocess
 import time
 from collections import defaultdict
 from pathlib import Path
 
 import modal
 
-from jogo import _bg, _chrome, imagem
+from cdp import subir_jogo
+from jogo import imagem
 
 app = modal.App("maresia-perfil")
 # o jogo.py vai junto para dentro do contêiner (o Modal não leva módulos locais sozinho)
-imagem_perfil = imagem.add_local_python_source("jogo")
+imagem_perfil = imagem.add_local_python_source("jogo", "cdp")
 
 CENARIOS = {
     "parado": {},
     "andando": {"frente": True, "girarEsq": True},
     "correndo": {"frente": True, "girarEsq": True, "correr": True},
 }
-
-
-class Cdp:
-    """Conversa com a página do jogo pela porta de depuração do Chrome (só dentro do contêiner)."""
-
-    def __init__(self):
-        import urllib.request
-
-        import websocket
-        alvos = json.load(urllib.request.urlopen("http://127.0.0.1:9222/json", timeout=5))
-        pagina = next(a for a in alvos if a.get("type") == "page" and "5195" in a.get("url", ""))
-        self.ws = websocket.create_connection(pagina["webSocketDebuggerUrl"], timeout=120, suppress_origin=True,
-                                              max_size=None)
-        self.n = 0
-
-    def __call__(self, metodo, **params):
-        self.n += 1
-        self.ws.send(json.dumps({"id": self.n, "method": metodo, "params": params}))
-        while True:
-            m = json.loads(self.ws.recv())
-            if m.get("id") == self.n:
-                if "error" in m:
-                    raise RuntimeError(m["error"])
-                return m.get("result", {})
-
-    def js(self, expressao):
-        r = self("Runtime.evaluate", expression=expressao, awaitPromise=True, returnByValue=True)
-        return r["result"].get("value")
 
 
 def _resumir(perfil):
@@ -79,16 +51,9 @@ def _resumir(perfil):
 
 
 def _subir_jogo():
-    subprocess.run("rm -rf /tmp/jogo && cp -r /jogo-fonte /tmp/jogo && ln -s /deps/node_modules /tmp/jogo/node_modules", shell=True, check=True)
-    _bg("Xvfb :1 -screen 0 1280x720x24 -nolisten tcp")
-    _bg("cd /tmp/jogo && npx vite --port 5195 --strictPort --host 127.0.0.1 > /tmp/vite.log 2>&1")
-    for _ in range(60):
-        if subprocess.run("curl -sf http://127.0.0.1:5195/ > /dev/null", shell=True).returncode == 0:
-            break
-        time.sleep(1)
-    _chrome(1280, 720)
-    time.sleep(50)  # carregar o mundo e compilar os shaders
-    return Cdp()
+    cdp = subir_jogo()
+    time.sleep(40)  # a medição segue esperando mais (como antes: ~50 s depois de abrir) para a cena assentar
+    return cdp
 
 
 @app.function(gpu="L4", image=imagem_perfil, timeout=30 * 60, cpu=4, memory=8192)

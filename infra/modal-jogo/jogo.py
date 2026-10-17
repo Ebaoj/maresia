@@ -18,6 +18,7 @@ terminal mostra a cada 20 s o FPS do jogo medido dentro do servidor e o processa
 import asyncio
 import base64
 import json
+import os
 import secrets
 import subprocess
 import threading
@@ -30,7 +31,9 @@ import modal
 
 # o projeto maresia (no Mac); dentro do contêiner o arquivo fica em /root e a raiz não é usada
 _aqui = Path(__file__).resolve()
-RAIZ = _aqui.parents[2] if len(_aqui.parents) > 2 else Path('/')
+# MARESIA_RAIZ aponta outra cópia do projeto (ex.: um commit antigo num git worktree, para ver um teste
+# de regressão falhar no código de antes da correção)
+RAIZ = Path(os.environ["MARESIA_RAIZ"]) if os.environ.get("MARESIA_RAIZ") else (_aqui.parents[2] if len(_aqui.parents) > 2 else Path('/'))
 app = modal.App("maresia-jogo")
 estado = modal.Dict.from_name("maresia-jogo-estado", create_if_missing=True)
 
