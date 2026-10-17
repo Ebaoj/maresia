@@ -62,7 +62,6 @@ export class CameraTerceiraPessoa {
       this.iniciado = true
     }
     this.alvo.lerp(desejado, 1 - Math.exp(-dt * 8))
-    this.dist += (cfg.distancia - this.dist) * (1 - Math.exp(-dt * 6))
 
     // se tiver prédio entre o personagem e a câmera, a câmera chega mais perto.
     // Um feixe de 5 raios (centro e 4 lados do tamanho da lente) evita a lente raspar na quina.
@@ -95,7 +94,11 @@ export class CameraTerceiraPessoa {
     }
     this.subida += (alvoSubida - this.subida) * (1 - Math.exp(-dt * (alvoSubida > this.subida ? 5 : 1.5)))
     ;({ dir, livre } = livreEm(Math.min(1.25, this.pitch + this.subida)))
-    if (livre < this.dist) this.dist = Math.max(1.2, livre - 0.5)
+    // aproxima na hora (não atravessa parede) e volta devagar só até onde está livre: antes voltava até
+    // passar do obstáculo, batia, pulava para perto e repetia (a câmera tremia parada, ciclo de 3 quadros)
+    const limite = livre < cfg.distancia ? Math.max(1.2, livre - 0.5) : cfg.distancia
+    if (this.dist > limite) this.dist = limite
+    else this.dist += (limite - this.dist) * (1 - Math.exp(-dt * 6))
     const p = dir.multiplyScalar(this.dist).add(this.alvo)
     // parede ao lado (não entre a câmera e o personagem): afasta para o outro lado, sem pulo
     this._lado.normalize()

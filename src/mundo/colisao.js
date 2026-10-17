@@ -2,7 +2,6 @@
 // "Decks" são pisos acima do chão (pontes, píer) onde o personagem pode andar.
 
 import { alturaTerreno } from './terreno.js'
-import { distCosta, larguraPraia, FIM_AVENIDA, NIVEL_CIDADE } from './mapa.js'
 
 const CEL = 16
 const baldes = new Map()
@@ -93,13 +92,10 @@ function alturaDeck(x, z, yRef) {
   return melhor
 }
 
-// Altura do que está debaixo do pé: terreno, calçadão/avenida (que viram ponte sobre o rio) ou deck.
+// Altura do que está debaixo do pé: terreno ou deck. O calçadão e a avenida saíram em 1932 (main.js);
+// a colisão ainda subia o chão até eles e o pé flutuava 5 a 10 cm acima da areia na beira da praia.
 export function alturaChao(x, z, yRef = Infinity) {
-  let h = alturaTerreno(x, z)
-  const s = distCosta(x, z)
-  const bw = larguraPraia(x)
-  if (s >= bw - 0.5 && s <= bw + FIM_AVENIDA + 0.5) h = Math.max(h, NIVEL_CIDADE + 0.05)
-  return Math.max(h, alturaDeck(x, z, yRef))
+  return Math.max(alturaTerreno(x, z), alturaDeck(x, z, yRef))
 }
 
 // Tudo que é sólido ou deck perto de um ponto (para a física carregar só o que está por perto).

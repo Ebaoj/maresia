@@ -63,7 +63,7 @@ export class Jogador {
     const acao = this.velHoriz > cfg.corridaNova * 0.75 || !this.noChao
     Object.assign(a.opcoes, {
       fps: acao ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
-      mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0, clavicula: cfg.clavicula,
+      mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0, clavicula: cfg.clavicula, joelhos: cfg.joelhos,
     })
     // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo
     const forca = Math.max(clamp((this.velHoriz - cfg.corridaNova * 0.8) / (cfg.corridaNova * 0.3), 0, 1), this.noChao || this.nadando ? 0 : 0.5)
@@ -301,7 +301,7 @@ export class Jogador {
     }
     if (!cfg.posicaoEm2) this.p.raiz.position.copy(this.pos)
     // afundar uns centímetros na areia fofa (só no desenho)
-    this.afundado += ((this.naAreiaSeca ? 0.045 : 0) - this.afundado) * Math.min(1, dt * 8)
+    this.afundado += ((this.naAreiaSeca ? cfg.afundaAreia ?? 0.02 : 0) - this.afundado) * Math.min(1, dt * 8)
     if (!cfg.posicaoEm2) this.p.raiz.position.y -= this.afundado
     // o corpo novo faz o "em 2" dele mesmo, depois da raiz no lugar (o pé no chão precisa dela)
     if (this.animador) this.animar(dt, cfg)

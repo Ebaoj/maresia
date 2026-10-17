@@ -83,6 +83,8 @@ export const PADRAO = {
     corridaNova: 4.5,
     peNoChao: true,        // IK: cada pé pisa no chão de verdade (ladeira, degrau, duna)
     inclinar: true,        // o corpo inclina na curva e na arrancada
+    afundaAreia: 0.02,     // m que o corpo afunda na areia seca (era 0,045: os dedos sumiam no chão)
+    joelhos: 6,            // graus: parado, o quadril sobe até o joelho mais dobrado ficar nisso (o mocap vem com 15 a 40°)
     motionMatching: true,  // locomoção por motion matching (motion-matching.js); desligado = mistura antiga por velocidade
     fpsAcao: 24,           // correndo e no ar a pose anda "em 1" (Aranhaverso: ação mais fluida, calma em 2)
     pausaPulo: true,       // a pose segura alguns quadros no alto do pulo

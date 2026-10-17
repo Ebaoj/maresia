@@ -344,6 +344,8 @@ export class Animador {
     if (this.opcoes.clavicula != null) this.endireitarClavicula(this.opcoes.clavicula)
     if (this.opcoes.bracosJuntos !== 0) this.bracosJuntos(s, this.opcoes.bracosJuntos ?? 0.6)
     if (this.opcoes.inclinar) this.inclinar(DT, s)
+    if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.ancorarPes(DT, s)
+    if (this.opcoes.ik && this.opcoes.joelhos != null && !s.noAr && !s.nadando && !s.sentado && s.chao) this.endireitarJoelhos(s, this.opcoes.joelhos)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)
     const olharVida = this.vidaParado(DT, s)
     if (this.opcoes.olhar !== false) this.olhar(DT, olharVida || s.olhar)
@@ -539,6 +541,58 @@ export class Animador {
   }
 
   // cada pé pisa no chão de verdade; o quadril desce o que o pé mais baixo precisar
+  // Parado, os pés não deslizam. O mocap foi convertido "no lugar": o quadril ficou cravado e o balanço do
+  // corpo virou pé patinando no chão (os dois juntos, até ~10 cm). Aqui é o contrário: o centro dos pés
+  // fica onde estava quando ele parou e o quadril leva o balanço. A âncora acompanha bem devagar (~20 s) para
+  // o corpo não ficar deslocado do lugar do jogador num parado longo.
+  ancorarPes(DT, s) {
+    const f = 1 - THREE.MathUtils.clamp((s.vel - 0.15) / 0.5, 0, 1)
+    const pe = ['LeftFoot', 'RightFoot'].map((n) => this.ossos.get(n))
+    const quadril = this.ossos.get('Hips')
+    if (!quadril || pe.some((o) => !o)) return
+    const raiz = this.corpo.raiz
+    const centro = raiz.worldToLocal(pe[0].getWorldPosition(v()).add(pe[1].getWorldPosition(v())).multiplyScalar(0.5))
+    if (!this.ancoraPes || f < 0.01) { this.ancoraPes = centro.clone(); return }
+    this.ancoraPes.lerp(centro, 1 - Math.exp(-DT * 0.05))
+    const delta = v().set(this.ancoraPes.x - centro.x, 0, this.ancoraPes.z - centro.z).multiplyScalar(f)
+    if (delta.lengthSq() < 1e-8) return
+    // de local da raiz para mundo (só direção) e daí para o pai do quadril
+    const w = quadril.getWorldPosition(v()).add(delta.applyQuaternion(raiz.getWorldQuaternion(new THREE.Quaternion())))
+    quadril.parent.worldToLocal(w)
+    quadril.position.copy(w)
+    quadril.updateMatrixWorld(true)
+  }
+
+  // Parado de joelho dobrado (os "parados" do Mixamo vêm com 15 a 40°) parece meio agachado: sobe o
+  // quadril até o joelho mais dobrado ficar em alvoGraus e devolve cada pé, por IK, ao lugar em que estava.
+  // Uma perna já esticada (o peso num pé só) limita a subida: o contrapposto fica.
+  endireitarJoelhos(s, alvoGraus) {
+    const f = 1 - THREE.MathUtils.clamp((s.vel - 0.3) / 0.7, 0, 1)
+    if (f < 0.01) return
+    const quadril = this.ossos.get('Hips')
+    const pernas = ['Left', 'Right'].map((L) => ({ coxa: this.ossos.get(L + 'UpLeg'), canela: this.ossos.get(L + 'Leg'), pe: this.ossos.get(L + 'Foot') }))
+    if (!quadril || pernas.some((p) => !p.coxa || !p.canela || !p.pe)) return
+    const cosAlvo = Math.cos(THREE.MathUtils.degToRad(alvoGraus))
+    let sobe = Infinity
+    for (const p of pernas) {
+      const A = p.coxa.getWorldPosition(v()), B = p.canela.getWorldPosition(v()), C = p.pe.getWorldPosition(v())
+      p.C = C
+      const a = A.distanceTo(B), b = B.distanceTo(C)
+      const dAlvo = Math.sqrt(a * a + b * b + 2 * a * b * cosAlvo)
+      const d = C.clone().sub(A)
+      const horiz2 = d.x * d.x + d.z * d.z
+      if (dAlvo * dAlvo <= horiz2) { sobe = 0; continue }
+      sobe = Math.min(sobe, Math.sqrt(dAlvo * dAlvo - horiz2) - Math.abs(d.y))
+    }
+    if (!(sobe > 0.001)) return
+    const w = quadril.getWorldPosition(v())
+    w.y += Math.min(sobe, 0.06) * f
+    quadril.parent.worldToLocal(w)
+    quadril.position.copy(w)
+    quadril.updateMatrixWorld(true)
+    for (const p of pernas) ikPerna(p.coxa, p.canela, p.pe, p.C)
+  }
+
   pesNoChao(s) {
     const raizY = this.corpo.raiz.getWorldPosition(v()).y
     const pernas = ['Left', 'Right'].map((L) => ({
