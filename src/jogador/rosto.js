@@ -196,6 +196,85 @@ const ESTILOS = {
     },
   },
 }
+
+// ---------- variações dos três preferidos (16/10/2026: grande, gato e mínimo) ----------
+
+// olhos grandes, parametrizado: rx/ry tamanho do branco, iris (cor e raio), contorno de baixo, peso
+// da sobrancelha
+function olhosGrandes({ rx = 30, ry = 30, iris = IRIS, irisR = 20, baixo = true, sobr = 7, brilhoR = 6, pupila = 0.5 }) {
+  const s = (g, y, inc = 0) => pincel(g, [[36, y + 4], [64, y - 3 + inc], [92, y + 2 + inc * 2]], sobr * 0.5, sobr * 1.4)
+  const olho = (g, k = 1, ir = irisR, iy = 76) => {
+    encher(g, arco(64, 74, rx, ry * k, 0, Math.PI * 2, 24), BRANCO)
+    g.save(); g.beginPath(); arco(64, 74, rx, ry * k, 0, Math.PI * 2, 24).forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.clip()
+    bola(g, 66, iy, ir, iris); bola(g, 66, iy, ir * pupila); bola(g, 58, iy - 10, brilhoR, '#fff'); bola(g, 74, iy + 9, brilhoR * 0.5, '#fff')
+    g.restore()
+    tremido(g, arco(64, 74, rx, ry * k, Math.PI * 1.05, Math.PI * 1.95, 16), 9)
+    if (baixo) tremido(g, arco(64, 74, rx, ry * k, Math.PI * 0.25, Math.PI * 0.75, 8), 4)
+  }
+  return {
+    aberto: (g) => { s(g, 74 - ry - 14); olho(g) },
+    fechado: (g) => { s(g, 74 - ry - 10); tremido(g, arco(64, 72, rx, 12, Math.PI * 0.1, Math.PI * 0.9, 14), 9) },
+    feliz: (g) => { s(g, 74 - ry - 18, -2); tremido(g, arco(64, 86, rx, 22, Math.PI * 1.1, Math.PI * 1.9, 14), 10) },
+    susto: (g) => { s(g, 74 - ry - 26, -4); olho(g, 1.12, irisR * 0.62, 74) },
+    determinado: (g) => { pincel(g, [[34, 74 - ry - 10], [64, 74 - ry + 2], [94, 74 - ry]], sobr * 0.6, sobr * 1.5); olho(g, 0.6, irisR * 0.85, 78) },
+    triste: (g) => { pincel(g, [[34, 74 - ry - 24], [64, 74 - ry - 16], [94, 74 - ry - 2]], sobr * 0.5, sobr * 1.3); olho(g, 0.8, irisR * 0.8, 84) },
+  }
+}
+
+// Gato de Botas, parametrizado: cor da íris, cílios, brilho, pálpebra
+function olhosGato({ iris = '#4a2c1a', irisR = 28, cilios = true, brilhoR = 9, palpebra = 13, ry = 34, rx = 32, meio = '#1a0f0a' }) {
+  const cil = (g) => { if (cilios) { tremido(g, [[30, 58], [22, 50]], 5); tremido(g, [[38, 50], [32, 42]], 5) } }
+  const olho = (g, k = 1, ir = irisR, iy = 76) => {
+    encher(g, arco(64, 74, rx, ry * k, 0, Math.PI * 2, 24), BRANCO)
+    g.save(); g.beginPath(); arco(64, 74, rx, ry * k, 0, Math.PI * 2, 24).forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.clip()
+    bola(g, 64, iy, ir, iris); bola(g, 64, iy, ir * 0.55, meio); bola(g, 54, iy - 14, brilhoR, '#fff'); bola(g, 76, iy + 14, brilhoR * 0.45, '#fff')
+    g.restore()
+    pincel(g, arco(64, 74, rx, ry * k, Math.PI * 1.0, Math.PI * 2.0, 16), palpebra * 0.45, palpebra); cil(g)
+  }
+  return {
+    aberto: (g) => olho(g),
+    fechado: (g) => { pincel(g, arco(64, 70, rx, 12, Math.PI * 0.08, Math.PI * 0.92, 14), palpebra * 0.45, palpebra); cil(g) },
+    feliz: (g) => pincel(g, arco(64, 88, rx, 26, Math.PI * 1.1, Math.PI * 1.9, 14), palpebra * 0.45, palpebra + 1),
+    susto: (g) => olho(g, 1.12, irisR * 0.62, 74),
+    determinado: (g) => { pincel(g, [[28, 36], [64, 50], [100, 48]], 6, 14); olho(g, 0.65, irisR * 0.8, 80) },
+    triste: (g) => { pincel(g, [[30, 22], [64, 30], [100, 46]], 5, 12); olho(g, 0.88, irisR, 82) },
+  }
+}
+
+// mínimo, parametrizado: forma do olho ('ponto', 'feijao' vertical, 'brilho' com reflexo), sobrancelha
+function olhosMinimos({ forma = 'ponto', sobr = 9, tam = 1 }) {
+  const t = tam
+  const olho = (g, y = 72, k = 1) => {
+    if (forma === 'feijao') { g.beginPath(); g.ellipse(64, y, 9 * t, 19 * t * k, 0, 0, Math.PI * 2); g.fill() } else { g.beginPath(); g.ellipse(64, y, 11 * t, 15 * t * k, 0, 0, Math.PI * 2); g.fill() }
+    if (forma === 'brilho') bola(g, 60, y - 6 * t, 4 * t, '#fff')
+  }
+  const s = (g, pts) => (sobr > 10 ? pincel(g, pts, sobr * 0.5, sobr * 1.3) : tremido(g, pts, sobr))
+  return {
+    aberto: (g) => { s(g, [[44, 40], [64, 36], [84, 40]]); olho(g) },
+    fechado: (g) => { s(g, [[44, 42], [64, 38], [84, 42]]); tremido(g, [[46, 72], [64, 76], [82, 72]], 9) },
+    feliz: (g) => { s(g, [[44, 34], [64, 30], [84, 34]]); tremido(g, arco(64, 80, 18, 12, Math.PI * 1.1, Math.PI * 1.9, 10), 10) },
+    susto: (g) => { s(g, [[44, 26], [64, 22], [84, 26]]); tremido(g, arco(64, 70, 14 * t, 16 * t, 0, Math.PI * 2, 16), 7) },
+    determinado: (g) => { s(g, [[40, 40], [64, 50], [88, 46]]); olho(g, 74, 0.65) },
+    triste: (g) => { s(g, [[42, 30], [64, 36], [86, 46]]); olho(g, 78) },
+  }
+}
+
+Object.assign(ESTILOS, {
+  // grande com íris mel, sem contorno de baixo (mais limpo), sobrancelha grossa de pincel
+  'grande-mel': { escalaOlho: 1.75, escalaBoca: 1.2, olhos: olhosGrandes({ iris: '#7a4a22', baixo: false, sobr: 10, irisR: 21 }), bocas: ESTILOS.grande.bocas },
+  // grande oval, mais alto que largo, íris enorme quase sem branco
+  'grande-oval': { escalaOlho: 1.8, escalaBoca: 1.2, olhos: olhosGrandes({ rx: 24, ry: 34, irisR: 22, pupila: 0.45, brilhoR: 7 }), bocas: ESTILOS.grande.bocas },
+  // gato com íris âmbar e sem cílios (menino)
+  'gato-ambar': { escalaOlho: 2.0, escalaBoca: 1.15, olhos: olhosGato({ iris: '#9a5a1e', meio: '#24140a', cilios: false }), bocas: ESTILOS.gato.bocas },
+  // gato menor e mais estreito, pálpebra grossa por cima (meio caminho para o Aranhaverso)
+  'gato-palpebra': { escalaOlho: 1.75, escalaBoca: 1.15, olhos: olhosGato({ ry: 26, rx: 32, irisR: 24, palpebra: 17, cilios: false, brilhoR: 7 }), bocas: ESTILOS.gato.bocas },
+  // mínimo em feijão vertical, sobrancelha de pincel
+  'minimo-feijao': { escalaOlho: 1.5, escalaBoca: 1.2, olhos: olhosMinimos({ forma: 'feijao', sobr: 12 }), bocas: ESTILOS.minimo.bocas },
+  // mínimo com brilho no olho, um pouco maior
+  'minimo-brilho': { escalaOlho: 1.6, escalaBoca: 1.2, olhos: olhosMinimos({ forma: 'brilho', tam: 1.25 }), bocas: ESTILOS.minimo.bocas },
+})
+// o mínimo original não tinha "triste"? tem; garante que todo estilo tenha todas as expressões
+for (const e of Object.values(ESTILOS)) for (const k of Object.keys(ESTILOS.atual.olhos)) if (!e.olhos[k]) e.olhos[k] = e.olhos.aberto
 export const ESTILOS_ROSTO = Object.keys(ESTILOS)
 
 function plano(tex, w, h) {
