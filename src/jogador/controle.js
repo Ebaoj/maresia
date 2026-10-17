@@ -34,6 +34,7 @@ export class Jogador {
     this.velDesejada = new THREE.Vector3()
     this.sentado = null // banco onde está sentado
     this.trocaBanco = null // sentando ou levantando (andarNoBanco)
+    this.indoSentar = null // andando até o banco antes de sentar
     this.carregando = null // objeto que está segurando
     this.afundado = 0
     this.naAreiaSeca = false
@@ -120,7 +121,15 @@ export class Jogador {
     return new THREE.Vector3(x, alturaChao(x, z, b.y + 0.4), z)
   }
 
+  // longe da frente do banco: anda até lá primeiro (qualquer tecla desiste); perto, já senta
   sentar(banco) {
+    const frente = this.frenteDoBanco(banco, 0.45)
+    if (Math.hypot(frente.x - this.pos.x, frente.z - this.pos.z) > 0.35) { this.indoSentar = { banco, frente, t: 0 }; return }
+    this.sentarAgora(banco)
+  }
+
+  sentarAgora(banco) {
+    this.indoSentar = null
     this.sentado = banco
     this.vel.set(0, 0, 0)
     this.velDesejada.set(0, 0, 0)
@@ -187,6 +196,16 @@ export class Jogador {
     let dz = fz * iz + fx * ix
     const n = Math.hypot(dx, dz)
     if (n > 0) { dx /= n; dz /= n }
+    // indo sentar: anda sozinho até a frente do banco, mais devagar no fim
+    let devagar = 1
+    if (this.indoSentar) {
+      const ir = this.indoSentar
+      ir.t += dt
+      const ex = ir.frente.x - this.pos.x, ez = ir.frente.z - this.pos.z, d = Math.hypot(ex, ez)
+      if (n > 0) this.indoSentar = null
+      else if (d < 0.3 || ir.t > 4) { this.sentarAgora(ir.banco); return this.atualizarSentado(dt, cfg) }
+      else { dx = ex / d; dz = ez / d; devagar = Math.min(1, 0.35 + d / 0.8) }
+    }
 
     const profAqui = -alturaChao(this.pos.x, this.pos.z, this.pos.y)
     let alvoVel = this.animador
@@ -200,6 +219,7 @@ export class Jogador {
     else if (profAqui > 0.35 && this.pos.y < 0.2) alvoVel *= 0.6 // água pela canela
     // girando (meia-volta): quase para enquanto vira, em vez de sair andando de costas para a nova direção
     if (this.animador?.girando) alvoVel *= 0.3
+    alvoVel *= devagar
 
     const acel = this.noChao || this.nadando ? 10 : 3
     this.velDesejada.set(dx * alvoVel, 0, dz * alvoVel) // o motion matching lê para prever a trajetória

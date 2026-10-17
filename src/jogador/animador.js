@@ -363,8 +363,12 @@ export class Animador {
     if (this.opcoes.clavicula != null) this.endireitarClavicula(this.opcoes.clavicula)
     if (this.opcoes.bracosJuntos !== 0) this.bracosJuntos(s, this.opcoes.bracosJuntos ?? 0.6)
     if (this.opcoes.inclinar) this.inclinar(DT, s)
-    if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.ancorarPes(DT, s)
-    if (this.opcoes.ik && this.opcoes.joelhos != null && !s.noAr && !s.nadando && !s.sentado && s.chao) this.endireitarJoelhos(s, this.opcoes.joelhos)
+    // sentando ou levantando, o corpo é do movimento do banco: a âncora dos pés (que ficou de antes de
+    // sentar) puxava o quadril de lado no começo do levantar, e o joelho reto brigava com o agachar
+    const noBanco = s.sentado || this.umaVez === 'sentar' || this.umaVez === 'levantar'
+    if (noBanco) this.ancoraPes = null
+    if (this.opcoes.ik && !noBanco && !s.noAr && !s.nadando && s.chao) this.ancorarPes(DT, s)
+    if (this.opcoes.ik && this.opcoes.joelhos != null && !noBanco && !s.noAr && !s.nadando && !s.sentado && s.chao) this.endireitarJoelhos(s, this.opcoes.joelhos)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)
     const olharVida = this.vidaParado(DT, s)
     if (this.opcoes.olhar !== false) this.olhar(DT, olharVida || s.olhar)
