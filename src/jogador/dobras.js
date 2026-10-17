@@ -21,7 +21,7 @@ function textura(desenhar) {
 }
 // traços em leque: cruzam o membro (o membro corre na vertical do desenho), finos, de tamanhos
 // diferentes e abrindo um pouco para um lado, como dobra desenhada à mão
-const leque = (n) => textura((g) => {
+export const leque = (n) => textura((g) => {
   const linhas = [[30, 92, 40, -6], [40, 98, 62, 0], [34, 84, 84, 7], [46, 90, 102, 12]].slice(0, n)
   for (const [x0, x1, y, abre] of linhas) {
     g.lineWidth = 6.5

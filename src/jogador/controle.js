@@ -103,6 +103,7 @@ export class Jogador {
       a.pano.atualizar(dt, { vento: this.cfg.interacao.ventoCoqueiros * naPraia * 1.6, ventoDir: VENTO, forca: cfg.panoSolto })
     }
     a.dobras?.atualizar(cfg.dobras)
+    a.dobrasPano?.atualizar(dt, cfg.dobras)
     // pisadas do pé de verdade (o boneco antigo usava a fase do passo)
     for (const ev of a.eventos) this.eventos.push(ev)
     a.eventos.length = 0
@@ -202,8 +203,8 @@ export class Jogador {
       const ir = this.indoSentar
       ir.t += dt
       const ex = ir.frente.x - this.pos.x, ez = ir.frente.z - this.pos.z, d = Math.hypot(ex, ez)
-      if (n > 0) this.indoSentar = null
-      else if (d < 0.3 || ir.t > 4) { this.sentarAgora(ir.banco); return this.atualizarSentado(dt, cfg) }
+      if (n > 0 || ir.t > 4) this.indoSentar = null // o jogador mexeu ou não chegou (preso em algo): desiste
+      else if (d < 0.3) { this.sentarAgora(ir.banco); return this.atualizarSentado(dt, cfg) }
       else { dx = ex / d; dz = ez / d; devagar = Math.min(1, 0.35 + d / 0.8) }
     }
 

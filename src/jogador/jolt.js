@@ -7,20 +7,24 @@ import initJolt from 'jolt-physics'
 
 let promessa = null
 
+export const CAMADA = { PANO_SOLTO: 0, CORPO: 1, PANO_JUSTO: 2 }
+
 // carrega uma vez só (o motor tem ~3 MB) e devolve { J, sistema, corpos, passo(dt) }
 export function carregarJolt() {
   if (promessa) return promessa
   promessa = initJolt().then((J) => {
     const conf = new J.JoltSettings()
     conf.mMaxBodies = 64
-    conf.mMaxBodyPairs = 64
-    conf.mMaxContactConstraints = 64
-    const pares = new J.ObjectLayerPairFilterTable(1)
-    const camadas = new J.BroadPhaseLayerInterfaceTable(1, 1)
-    camadas.MapObjectToBroadPhaseLayer(0, new J.BroadPhaseLayer(0))
+    conf.mMaxBodyPairs = 256
+    conf.mMaxContactConstraints = 256
+    // camadas: pano solto (camisa) bate nas cápsulas do corpo; pano justo (calça, já preso às pernas) não
+    const pares = new J.ObjectLayerPairFilterTable(3)
+    pares.EnableCollision(CAMADA.PANO_SOLTO, CAMADA.CORPO)
+    const camadas = new J.BroadPhaseLayerInterfaceTable(3, 1)
+    for (let c = 0; c < 3; c++) camadas.MapObjectToBroadPhaseLayer(c, new J.BroadPhaseLayer(0))
     conf.mObjectLayerPairFilter = pares
     conf.mBroadPhaseLayerInterface = camadas
-    conf.mObjectVsBroadPhaseLayerFilter = new J.ObjectVsBroadPhaseLayerFilterTable(camadas, 1, pares, 1)
+    conf.mObjectVsBroadPhaseLayerFilter = new J.ObjectVsBroadPhaseLayerFilterTable(camadas, 1, pares, 3)
     const iface = new J.JoltInterface(conf)
     J.destroy(conf)
     const sistema = iface.GetPhysicsSystem()
