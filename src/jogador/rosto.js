@@ -307,6 +307,20 @@ Object.assign(ESTILOS, {
   'brilho-triste-oval': mb({ alto: 1.15 }, { triste: ovalTriste }),
 })
 
+// opções de susto para o mínimo brilho (o Joabe achou o arregalado de branco ruim, 16/10/2026)
+const sobrAlta = (g) => tremido(g, [[42, 24], [64, 14], [86, 22]], 9)
+const SUSTOS = {
+  // a pupila encolhe: ponto pequeno, sem branco
+  ponto: (g) => { sobrAlta(g); bola(g, 64, 72, 7); bola(g, 61, 69, 2, '#fff') },
+  // o olho estica para cima: oval alto
+  oval: (g) => { sobrAlta(g); g.beginPath(); g.ellipse(64, 70, 10, 21, 0, 0, Math.PI * 2); g.fill(); bola(g, 61, 60, 3.5, '#fff') },
+  // branco pequeno, sem contorno, pupila no meio
+  branco: (g) => { sobrAlta(g); encher(g, arco(64, 70, 12, 15, 0, Math.PI * 2, 18), BRANCO); bola(g, 64, 71, 6) },
+  // olho normal com a sobrancelha bem alta e torta, mais contido
+  contido: (g) => { tremido(g, [[42, 26], [62, 16], [86, 20]], 9); g.beginPath(); g.ellipse(64, 72, 13, 18, 0, 0, Math.PI * 2); g.fill(); bola(g, 60, 64, 4, '#fff') },
+}
+for (const [k, f] of Object.entries(SUSTOS)) ESTILOS['brilho-susto-' + k] = mb({ alto: 1, tam: 1.25 }, { susto: f })
+
 // o mínimo original não tinha "triste"? tem; garante que todo estilo tenha todas as expressões
 for (const e of Object.values(ESTILOS)) for (const k of Object.keys(ESTILOS.atual.olhos)) if (!e.olhos[k]) e.olhos[k] = e.olhos.aberto
 export const ESTILOS_ROSTO = Object.keys(ESTILOS)
