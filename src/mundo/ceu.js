@@ -81,9 +81,16 @@ void main() {
     // pintado; um brilho largo e quente em volta do sol; nuvens de pincel baixas, com o lado do sol
     // quente e a barriga fria. Azimute e altura como "tela", deriva lenta com o tempo.
     float az = atan(d.z, d.x) + uTempo * 0.002;
-    float traco = 0.6 * vn(vec2(az * 2.2, pow(y, 0.6) * 26.0)) + 0.4 * vn(vec2(az * 7.0, pow(y, 0.6) * 70.0) + 5.0);
-    float t = clamp(pow(y, 0.55) + (traco - 0.5) * 0.22 * uArcCeu, 0.0, 1.0);
+    // pinceladas largas (poucas por tela) e outras finas por cima, como pincel chato e pincel de detalhe
+    float yP = pow(y, 0.6);
+    float largo = vn(vec2(az * 1.1, yP * 9.0));
+    float fino = vn(vec2(az * 4.5, yP * 38.0) + 5.0);
+    float traco = 0.7 * largo + 0.3 * fino;
+    float t = clamp(pow(y, 0.55) + (traco - 0.5) * 0.42 * uArcCeu, 0.0, 1.0);
     cor = mix(uHor, uTopo, t);
+    // cada pincelada puxa um pouco para o quente ou para o frio (a tinta não é uniforme)
+    float tempT = (vn(vec2(az * 0.8, yP * 6.0) + 21.0) - 0.5) * 0.16 * uArcCeu;
+    cor *= vec3(1.0 + tempT, 1.0, 1.0 - tempT);
     float sA = dot(d, normalize(uSolDir));
     cor = mix(cor, uSolCor * 1.05, smoothstep(0.55, 1.0, sA) * 0.38 * (1.0 - uNoite) * uArcCeu);
     // nuvens de pincel: manchas esticadas na horizontal, só na faixa baixa do céu

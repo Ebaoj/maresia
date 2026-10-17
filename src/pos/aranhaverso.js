@@ -199,6 +199,8 @@ void main() {
   // 4. brilho das luzes: feito de pontos que crescem com a intensidade (ou halo liso)
   // o céu e as nuvens não viram bola de brilho (só luzes e reflexos perto)
   vec3 bri = texture2D(tBrilho, uv).rgb * uBrilho * (1.0 - smoothstep(250.0, 450.0, dc));
+  // Arcane: contra o sol a figura fica escura e só a borda brilha; o halo do sol não lava o que está perto
+  if (uArcane > 0.5) bri *= mix(0.12, 1.0, smoothstep(10.0, 60.0, dc));
   float bl = max(bri.r, max(bri.g, bri.b));
   // brilho fraco não vira ponto (senão o resto do halo suja a tela inteira)
   float rB = 0.62 * sqrt(smoothstep(0.05, 0.6, bl));
