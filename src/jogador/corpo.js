@@ -46,7 +46,7 @@ export function criarAdaptador(alvo) {
   }
 }
 
-// modelo: 'neto' (o personagem da história) ou 'boneco' (o de cápsulas, para testes)
+// modelo: 'neto-tripo' (o padrão), 'neto' (MakeHuman) ou 'boneco' (o de cápsulas, para testes)
 export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false, estiloRosto = 'minimo-brilho', ombros = 0.9, folgaCamisa = 0.012, roupaJolt = false } = {}) {
   const boneco = criarBoneco()
   const r = await carregarMovimentosMixamo({
