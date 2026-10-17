@@ -508,7 +508,9 @@ export class Animador {
       const c = this.ossos.get(L + 'Shoulder'), b = this.ossos.get(L + 'Arm')
       if (!c || !b || this.clavRep[L] == null) continue
       const sobe = this.clavRep[L] - alvo
-      if (Math.abs(sobe) < 0.005) continue
+      // só levanta ombro que nasceu caído demais (o neto MakeHuman, 28 a 33°); nunca abaixa: o neto do
+      // Tripo nasce com 8° e a camada abaixava o ombro dele 10° (17/10/2026)
+      if (sobe < 0.005) continue
       const d = b.getWorldPosition(v()).sub(c.getWorldPosition(v()))
       const h = v().set(d.x, 0, d.z)
       const L0 = d.length()

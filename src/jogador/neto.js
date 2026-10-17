@@ -19,7 +19,7 @@ const PERSONAGEM = { opacity: 0.5, blending: THREE.NoBlending, semCache: true } 
 
 function materialPara(malha) {
   const nome = (malha.material?.name || malha.name).toLowerCase()
-  if (malha.material?.map && !malha.geometry.attributes.color && malha.geometry.attributes.position.count > 5000) {
+  if (malha.material?.map && !malha.geometry.attributes.color && (malha.userData.tripo || malha.geometry.attributes.position.count > 5000)) {
     // modelo inteiro numa textura pintada (Tripo): a textura é a cor
     const map = malha.material.map
     map.colorSpace = THREE.SRGBColorSpace
@@ -76,6 +76,7 @@ export async function carregarNeto({ chapeu = false, semRosto = false, ombros = 
   const malhas = []
   raiz.traverse((o) => {
     if (!o.isSkinnedMesh) return
+    if (arquivo) o.userData.tripo = true // do Tripo: tudo é textura pintada, até os pedaços pequenos
     o.material = materialPara(o)
     o.castShadow = true
     o.receiveShadow = true
