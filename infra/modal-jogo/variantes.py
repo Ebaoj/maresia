@@ -67,18 +67,33 @@ ROTEIRO = """(t, m) => {
 }"""
 
 
+# De perto, para ver a roupa: câmera a 1,7 m e mais baixa, meio da manhã com o relógio parado, a câmera dá
+# uma volta inteira no menino parado e depois ele anda, corre, vira e para
+ROTEIRO_PERTO = """(t, m) => {
+  const k = m.teclas
+  for (const c in k) k[c] = false
+  if (t < 3.6) k.girarEsq = true
+  if (t >= 4.5 && t < 7.5) k.frente = true
+  if (t >= 7.5 && t < 9.5) { k.frente = true; k.correr = true }
+  if (t >= 9.5 && t < 11) k.tras = true
+  if (t >= 12) k.girarDir = true
+}"""
+CONFIG_PERTO = {"camera": {"distancia": 1.7, "altura": 0.85}, "tempo": {"hora": 9.5, "pausado": True}}
+
+
 @app.function(gpu="L4", image=imagem_var, timeout=40 * 60, cpu=4, memory=8192)
-def gravar_modelos(modelos: list, segundos: float = 12) -> dict:
+def gravar_modelos(modelos: list, segundos: float = 12, roteiro: str = ROTEIRO, extra: dict = None,
+                   largura: int = 640) -> dict:
     cdp = subir_jogo()
     videos = {}
     for modelo in modelos:
-        mudar_config(cdp, {"personagem": {"modeloJogador": modelo}})
+        mudar_config(cdp, {"personagem": {"modeloJogador": modelo}, **(extra or {})})
         time.sleep(4)
-        cdp.js(f"window.maresia.gravar({{ nome: '{modelo}', segundos: {segundos}, fps: 30, roteiro: {ROTEIRO} }})")
+        cdp.js(f"window.maresia.gravar({{ nome: '{modelo}', segundos: {segundos}, fps: 30, roteiro: {roteiro} }})")
         pasta = f"/tmp/jogo/docs/capturas/video/{modelo}"
         saida = f"/tmp/{modelo}.mp4"
-        subprocess.run(f"ffmpeg -y -loglevel error -framerate 30 -i {pasta}/q%04d.jpg -vf scale=640:-2 -c:v libx264 "
-                       f"-pix_fmt yuv420p {saida}", shell=True, check=True)
+        subprocess.run(f"ffmpeg -y -loglevel error -framerate 30 -i {pasta}/q%04d.jpg -vf scale={largura}:-2 -c:v libx264 "
+                       f"-crf 18 -pix_fmt yuv420p {saida}", shell=True, check=True)
         videos[modelo] = Path(saida).read_bytes()
     return videos
 
@@ -95,10 +110,14 @@ def bloco():
 
 
 @app.local_entrypoint()
-def modelos(lista: str = "neto-tripo-partes,neto-tripo-p2,neto-vestido"):
-    r = gravar_modelos.remote(lista.split(","))
+def modelos(lista: str = "neto-tripo-partes,neto-tripo-p2,neto-vestido", perto: bool = False):
+    if perto:
+        r = gravar_modelos.remote(lista.split(","), segundos=14, roteiro=ROTEIRO_PERTO, extra=CONFIG_PERTO, largura=1280)
+    else:
+        r = gravar_modelos.remote(lista.split(","))
     pasta = Path(__file__).parent / "testes"
     pasta.mkdir(exist_ok=True)
     for nome, dados in r.items():
-        (pasta / f"modelo-{nome}.mp4").write_bytes(dados)
-        print("gravado", pasta / f"modelo-{nome}.mp4")
+        arq = pasta / f"modelo-{nome}{'-perto' if perto else ''}.mp4"
+        arq.write_bytes(dados)
+        print("gravado", arq)
