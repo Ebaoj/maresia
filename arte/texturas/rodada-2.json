@@ -1,0 +1,5 @@
+[
+ {"nome": "tex-tronco", "semente": 21, "n": 4, "prompt": "hand-painted stylized game texture of a coconut palm tree trunk bark, horizontal ring scars, grey-brown fibrous bark, weathered, painterly visible brush strokes, mature concept-art matte painting style, muted palette, flat even lighting, orthographic front view, fills the whole frame, seamless tileable texture, no text"},
+ {"nome": "tex-vela", "semente": 22, "n": 4, "prompt": "hand-painted stylized game texture of old cotton sailcloth from a fishing raft sail, off-white canvas with patches, seams, salt stains and faded ochre repairs, painterly visible brush strokes, mature concept-art matte painting style, flat even lighting, orthographic front view, fills the whole frame, seamless tileable texture, no text"},
+ {"nome": "tex-folha", "semente": 23, "n": 4, "prompt": "hand-painted stylized game texture of green coconut palm leaflets close-up, parallel long leaf blades with yellow-green highlights and dark teal shadows between them, painterly visible brush strokes, mature concept-art matte painting style, flat even lighting, orthographic view, fills the whole frame, seamless tileable texture, no text"}
+]

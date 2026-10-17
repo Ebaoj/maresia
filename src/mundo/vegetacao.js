@@ -9,7 +9,7 @@ import {
 import { coqueirosDasVilas } from './vilas.js'
 import { LIMITES, densidadeLotes } from './mapa.js'
 import { alturaTerreno, inclinacao } from './terreno.js'
-import { gradienteToon, texturaCanvas, pintar } from '../materiais.js'
+import { gradienteToon, texturaCanvas, pintar, texturizar } from '../materiais.js'
 import { adicionarCirculo } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { criarAleatorio } from '../utils.js'
@@ -204,7 +204,8 @@ function balancarCopa(mat, cfg) {
 export function criarCoqueiros(cena, cfg) {
   const { geo: geoTronco, topo } = geometriaTronco()
   const geoCopa = geometriaCopa(topo)
-  const matTronco = pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 'toon-pintado')
+  // casca pintada com os anéis (visual Arcane)
+  const matTronco = texturizar(pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 'toon-pintado'), { topo: 'tronco', lado: 'tronco', tam: 1.4, contraste: 1.3 })
   const matCopa = balancarCopa(new THREE.MeshToonMaterial({
     vertexColors: true,
     gradientMap: gradienteToon(),
@@ -213,6 +214,7 @@ export function criarCoqueiros(cena, cfg) {
     side: THREE.DoubleSide,
   }), cfg)
   pintar(matCopa, 'copa-pintada')
+  texturizar(matCopa, { topo: 'folha', lado: 'folha', tam: 1.2, contraste: 0.9, massa: 0.3 }) // folhagem pintada (visual Arcane)
 
   const lista = posicoes()
   const matrizes = []

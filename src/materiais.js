@@ -68,11 +68,16 @@ export function pintar(mat, chave) {
       sh.uniforms.uTexTam = { value: tp.tam }
       sh.uniforms.uTexContraste = { value: tp.contraste }
       sh.uniforms.uTexMassa = { value: tp.massa }
+      if (tp.alt) {
+        sh.defines.TEX_PINTADA_ALT = ''
+        sh.uniforms.tTexAlt = { value: tp.alt }
+        sh.uniforms.uTexTamAlt = { value: tp.tamAlt }
+      }
       sh.uniforms.uTexForca = globais.uTexForca
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tTexTopo; uniform sampler2D tTexLado; uniform float uTexTam; uniform float uTexForca; uniform float uTexContraste; uniform float uTexMassa;')
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tTexTopo; uniform sampler2D tTexLado; uniform float uTexTam; uniform float uTexForca; uniform float uTexContraste; uniform float uTexMassa;\n#ifdef TEX_PINTADA_ALT\nuniform sampler2D tTexAlt; uniform float uTexTamAlt; varying float vTexAlt;\n#endif')
     }
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vPMundo; varying vec3 vNMundo;')
+      .replace('#include <common>', '#include <common>\nvarying vec3 vPMundo; varying vec3 vNMundo;\n#ifdef TEX_PINTADA_ALT\nattribute float aTexAlt; varying float vTexAlt;\n#endif')
       .replace(
         '#include <project_vertex>',
         `#include <project_vertex>
@@ -83,7 +88,10 @@ export function pintar(mat, chave) {
           nP = mat3(instanceMatrix) * nP;
         #endif
         vPMundo = (modelMatrix * pmP).xyz;
-        vNMundo = normalize(mat3(modelMatrix) * nP);`
+        vNMundo = normalize(mat3(modelMatrix) * nP);
+        #ifdef TEX_PINTADA_ALT
+          vTexAlt = aTexAlt;
+        #endif`
       )
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\n' + GLSL_PINCEL + SAIDA_LUZ + 'uniform float uLuzRef;\nuniform float uArcane; uniform vec2 uArcLim; uniform float uArcSuave; uniform float uArcPincel; uniform vec3 uArcCorSombra; uniform vec3 uArcNiveis; uniform float uArcRim; uniform vec3 uSolDirA;\nuniform sampler2D tLampioes; uniform vec2 uLampMin; uniform vec2 uLampTam; uniform vec3 uCorLamp; uniform float uNoiteL;\n')
@@ -149,6 +157,12 @@ export function pintar(mat, chave) {
           wT /= (wT.x + wT.y + wT.z + 1e-4);
           vec3 pT = vPMundo / uTexTam;
           vec3 detT = texture2D(tTexLado, pT.zy).rgb * wT.x + texture2D(tTexTopo, pT.xz).rgb * wT.y + texture2D(tTexLado, pT.xy).rgb * wT.z;
+          #ifdef TEX_PINTADA_ALT
+            // parte marcada na geometria (aTexAlt = 1, ex.: a vela da jangada) usa a textura alternativa
+            vec3 pA = vPMundo / uTexTamAlt;
+            vec3 detA = texture2D(tTexAlt, pA.zy).rgb * wT.x + texture2D(tTexAlt, pA.xz).rgb * wT.y + texture2D(tTexAlt, pA.xy).rgb * wT.z;
+            detT = mix(detT, detA, step(0.5, vTexAlt));
+          #endif
           // massa: a mesma textura 9 vezes maior e girada dá manchas grandes de valor (como numa pintura de
           // cenário) e esconde a repetição
           vec3 pM = vPMundo / (uTexTam * 9.0);
@@ -191,10 +205,12 @@ export function texturaPintada(nome) {
 // Liga a textura pintada num material que passa por pintar(): "topo" no que olha para cima (chão,
 // telhado), "lado" nas paredes; tam = quantos metros cobre uma repetição. Chamar antes do primeiro desenho.
 // contraste: quanto o detalhe da textura marca (1 = como pintada); massa: manchas grandes de valor
-export function texturizar(mat, { topo, lado = topo, tam = 2, contraste = 1, massa = 0.5 }) {
-  mat.userData.texPintada = { topo: texturaPintada(topo), lado: texturaPintada(lado), tam, contraste, massa }
+// alt: textura para a parte da geometria marcada com o atributo aTexAlt = 1 (ex.: a vela, no material da
+// jangada inteira); tamAlt: metros por repetição dela
+export function texturizar(mat, { topo, lado = topo, tam = 2, contraste = 1, massa = 0.5, alt = null, tamAlt = tam }) {
+  mat.userData.texPintada = { topo: texturaPintada(topo), lado: texturaPintada(lado), tam, contraste, massa, alt: alt ? texturaPintada(alt) : null, tamAlt }
   const chave = mat.customProgramCacheKey?.() || ''
-  mat.customProgramCacheKey = () => `${chave}|tex:${topo}:${lado}`
+  mat.customProgramCacheKey = () => `${chave}|tex:${topo}:${lado}:${alt}`
   mat.needsUpdate = true
   return mat
 }

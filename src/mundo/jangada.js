@@ -75,6 +75,7 @@ function vela(amura, topo, punho, semente, idade) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
   g.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3))
   g.computeVertexNormals()
+  g.userData.vela = true // leva a textura de lona, não a de madeira (aTexAlt, materiais.js)
   return g
 }
 
@@ -128,11 +129,13 @@ export function geometriaJangada({ semente = 0, idade = 0.4, naAreia = false } =
   partes.push(colorir(new THREE.TorusGeometry(0.17, 0.05, 5, 10).rotateX(Math.PI / 2).translate(0.6, 0.5, -0.45), '#94805c'))
   // roletes de tronco de coqueiro por baixo (quando está na areia)
   if (naAreia) for (const x of [-1.8, 1.4]) partes.push(colorir(new THREE.CylinderGeometry(0.13, 0.13, 2.3, 8).rotateX(Math.PI / 2).translate(x, -0.08, 0), '#8a7a62'))
+  // vela marcada para a textura de lona; o resto, madeira
+  for (const g of partes) g.setAttribute('aTexAlt', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count).fill(g.userData.vela ? 1 : 0), 1))
   return mergeGeometries(partes)
 }
 
 let _mat = null
 export function materialJangada() {
-  if (!_mat) _mat = texturizar(toonVertice({ side: THREE.DoubleSide }), { topo: 'madeira', lado: 'madeira', tam: 1.2 }) // pau de piúba gasto de sal (visual Arcane)
+  if (!_mat) _mat = texturizar(toonVertice({ side: THREE.DoubleSide }), { topo: 'madeira', lado: 'madeira', tam: 1.2, alt: 'vela', tamAlt: 2.5 }) // pau de piúba gasto de sal (visual Arcane)
   return _mat
 }
