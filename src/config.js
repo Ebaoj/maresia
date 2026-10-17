@@ -8,6 +8,20 @@ export const PADRAO = {
     pausado: false,
   },
   estilo: {
+    // 'arcane' (pintor de luz nos materiais, sem retícula, docs/pesquisa-arcane.md; escolha do Joabe em
+    // 17/10/2026, para ver como fica) ou 'quadrinho' (o filtro Aranhaverso). Trocar pede recarregar
+    visual: 'arcane',
+    arcSombra: 0.38,       // abaixo disso de luz, a faixa de sombra
+    arcLuz: 0.72,          // acima disso, a faixa de luz; entre as duas, o meio-tom
+    arcSuave: 0.05,        // largura da passagem entre as faixas
+    arcPincel: 0.35,       // quanto a pincelada recorta a borda das faixas
+    arcCorSombra: '#5d6e9e', // sombra fria, com luz rebatida do céu
+    arcNivelSombra: 0.42,
+    arcNivelMeio: 0.8,
+    arcNivelLuz: 1.1,
+    arcLinha: 0.7,         // contorno só na silhueta, na cor do objeto escurecida
+    arcSaturacao: 1.05,
+    arcGrao: 0.04,
     espessuraLinha: 1.3,
     limiarProfundidade: 0.07,
     limiarNormal: 0.55,

@@ -5,6 +5,8 @@ import { globais } from './globais.js'
 let _gradiente = null
 // degraus do toon: 2 = luz e sombra chapadas (Messenger); 5 = o antigo. Definido uma vez no início.
 const PASSOS = { 2: [0.5, 1.0], 3: [0.45, 0.75, 1.0], 5: [0.42, 0.58, 0.74, 0.9, 1.0] }
+// liso: luz quase contínua; quem faz as faixas é o pintor de luz (visual Arcane), não o toon
+PASSOS.liso = Array.from({ length: 32 }, (_, i) => 0.03 + (0.97 * (i + 1)) / 32)
 let _tons = 5
 export function definirTonsLuz(n) { _tons = PASSOS[n] ? n : 5 }
 
@@ -56,6 +58,7 @@ export function pintar(mat, chave) {
     sh.uniforms.uLampTam = globais.uLampTam
     sh.uniforms.uCorLamp = globais.uCorLamp
     sh.uniforms.uNoiteL = globais.uNoite
+    for (const k of ['uArcane', 'uArcLim', 'uArcSuave', 'uArcPincel', 'uArcCorSombra', 'uArcNiveis']) sh.uniforms[k] = globais[k]
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vPMundo; varying vec3 vNMundo;')
       .replace(
@@ -71,7 +74,7 @@ export function pintar(mat, chave) {
         vNMundo = normalize(mat3(modelMatrix) * nP);`
       )
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\n' + GLSL_PINCEL + SAIDA_LUZ + 'uniform float uLuzRef;\nuniform sampler2D tLampioes; uniform vec2 uLampMin; uniform vec2 uLampTam; uniform vec3 uCorLamp; uniform float uNoiteL;\n')
+      .replace('#include <common>', '#include <common>\n' + GLSL_PINCEL + SAIDA_LUZ + 'uniform float uLuzRef;\nuniform float uArcane; uniform vec2 uArcLim; uniform float uArcSuave; uniform float uArcPincel; uniform vec3 uArcCorSombra; uniform vec3 uArcNiveis;\nuniform sampler2D tLampioes; uniform vec2 uLampMin; uniform vec2 uLampTam; uniform vec3 uCorLamp; uniform float uNoiteL;\n')
       .replace(
         '#include <lights_fragment_end>',
         `#include <lights_fragment_end>
@@ -90,6 +93,28 @@ export function pintar(mat, chave) {
           vec3 albL = max(material.diffuseColor * RECIPROCAL_PI, vec3(1e-3));
           vec3 irrL = (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse) / albL;
           gLuz = vec4(dot(irrL, vec3(0.299, 0.587, 0.114)) / max(uLuzRef, 0.05), dot(totalEmissiveRadiance, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
+          // PINTOR DE LUZ (visual Arcane): a luz que chega vira três faixas pintadas (sombra fria, meio-tom,
+          // luz com a cor do sol ou do lampião). A borda entre elas é recortada pela pincelada presa ao mundo,
+          // então anda com o objeto (filtro de tela faria "porta de box"). O resto do volume vem da cor do
+          // material, como na pintura.
+          if (uArcane > 0.5) {
+            float lumA = gLuz.r;
+            float pesoIrr = max(dot(irrL, vec3(0.299, 0.587, 0.114)), 1e-3);
+            vec3 tomA = clamp(irrL / pesoIrr, 0.0, 2.0); // cor da luz (pôr do sol, lampião), sem a força
+            float pinA = pincelada(vPMundo * 3.1, normalize(vNMundo)) - 0.5;
+            float tA = lumA + pinA * uArcPincel;
+            float sombraA = 1.0 - smoothstep(uArcLim.x - uArcSuave, uArcLim.x + uArcSuave, tA);
+            float luzA = smoothstep(uArcLim.y - uArcSuave, uArcLim.y + uArcSuave, tA);
+            vec3 cLuz = mix(vec3(1.0), tomA, 0.65) * uArcNiveis.z;
+            vec3 cMeio = mix(vec3(1.0), tomA, 0.35) * uArcNiveis.y;
+            // a sombra esfria a cor do objeto sem trocá-la: só o matiz da cor fria entra, pela metade
+            // (com a cor inteira, o vermelho da camisa virava azul-marinho)
+            vec3 friaA = uArcCorSombra / max(dot(uArcCorSombra, vec3(0.299, 0.587, 0.114)), 1e-3);
+            vec3 cSomb = mix(vec3(1.0), friaA, 0.35) * uArcNiveis.x * mix(vec3(1.0), tomA, 0.15);
+            vec3 faixa = mix(mix(cMeio, cLuz, luzA), cSomb, sombraA);
+            reflectedLight.directDiffuse = material.diffuseColor * RECIPROCAL_PI * faixa * uLuzRef;
+            reflectedLight.indirectDiffuse = vec3(0.0);
+          }
         }`
       )
       .replace(

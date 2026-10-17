@@ -43,7 +43,7 @@ import { criarPainel } from './ui/painel.js'
 import { criarSom } from './audio.js'
 
 const cfg = carregarConfig()
-definirTonsLuz(cfg.estilo.tonsLuz) // antes de qualquer material ser criado
+definirTonsLuz(cfg.estilo.visual === 'arcane' ? 'liso' : cfg.estilo.tonsLuz) // antes de qualquer material ser criado (Arcane: as faixas são do pintor de luz)
 const canvas = document.getElementById('tela')
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
 renderer.shadowMap.enabled = true

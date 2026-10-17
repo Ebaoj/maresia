@@ -21,5 +21,12 @@ export const globais = {
   uLampMin: { value: new THREE.Vector2(0, 0) },
   uLampTam: { value: new THREE.Vector2(1, 1) },
   uCorLamp: { value: new THREE.Color('#ffb45c') },
+  // pintor de luz (visual Arcane, docs/pesquisa-arcane.md): três faixas pintadas em vez dos degraus do quadrinho
+  uArcane: { value: 0 },
+  uArcLim: { value: new THREE.Vector2(0.38, 0.72) }, // onde a sombra vira meio-tom e o meio-tom vira luz (0 a 1 de luz)
+  uArcSuave: { value: 0.05 },
+  uArcPincel: { value: 0.35 }, // quanto a pincelada (presa ao mundo) recorta a borda entre as faixas
+  uArcCorSombra: { value: new THREE.Color('#5d6e9e') },
+  uArcNiveis: { value: new THREE.Vector3(0.5, 0.8, 1.05) }, // força da sombra, do meio-tom e da luz
 }
 globais.tLampioes.value.needsUpdate = true

@@ -107,6 +107,7 @@ uniform float uDesfoque; uniform float uFoco; uniform float uVelocidade;
 uniform float uOclusao; uniform float uBrilho; uniform vec2 uDesloc;
 uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uniform float uMaresia;
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
+uniform float uArcane; uniform float uArcLinha;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
 ${COMUM}
@@ -213,7 +214,9 @@ void main() {
   L = dot(cor, vec3(0.299, 0.587, 0.114));
 
   float tremorH = ruido((px + uDesloc) * 0.05 + uTempo * 2.0) * 0.6;
-  if (uModo > 0.5) {
+  if (uArcane > 0.5) {
+    // visual Arcane: sem retícula nem hachura (as faixas de luz são pintadas no material, materiais.js)
+  } else if (uModo > 0.5) {
     // LUZ COMO MÁSCARA (como no Aranhaverso e no Hi-Fi Rush): quem decide é a luz que chega
     // na superfície, não a cor final. Asfalto escuro no sol não ganha hachura; parede branca
     // na sombra ganha.
@@ -287,7 +290,14 @@ void main() {
   float perto = 1.0 - smoothstep(alcance * 0.5, alcance, dmin);
   float forca = mix(uPesoCenario, 1.0, smoothstep(0.3, 1.0, peso));
   float borda = max(bordaP, bordaN) * perto * forca;
-  cor = mix(cor, uCorTinta, borda * uIntTinta);
+  if (uArcane > 0.5) {
+    // Arcane quase não tem linha: só a silhueta, fina, na cor do próprio objeto escurecida (nunca preta);
+    // as linhas de dentro (pálpebra, vinco, costura) moram na pintura
+    vec3 tintaLocal = cor * vec3(0.32, 0.3, 0.38);
+    cor = mix(cor, tintaLocal, bordaP * perto * forca * uArcLinha);
+  } else {
+    cor = mix(cor, uCorTinta, borda * uIntTinta);
+  }
 
   // 9. saturação, papel e grão
   float Lm = dot(cor, vec3(0.299, 0.587, 0.114));
@@ -399,6 +409,7 @@ export class Aranhaverso {
       uNevoaCor: { value: new THREE.Color() }, uNevoaDens: { value: 0.002 }, uNevoaQueda: { value: 0.05 }, uMaresia: { value: 0.006 },
       uMemoria: { value: 0 }, uMemPapel: v3(), uMemTinta: v3(), uMemAnil: v3(), uMemUrucum: v3(), uMemOcre: v3(),
       uCorSombra: v3(), uTomSombra: { value: 0.3 }, uCorLuz: v3(), uTomLuz: { value: 0.2 },
+      uArcane: { value: 0 }, uArcLinha: { value: 0.7 },
     }
 
     const shader = (frag, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, depthTest: false, depthWrite: false })
@@ -441,6 +452,18 @@ export class Aranhaverso {
     const r = this.renderer
     const cam = this.camera
 
+    // visual Arcane (docs/pesquisa-arcane.md): o pintor de luz mora nos materiais; aqui saem a retícula,
+    // a hachura, a aberração e o traço tremido, e o bloom vira halo liso
+    const arc = e.visual === 'arcane'
+    u.uArcane.value = arc ? 1 : 0
+    u.uArcLinha.value = e.arcLinha
+    const gl = this.globais
+    gl.uArcane.value = arc ? 1 : 0
+    gl.uArcLim.value.set(e.arcSombra, e.arcLuz)
+    gl.uArcSuave.value = e.arcSuave
+    gl.uArcPincel.value = e.arcPincel
+    gl.uArcCorSombra.value.set(e.arcCorSombra)
+    gl.uArcNiveis.value.set(e.arcNivelSombra, e.arcNivelMeio, e.arcNivelLuz)
     u.uTempo.value = Math.floor(tempo * e.fpsTraco) / e.fpsTraco
     u.uNear.value = cam.near
     u.uFar.value = cam.far
@@ -465,13 +488,13 @@ export class Aranhaverso {
     u.uLimProf.value = e.limiarProfundidade
     u.uLimNormal.value = e.limiarNormal
     u.uDistLinha.value = e.distanciaLinha
-    u.uTremor.value = e.tremorLinha
+    u.uTremor.value = arc ? 0 : e.tremorLinha
     srgb(e.corTinta, u.uCorTinta.value)
     u.uCorTinta.value.lerp(SEPIA, e.memoria) // na memória o traço é sépia, a tinta do jornal
     u.uIntTinta.value = e.intensidadeTinta
     u.uPesoCenario.value = e.pesoCenario
-    u.uAberracao.value = e.aberracao
-    u.uDesalinho.value = e.desalinho + (3.2 - e.desalinho) * e.memoria // impressão antiga sai do registro
+    u.uAberracao.value = arc ? 0 : e.aberracao
+    u.uDesalinho.value = (arc ? 0 : e.desalinho) + (3.2 - (arc ? 0 : e.desalinho)) * e.memoria // impressão antiga sai do registro
     u.uTamPonto.value = e.tamanhoPonto
     u.uLimRet.value = e.limiarReticula
     u.uIntRet.value = e.intensidadeReticula
@@ -480,10 +503,10 @@ export class Aranhaverso {
     u.uHachura.value = e.hachura
     u.uEspHachura.value = e.espacoHachura
     u.uLimHachura.value = e.limiarHachura
-    u.uSaturacao.value = e.saturacao
+    u.uSaturacao.value = arc ? e.arcSaturacao : e.saturacao
     u.uExposicao.value = e.exposicao
-    u.uGrao.value = e.grao
-    u.uPapel.value = e.papel + (0.2 - e.papel) * e.memoria
+    u.uGrao.value = arc ? e.arcGrao : e.grao
+    u.uPapel.value = (arc ? 0.02 : e.papel) + (0.2 - (arc ? 0.02 : e.papel)) * e.memoria
     u.uVinheta.value = e.vinheta
     u.uDesfoque.value = e.desfoqueFundo
     u.uFoco.value = e.focoDistancia
@@ -496,7 +519,7 @@ export class Aranhaverso {
     u.uLimHachuraLuz.value = e.limiarHachuraLuz
     u.uHachuraAO.value = e.hachuraOclusao
     u.uHachuraCruzada.value = e.hachuraCruzada
-    u.uBloomPontos.value = e.brilhoEmPontos
+    u.uBloomPontos.value = arc ? 0 : e.brilhoEmPontos
     u.uNoite.value = this.globais.uNoite.value
     u.uDistReticula.value = e.distanciaReticula
     u.uNevoaCor.value.copy(this.globais.uNevoaCor.value)
@@ -512,14 +535,14 @@ export class Aranhaverso {
     srgb('#a8432e', u.uMemUrucum.value)
     srgb('#c08a3e', u.uMemOcre.value)
     srgb(e.corSombra, u.uCorSombra.value)
-    u.uTomSombra.value = e.tomSombra
+    u.uTomSombra.value = arc ? e.tomSombra * 0.4 : e.tomSombra
     srgb(e.corLuz, u.uCorLuz.value)
-    u.uTomLuz.value = e.tomLuz
+    u.uTomLuz.value = arc ? e.tomLuz * 0.5 : e.tomLuz
     // linhas de velocidade a partir de ~70% da corrida (o corpo novo corre a 4,5 m/s; o antigo a 9)
     const pj = this.cfg.personagem
     const ini = pj.corpoNovo ? pj.corridaNova * 0.7 : 6
     const faixa = pj.corpoNovo ? pj.corridaNova * 0.3 : 3
-    const alvoVel = e.linhasVelocidade ? Math.min(1, Math.max(0, (velocidadeJogador - ini) / faixa)) : 0
+    const alvoVel = e.linhasVelocidade && !arc ? Math.min(1, Math.max(0, (velocidadeJogador - ini) / faixa)) : 0
     this.velocidade += (alvoVel - this.velocidade) * 0.1
     u.uVelocidade.value = this.velocidade
     this.globais.uPincel.value = e.pincel
