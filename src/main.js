@@ -135,7 +135,8 @@ async function iniciar() {
   // segundo avô para comparar (o do Tripo), 1,2 m ao lado do primeiro
   let avo2 = null
   if (cfg.personagem.avoTripo) {
-    carregarAvo({ movimento: cfg.personagem.avoMovimento, arquivo: '/arte/finais/avo-tripo.glb' }).then((a) => {
+    // o do Tripo vem de coluna reta (17/10/2026): a postura de velho vem só do movimento
+    carregarAvo({ movimento: cfg.personagem.avoTripoMovimento, arquivo: '/arte/finais/avo-tripo.glb' }).then((a) => {
       if (!a) return
       const x = inicio.x - 2.6, z = inicio.z + 2.1
       a.raiz.position.set(x, alturaChao(x, z), z)
