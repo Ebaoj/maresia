@@ -87,6 +87,8 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
   if (alvo.raiz === boneco.raiz) animador.rosto = criarRosto(boneco.ossos.get('Head'), {}, estiloRosto)
   else if (alvo.ancorasRosto) animador.rosto = criarRosto(alvo.ossos.get('Head'), alvo.ancorasRosto, estiloRosto) // neto de rosto liso
   animador.molas = criarMolas(alvo.ossos)
+  // susto: o tronco leva um tranco para trás (Tintin: "o corpo é que reage")
+  if (animador.rosto) animador.rosto.aoAssustar = () => { const y = animador.antes?.yaw || 0; animador.molas.empurrar(-Math.sin(y) * 3, -Math.cos(y) * 3, y) }
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
   // clipes no esqueleto padrão: a gente da cidade (atores.js) usa o boneco
   return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto, clipes: r.clipes }

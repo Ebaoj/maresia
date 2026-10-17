@@ -374,6 +374,28 @@ for (const [k, f] of Object.entries(VAR_BRANCO)) {
 
 // o mínimo original não tinha "triste"? tem; garante que todo estilo tenha todas as expressões
 for (const e of Object.values(ESTILOS)) for (const k of Object.keys(ESTILOS.atual.olhos)) if (!e.olhos[k]) e.olhos[k] = e.olhos.aberto
+// O nosso susto (16/10/2026), a partir das referências do Tintin e do Peanuts
+// (arte/entradas/referencias/rosto-susto/LEIA.md): no estilo de ponto o olho não vira outro olho;
+// o susto vem da sobrancelha lá em cima, da boca escura de queixo caído e das gotinhas que saltam em
+// volta da cabeça (criarRosto) e do tranco do corpo (animador)
+const sustoNosso = (g) => {
+  pincel(g, [[38, 24], [50, 10], [66, 6], [90, 15]], 5, 12) // sobrancelha bem alta, arqueada
+  g.beginPath(); g.ellipse(64, 78, 10, 13, 0, 0, Math.PI * 2); g.fill() // o ponto, um pouco menor
+  bola(g, 61, 73, 3, '#fff')
+}
+const bocaQueixo = (g) => {
+  // meia-lua caída: borda de cima quase reta, de baixo funda (o queixo cai)
+  const pts = [...arco(64, 46, 21, 6, Math.PI, Math.PI * 2, 10), ...arco(64, 46, 21, 40, 0, Math.PI, 16)]
+  encher(g, pts, '#2a1414')
+  g.lineWidth = 5; g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.stroke()
+}
+for (const [k, e] of Object.entries(ESTILOS)) {
+  if (k === 'minimo-brilho' || (k.startsWith('brilho-') && !k.startsWith('brilho-susto'))) {
+    e.olhos = { ...e.olhos, susto: sustoNosso }
+    e.bocas = { ...e.bocas, o: bocaQueixo }
+  }
+}
+
 export const ESTILOS_ROSTO = Object.keys(ESTILOS)
 
 function plano(tex, w, h) {
@@ -425,6 +447,48 @@ export function criarRosto(cabeca, ancoras = {}, estiloInicial = 'atual') {
   }
   aplicarEscala()
 
+  // gotinhas de susto (Tintin): gotas de nanquim que saltam da cabeça para fora e somem em ~0,7 s
+  const texGota = tela((g) => {
+    // gota com a ponta para baixo (para a cabeça) e o bojo para fora
+    g.beginPath(); g.moveTo(64, 112); g.quadraticCurveTo(30, 60, 64, 30); g.quadraticCurveTo(98, 60, 64, 112); g.fill()
+  })
+  const gotas = [-1.05, -0.4, 0.4, 1.05].map((a) => {
+    const m = new THREE.SpriteMaterial({ map: texGota, alphaTest: 0.4, transparent: false, depthWrite: true, opacity: 0.5, blending: THREE.NoBlending }) // com profundidade: senão o filtro a trata como fundo e desfoca
+    luzFixa(m, 0.5) // pouca luz: o filtro a pinta como sombra, bem escura
+    m.customProgramCacheKey = () => 'luz-fixa-gota'
+    const sp = new THREE.Sprite(m)
+    sp.visible = false
+    sp.renderOrder = 3
+    // na hora de desenhar: a ponta da gota aponta para a cabeça na tela, qualquer que seja a câmera
+    const a2 = new THREE.Vector3(), b2 = new THREE.Vector3()
+    sp.onBeforeRender = (_r, _c, camera) => {
+      a2.copy(pc).project(camera)
+      sp.getWorldPosition(b2).project(camera)
+      const ang = Math.atan2((b2.y - a2.y) / camera.aspect ** 0, (b2.x - a2.x) * camera.aspect)
+      m.rotation = ang - Math.PI / 2 // o desenho tem a ponta para baixo: gira para a ponta ir para a cabeça
+    }
+    return { sp, a, t: 9 }
+  })
+  let raizGotas = null
+  const pc = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), dir = new THREE.Vector3()
+  const animarGotas = (dt, yaw) => {
+    if (!raizGotas) { raizGotas = cabeca; while (raizGotas.parent && raizGotas.parent.type !== 'Scene') raizGotas = raizGotas.parent; for (const g of gotas) raizGotas.add(g.sp) }
+    cabeca.getWorldPosition(pc).addScaledVector(up, 0.1)
+    const direita = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw))
+    for (const g of gotas) {
+      g.t += dt
+      const vida = g.t / 0.7
+      g.sp.visible = vida < 1
+      if (!g.sp.visible) continue
+      dir.copy(up).multiplyScalar(Math.cos(g.a)).addScaledVector(direita, Math.sin(g.a))
+      const w = pc.clone().addScaledVector(dir, 0.15 + 0.05 * Math.min(1, vida * 1.6))
+      raizGotas.worldToLocal(w)
+      g.sp.position.copy(w)
+      const tam = 0.1 * (vida < 0.2 ? vida / 0.2 : 1 - Math.max(0, vida - 0.6) / 0.4) // cresce, fica, encolhe
+      g.sp.scale.set(tam, tam, 1)
+    }
+  }
+  let antes = null
   let piscar = 2 + rnd.proximo() * 3
   let fechado = 0
   let fixo = null // expressão pedida pela história, por um tempo
@@ -445,6 +509,10 @@ export function criarRosto(cabeca, ancoras = {}, estiloInicial = 'atual') {
       if (fixo) { fixo.t -= dt; if (fixo.t <= 0) fixo = null; else { olho = fixo.olho || olho; b = fixo.boca || b } }
       if (fechado > 0 && olho !== 'susto' && !fixo?.semPiscar) olho = 'fechado'
       atual = { olho, boca: b }
+      // entrou no susto: as gotinhas saltam e o corpo leva o tranco (quem usa o rosto liga aoAssustar)
+      if (olho === 'susto' && antes !== 'susto') { for (const g of gotas) g.t = 0; this.aoAssustar?.() }
+      antes = olho
+      animarGotas(dt, s.yaw || 0)
       mostrar()
     },
     // para a história: expressar(olho, boca, segundos), por exemplo ('feliz', 'sorriso', 2)
