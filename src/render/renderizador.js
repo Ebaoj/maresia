@@ -5,12 +5,15 @@
 // (window.__faltaPortar), que a fase 2 usa para se fatiar.
 
 import * as THREE from 'three'
+import { atualizarUniformsArcane, materialArcane } from './arcane-tsl.js'
+
+let W = null // o módulo three/webgpu, no modo webgpu
 
 export async function criarRenderizador(cfg, canvas) {
   if (cfg.desempenho.renderizador === 'webgpu') {
     // o three/webgpu do 0.170 é um pacote separado do three (outra cópia do núcleo); a cena continua
     // sendo do three, e o renderizador lê os objetos pelas marcas (isMesh, isTexture...)
-    const W = await import('three/webgpu')
+    W = await import('three/webgpu')
     const renderer = new W.WebGPURenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
     // o WebGPU acha o material pelo nome do tipo (funciona com a outra cópia), mas a luz pela classe: sem
     // registrar as classes de luz do three, nenhuma luz da cena era achada e tudo saía preto
@@ -41,6 +44,7 @@ function corReserva(o) {
 const vistos = new WeakSet()
 const reservas = new Map()
 const falta = new Map()
+const convertidos = new Set()
 
 // Troca o que o WebGPU não roda por material padrão e anota em "falta portar". Pode ser chamada de novo:
 // só olha os materiais que ainda não viu (o corpo do jogador e outras coisas chegam depois).
@@ -54,6 +58,15 @@ export function prepararCenaWebgpu(cena) {
       if (vistos.has(m)) return m
       vistos.add(m)
       const onde = o.name || o.type
+      // o visual Arcane (pintar() de materiais.js) tem versão em TSL (arcane-tsl.js); o código extra que
+      // alguns materiais somam a ele (vento, janelas, roupa) ainda não, e fica anotado pela chave
+      if (m.isMeshToonMaterial && m.userData.luzMRT) {
+        const nm = materialArcane(W, m)
+        reservas.set(m, nm)
+        convertidos.add(m.customProgramCacheKey ? m.customProgramCacheKey() : onde)
+        mudou = true
+        return nm
+      }
       if (m.isShaderMaterial || m.isRawShaderMaterial) {
         anotar(`shader próprio (${m.type})`, onde)
         const r = o.isPoints
@@ -69,7 +82,11 @@ export function prepararCenaWebgpu(cena) {
     if (mudou) o.material = Array.isArray(o.material) ? novas : novas[0]
   })
   window.__faltaPortar = [...falta.entries()].map(([k, s]) => ({ peca: k, onde: [...s].slice(0, 12), quantos: s.size }))
+  window.__convertidosTsl = [...convertidos]
 }
+
+// a cada quadro no modo webgpu: o painel continua mexendo no visual pelos mesmos globais do WebGL
+export function quadroWebgpu() { atualizarUniformsArcane() }
 
 function anotar(peca, onde) {
   if (!falta.has(peca)) falta.set(peca, new Set())

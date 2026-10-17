@@ -9,7 +9,7 @@ import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno } from './mundo/terreno.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
-import { criarRenderizador, prepararCenaWebgpu } from './render/renderizador.js'
+import { criarRenderizador, prepararCenaWebgpu, quadroWebgpu } from './render/renderizador.js'
 import { definirTamBloco } from './mundo/blocos.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
@@ -165,7 +165,7 @@ async function iniciar() {
   const VENTO_FX = new THREE.Vector3(-1, 0, -0.35).normalize()
   // no modo webgpu ainda não há pós: a cena é desenhada direto (o resto entra na fase 2 do motor)
   const pos = webgpu
-    ? { render: () => renderer.render(cena, camera), tamanho() {}, coletarExcecoes() {} }
+    ? { render() { quadroWebgpu(); renderer.render(cena, camera) }, tamanho() {}, coletarExcecoes() {} }
     : new Aranhaverso(renderer, cena, camera, cfg, globais)
   pos.coletarExcecoes()
   if (webgpu) {
