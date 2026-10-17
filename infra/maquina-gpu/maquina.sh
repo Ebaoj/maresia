@@ -47,12 +47,14 @@ case "${1:-}" in
     # instala na frente; o Vite sobe solto da conexão (com tudo em segundo plano, a instalação e o Vite
     # morriam quando o SSH fechava). [v]ite: o pkill não pode casar com o próprio comando
     ssh_ 'cd maresia && npm ci --silent && (pkill -f "[v]ite --port 5195" || true)'
-    ssh -f -n -i $PEM ubuntu@$(ip_maquina) 'cd maresia && setsid nohup npm run dev > vite.log 2>&1 < /dev/null &'
+    # o redirecionamento vale para o grupo inteiro: com ele só no npm, o shell do grupo segurava o SSH aberto
+    ssh -f -n -i $PEM ubuntu@$(ip_maquina) '(cd maresia && exec setsid nohup npm run dev) > maresia/vite.log 2>&1 < /dev/null &'
     # sem tela de bloqueio: o usuário ubuntu não tem senha (acesso só por chave), então a tela travada
     # pedia uma senha que não existe. Quem chega no DCV já passou pelo túnel SSH com a chave
     ssh_ 'export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; gsettings set org.gnome.desktop.screensaver lock-enabled false; gsettings set org.gnome.desktop.session idle-delay 0; sudo loginctl unlock-sessions'
     # Chrome em tela cheia na área de trabalho da máquina (a sessão do DCV), na placa NVIDIA
-    ssh -f -n -i $PEM ubuntu@$(ip_maquina) 'pkill -f "[c]hrome-maresia"; sleep 1; DISPLAY=:0 XAUTHORITY=/run/user/1000/gdm/Xauthority setsid nohup google-chrome --no-first-run --no-default-browser-check --ignore-gpu-blocklist --disable-features=Translate --lang=pt-BR --start-fullscreen --user-data-dir=/home/ubuntu/.chrome-maresia http://localhost:5195/ > /tmp/chrome.log 2>&1 < /dev/null &'
+    # sem trava de 60 (vsync); pkill pelo nome do processo (com -f, o padrão casava com o próprio comando)
+    ssh -f -n -i $PEM ubuntu@$(ip_maquina) 'pkill -x chrome; sleep 2; DISPLAY=:0 XAUTHORITY=/run/user/1000/gdm/Xauthority setsid nohup google-chrome --no-first-run --no-default-browser-check --ignore-gpu-blocklist --disable-gpu-vsync --disable-frame-rate-limit --remote-debugging-port=9222 --disable-features=Translate --lang=pt-BR --start-fullscreen --user-data-dir=/home/ubuntu/.chrome-maresia http://localhost:5195/ > /tmp/chrome.log 2>&1 < /dev/null &'
     echo "jogo enviado e aberto no Chrome da máquina (http://localhost:5195); veja com ./maquina.sh abrir"
     ;;
   abrir)

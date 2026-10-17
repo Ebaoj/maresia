@@ -67,7 +67,7 @@ imagem = (
 # servidor (o _medir, a cada 20 s)
 CONTADOR_JS = r"""(() => {
   const caixa = document.createElement('div');
-  caixa.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:2147483647;' +
+  caixa.style.cssText = 'position:fixed;top:36px;left:50%;transform:translateX(-50%);z-index:2147483647;' +
     'pointer-events:none;font:600 13px/1.3 ui-monospace,Menlo,monospace;color:#fff;background:rgba(0,0,0,.6);' +
     'padding:4px 10px;border-radius:6px;white-space:nowrap';
   caixa.textContent = 'medindo...';

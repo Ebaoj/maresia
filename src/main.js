@@ -8,6 +8,7 @@ import { globais } from './globais.js'
 import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno } from './mundo/terreno.js'
 import { congelar } from './mundo/congelar.js'
+import { criarContadorFps } from './ui/contador-fps.js'
 import { definirTamBloco } from './mundo/blocos.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
@@ -321,8 +322,10 @@ async function iniciar() {
     pos.render(t, jogador.velHoriz)
   }
 
+  const contadorFps = criarContadorFps(cfg)
   function quadro() {
     requestAnimationFrame(quadro)
+    contadorFps.quadro()
     const real = relogio.getDelta()
     estatistica.msQuadro += (real * 1000 - estatistica.msQuadro) * 0.05
     if (controle.pausado) return
