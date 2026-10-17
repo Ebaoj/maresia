@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Maresia - maquina com placa de video (g4dn.xlarge, NVIDIA T4) para rodar o jogo e transmitir a
+  imagem para o Mac pelo DCV. Teste do Joabe (17/10/2026). Unica porta aberta - SSH, so para o IP de
+  casa; o video do DCV passa por dentro do SSH. Desliga sozinha depois de 30 min parada.
+
+Parameters:
+  IpDeCasa:
+    Type: String
+    Description: IP publico de casa em CIDR (ex. 187.65.18.169/32)
+  ChaveSsh:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: maresia-gpu
+  Imagem:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/deeplearning/ami/x86_64/base-oss-nvidia-driver-gpu-ubuntu-22.04/latest/ami-id
+  TipoMaquina:
+    Type: String
+    Default: g4dn.xlarge
+
+Resources:
+  PortaSsh:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Maresia GPU - so SSH do IP de casa
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref IpDeCasa
+      Tags:
+        - Key: Name
+          Value: maresia-gpu
+
+  Maquina:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref TipoMaquina
+      ImageId: !Ref Imagem
+      KeyName: !Ref ChaveSsh
+      SecurityGroupIds:
+        - !GetAtt PortaSsh.GroupId
+      InstanceInitiatedShutdownBehavior: stop
+      MetadataOptions:
+        HttpTokens: required
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 80
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: maresia-gpu
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          # area de trabalho, DCV (video remoto da AWS), Chrome e Node; GPU no X para o WebGL
+          set -euxo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y ubuntu-desktop-minimal gdm3 mesa-utils rsync curl
+          # X com a placa NVIDIA (sem monitor ligado)
+          nvidia-xconfig --preserve-busid --enable-all-gpus --allow-empty-initial-configuration
+          sed -i 's/^#WaylandEnable=false/WaylandEnable=false/' /etc/gdm3/custom.conf
+          systemctl set-default graphical.target
+          # DCV
+          cd /tmp
+          curl -fsSL -o dcv.tgz https://d1uj6qtbmh3dt5.cloudfront.net/nice-dcv-ubuntu2204-x86_64.tgz
+          tar xzf dcv.tgz && cd nice-dcv-*-ubuntu2204-x86_64
+          apt-get install -y ./nice-dcv-server_*.deb ./nice-dcv-web-viewer_*.deb ./nice-xdcv_*.deb
+          usermod -aG video dcv
+          # DCV so escuta na maquina (o Mac chega por tunel SSH) e sem senha propria: quem passa no SSH entra
+          cat > /etc/dcv/dcv.conf <<'CONF'
+          [license]
+          [log]
+          [session-management]
+          create-session = true
+          [session-management/automatic-console-session]
+          owner = "ubuntu"
+          [display]
+          [connectivity]
+          web-listen-endpoints = ['127.0.0.1:8443']
+          quic-listen-endpoints = []
+          [security]
+          authentication = "none"
+          CONF
+          systemctl enable dcvserver
+          # Chrome e Node 20
+          curl -fsSL -o /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          apt-get install -y /tmp/chrome.deb
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y nodejs
+          # login automatico do ubuntu na sessao grafica (o DCV usa a sessao de console)
+          sed -i 's/^#  AutomaticLoginEnable = true/AutomaticLoginEnable = true/; s/^#  AutomaticLogin = user1/AutomaticLogin = ubuntu/' /etc/gdm3/custom.conf
+          mkdir -p /home/ubuntu/maresia && chown ubuntu:ubuntu /home/ubuntu/maresia
+          touch /home/ubuntu/.instalado
+          reboot
+
+  # desliga sozinha depois de 30 min com CPU baixa (ninguem jogando)
+  DesligarParada:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: maresia-gpu-desliga-parada
+      AlarmDescription: Desliga a maquina do Maresia depois de 30 min parada
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref Maquina
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 6
+      Threshold: 4
+      ComparisonOperator: LessThanThreshold
+      AlarmActions:
+        - !Sub arn:aws:automate:${AWS::Region}:ec2:stop
+
+Outputs:
+  Maquina:
+    Value: !Ref Maquina
+  GrupoSsh:
+    Value: !GetAtt PortaSsh.GroupId
