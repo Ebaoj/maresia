@@ -154,8 +154,8 @@ def fotos(lugares: list, mudancas: dict = None) -> dict:
 
 
 @app.local_entrypoint()
-def foto(rotulo: str = "antes"):
-    r = fotos.remote(LUGARES_PADRAO)
+def foto(rotulo: str = "antes", renderizador: str = ""):
+    r = fotos.remote(LUGARES_PADRAO, {"desempenho": {"renderizador": renderizador}} if renderizador else None)
     pasta = Path(__file__).parent / "testes" / "fotos"
     pasta.mkdir(parents=True, exist_ok=True)
     for nome, x in r.items():

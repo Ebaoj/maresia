@@ -71,8 +71,10 @@ def rodar(cenarios: list) -> dict:
             resultados[nome] = cdp.js(f"import('/testes/jogo/cenarios.js').then(m => m.cenarios.{nome}(window.maresia))")
         except Exception as e:  # o cenário quebrou (ex.: API que não existia no commit antigo)
             resultados[nome] = {"ok": False, "motivo": f"o cenário quebrou: {e}"[:400]}
-    # o Chrome pede /favicon.ico sozinho; o 404 dele não é do jogo
-    avisos = [a for a in cdp.avisos() if "favicon.ico" not in a]
+    # o Chrome pede /favicon.ico sozinho; o 404 dele não é do jogo. A fonte do Google Fonts às vezes não
+    # carrega dentro do contêiner (ERR_CERT_VERIFIER_CHANGED, rede do Modal, 17/10): também não é do jogo
+    externos = ("favicon.ico", "fonts.googleapis.com", "fonts.gstatic.com")
+    avisos = [a for a in cdp.avisos() if not any(e in a for e in externos)]
     reprovam = [a for a in avisos if a.startswith(("error", "exceção", "log error")) or any(p in a for p in AVISOS_QUE_REPROVAM)]
     resultados["console"] = {"ok": not reprovam, "medidas": {"reprovam": reprovam[:10], "outros": [a for a in avisos if a not in reprovam][:10]},
                              "motivo": "erro ou aviso proibido no console" if reprovam else ""}

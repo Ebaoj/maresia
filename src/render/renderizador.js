@@ -10,8 +10,13 @@ export async function criarRenderizador(cfg, canvas) {
   if (cfg.desempenho.renderizador === 'webgpu') {
     // o three/webgpu do 0.170 é um pacote separado do three (outra cópia do núcleo); a cena continua
     // sendo do three, e o renderizador lê os objetos pelas marcas (isMesh, isTexture...)
-    const { WebGPURenderer } = await import('three/webgpu')
-    const renderer = new WebGPURenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
+    const W = await import('three/webgpu')
+    const renderer = new W.WebGPURenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
+    // o WebGPU acha o material pelo nome do tipo (funciona com a outra cópia), mas a luz pela classe: sem
+    // registrar as classes de luz do three, nenhuma luz da cena era achada e tudo saía preto
+    for (const [no, classe] of [[W.DirectionalLightNode, THREE.DirectionalLight], [W.HemisphereLightNode, THREE.HemisphereLight],
+      [W.AmbientLightNode, THREE.AmbientLight], [W.PointLightNode, THREE.PointLight], [W.SpotLightNode, THREE.SpotLight],
+      [W.RectAreaLightNode, THREE.RectAreaLight], [W.LightProbeNode, THREE.LightProbe]]) renderer.library.addLight(no, classe)
     await renderer.init()
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFShadowMap
