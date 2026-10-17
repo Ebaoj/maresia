@@ -64,25 +64,38 @@ export class CameraTerceiraPessoa {
     this.alvo.lerp(desejado, 1 - Math.exp(-dt * 8))
     this.dist += (cfg.distancia - this.dist) * (1 - Math.exp(-dt * 6))
 
-    const pitch = Math.min(1.25, this.pitch + this.subida)
-    const cp = Math.cos(pitch)
-    const dir = new THREE.Vector3(Math.sin(this.yaw) * cp, Math.sin(pitch), Math.cos(this.yaw) * cp)
     // se tiver prédio entre o personagem e a câmera, a câmera chega mais perto.
     // Um feixe de 5 raios (centro e 4 lados do tamanho da lente) evita a lente raspar na quina.
-    this._lado.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).multiplyScalar(0.35)
-    this._cima.crossVectors(dir, this._lado).normalize().multiplyScalar(0.25)
-    let livre = this.dist
-    for (const [a, b] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      this._origem.copy(this.alvo).addScaledVector(this._lado, a).addScaledVector(this._cima, b)
-      this.raio.set(this._origem, dir)
-      this.raio.far = livre
-      const bate = this.raio.intersectObjects(solidosCamera, true)[0]
-      if (bate) livre = Math.min(livre, bate.distance)
+    const livreEm = (pitch) => {
+      const cp = Math.cos(pitch)
+      const dir = new THREE.Vector3(Math.sin(this.yaw) * cp, Math.sin(pitch), Math.cos(this.yaw) * cp)
+      this._lado.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).multiplyScalar(0.35)
+      this._cima.crossVectors(dir, this._lado).normalize().multiplyScalar(0.25)
+      let livre = cfg.distancia
+      for (const [a, b] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        this._origem.copy(this.alvo).addScaledVector(this._lado, a).addScaledVector(this._cima, b)
+        this.raio.set(this._origem, dir)
+        this.raio.far = livre
+        const bate = this.raio.intersectObjects(solidosCamera, true)[0]
+        if (bate) livre = Math.min(livre, bate.distance)
+      }
+      return { dir, livre }
     }
+    // parede atrás da câmera (o personagem andando para ela, de costas para uma casa): em vez de colar
+    // no rosto dele, sobe e olha por cima do telhado; procura o ângulo mais baixo que deixa a câmera longe
+    let alvoSubida = 0
+    let { dir, livre } = livreEm(Math.min(1.25, this.pitch))
+    if (livre < cfg.distancia * 0.6) {
+      let melhor = livre + 0.3
+      for (const extra of [0.2, 0.4, 0.6, 0.8]) {
+        const tentativa = livreEm(Math.min(1.25, this.pitch + extra))
+        if (tentativa.livre > melhor) { melhor = tentativa.livre; alvoSubida = extra }
+        if (tentativa.livre >= cfg.distancia * 0.6) break
+      }
+    }
+    this.subida += (alvoSubida - this.subida) * (1 - Math.exp(-dt * (alvoSubida > this.subida ? 5 : 1.5)))
+    ;({ dir, livre } = livreEm(Math.min(1.25, this.pitch + this.subida)))
     if (livre < this.dist) this.dist = Math.max(1.2, livre - 0.5)
-    // rua apertada (câmera encurtada a menos da metade): sobe e olha por cima, devagar
-    const apertado = clamp(1 - this.dist / Math.max(cfg.distancia * 0.5, 1.5), 0, 1)
-    this.subida += (apertado * 0.45 - this.subida) * (1 - Math.exp(-dt * 2))
     const p = dir.multiplyScalar(this.dist).add(this.alvo)
     // parede ao lado (não entre a câmera e o personagem): afasta para o outro lado, sem pulo
     this._lado.normalize()

@@ -45,13 +45,13 @@ function geometriaBola() {
 }
 
 function geometriaCoco() {
-  const g = new THREE.SphereGeometry(0.17, 10, 8).scale(1, 1.15, 1).toNonIndexed()
+  const g = new THREE.SphereGeometry(0.11, 10, 8).scale(1, 1.15, 1).toNonIndexed() // coco verde: ~22 cm de largura
   const pos = g.attributes.position
   const arr = new Float32Array(pos.count * 3)
   const verde = new THREE.Color('#6f9a2a')
   const marrom = new THREE.Color('#7a5230')
   for (let i = 0; i < pos.count; i++) {
-    const c = pos.getY(i) > 0.12 ? marrom : verde
+    const c = pos.getY(i) > 0.08 ? marrom : verde
     arr[i * 3] = c.r; arr[i * 3 + 1] = c.g; arr[i * 3 + 2] = c.b
   }
   g.setAttribute('color', new THREE.BufferAttribute(arr, 3))
@@ -140,10 +140,10 @@ export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
     const corpo = world.createRigidBody(desc)
     const col = tipo === 'bola'
       ? RAPIER.ColliderDesc.ball(0.22).setDensity(0.25).setRestitution(0.5).setFriction(0.6)
-      : RAPIER.ColliderDesc.ball(0.17).setDensity(1.1).setRestitution(0.15).setFriction(0.9)
+      : RAPIER.ColliderDesc.ball(0.11).setDensity(1.1).setRestitution(0.15).setFriction(0.9)
     world.createCollider(col, corpo)
     if (vel) corpo.setLinvel(vel, true)
-    const p = { tipo, corpo, raio: tipo === 'bola' ? 0.22 : 0.17, naAgua: false, carregado: false }
+    const p = { tipo, corpo, raio: tipo === 'bola' ? 0.22 : 0.11, naAgua: false, carregado: false }
     props.push(p)
     return p
   }

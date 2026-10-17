@@ -76,6 +76,13 @@ export class Animador {
       abaChapeu: new THREE.Vector3(-0.16, 0.2, 0.06), ...(corpo.eixos || {}),
     }
     this.mixer = new THREE.AnimationMixer(corpo.raiz)
+    // palma da mão no repouso (pose em T: virada para baixo), no espaço de cada mão
+    corpo.raiz.updateMatrixWorld(true)
+    this.palma = {}
+    for (const L of ['Left', 'Right']) {
+      const h = corpo.ossos.get(L + 'Hand')
+      if (h) this.palma[L] = new THREE.Vector3(0, -1, 0).applyQuaternion(h.getWorldQuaternion(new THREE.Quaternion()).invert())
+    }
     // inclinação da clavícula no repouso (graus para baixo): no neto ela nasce caída 28 a 33° e diferente
     // de um lado para o outro; a postura (clavicula) corrige para um valor só
     corpo.raiz.updateMatrixWorld(true)
@@ -271,7 +278,7 @@ export class Animador {
       const vC = this.passadas.correr || 3.5
       const tAndar = THREE.MathUtils.clamp(vel / (vA * 0.6), 0, 1)
       const tCorrer = this.tem('correr') ? THREE.MathUtils.clamp((vel - vA) / (vC - vA), 0, 1) : 0
-      alvo.parado = 1 - tAndar
+      alvo[s.carregando && this.tem('carregar-parado') ? 'carregar-parado' : 'parado'] = 1 - tAndar
       alvo[andarNome] = tAndar * (1 - tCorrer)
       alvo.correr = tAndar * tCorrer
     }
@@ -437,9 +444,20 @@ export class Animador {
     const direita = this.eixos.quadrilEsquerda.clone().applyQuaternion(quadril.getWorldQuaternion(new THREE.Quaternion()))
     direita.y = 0
     direita.normalize()
+    // frente e centro do quadril: quem segura põe o objeto aqui (a pose de carregar vem com o quadril
+    // girado; pela direção do controle o coco ficava de lado, com uma mão na frente e outra atrás)
+    this.frenteCorpo = new THREE.Vector3().crossVectors(direita, new THREE.Vector3(0, 1, 0))
+    this.centroCorpo = quadril.getWorldPosition(new THREE.Vector3())
     for (const [L, s] of [['Left', 1], ['Right', -1]]) {
       const a = this.ossos.get(L + 'Arm'), b = this.ossos.get(L + 'ForeArm'), c = this.ossos.get(L + 'Hand')
-      if (a && b && c) ikDuas(a, b, c, centro.clone().addScaledVector(direita, s * (raio + 0.03)))
+      if (!a || !b || !c) continue
+      ikDuas(a, b, c, centro.clone().addScaledVector(direita, s * (raio + 0.02)))
+      // palma virada para o objeto (antes ficava para baixo e só a ponta dos dedos encostava)
+      if (this.palma[L]) {
+        const palma = this.palma[L].clone().applyQuaternion(c.getWorldQuaternion(new THREE.Quaternion()))
+        const paraCentro = centro.clone().sub(c.getWorldPosition(v())).normalize()
+        apontar(c, palma, paraCentro)
+      }
     }
   }
 

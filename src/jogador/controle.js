@@ -84,7 +84,7 @@ export class Jogador {
       olhar: this.olharPara || (this.velHoriz < 0.3 && this.yawCamera !== undefined
         ? new THREE.Vector3(this.pos.x - Math.sin(this.yawCamera) * 10, this.pos.y + 1.4, this.pos.z - Math.cos(this.yawCamera) * 10)
         : null),
-      segurando: this.carregando?.corpo ? (() => { const t = this.carregando.corpo.translation(); return { x: t.x, y: t.y, z: t.z, raio: this.carregando.tipo === 'bola' ? 0.22 : 0.15 } })() : null,
+      segurando: this.carregando?.corpo ? (() => { const t = this.carregando.corpo.translation(); return { x: t.x, y: t.y, z: t.z, raio: this.carregando.tipo === 'bola' ? 0.22 : 0.11 } })() : null,
       // trajetória que o controle vai fazer no próximo segundo (motion matching)
       traj: trajetoriaPedida({
         vel: this.vel,
@@ -271,7 +271,11 @@ export class Jogador {
         if (!this.animador.girando) this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 3))
       } else {
         this.animador?.consumirGiro()
-        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 14))
+        // meia-volta saindo do parado: o motion matching ainda não assumiu (está entrando na mistura);
+        // girar rápido aqui fazia o corpo estalar 120° em 0,1 s antes da animação de volta começar
+        const d = this.yawAlvo - this.yawVisual
+        const meiaVolta = this.animador?.mm && this.animador.opcoes.mm && !this.carregando && this.noChao && !this.nadando && Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) > 1.6
+        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * (meiaVolta ? 2 : 14)))
       }
       if (!this.animador) {
         aplicarPose(this.p, {

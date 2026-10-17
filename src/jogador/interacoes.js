@@ -63,10 +63,20 @@ export function criarInteracoes({ jogador, fisica, lugares, camera }) {
     jogador.carregando = p
   }
 
+  // junto da barriga, de cotovelo dobrado (antes ficava a 45 cm, na altura do peito: braço de bandeja)
   function posicaoDasMaos() {
-    const [fx, fz] = frente()
+    let [fx, fz] = frente()
     const jp = jogador.pos
-    return { x: jp.x + fx * 0.45, y: jp.y + 1.15 - jogador.afundado, z: jp.z + fz * 0.45 }
+    let cx = jp.x, cz = jp.z
+    // segurando: na frente do quadril de verdade (o animador mede depois de montar a pose)
+    const an = jogador.animador
+    if (jogador.carregando && an?.frenteCorpo) {
+      fx = an.frenteCorpo.x; fz = an.frenteCorpo.z
+      cx = an.centroCorpo.x; cz = an.centroCorpo.z
+    }
+    const bola = jogador.carregando?.tipo === 'bola'
+    const longe = bola ? 0.3 : 0.22
+    return { x: cx + fx * longe, y: jp.y + (bola ? 1.02 : 0.98) - jogador.afundado, z: cz + fz * longe }
   }
 
   return {
