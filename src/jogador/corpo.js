@@ -11,6 +11,7 @@ import { BancoDeMovimento, espelhar } from './motion-matching.js'
 import { criarMultiplos } from './multiplos.js'
 import { criarRosto } from './rosto.js'
 import { criarMolas } from './molas.js'
+import { criarPano } from './pano.js'
 
 // banco do motion matching: movimentos com deslocamento (os que repetem marcados); os que não repetem
 // entram também espelhados (curva para a esquerda vira curva para a direita, etc.)
@@ -71,6 +72,8 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
     const neto = await carregarNeto({ chapeu, semRosto: rostoDesenhado, ombros, folgaCamisa })
     if (neto) { alvo = neto; adaptar = criarAdaptador(neto) } else console.warn('Corpo: o neto não carregou; fica o boneco')
   }
+  // tecido solto: prepara antes de qualquer pose (precisa do repouso)
+  const pano = alvo.malhas && alvo !== null && modelo === 'neto' ? criarPano(alvo.malhas) : null
   const clipesAlvo = Object.fromEntries(Object.entries(r.clipes).map(([k, c]) => [k, adaptar(c)]))
   // mesma forma do boneco antigo: raiz (posição e direção) > corpo (estica e amassa) > modelo
   const raiz = new THREE.Group()
@@ -91,5 +94,6 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
   if (animador.rosto) animador.rosto.aoAssustar = () => { const y = animador.antes?.yaw || 0; animador.molas.empurrar(-Math.sin(y) * 3, -Math.cos(y) * 3, y) }
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
   // clipes no esqueleto padrão: a gente da cidade (atores.js) usa o boneco
-  return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto, clipes: r.clipes }
+  animador.pano = pano
+  return { raiz, corpo, animador, passadas: r.passadas, banco, multiplos, rosto: animador.rosto, clipes: r.clipes, pano }
 }

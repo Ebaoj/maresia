@@ -91,6 +91,8 @@ export class Jogador {
         yawDesejado: this.velDesejada.lengthSq() > 0.09 ? Math.atan2(this.velDesejada.x, this.velDesejada.z) : this.yawVisual,
       }),
     })
+    // tecido solto: todo quadro (o pano não anda em 2: balança contínuo)
+    if (a.pano && cfg.panoSolto > 0) a.pano.atualizar(dt, { vento: this.cfg.interacao.ventoCoqueiros, forca: cfg.panoSolto })
     // pisadas do pé de verdade (o boneco antigo usava a fase do passo)
     for (const ev of a.eventos) this.eventos.push(ev)
     a.eventos.length = 0
