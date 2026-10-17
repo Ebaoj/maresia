@@ -58,7 +58,8 @@ export function pintar(mat, chave) {
     sh.uniforms.uLampTam = globais.uLampTam
     sh.uniforms.uCorLamp = globais.uCorLamp
     sh.uniforms.uNoiteL = globais.uNoite
-    for (const k of ['uArcane', 'uArcLim', 'uArcSuave', 'uArcPincel', 'uArcCorSombra', 'uArcNiveis']) sh.uniforms[k] = globais[k]
+    for (const k of ['uArcane', 'uArcLim', 'uArcSuave', 'uArcPincel', 'uArcCorSombra', 'uArcNiveis', 'uArcRim']) sh.uniforms[k] = globais[k]
+    sh.uniforms.uSolDirA = globais.uSolDir
     const tp = mat.userData.texPintada
     if (tp) {
       sh.defines = { ...(sh.defines || {}), TEX_PINTADA: '' }
@@ -85,7 +86,7 @@ export function pintar(mat, chave) {
         vNMundo = normalize(mat3(modelMatrix) * nP);`
       )
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\n' + GLSL_PINCEL + SAIDA_LUZ + 'uniform float uLuzRef;\nuniform float uArcane; uniform vec2 uArcLim; uniform float uArcSuave; uniform float uArcPincel; uniform vec3 uArcCorSombra; uniform vec3 uArcNiveis;\nuniform sampler2D tLampioes; uniform vec2 uLampMin; uniform vec2 uLampTam; uniform vec3 uCorLamp; uniform float uNoiteL;\n')
+      .replace('#include <common>', '#include <common>\n' + GLSL_PINCEL + SAIDA_LUZ + 'uniform float uLuzRef;\nuniform float uArcane; uniform vec2 uArcLim; uniform float uArcSuave; uniform float uArcPincel; uniform vec3 uArcCorSombra; uniform vec3 uArcNiveis; uniform float uArcRim; uniform vec3 uSolDirA;\nuniform sampler2D tLampioes; uniform vec2 uLampMin; uniform vec2 uLampTam; uniform vec3 uCorLamp; uniform float uNoiteL;\n')
       .replace(
         '#include <lights_fragment_end>',
         `#include <lights_fragment_end>
@@ -121,8 +122,16 @@ export function pintar(mat, chave) {
             // a sombra esfria a cor do objeto sem trocá-la: só o matiz da cor fria entra, pela metade
             // (com a cor inteira, o vermelho da camisa virava azul-marinho)
             vec3 friaA = uArcCorSombra / max(dot(uArcCorSombra, vec3(0.299, 0.587, 0.114)), 1e-3);
-            vec3 cSomb = mix(vec3(1.0), friaA, 0.35) * uArcNiveis.x * mix(vec3(1.0), tomA, 0.15);
+            vec3 cSomb = mix(vec3(1.0), friaA, 0.5) * uArcNiveis.x * mix(vec3(1.0), tomA, 0.15);
             vec3 faixa = mix(mix(cMeio, cLuz, luzA), cSomb, sombraA);
+            // luz de recorte: borda quente onde a superfície olha para o sol e o sol está atrás, contra a
+            // câmera (o contorno de luz que separa a figura do fundo)
+            vec3 nA = normalize(vNMundo);
+            vec3 vA = normalize(cameraPosition - vPMundo);
+            float bordaA = pow(1.0 - clamp(abs(dot(nA, vA)), 0.0, 1.0), 3.0);
+            float paraSol = smoothstep(-0.05, 0.5, dot(nA, normalize(uSolDirA)));
+            float contraLuz = smoothstep(-0.4, 0.6, dot(-vA, normalize(uSolDirA)));
+            faixa += mix(vec3(1.0), tomA, 0.8) * bordaA * paraSol * contraLuz * uArcRim * 1.4;
             reflectedLight.directDiffuse = material.diffuseColor * RECIPROCAL_PI * faixa * uLuzRef;
             reflectedLight.indirectDiffuse = vec3(0.0);
           }

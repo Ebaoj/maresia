@@ -474,6 +474,8 @@ export class Aranhaverso {
     gl.uArcCorSombra.value.set(e.arcCorSombra)
     gl.uArcNiveis.value.set(e.arcNivelSombra, e.arcNivelMeio, e.arcNivelLuz)
     gl.uTexForca.value = e.arcTextura
+    gl.uArcRim.value = arc ? e.arcRecorte : 0
+    gl.uArcCeu.value = e.arcCeu
     u.uTempo.value = Math.floor(tempo * e.fpsTraco) / e.fpsTraco
     u.uNear.value = cam.near
     u.uFar.value = cam.far
@@ -533,9 +535,9 @@ export class Aranhaverso {
     u.uNoite.value = this.globais.uNoite.value
     u.uDistReticula.value = e.distanciaReticula
     u.uNevoaCor.value.copy(this.globais.uNevoaCor.value)
-    u.uNevoaDens.value = e.nevoaDensidade
+    u.uNevoaDens.value = e.nevoaDensidade * (arc ? e.arcAr : 1)
     u.uNevoaQueda.value = e.nevoaQueda
-    u.uMaresia.value = e.maresia
+    u.uMaresia.value = e.maresia * (arc ? e.arcAr : 1)
     // época: 0 = 1932 (presente), 1 = 1881 (memória impressa)
     const mem = e.memoria
     u.uMemoria.value = mem

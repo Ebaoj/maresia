@@ -63,17 +63,44 @@ void main() {
 
 const fragCeu = /* glsl */ `
 uniform vec3 uTopo; uniform vec3 uHor; uniform vec3 uSolDir; uniform vec3 uSolCor;
-uniform float uNoite; uniform float uTempo;
+uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu;
 varying vec3 vDir;
 ${SAIDA_LUZ}
 float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+float h2(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vn(vec2 p) {
+  vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h2(i), h2(i + vec2(1, 0)), u.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), u.x), u.y);
+}
 void main() {
   vec3 d = normalize(vDir);
   float y = max(d.y, 0.0);
   vec3 cor = mix(uHor, uTopo, pow(y, 0.55));
-  // faixas de cor chapadas, como céu pintado
-  float faixas = floor(pow(y, 0.55) * 7.0) / 7.0;
-  cor = mix(cor, mix(uHor, uTopo, faixas), 0.35);
+  if (uArcane > 0.5) {
+    // CÉU PINTADO (visual Arcane): o degradê vira pinceladas longas e horizontais, como num fundo
+    // pintado; um brilho largo e quente em volta do sol; nuvens de pincel baixas, com o lado do sol
+    // quente e a barriga fria. Azimute e altura como "tela", deriva lenta com o tempo.
+    float az = atan(d.z, d.x) + uTempo * 0.002;
+    float traco = 0.6 * vn(vec2(az * 2.2, pow(y, 0.6) * 26.0)) + 0.4 * vn(vec2(az * 7.0, pow(y, 0.6) * 70.0) + 5.0);
+    float t = clamp(pow(y, 0.55) + (traco - 0.5) * 0.22 * uArcCeu, 0.0, 1.0);
+    cor = mix(uHor, uTopo, t);
+    float sA = dot(d, normalize(uSolDir));
+    cor = mix(cor, uSolCor * 1.05, smoothstep(0.55, 1.0, sA) * 0.38 * (1.0 - uNoite) * uArcCeu);
+    // nuvens de pincel: manchas esticadas na horizontal, só na faixa baixa do céu
+    float faixaN = smoothstep(0.02, 0.12, y) * (1.0 - smoothstep(0.32, 0.55, y));
+    float nN = 0.65 * vn(vec2(az * 1.6, y * 9.0) + 11.0) + 0.35 * vn(vec2(az * 5.0, y * 30.0) + 3.0);
+    float nuvem = smoothstep(0.58, 0.7, nN) * faixaN * uArcCeu;
+    float ladoSol = 0.5 + 0.5 * dot(normalize(vec2(d.x, d.z)), normalize(vec2(uSolDir.x, uSolDir.z)));
+    float topoN = smoothstep(0.55, 0.85, vn(vec2(az * 1.6, y * 9.0 + 0.6) + 11.0)); // a parte de cima pega mais luz
+    vec3 corNuvemLuz = mix(uHor, uSolCor, 0.55) * 1.12;
+    vec3 corNuvemSombra = mix(uTopo, uHor, 0.55) * 0.92;
+    vec3 corNuvem = mix(corNuvemSombra, corNuvemLuz, clamp(ladoSol * 0.6 + topoN * 0.5, 0.0, 1.0));
+    cor = mix(cor, mix(corNuvem, uTopo * 0.6, uNoite * 0.7), nuvem * 0.85);
+  } else {
+    // faixas de cor chapadas, como céu pintado
+    float faixas = floor(pow(y, 0.55) * 7.0) / 7.0;
+    cor = mix(cor, mix(uHor, uTopo, faixas), 0.35);
+  }
   // sol
   float s = dot(d, normalize(uSolDir));
   float disco = smoothstep(0.9975, 0.9985, s);
@@ -100,6 +127,8 @@ export function criarCeu(cena) {
     uSolCor: globais.uSolCor,
     uNoite: globais.uNoite,
     uTempo: globais.uTempo,
+    uArcane: globais.uArcane,
+    uArcCeu: globais.uArcCeu,
   }
   const ceu = new THREE.Mesh(
     new THREE.SphereGeometry(1800, 48, 24),

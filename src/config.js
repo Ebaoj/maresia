@@ -15,8 +15,8 @@ export const PADRAO = {
     arcLuz: 0.72,          // acima disso, a faixa de luz; entre as duas, o meio-tom
     arcSuave: 0.05,        // largura da passagem entre as faixas
     arcPincel: 0.35,       // quanto a pincelada recorta a borda das faixas
-    arcCorSombra: '#5d6e9e', // sombra fria, com luz rebatida do céu
-    arcNivelSombra: 0.42,
+    arcCorSombra: '#4f5fa8', // sombra fria, com luz rebatida do céu
+    arcNivelSombra: 0.34,
     arcNivelMeio: 0.8,
     arcNivelLuz: 1.1,
     arcLinha: 0.7,         // contorno só na silhueta, na cor do objeto escurecida
@@ -24,7 +24,10 @@ export const PADRAO = {
     arcGrao: 0.04,
     arcContraste: 1.18,    // gradação: contraste (curva em S) e exposição, menos lavado
     arcExposicao: 0.93,
-    arcTextura: 1.0,       // força das texturas pintadas do mundo (areia, palha, madeira; public/texturas)
+    arcTextura: 1.0,
+    arcRecorte: 0.6,       // luz de recorte quente nas bordas contra o sol
+    arcAr: 1.8,            // profundidade de ar: o fundo se separa em camadas frias (multiplica névoa e maresia)
+    arcCeu: 1.0,           // céu pintado: pinceladas longas e nuvens de pincel (0 = céu liso)       // força das texturas pintadas do mundo (areia, palha, madeira; public/texturas)
     espessuraLinha: 1.3,
     limiarProfundidade: 0.07,
     limiarNormal: 0.55,

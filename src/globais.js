@@ -28,6 +28,8 @@ export const globais = {
   uArcPincel: { value: 0.35 }, // quanto a pincelada (presa ao mundo) recorta a borda entre as faixas
   uArcCorSombra: { value: new THREE.Color('#5d6e9e') },
   uArcNiveis: { value: new THREE.Vector3(0.5, 0.8, 1.05) }, // força da sombra, do meio-tom e da luz
-  uTexForca: { value: 0.8 }, // quanto a textura pintada do mundo pesa (materiais.js, texturizar)
+  uTexForca: { value: 0.8 },
+  uArcRim: { value: 0.6 }, // luz de recorte quente nas bordas que pegam sol por trás
+  uArcCeu: { value: 1 }, // céu pintado (pinceladas e nuvens de pincel) // quanto a textura pintada do mundo pesa (materiais.js, texturizar)
 }
 globais.tLampioes.value.needsUpdate = true
