@@ -21,7 +21,7 @@ cena = bpy.context.scene
 for o in list(bpy.data.objects): bpy.data.objects.remove(o, do_unlink=True)
 bpy.ops.import_scene.gltf(filepath=ENTRADA)
 malha = next(o for o in cena.objects if o.type == "MESH")
-malha.name = "avo"; malha.data.name = "avo"
+NOME = os.environ.get("TRIPO_NOME", os.path.basename(SAIDA).split("-")[0]); malha.name = NOME; malha.data.name = NOME   # "avo", "neto"...
 
 
 def ativar(ob):
