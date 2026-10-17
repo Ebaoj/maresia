@@ -321,6 +321,30 @@ const SUSTOS = {
 }
 for (const [k, f] of Object.entries(SUSTOS)) ESTILOS['brilho-susto-' + k] = mb({ alto: 1, tam: 1.25 }, { susto: f })
 
+// variações do "branco pequeno" (o escolhido): sobrancelha bem alta (o olho desce um pouco para abrir
+// espaço) e boca em "o" maior
+const sobrMuitoAlta = (g) => pincel(g, [[40, 18], [52, 8], [66, 5], [88, 14]], 5, 11)
+const brancoPeq = ({ rx = 12, ry = 15, pupila = 6, contorno = 0, brilho = false, py = 0, cy = 76 }) => (g) => {
+  sobrMuitoAlta(g)
+  encher(g, arco(64, cy, rx, ry, 0, Math.PI * 2, 18), BRANCO)
+  if (contorno) tremido(g, arco(64, cy, rx, ry, 0, Math.PI * 2, 18), contorno)
+  bola(g, 64, cy + 1 + py, pupila)
+  if (brilho) bola(g, 62, cy - 2 + py, pupila * 0.35, '#fff')
+}
+const bocaO = (g) => tremido(g, arco(64, 66, 11, 14, 0, Math.PI * 2, 18), 8)
+const VAR_BRANCO = {
+  base: brancoPeq({}),
+  maior: brancoPeq({ rx: 15, ry: 19, pupila: 6.5 }),
+  contorno: brancoPeq({ contorno: 3.5 }),
+  brilho: brancoPeq({ pupila: 7.5, brilho: true }),
+  oval: brancoPeq({ rx: 10, ry: 19, pupila: 6, py: -3 }),
+}
+for (const [k, f] of Object.entries(VAR_BRANCO)) {
+  const e = mb({ alto: 1, tam: 1.25 }, { susto: f })
+  e.bocas = { ...e.bocas, o: bocaO }
+  ESTILOS['susto-branco-' + k] = e
+}
+
 // o mínimo original não tinha "triste"? tem; garante que todo estilo tenha todas as expressões
 for (const e of Object.values(ESTILOS)) for (const k of Object.keys(ESTILOS.atual.olhos)) if (!e.olhos[k]) e.olhos[k] = e.olhos.aberto
 export const ESTILOS_ROSTO = Object.keys(ESTILOS)
