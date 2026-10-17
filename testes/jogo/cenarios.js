@@ -620,6 +620,43 @@ export const cenarios = {
     return { ok, medidas, motivo: ok ? '' : 'mudança de opacidade ou de textura no material original não chegou ao desenho' }
   },
 
+  // Regressão KAN-68 (17/10/2026, rodada na g4dn da AWS): com as matrizes das cópias numa lista em uniform, cada
+  // objeto ganhava um nome de lista próprio no código do shader e o WebGPU compilava um programa de vértice por objeto
+  // (638 no jogo; na NVIDIA do Linux a compilação levava minutos e o Chrome derrubava a placa). Dez blocos com o
+  // mesmo material e a mesma forma têm de reaproveitar o programa.
+  async programasReaproveitados(m) {
+    const THREE = await import('three')
+    const { pintar } = await import('/src/materiais.js')
+    const r = m.renderer
+    const W = m.gpu?.W || null
+    if (m.webgpu && !W) return { ok: false, motivo: 'modo webgpu sem maresia.gpu (módulo e troca de materiais do jogo)' }
+    const cena = new THREE.Scene()
+    cena.add(new THREE.AmbientLight('#ffffff', 2))
+    const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3)
+    const mat = pintar(new THREE.MeshToonMaterial({ color: '#2080ff' }), 'teste-programas')
+    for (let b = 0; b < 10; b++) {
+      const im = new THREE.InstancedMesh(geo, mat, 3)
+      for (let i = 0; i < 3; i++) im.setMatrixAt(i, new THREE.Matrix4().makeTranslation(-3.5 + b * 0.7, -1 + i, 0))
+      cena.add(im)
+    }
+    const cam = new THREE.OrthographicCamera(-4, 4, 2, -2, 0.1, 20)
+    cam.position.set(0, 0, 10)
+    cam.updateMatrixWorld()
+    const contar = () => (W ? r._pipelines.programs.vertex.size : r.info.programs.length)
+    const rt = W ? new W.RenderTarget(64, 32, { count: 2 }) : new THREE.WebGLRenderTarget(64, 32)
+    if (W) { rt.textures[0].name = 'output'; rt.textures[1].name = 'gLuz'; m.gpu.preparar(cena) }
+    const antes = contar()
+    r.setRenderTarget(rt)
+    if (W) r.setMRT(W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) }))
+    r.render(cena, cam)
+    if (W) r.setMRT(null)
+    r.setRenderTarget(null)
+    rt.dispose()
+    const novos = contar() - antes
+    const ok = novos <= 2
+    return { ok, medidas: { programasNovos: novos, blocos: 10 }, motivo: ok ? '' : 'cada bloco de cópias compilou um programa de vértice próprio' }
+  },
+
   // O mínimo de toda mudança: o jogo carregou sem shader quebrado (os erros de console o executor junta)
   async semErros() {
     const quebrados = (window.__shadersQuebrados || []).length

@@ -7,7 +7,7 @@
 //   (window.__faltaPortar), que a suíte e a foto justa leem.
 
 import * as THREE from 'three'
-import { materialArcane, copiarPropriedades } from './arcane-tsl.js'
+import { materialArcane, copiarPropriedades, matrizInstancia } from './arcane-tsl.js'
 import { usarModulo, ref } from './gpu/comum.js'
 
 let W = null // o módulo three/webgpu, no modo webgpu
@@ -19,6 +19,7 @@ export async function criarRenderizador(cfg, canvas) {
     // sendo do three, e o renderizador lê os objetos pelas marcas (isMesh, isTexture...)
     W = await import('three/webgpu')
     usarModulo(W)
+    copiasComoAtributo(W)
     const renderer = new W.WebGPURenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
     // o WebGPU acha o material pelo nome do tipo (funciona com a outra cópia), mas a luz pela classe: sem
     // registrar as classes de luz do three, nenhuma luz da cena era achada e tudo saía preto
@@ -47,6 +48,25 @@ export async function criarRenderizador(cfg, canvas) {
 }
 
 export function modulo() { return W }
+
+// O InstanceNode do three (passe de sombra e materiais que não são do pintar) guarda as matrizes das cópias numa
+// lista em uniform até 1000 cópias, com um nome próprio por objeto no código do shader: nenhum programa é
+// reaproveitado e o WebGPU compila um programa de vértice por objeto. Aqui ele usa sempre o atributo de vértice (o
+// caminho dele acima de 1000), igual ao MaterialPintado (arcane-tsl.js, matrizInstancia).
+function copiasComoAtributo(W) {
+  const proto = W.InstanceNode.prototype
+  if (proto.__copiasComoAtributo) return
+  const setupOriginal = proto.setup
+  proto.setup = function (builder) {
+    if (this.instanceMatrixNode === null) {
+      const { no, buf } = matrizInstancia(W, this.instanceMesh)
+      this.instanceMatrixNode = no
+      this.buffer = buf
+    }
+    return setupOriginal.call(this, builder)
+  }
+  proto.__copiasComoAtributo = true
+}
 
 // Cor de reserva para o que ainda não tem versão no WebGPU, pelo nome do objeto (só para a cena ficar legível)
 function corReserva(o) {

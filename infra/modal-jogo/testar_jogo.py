@@ -23,9 +23,9 @@ app = modal.App("maresia-testes")
 imagem_testes = imagem.add_local_python_source("jogo", "cdp")
 
 ORDEM = ["semErros", "pesParados", "poseCongelada", "meiaVolta", "meiaVoltaRapida", "meiaVoltaInterrompida", "sentarLevantar",
-         "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo", "modoWebgpu"]
+         "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo", "programasReaproveitados", "modoWebgpu"]
 # KAN-68: cenários que também rodam com o jogo aberto no WebGPU (dentro de modoWebgpu)
-CENARIOS_WEBGPU = ["semErros", "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo"]
+CENARIOS_WEBGPU = ["semErros", "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo", "programasReaproveitados"]
 # cenários que recarregam a página com outra configuração: rodam aqui, em Python, e por último
 CENARIOS_PYTHON = {}
 

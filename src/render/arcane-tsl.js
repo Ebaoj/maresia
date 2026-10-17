@@ -205,13 +205,12 @@ function criarClasse(W) {
   }
 }
 
-// a matriz de cada cópia, como o InstanceNode do three monta (buffer até 1000 cópias, atributo acima). A lista tem
-// o tamanho da capacidade, não da quantidade no primeiro desenho: o shader não é remontado quando count muda, e
-// bolas, cocos e poeira nascem com zero (só a primeira saía no lugar). Bloco com uma cópia só e bloco que muda de
-// quantidade têm shader próprio (render/renderizador.js), então a lista guardada aqui é a do objeto certo.
-function matrizInstancia(W, object) {
+// a matriz de cada cópia sempre como atributo de vértice (o caminho que o InstanceNode do three usa acima de 1000
+// cópias). Com a lista em uniform (o caminho dele até 1000), cada objeto ganhava um nome de lista próprio no código
+// do shader, nenhum programa era reaproveitado e o WebGPU compilava um programa de vértice por objeto: 638 no Mac
+// (11 s no primeiro quadro) e minutos na placa NVIDIA do Linux, onde o Chrome derrubava a placa (KAN-68, R7).
+export function matrizInstancia(W, object) {
   const attr = object.instanceMatrix
-  if (attr.count <= 1000) return { no: W.buffer(attr.array, 'mat4', attr.count).element(W.instanceIndex) }
   const buf = new W.InstancedInterleavedBuffer(attr.array, 16, 1)
   const fn = attr.usage === W.DynamicDrawUsage ? W.instancedDynamicBufferAttribute : W.instancedBufferAttribute
   return { no: W.mat4(fn(buf, 'vec4', 16, 0), fn(buf, 'vec4', 16, 4), fn(buf, 'vec4', 16, 8), fn(buf, 'vec4', 16, 12)), buf }
