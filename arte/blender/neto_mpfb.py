@@ -569,11 +569,14 @@ def barba_fios(nucleo, zl, zt, cb_y, N):
     # corte reto: tira CORTE da ponta mais baixa e apara todas as mechas nesse plano (ponta cega, sem afinar)
     CORTE = float(os.environ.get("NETO_BARBA_CORTE", "0"))
     z_corte = float(np.percentile([mc[0][-1].z for mc in mechas], 3)) + CORTE if CORTE else -1e9   # a partir de onde a barba termina (sem os fios soltos)
+    rc = np.random.default_rng(7)
     for pts, lado, w0, fase, amp, tint, gs in mechas:
         S = len(pts) - 1; cortada = False
+        # corte natural: ponta arredondada (laterais mais curtas que o meio) e cada mecha com sua altura
+        zc = z_corte + 0.025 * min((pts[0].x / 0.07) ** 2, 1.5) + rc.normal(0, 0.007)
         for s in range(1, S + 1):
-            if pts[s].z < z_corte:
-                a_, b2 = pts[s - 1], pts[s]; f_ = (a_.z - z_corte) / max(a_.z - b2.z, 1e-9)
+            if pts[s].z < zc:
+                a_, b2 = pts[s - 1], pts[s]; f_ = (a_.z - zc) / max(a_.z - b2.z, 1e-9)
                 pts = pts[:s] + [a_ + (b2 - a_) * f_]; cortada = True
                 break
         if len(pts) < 2: continue
@@ -581,6 +584,7 @@ def barba_fios(nucleo, zl, zt, cb_y, N):
         for s, q in enumerate(pts):
             u = s / S   # posição no fio inteiro: a cor e a largura não mudam com o corte
             w = w0 * (1 - u) ** 0.8 + 0.0004
+            if cortada and s == n_: w *= 0.35   # ponta aparada também afina um pouco
             onda = lado * (math.sin(fase + u * 9) * amp)
             verts += [tuple(q + onda - lado * w / 2), tuple(q + onda + lado * w / 2)]
             c = raiz_c * (1 - u ** 0.6) + ponta_c * u ** 0.6 + tint
