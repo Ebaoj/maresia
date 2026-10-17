@@ -62,7 +62,7 @@ export class Jogador {
     const acao = this.velHoriz > cfg.corridaNova * 0.75 || !this.noChao
     Object.assign(a.opcoes, {
       fps: acao ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
-      mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0,
+      mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0, clavicula: cfg.clavicula,
     })
     // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo
     const forca = Math.max(clamp((this.velHoriz - cfg.corridaNova * 0.8) / (cfg.corridaNova * 0.3), 0, 1), this.noChao || this.nadando ? 0 : 0.5)

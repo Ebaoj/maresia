@@ -76,6 +76,16 @@ export class Animador {
       abaChapeu: new THREE.Vector3(-0.16, 0.2, 0.06), ...(corpo.eixos || {}),
     }
     this.mixer = new THREE.AnimationMixer(corpo.raiz)
+    // inclinação da clavícula no repouso (graus para baixo): no neto ela nasce caída 28 a 33° e diferente
+    // de um lado para o outro; a postura (clavicula) corrige para um valor só
+    corpo.raiz.updateMatrixWorld(true)
+    this.clavRep = {}
+    for (const L of ['Left', 'Right']) {
+      const c = corpo.ossos.get(L + 'Shoulder'), b = corpo.ossos.get(L + 'Arm')
+      if (!c || !b) continue
+      const d = b.getWorldPosition(new THREE.Vector3()).sub(c.getWorldPosition(new THREE.Vector3()))
+      this.clavRep[L] = Math.atan2(-d.y, Math.hypot(d.x, d.z))
+    }
     this.passadas = passadas
     this.acoes = {}
     for (const [nome, clipe] of Object.entries(clipes)) {
@@ -286,6 +296,7 @@ export class Animador {
     const wNado = nado?.userData.peso || 0
     if (wNado > 0.01 && !nado.getClip().userData?.procedural) this.ossos.get('Hips').position.y += wNado * 0.7
     this.corpo.raiz.updateMatrixWorld(true)
+    if (this.opcoes.clavicula != null) this.endireitarClavicula(this.opcoes.clavicula)
     if (this.opcoes.bracosJuntos !== 0) this.bracosJuntos(s, this.opcoes.bracosJuntos ?? 0.6)
     if (this.opcoes.inclinar) this.inclinar(DT, s)
     if (this.opcoes.ik && !s.noAr && !s.nadando && !s.sentado && s.chao) this.pesNoChao(s)
@@ -405,6 +416,27 @@ export class Animador {
     for (const [L, s] of [['Left', 1], ['Right', -1]]) {
       const a = this.ossos.get(L + 'Arm'), b = this.ossos.get(L + 'ForeArm'), c = this.ossos.get(L + 'Hand')
       if (a && b && c) ikDuas(a, b, c, centro.clone().addScaledVector(direita, s * (raio + 0.03)))
+    }
+  }
+
+  // Ombro: sobe a clavícula de cada lado o tanto que o repouso dela passa do alvo (graus para baixo).
+  // A diferença entre o repouso e o alvo é fixa; o que o movimento faz por cima (respirar, encolher) fica.
+  endireitarClavicula(alvoGraus) {
+    const alvo = THREE.MathUtils.degToRad(alvoGraus)
+    for (const L of ['Left', 'Right']) {
+      const c = this.ossos.get(L + 'Shoulder'), b = this.ossos.get(L + 'Arm')
+      if (!c || !b || this.clavRep[L] == null) continue
+      const sobe = this.clavRep[L] - alvo
+      if (Math.abs(sobe) < 0.005) continue
+      const d = b.getWorldPosition(v()).sub(c.getWorldPosition(v()))
+      const h = v().set(d.x, 0, d.z)
+      const L0 = d.length()
+      if (h.lengthSq() < 1e-8) continue
+      h.normalize()
+      const atual = Math.atan2(-d.y, Math.hypot(d.x, d.z))
+      const novo = atual - sobe
+      const d2 = h.multiplyScalar(Math.cos(novo)).add(v().set(0, -Math.sin(novo), 0)).multiplyScalar(L0)
+      apontar(c, d, d2)
     }
   }
 

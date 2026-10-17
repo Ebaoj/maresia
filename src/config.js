@@ -74,6 +74,7 @@ export const PADRAO = {
     chapeu: false,         // chapéu de palha no neto (o Joabe tirou em 16/10/2026); recarregar
     ombros: 0.9,           // largura dos ombros do neto (1 = como veio do modelo, largo de adulto); recarregar
     folgaCamisa: 0.012,    // folga máxima da camisa sobre a pele no ombro e na manga, em metros (0 = como veio); recarregar
+    clavicula: 15,         // inclinação da clavícula para baixo, em graus (o neto nasce com 28 a 33°: ombro caído)
     rostoDesenhado: false, // neto de rosto liso com olhos e boca desenhados em 2D (rosto.js); recarregar
     estiloRosto: 'minimo-brilho', // desenho do rosto (rosto.js, ESTILOS); o Joabe gostou do mínimo brilho (16/10/2026)
     velocidadeNova: 1.8,   // com o corpo novo: gente de verdade anda a ~1,4 m/s e corre a ~3,5 m/s
