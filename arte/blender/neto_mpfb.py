@@ -481,7 +481,7 @@ if SEM_ROSTO:
         perto = [q for q in pts if abs(q.x - c.x) < raio and abs(q.z - c.z) < raio and q.y < c.y]
         return min(perto, key=lambda q: q.y) if perto else c
     anc = {}
-    for nome, g in (("olho_esquerdo", "joint-l-eye"), ("olho_direito", "joint-r-eye"), ("boca", "joint-mouth")):
+    for nome, g in (("olho_esquerdo", "joint-l-eye"), ("olho_direito", "joint-r-eye"), ("boca", "lips")):
         c = ponto_grupo(g); f = frente_de(c)
         anc[nome] = {"centro": gltf(c), "superficie": gltf(f)}
     import json as _j
