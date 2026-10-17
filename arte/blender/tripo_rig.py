@@ -39,6 +39,12 @@ for o in pecas:
     bm.to_mesh(o.data); bm.free()
 for o in list(cena.objects):
     if o.type == "EMPTY": bpy.data.objects.remove(o, do_unlink=True)
+alta = [np.array([v.co[:] for v in o.data.vertices]) for o in pecas]   # malha original: só para medir os dedos
+arestas_alta, desloc = [], 0
+for o in pecas:
+    e_ = np.empty(len(o.data.edges) * 2, dtype=np.int64); o.data.edges.foreach_get("vertices", e_)
+    arestas_alta.append(e_.reshape(-1, 2) + desloc); desloc += len(o.data.vertices)
+EA = np.concatenate(arestas_alta); del arestas_alta
 total = sum(len(o.data.polygons) for o in pecas)
 for o in pecas:
     ativar(o); dec = o.modifiers.new("reduz", "DECIMATE"); dec.ratio = min(1.0, FACES / total)
@@ -55,6 +61,9 @@ for o in pecas:
     if virar: Q[:, 0] *= -1; Q[:, 1] *= -1   # gira 180° em Z: frente para -Y
     o.data.vertices.foreach_set("co", Q.ravel()); o.data.update()
 P = np.concatenate([np.array([v.co[:] for v in o.data.vertices]) for o in pecas])
+PA = (np.concatenate(alta) - centro) * k
+if virar: PA[:, 0] *= -1; PA[:, 1] *= -1
+del alta
 # partes: agrupa em corpo (pele e cabelo), camisa e calça, pela posição de cada peça
 if len(pecas) > 1:
     z_meio = ALTURA * 0.5
@@ -154,6 +163,117 @@ for lado, nome in ((1, "Left"),):
     J[nome + "UpLeg"], J[nome + "Leg"], J[nome + "Foot"], J[nome + "ToeBase"], J[nome + "Toe_End"] = quadril, joelho, tornozelo, bola, np.array([dedo[0], dedo[1], 0.015 * H])
 for k_ in [k_ for k_ in J if k_.startswith("Left")]:   # lado direito: espelho do esquerdo
     J["Right" + k_[4:]] = J[k_] * np.array([-1, 1, 1])
+MAO = float(os.environ.get("TRIPO_MAO", "1.0"))   # escala das mãos em volta do punho (0.8 = 20% menores)
+def escala_mao(Q):
+    """reduz a mão em volta do punho: região = cilindro no prolongamento do antebraço (a mão pende nessa direção)"""
+    for lado_n in ("Left", "Right"):
+        pun = J[lado_n + "Hand"]; fa = pun - J[lado_n + "ForeArm"]; fa = fa / np.linalg.norm(fa)
+        rel = Q - pun; t = rel @ fa
+        perp = np.linalg.norm(rel - np.outer(t, fa), axis=1)
+        dist_ = np.linalg.norm(rel, axis=1)
+        if len(pecas) > 1:   # em partes a mão é peça própria: tudo além do punho, numa esfera (o polegar abre muito)
+            na_mao = (t > -0.03) & (dist_ < 0.22)
+        else:
+            na_mao = (t > -0.03) & (t < 0.24) & (perp < 0.12)
+        f = np.clip((t + 0.03) / 0.05, 0, 1); f = f * f * (3 - 2 * f)   # transição suave no punho
+        esc = 1 - (1 - MAO) * f
+        Q[na_mao] = pun + rel[na_mao] * esc[na_mao, None]
+    return Q
+if MAO != 1.0:
+    PA = escala_mao(PA)
+    for o in pecas:
+        if len(pecas) > 1 and not o.name.endswith("corpo"): continue   # em partes: só a peça das mãos
+        Q = np.array([v.co[:] for v in o.data.vertices])
+        for lado_n in ():
+            pun, pon = J[lado_n + "Hand"], J[lado_n + "Ponta"]
+            eixo = (pon - pun) / np.linalg.norm(pon - pun); L = np.linalg.norm(pon - pun)
+            rel = Q - pun; t = rel @ eixo
+            perp = np.linalg.norm(rel - np.outer(t, eixo), axis=1)
+            na_mao = (t > -0.03) & (t < L * 1.2) & (perp < 0.09)
+            f = np.clip((t + 0.03) / 0.05, 0, 1); f = f * f * (3 - 2 * f)   # transição suave no punho
+            esc = 1 - (1 - MAO) * f
+            Q[na_mao] = pun + rel[na_mao] * esc[na_mao, None]
+        Q = escala_mao(Q)
+        o.data.vertices.foreach_set("co", Q.ravel()); o.data.update()
+    for lado_n in ("Left", "Right"):
+        J[lado_n + "Ponta"] = J[lado_n + "Hand"] + (J[lado_n + "Ponta"] - J[lado_n + "Hand"]) * MAO
+    P = np.concatenate([np.array([v.co[:] for v in o.data.vertices]) for o in pecas])
+    print("MAOS escala", MAO)
+def achar_dedos(lado_n, lado):
+    """Dedos pela distância medida sobre a superfície (malha original): a partir do punho, as pontas dos
+    dedos são os máximos locais; voltando de cada ponta pelos anéis de mesma distância sai a linha central
+    do dedo, até ele alargar na palma (o nó). Funciona com dedo curvo ou encostado."""
+    import heapq
+    pun = J[lado_n + "Hand"]; pon = J[lado_n + "Ponta"]
+    ax0 = (pon - pun) / np.linalg.norm(pon - pun); L0 = np.linalg.norm(pon - pun)
+    rel = PA - pun; tt = rel @ ax0; perp = np.linalg.norm(rel - np.outer(tt, ax0), axis=1)
+    dentro = (tt > -0.02) & (tt < L0 * 1.3) & (perp < 0.6 * L0)
+    ids = np.nonzero(dentro)[0]
+    if len(ids) < 1000: return None
+    loc = -np.ones(len(PA), dtype=np.int64); loc[ids] = np.arange(len(ids))
+    ok = dentro[EA[:, 0]] & dentro[EA[:, 1]]; E = loc[EA[ok]]
+    Q = PA[ids]; comp = np.linalg.norm(Q[E[:, 0]] - Q[E[:, 1]], axis=1)
+    viz = [[] for _ in range(len(ids))]
+    for (i, j), c in zip(E.tolist(), comp.tolist()): viz[i].append((j, c)); viz[j].append((i, c))
+    tq = tt[ids]
+    d = np.full(len(ids), np.inf); fila = []
+    for i in np.nonzero(tq < 0.0)[0]: d[i] = 0.0; fila.append((0.0, int(i)))   # fontes: a fatia do punho
+    heapq.heapify(fila)
+    while fila:
+        dist, i = heapq.heappop(fila)
+        if dist > d[i]: continue
+        for j, c in viz[i]:
+            nd = dist + c
+            if nd < d[j]: d[j] = nd; heapq.heappush(fila, (nd, j))
+    fin = np.isfinite(d)
+    if fin.sum() < 500: return None
+    # pontas: máximos de d, separados entre si
+    ordem = np.argsort(-np.where(fin, d, -1)); pontas = []
+    sep = 0.012 * MAO / 0.7
+    for i in ordem[:20000]:
+        if not fin[i] or d[i] < 0.35 * d[fin].max(): break
+        if all(np.linalg.norm(Q[i] - Q[p_]) > sep for p_ in pontas): pontas.append(int(i))
+        if len(pontas) == 5: break
+    if len(pontas) < 5: print("DEDOS", lado_n, "só achei", len(pontas), "pontas"); return None
+    def linha(p_):
+        """anéis de mesma distância, da ponta para a palma; para quando o anel alarga (palma)"""
+        cs = []; c_ant = Q[p_]; larg0 = None
+        for lam in np.arange(d[p_] - 0.002, 0, -0.002):
+            anel = np.nonzero(np.abs(d - lam) < 0.0012)[0]
+            anel = anel[np.linalg.norm(Q[anel] - c_ant, axis=1) < 0.015]
+            if len(anel) < 3: break
+            c = Q[anel].mean(0); larg = np.linalg.norm(Q[anel] - c, axis=1).max()
+            if larg0 is None and len(cs) >= 3: larg0 = np.median([x[1] for x in cs])
+            if larg0 is not None and larg > 1.8 * larg0: break   # chegou à palma
+            cs.append((c, larg)); c_ant = c
+        return [c for c, _ in cs]
+    linhas = {p_: linha(p_) for p_ in pontas}
+    # polegar: a ponta de menor distância ao punho (é o dedo mais curto e nasce mais perto)
+    pol = min(pontas, key=lambda p_: d[p_]); outros = [p_ for p_ in pontas if p_ != pol]
+    outros.sort(key=lambda p_: Q[p_][1])   # da frente (-y) para trás: indicador, médio, anelar, mínimo
+    dedos = {}
+    for nome_d, p_ in zip(("Thumb", "Index", "Middle", "Ring", "Pinky"), [pol] + outros):
+        ln = linhas[p_]
+        if len(ln) < 3: print("DEDOS", lado_n, nome_d, "linha curta"); return None
+        ponta = Q[p_]; borda = ln[-1]
+        dir_ = (borda - ln[max(0, len(ln) - 4)]); dir_ = dir_ / (np.linalg.norm(dir_) + 1e-9)
+        comp_ = np.linalg.norm(ponta - borda)
+        base = borda + dir_ * comp_ * (0.25 if nome_d != "Thumb" else 0.5)   # o nó fica dentro da palma
+        cad = [ponta] + ln + [base]
+        acum = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(np.array(cad), axis=0), axis=1))])
+        def em(fr):   # ponto ao longo da linha (da base para a ponta)
+            alvo = acum[-1] * (1 - fr); k_ = np.searchsorted(acum, alvo)
+            k_ = min(max(k_, 1), len(cad) - 1); f_ = (alvo - acum[k_ - 1]) / max(acum[k_] - acum[k_ - 1], 1e-9)
+            return cad[k_ - 1] + (cad[k_] - cad[k_ - 1]) * f_
+        for i, fr in enumerate((0.0, 0.45, 0.75, 1.0)):
+            dedos[f"{lado_n}Hand{nome_d}{i + 1}"] = em(fr)
+    print("DEDOS", lado_n, "ok: comprimentos (mm)", {nd: round(float(np.linalg.norm(dedos[f"{lado_n}Hand{nd}4"] - dedos[f"{lado_n}Hand{nd}1"])) * 1000) for nd in ("Thumb", "Index", "Middle", "Ring", "Pinky")})
+    return dedos
+DEDOS = {}
+if os.environ.get("TRIPO_ACHAR_DEDOS") == "1":   # experimental: dedos encostados/curvos do Tripo ainda confundem
+    for lado_n, lado in (("Left", 1), ("Right", -1)):
+        d_ = achar_dedos(lado_n, lado)
+        if d_: DEDOS.update(d_)
 z_top = P[:, 2].max()
 def centro_tronco(z):
     s = fatia(z, 0.012); s = s[np.abs(s[:, 0]) < 0.08]; return np.array([0.0, (s[:, 1].max() + s[:, 1].min()) / 2, z])
@@ -186,6 +306,8 @@ for lado, nome in ((1, "Left"), (-1, "Right")):
         for f in range(1, 5): cabecas[f"{nome}Hand{dedo}{f}"] = base + eixo * L * 0.55 * (f - 1) / 3
     pol = pun + eixo * L * 0.12 + frente * 0.02
     for f in range(1, 5): cabecas[f"{nome}HandThumb{f}"] = pol + (eixo * 0.6 + frente * 0.8).normalized() * L * 0.4 * (f - 1) / 3
+    for k_, v_ in DEDOS.items():   # dedos achados na malha substituem o leque
+        if k_.startswith(nome): cabecas[k_] = V(v_)
 for b in ("Hips", "Spine", "Spine1", "Spine2", "Neck", "Head", "HeadTop_End"): cabecas[b] = V(J[b])
 filhos = {}
 for n, (_, _, _, pai) in eixos.items():
@@ -222,6 +344,64 @@ for o in cena.objects: o.select_set(False)
 for o in pecas: o.select_set(True)
 rig.select_set(True); bpy.context.view_layer.objects.active = rig
 bpy.ops.object.parent_set(type="ARMATURE_AUTO")
+if len(DEDOS) >= 40 and os.environ.get("TRIPO_DEDOS_RIGIDOS", "auto") != "1":
+    # pesos da mão pintados pela geometria: cada ponto vai para o dedo cuja linha central está mais perto
+    # (os pesos automáticos vazavam entre dedos encostados e a mão "explodia" ao dobrar)
+    def seg_dist(p_, a_, b_):
+        ab = b_ - a_; t_ = np.clip(((p_ - a_) @ ab) / max(ab @ ab, 1e-12), 0, 1)
+        return np.linalg.norm(p_ - (a_ + np.outer(t_, ab)), axis=1), t_
+    for lado_n in ("Left", "Right"):
+        pun = J[lado_n + "Hand"]; pon = J[lado_n + "Ponta"]
+        ax0 = (pon - pun) / np.linalg.norm(pon - pun); L0 = np.linalg.norm(pon - pun)
+        raio = 0.011 * MAO / 0.7
+        for o in pecas:
+            Q = np.array([v.co[:] for v in o.data.vertices])
+            rel = Q - pun; tt = rel @ ax0; dist = np.linalg.norm(rel, axis=1)
+            cand = np.nonzero((tt > 0.015) & (dist < 1.4 * L0))[0]
+            if not len(cand): continue
+            melhor = np.full(len(cand), np.inf); qual = [None] * len(cand)
+            for nd in ("Thumb", "Index", "Middle", "Ring", "Pinky"):
+                js = [DEDOS[f"{lado_n}Hand{nd}{i}"] for i in (1, 2, 3, 4)]
+                for k_ in range(3):
+                    dd, tq = seg_dist(Q[cand], js[k_], js[k_ + 1])
+                    for m in np.nonzero(dd < melhor)[0]:
+                        melhor[m] = dd[m]; qual[m] = (nd, k_, tq[m])
+            g_mao = o.vertex_groups.get(f"mixamorig:{lado_n}Hand") or o.vertex_groups.new(name=f"mixamorig:{lado_n}Hand")
+            dedo_gs = [g for g in o.vertex_groups if g.name.startswith(f"mixamorig:{lado_n}Hand") and g.name != g_mao.name]
+            for m, vi in enumerate(cand):
+                for g in dedo_gs + [g_mao]: g.remove([int(vi)])
+                pesos = {}
+                if qual[m] is not None and melhor[m] < raio * 1.6:
+                    nd, k_, tq = qual[m]
+                    osso = f"mixamorig:{lado_n}Hand{nd}{k_ + 1}"
+                    pesos[osso] = 1.0
+                    if k_ == 0 and tq < 0.3:            # junto ao nó: mistura com a palma
+                        f_ = tq / 0.3; pesos[osso] = f_; pesos[g_mao.name] = 1 - f_
+                    elif tq > 0.8 and k_ < 2:            # junto à próxima junta: mistura com a falange seguinte
+                        f_ = (tq - 0.8) / 0.4; pesos[osso] = 1 - f_; pesos[f"mixamorig:{lado_n}Hand{nd}{k_ + 2}"] = f_
+                else:
+                    pesos[g_mao.name] = 1.0
+                for nome_g, x in pesos.items():
+                    gg = o.vertex_groups.get(nome_g) or o.vertex_groups.new(name=nome_g)
+                    gg.add([int(vi)], x, "REPLACE")
+    print("DEDOS pesos pintados pela linha central de cada dedo")
+if os.environ.get("TRIPO_DEDOS_RIGIDOS", "auto") == "1" or (os.environ.get("TRIPO_DEDOS_RIGIDOS", "auto") == "auto" and len(DEDOS) < 40):
+    # mão rígida: os dedos estimados não batem com a malha do Tripo e dobravam como garra;
+    # o peso dos dedos vai todo para o osso da mão (os ossos dos dedos continuam no esqueleto)
+    for o in pecas:
+        for lado_n in ("Left", "Right"):
+            mao = o.vertex_groups.get(f"mixamorig:{lado_n}Hand")
+            dedos = [g for g in o.vertex_groups if g.name.startswith(f"mixamorig:{lado_n}Hand") and g.name != f"mixamorig:{lado_n}Hand"]
+            if not dedos: continue
+            if mao is None: mao = o.vertex_groups.new(name=f"mixamorig:{lado_n}Hand")
+            idx_d = {g.index for g in dedos}
+            for v in o.data.vertices:
+                extra = sum(e.weight for e in v.groups if e.group in idx_d)
+                if extra > 0:
+                    atual = next((e.weight for e in v.groups if e.group == mao.index), 0.0)
+                    mao.add([v.index], atual + extra, "REPLACE")
+            for g in dedos: o.vertex_groups.remove(g)
+    print("DEDOS rígidos: peso dos dedos somado ao da mão")
 if len(pecas) > 1:
     # emendas: perto de outra peça, os dois lados recebem a MESMA média de pesos (senão a manga e o braço
     # seguem os ossos de jeitos diferentes e a fresta abre no movimento)
