@@ -16,13 +16,43 @@ import sys
 
 import modal
 
-from cdp import subir_jogo
+from cdp import mudar_config, subir_jogo
 from jogo import imagem
 
 app = modal.App("maresia-testes")
 imagem_testes = imagem.add_local_python_source("jogo", "cdp")
 
-ORDEM = ["semErros", "pesParados", "poseCongelada", "meiaVolta", "meiaVoltaRapida", "meiaVoltaInterrompida", "sentarLevantar"]
+ORDEM = ["semErros", "pesParados", "poseCongelada", "meiaVolta", "meiaVoltaRapida", "meiaVoltaInterrompida", "sentarLevantar",
+         "modoWebgpu"]
+# cenários que recarregam a página com outra configuração: rodam aqui, em Python, e por último
+CENARIOS_PYTHON = {}
+
+
+# KAN-67 (motor F1): com desempenho.renderizador = 'webgpu', o jogo abre no WebGPURenderer, no backend
+# WebGPU de verdade (não no reserva WebGL2), desenha quadros e não quebra shader. Volta para webgl no fim.
+def modo_webgpu(cdp):
+    mudar_config(cdp, {"desempenho": {"renderizador": "webgpu"}})
+    try:
+        r = cdp.js("""(async () => {
+          const m = window.maresia
+          if (!m || !m.renderer) return { erro: 'o jogo não abriu' }
+          const r = m.renderer
+          const contar = () => (r.info && r.info.render ? r.info.render.frame : 0)
+          const q0 = contar()
+          await new Promise((res) => setTimeout(res, 3000))
+          const backend = r.backend ? (r.backend.isWebGPUBackend ? 'webgpu' : r.backend.isWebGLBackend ? 'webgl2-reserva' : '?') : 'webgl (renderer antigo)'
+          return { webgpuRenderer: !!r.isWebGPURenderer, backend, quadros3s: contar() - q0, temGpu: !!navigator.gpu,
+                   shadersQuebrados: (window.__shadersQuebrados || []).length }
+        })()""")
+    except Exception as e:
+        r = {"erro": str(e)[:300]}
+    ok = bool(r) and not r.get("erro") and r.get("webgpuRenderer") and r.get("backend") == "webgpu" and r.get("quadros3s", 0) > 30 \
+        and r.get("shadersQuebrados", 1) == 0
+    mudar_config(cdp, {"desempenho": {"renderizador": "webgl"}})
+    return {"ok": ok, "medidas": r, "motivo": "" if ok else "o modo webgpu não abriu no WebGPU de verdade"}
+
+
+CENARIOS_PYTHON["modoWebgpu"] = modo_webgpu
 # avisos de console que reprovam (regras do CLAUDE.md do projeto); os outros só aparecem no relatório
 AVISOS_QUE_REPROVAM = ("sem saída de luz", "não compilaram", "Congelado e movido")
 
@@ -32,6 +62,9 @@ def rodar(cenarios: list) -> dict:
     cdp = subir_jogo(ouvir_desde_o_inicio=True)
     resultados = {}
     for nome in cenarios:
+        if nome in CENARIOS_PYTHON:
+            resultados[nome] = CENARIOS_PYTHON[nome](cdp)
+            continue
         try:
             resultados[nome] = cdp.js(f"import('/testes/jogo/cenarios.js').then(m => m.cenarios.{nome}(window.maresia))")
         except Exception as e:  # o cenário quebrou (ex.: API que não existia no commit antigo)

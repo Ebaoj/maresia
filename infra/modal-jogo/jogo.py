@@ -224,11 +224,12 @@ def _chrome(largura, altura):
     # superfície, o WebGL segue na L4 e a composição também (teste de 17/10/2026). Sem a trava de vsync e de
     # taxa de quadros, o jogo sobe de ~34 para ~44-54 FPS no servidor (comparar_chrome, 17/10/2026).
     # Tradutor desligado pelas preferências (a opção de linha de comando não escondia o balão).
-    # A porta de depuração só escuta dentro do contêiner; serve para medir o FPS do jogo.
+    # A porta de depuração só escuta dentro do contêiner; serve para medir o FPS do jogo. No Linux o WebGPU
+    # só existe com --enable-unsafe-webgpu (motor F1, KAN-67).
     Path("/tmp/chrome/Default").mkdir(parents=True, exist_ok=True)
     Path("/tmp/chrome/Default/Preferences").write_text(json.dumps({"translate": {"enabled": False}}))
     _bg(f"DISPLAY=:1 XDG_RUNTIME_DIR=/tmp google-chrome --no-sandbox --use-angle=vulkan --enable-features=Vulkan "
-        f"--disable-vulkan-surface --disable-gpu-vsync --disable-frame-rate-limit --disable-features=Translate "
+        f"--disable-vulkan-surface --disable-gpu-vsync --disable-frame-rate-limit --enable-unsafe-webgpu --disable-features=Translate "
         f"--lang=pt-BR --ignore-gpu-blocklist --disable-dev-shm-usage --no-first-run --no-default-browser-check "
         f"--kiosk --remote-debugging-port=9222 --window-size={largura},{altura} --window-position=0,0 "
         f"--user-data-dir=/tmp/chrome http://127.0.0.1:5195/ > /tmp/chrome.log 2>&1")
