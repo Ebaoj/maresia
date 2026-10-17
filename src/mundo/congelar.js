@@ -24,7 +24,7 @@ export function alternarCongelamento(ligado) {
   }
 }
 
-if (import.meta.env.DEV) {
+if (import.meta.env.DEV && typeof window !== 'undefined') { // fora do navegador (testes no Node) não há window
   window.__alternarCongelamento = alternarCongelamento
   const m = new THREE.Matrix4()
   const avisados = new Set()

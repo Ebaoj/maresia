@@ -62,6 +62,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 | `src/ui/` | Legendas de gibi, onomatopeias e o painel lil-gui |
 | `src/audio.js` | Mar e vento gerados na hora, sem arquivo de som |
 | `arte/gerador.py` | Gera arte 2D (conceito do personagem) com ComfyUI + Z-Image Turbo numa GPU L4 do Modal; rodar só via `arte/modal.sh` (chaves `modal_token_id`/`modal_secret` do cofre); imagens em `arte/saida/` |
+| `arte/tripo.py` | Tripo pela API (SDK oficial `tripo3d` 1.x): `saldo`, `gerar IMAGEM PASTA [--partes]`, `baixar TASK_ID PASTA`; rodar só via `arte/tripo.sh` (chave `tripo_api_key` do cofre). Crédito da API é separado da assinatura do site |
 | `src/debug/gravador.js` + `vite.config.js` | Gravador de quadros com passo fixo (só no modo dev) |
 | `src/debug/medidor.js` | `maresia.medir(...)`: custo real do quadro por vazão, fora da tela, com variantes alternadas (só no modo dev) |
 
@@ -90,3 +91,20 @@ Protótipo pessoal, local, sem usuário, sem dado, sem dinheiro. Ajuste visual e
 sensação de jogo não precisa de ticket. Precisa de ticket no Jira (projeto KAN) antes
 do código: virar produto publicado, ter conta ou dado de jogador, multiplayer,
 monetização ou qualquer coisa que vá ao ar. Projeto grande segue épico com fases.
+
+## Testes de regressão (nunca retroceder)
+
+Regra do KAN-62 aplicada aqui: bug corrigido não pode voltar sem um teste avisar.
+
+- `npm test`: testes rápidos da lógica (`testes/unidade`, Vitest, segundos). Rodar antes de todo commit.
+- Jogo rodando num navegador de verdade na L4 do Modal (`testes/jogo/cenarios.js`, ~5 min), de `arte/`:
+  `./modal.sh run ../infra/modal-jogo/testar_jogo.py`. Rodar antes de commit que mexe em `src/jogador`,
+  `src/mundo`, `src/pos` ou materiais. Também reprova erro no console, shader quebrado, material sem gLuz.
+- Bug corrigido: primeiro o teste que reproduz (unidade quando der; cenário do jogo quando precisar do
+  personagem animado), **visto falhando no código de antes**; depois a correção, e o teste passa.
+  Para ver falhar: `git worktree add --detach PASTA COMMIT_ANTES`, copiar o teste e também
+  `public/animacoes` e `arte/finais` (não estão no git), e rodar ali (`MARESIA_RAIZ=PASTA` para o cenário).
+- Cada teste diz no comentário qual bug pega e o commit da correção.
+- Teste de regressão nunca é apagado nem afrouxado para passar. Mudar tolerância exige o porquê no commit.
+- O cenário mede o que o olho vê (ossos do corpo visível), não variável interna: a meia-volta antiga
+  passava medindo `yawVisual` e só era vista pelo giro dos ossos.
