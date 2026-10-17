@@ -1,0 +1,6 @@
+Receita do avo-mpfb.glb (rodar de ~/Projetos/maresia/arte):
+NETO_BARBA=fechada NETO_BARBA_CHEIA=1 NETO_BARBA_QUEIXO=3.0 NETO_BARBA_FIOS=1800 NETO_BIGODE_FIOS=450 \
+NETO_BARBA_ESPETO=0.07 NETO_BARBA_GRAVIDADE=0.28 NETO_BARBA_CORTE=0.0333 NETO_BARBA_LADOS=1.0 \
+NETO_TRAPEZIO=18 NETO_OMBRO_CAI=14 NETO_TPOSE=1 NETO_CURVA=1 NETO_ALTURA=1.50 NETO_OLHOS=0 \
+NETO_SOBRANCELHA=eyebrow010 NETO_SOB_GROSSURA=1.0 NETO_CABELO=short04 NETO_COR_CABELO="#cfcac1" NETO_COR_PELOS="#8f877c" \
+/Applications/Blender.app/Contents/MacOS/Blender -b --python blender/neto_mpfb.py -- SAIDA limpo entradas/3d/rosto-recorte.png ajuste/params-avo.json

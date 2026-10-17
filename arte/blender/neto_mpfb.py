@@ -16,7 +16,11 @@ from bl_ext.blender_org.mpfb.services.humanservice import HumanService
 from bl_ext.blender_org.mpfb.services.targetservice import TargetService
 DADOS = os.path.expanduser("~/Library/Application Support/Blender/5.2/extensions/.user/blender_org/mpfb/data")
 
-ALTURA = 1.68
+ALTURA = float(os.environ.get("NETO_ALTURA", "1.68"))
+def _hex_lin(h):
+    return tuple([((int(h[i:i + 2], 16) / 255 + 0.055) / 1.055) ** 2.4 for i in (1, 3, 5)] + [1])
+COR_CABELO = _hex_lin(os.environ.get("NETO_COR_CABELO", "#030202"))
+COR_PELOS = _hex_lin(os.environ.get("NETO_COR_PELOS", "#020201"))
 # cor da pele amostrada no desenho (bochechas ~ #B06E46), em linear
 PELE_DESENHO = tuple([((c / 255 + 0.055) / 1.055) ** 2.4 for c in (138, 84, 52)] + [1])  # bronze queimado de sol
 # idade no MakeHuman: 0,1875 = 11 anos, 0,5 = 25 anos  ->  15 anos ~ 0,277
@@ -149,6 +153,22 @@ def ativo(nome, tipo):
     return HumanService.add_mhclo_asset(caminho, corpo, asset_type=tipo, subdiv_levels=0)
 
 olhos = ativo("eyes/low-poly/low-poly.mhclo", "Eyes")
+BARBA_MH = None; BARBAS_MH = []
+for _c in filter(None, os.environ.get("NETO_BARBA_MH", "").split(",")):   # barba pronta da comunidade (.mhclo; vira roupa)
+    BARBA_MH = HumanService.add_mhclo_asset(_c, corpo, asset_type="Clothes", subdiv_levels=0)
+    BARBA_MH.name = "barba"; BARBAS_MH.append(BARBA_MH)
+    _cor = _hex_lin(os.environ.get("NETO_COR_BARBA", "#d8d3ca"))
+    for _m in BARBA_MH.data.materials:   # fios brancos: a textura escura vira só variação; o alfa da textura fica
+        if not _m or not _m.use_nodes: continue
+        _nt = _m.node_tree; _bs = next((n for n in _nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
+        _tx = next((n for n in _nt.nodes if n.type == "TEX_IMAGE"), None)
+        if _bs is None: continue
+        _mix = _nt.nodes.new("ShaderNodeMix"); _mix.data_type = "RGBA"; _mix.inputs["Factor"].default_value = 0.25
+        _mix.inputs["A"].default_value = _cor
+        if _tx: _nt.links.new(_tx.outputs["Color"], _mix.inputs["B"])
+        _nt.links.new(_mix.outputs["Result"], _bs.inputs["Base Color"])
+        _m.name = "barba"
+    print("BARBA_MH", _c, len(BARBA_MH.data.vertices), "pontos", [m.name for m in BARBA_MH.data.materials])
 CABELO = os.environ.get("NETO_CABELO", "short04")
 def cabelo_proprio():
     """Mechas grossas e desgrenhadas sobre uma touca escura, presas ao osso da cabeça."""
@@ -231,7 +251,7 @@ for no in ([] if SEM_ROSTO else (olhos.active_material.node_tree.nodes if olhos.
         nt_o.links.new(no.outputs["Color"], nt_o.nodes["Principled BSDF"].inputs["Base Color"])
 cabelo.data.materials.clear()
 m_cab = bpy.data.materials.new("cabelo"); m_cab.use_nodes = True
-m_cab.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.012, 0.009, 0.008, 1)
+m_cab.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = COR_CABELO
 m_cab.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 1
 cabelo.data.materials.append(m_cab)
 if VARIANTE in ("ativos", "limpo"):
@@ -247,7 +267,7 @@ if VARIANTE in ("ativos", "limpo"):
     for ob in bpy.data.objects:  # sobrancelha e cílio: cor chapada escura (a textura do pacote é clara demais)
         if ob.type == "MESH" and ("eyebrow" in ob.name.lower() or "eyelash" in ob.name.lower()):
             mm = bpy.data.materials.new("pelos"); mm.use_nodes = True
-            mm.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.01, 0.008, 0.007, 1)
+            mm.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = COR_PELOS
             mm.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 1
             ob.data.materials.clear(); ob.data.materials.append(mm)
     if VARIANTE == "ativos":
@@ -267,6 +287,7 @@ if VARIANTE in ("ativos", "limpo"):
         if SEM_ROSTO:  # tampão das órbitas: a esfera do olho fica, na cor da pele
             olhos.name = "tampao-olhos"; olhos.data.materials.clear(); olhos.data.materials.append(m_pele)
 
+CAMISA = os.environ.get("NETO_CAMISA", "listrada")
 def roupa():
     """Camisa de malha listrada e calça clara arregaçada, feitas da própria malha do corpo (seguem o esqueleto)."""
     b, P = _mistura()
@@ -281,19 +302,31 @@ def roupa():
     joelho = (J("joint-l-knee")[2] + J("joint-r-knee")[2]) / 2
     tornozelo = (J("joint-l-ankle")[2] + J("joint-r-ankle")[2]) / 2
     barra = tornozelo + (joelho - tornozelo) * 0.45   # meio da canela
+    # braço pelo peso do esqueleto, não pela distância: em pose A a mão encosta na coxa e a distância cortava a calça
+    def _peso(chaves):
+        gis = [g.index for g in corpo.vertex_groups if any(g.name.endswith(c) for c in chaves)]
+        w = np.zeros(len(corpo.data.vertices))
+        for v in corpo.data.vertices:
+            w[v.index] = sum(g.weight for g in v.groups if g.group in gis)
+        return w
+    w_ante = _peso(("ForeArm",) + tuple(f"Hand{d}" for d in ("", "Thumb1", "Thumb2", "Thumb3", "Thumb4")) + tuple(
+        f"Hand{d}{k}" for d in ("Index", "Middle", "Ring", "Pinky") for k in range(1, 5)))
+    w_braco = _peso(("LeftArm", "RightArm"))
     def regiao(i, peca):
         v = P[i]; l = "l" if v[0] > 0 else "r"; S, El, H = braco[l]
-        d1, t1 = dist_seg(v, S, El); d2, _ = dist_seg(v, El, H)
-        no_antebraco = d2 < 0.05 and not (d1 < 0.06 and t1 < 0.92)
         if peca == "camisa":
-            if no_antebraco: return False
-            if d1 < 0.065 and t1 < 0.92: return True                      # manga até o cotovelo
-            return abs(v[0]) < abs(S[0]) * 1.05 and Zp - 0.075 < v[2] < Zn - 0.005
+            if w_ante[i] > 0.5:   # manga comprida arregaçada até o meio do antebraço
+                return CAMISA == "escura" and dist_seg(v, El, H)[1] < 0.5
+            if w_braco[i] > 0.5: return True                              # manga até o cotovelo
+            return abs(v[0]) < abs(S[0]) * 1.05 and Zp - 0.095 < v[2] < Zn + 0.01
         # calça
-        if no_antebraco or d1 < 0.065 or (abs(v[0]) > 0.2): return False
-        return barra < v[2] < Zp + 0.07
+        if w_ante[i] > 0.3 or w_braco[i] > 0.3: return False
+        return barra - 0.03 < v[2] < Zp + (0.02 if CAMISA == "escura" else 0.07)
     pecas = {}
-    for peca, folga, cor in (("camisa", 0.026, None), ("calca", 0.019, (0.80, 0.74, 0.62))):
+    cor_camisa = _hex_lin("#5c3d2e")[:3] if CAMISA == "escura" else None   # tinta de mangue escura e gasta
+    folga_camisa = 0.016 if CAMISA == "escura" else 0.026
+    folga_calca = 0.010 if CAMISA == "escura" else 0.019
+    for peca, folga, cor in (("camisa", folga_camisa, cor_camisa), ("calca", folga_calca, (0.80, 0.74, 0.62))):
         me2 = corpo.data.copy(); ob = corpo.copy(); ob.data = me2; ob.name = peca
         bpy.context.scene.collection.objects.link(ob)
         ob.shape_key_clear(); me2.vertices.foreach_set("co", P.ravel())
@@ -302,13 +335,20 @@ def roupa():
         bm = bmesh.new(); bm.from_mesh(me2); bm.verts.ensure_lookup_table()
         fora = [v for v in bm.verts if v.index not in corpo_set or not regiao(v.index, peca)]
         bmesh.ops.delete(bm, geom=fora, context="VERTS")
+        def cortar(z, manter_acima):   # corte reto por plano: barra e gola sem serrilha
+            g = bm.verts[:] + bm.edges[:] + bm.faces[:]
+            bmesh.ops.bisect_plane(bm, geom=g, dist=1e-6, plane_co=(0, 0, z), plane_no=(0, 0, 1 if manter_acima else -1), clear_inner=True)
+        if peca == "calca": cortar(barra, True)
+        else: cortar(Zp - 0.075, True); cortar(Zn - 0.005, False)
+        bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if v.is_boundary and Zp - 0.07 < v.co.z < Zn - 0.01 and not (peca == "calca" and v.co.z < barra + 0.005)],
+                              factor=0.7, use_axis_x=True, use_axis_y=True, use_axis_z=True)  # borda sem serrilha (menos nos cortes retos)
         if peca == "camisa":  # malha mais fina para as listras não serrilharem
             bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=2, use_grid_fill=True)
         bm.normal_update()
         for v in bm.verts:
             extra = 0.0
             if peca == "camisa" and v.co.z < Zp - 0.02: extra = (Zp - 0.02 - v.co.z) * 0.25      # barra solta
-            if peca == "calca" and v.co.z < barra + 0.035: extra = 0.012                        # barra dobrada
+            if peca == "calca" and v.co.z < barra + 0.035: extra = 0.012 if CAMISA != "escura" else 0.004   # barra dobrada
             v.co += v.normal * (folga + extra)
         bm.to_mesh(me2); bm.free()
         sol = ob.modifiers.new("espessura", "SOLIDIFY"); sol.thickness = 0.005; sol.offset = 1
@@ -332,6 +372,246 @@ def roupa():
 if os.environ.get("NETO_ROUPA"):
     ROUPAS = roupa()
 
+def barba_pintada(P, na_barba):
+    """Barba curta pintada na pele (cor dos vértices), sem casca: borda que se desfaz em fios soltos e
+    fios brancos e grisalhos misturados. Sem geometria nova, o nanquim do jogo não contorna como máscara."""
+    me = corpo.data; n = len(me.vertices)
+    w = np.array([1.0 if na_barba(i) else 0.0 for i in range(n)])
+    ar = np.empty(len(me.edges) * 2, dtype=np.int64); me.edges.foreach_get("vertices", ar); ar = ar.reshape(-1, 2)
+    grau = np.bincount(ar.ravel(), minlength=n).astype(float) + 1
+    def borrar(x, vezes):
+        for _ in range(vezes):
+            s = x.copy(); np.add.at(s, ar[:, 0], x[ar[:, 1]]); np.add.at(s, ar[:, 1], x[ar[:, 0]]); x = s / grau
+        return x
+    rng = np.random.default_rng(1932)
+    X = P * 60   # ruído de baixa frequência (tufos) para quebrar a borda
+    tufo = (np.sin(X[:, 0] * 1.7 + X[:, 2] * 2.3) + np.sin(X[:, 2] * 3.1 - X[:, 1] * 1.3) + np.sin(X[:, 0] * 4.3 + X[:, 1] * 2.9)) / 6 + 0.5
+    soft = borrar(w, 3)
+    a = np.clip((soft - 0.5 + 0.45 * (tufo - 0.5) + 0.25 * (rng.random(n) - 0.5)) * 3.2 + 0.5, 0, 1)
+    a = np.where(soft > 0.97, np.maximum(a, 0.85), a)   # miolo sempre cheio
+    claro, escuro = np.array(_hex_lin(os.environ.get("NETO_COR_BARBA", "#d3cdc3"))[:3]), np.array(_hex_lin("#857d72")[:3])
+    fio = 0.5 * rng.random(n) ** 6   # maioria branca, alguns fios grisalhos
+    cor_barba = claro[None] * (1 - fio[:, None]) + escuro[None] * fio[:, None]
+    pele = np.array(PELE_DESENHO[:3])
+    cor = pele[None] * (1 - a[:, None]) + cor_barba * a[:, None]
+    print(f"BARBA pintada: {int(w.sum())} vértices no miolo, {int((a > 0.05).sum())} com cor")
+    attr = me.color_attributes.new("Col", "BYTE_COLOR", "CORNER")
+    lv = np.empty(len(me.loops), dtype=np.int64); me.loops.foreach_get("vertex_index", lv)
+    rgba = np.ones((len(me.loops), 4)); rgba[:, :3] = cor[lv]
+    attr.data.foreach_set("color", rgba.ravel())
+    mt = bpy.data.materials.new("pele"); mt.use_nodes = True
+    bs = mt.node_tree.nodes["Principled BSDF"]; bs.inputs["Roughness"].default_value = 0.9
+    vc = mt.node_tree.nodes.new("ShaderNodeVertexColor"); vc.layer_name = "Col"
+    mt.node_tree.links.new(vc.outputs["Color"], bs.inputs["Base Color"])
+    antigo = me.materials[0]; antigo.name = "pele-lisa"   # continua nas órbitas tampadas
+    me.materials[0] = mt
+    return None
+
+CHEIA = bool(os.environ.get("NETO_BARBA_CHEIA"))   # barba bem fechada: bochecha toda, até o peito
+def barba():
+    b, P = _mistura()
+    J = lambda g: P[_grupo_idx(g)].mean(0)
+    zl = P[_grupo_idx("lips")][:, 2].mean(); ze = J("joint-l-eye")[2]; zn = J("joint-neck")[2]; cb_y = P[_grupo_idx("lips")][:, 1].mean() + 0.03
+    orelha_y = P[_grupo_idx("ears")][:, 1].mean()
+    corpo_set = set(_grupo_idx("body").tolist()); lab = set(_grupo_idx("lips").tolist())
+    L = P[_grupo_idx("lips")]; zt = L[np.abs(L[:, 0]) < 0.012][:, 2].max()   # topo do lábio de cima, no meio
+    def na_barba(i):
+        x, y, z = P[i]
+        if i not in corpo_set or (i in lab and z < zl + 0.007) or y > orelha_y - 0.012 or z < zl - 0.045: return False
+        if abs(x) < 0.026 and abs(z - zl) < 0.007: return False                       # deixa a boca livre
+        if zl + 0.007 < z < zt + 0.012 and abs(x) < 0.042 and y < cb_y - 0.01: return True   # bigode largo, cobre o filtro e a beira do lábio
+        if 0.022 < abs(x) < 0.045 and zl - 0.006 < z < zt + 0.014: return True         # cantos da boca (liga bigode e queixo)
+        if abs(x) > 0.04 and z < zl + (0.045 if CHEIA else 0.03) + (abs(x) - 0.04) * 0.6: return True       # bochecha subindo até a costeleta
+        return z < zl - 0.003                                                          # queixo e mandíbula
+    MODO = os.environ.get("NETO_BARBA")
+    if MODO == "pintada":
+        return barba_pintada(P, na_barba)
+    if MODO == "fechada":   # barba cheia: desce para baixo do queixo, na frente do pescoço
+        _base = na_barba
+        def na_barba(i):
+            x, y, z = P[i]
+            if i in corpo_set and zl - 0.075 < z <= zl - 0.045 and y < cb_y + 0.035 and abs(x) < (0.075 if CHEIA else 0.06): return True
+            return _base(i)
+        barba_pintada(P, na_barba)   # pele por baixo pintada: a borda da massa se desfaz nela
+    me2 = corpo.data.copy(); ob = corpo.copy(); ob.data = me2; ob.name = "barba"
+    bpy.context.scene.collection.objects.link(ob)
+    ob.shape_key_clear(); me2.vertices.foreach_set("co", P.ravel())
+    for m in list(ob.modifiers):
+        if m.type == "MASK": ob.modifiers.remove(m)
+    bm = bmesh.new(); bm.from_mesh(me2); bm.verts.ensure_lookup_table()
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not na_barba(v.index)], context="VERTS")
+    if MODO == "fechada":
+        bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=1, use_grid_fill=True, smooth=0.5)
+    bm.normal_update()
+    for _ in range(6): bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if v.is_boundary], factor=0.8, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.normal_update()
+    # volume: rente à pele na borda e cheia por dentro (anéis contados a partir da borda)
+    anel = {v: 0 for v in bm.verts if v.is_boundary}; fila = list(anel)
+    while fila:
+        v = fila.pop(0)
+        for e in v.link_edges:
+            o = e.other_vert(v)
+            if o not in anel: anel[o] = anel[v] + 1; fila.append(o)
+    normais = {v: v.normal.copy() for v in bm.verts}
+    antes = {v: v.co.copy() for v in bm.verts}
+    if MODO == "fechada":
+        R = 5
+        Q = float(os.environ.get("NETO_BARBA_QUEIXO", "1.0"))   # quanto a massa projeta o queixo
+        for v in bm.verts:
+            x, y, z = v.co
+            r = min(anel.get(v, R), R) / R; r = r * r * (3 - 2 * r)
+            if z > zl - 0.004 and anel.get(v, R) > 0: r = max(r, 0.7)   # bigode é faixa estreita: não deixa a borda achatar
+            t = (0.006 if z > zl - 0.004 else 0.004) + 0.007 * min(max((zl - z) / 0.04, 0), 1)                 # bochecha fina, mandíbula mais cheia
+            f = math.exp(-(x / 0.055) ** 2) * min(max((zl - 0.008 - z) / 0.03, 0), 1)   # massa do queixo
+            v.co += float(r) * (normais[v] * float(t) + float(Q * f) * Vector((0, -0.011, -0.022)))
+        for _ in range(8): bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if not v.is_boundary], factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+        if BARBAS_MH:   # fios prontos por cima: cada ponto anda junto com o pedaço da massa mais perto
+            from mathutils.kdtree import KDTree
+            vs = list(bm.verts); kd = KDTree(len(vs))
+            for k_, v in enumerate(vs): kd.insert(antes[v], k_)
+            kd.balance()
+            for ob_ in BARBAS_MH:
+                for v in ob_.data.vertices:
+                    viz_ = kd.find_n(v.co, 6)
+                    pesos_ = [1 / (d + 0.002) for _, _, d in viz_]
+                    v.co += sum(((vs[i].co - antes[vs[i]]) * w_ for (_, i, _), w_ in zip(viz_, pesos_)), Vector()) / sum(pesos_)
+                ob_.data.update()
+    else:
+        VOL = float(os.environ.get("NETO_BARBA_VOLUME", "0.007"))
+        for v in bm.verts: v.co += normais[v] * (0.0006 + VOL * min(anel.get(v, 4), 4) / 4)
+        for _ in range(4): bmesh.ops.smooth_vert(bm, verts=[v for v in bm.verts if not v.is_boundary], factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(me2); bm.free()
+    ob.modifiers.new("espessura", "SOLIDIFY").thickness = 0.0012
+    me2.materials.clear(); mt = bpy.data.materials.new("barba"); mt.use_nodes = True
+    bs = mt.node_tree.nodes["Principled BSDF"]; bs.inputs["Roughness"].default_value = 1
+    claro = np.array(_hex_lin(os.environ.get("NETO_COR_BARBA", "#d8d3ca"))[:3])
+    if MODO == "fechada":   # fios: listras finas que descem, brancas e grisalhas
+        escuro = np.array(_hex_lin("#8a8277")[:3]); rng = np.random.default_rng(1881)
+        attr = me2.color_attributes.new("Col", "BYTE_COLOR", "CORNER")
+        V = np.empty(len(me2.vertices) * 3); me2.vertices.foreach_get("co", V); V = V.reshape(-1, 3)
+        onda = np.sin(V[:, 0] * 700 + np.sin(V[:, 2] * 180) * 2.5) * 0.5 + 0.5
+        k = np.clip(0.45 * onda ** 6 + 0.3 * rng.random(len(V)) ** 6, 0, 0.6)
+        cor = claro[None] * (1 - k[:, None]) + escuro[None] * k[:, None]
+        lv = np.empty(len(me2.loops), dtype=np.int64); me2.loops.foreach_get("vertex_index", lv)
+        rgba = np.ones((len(me2.loops), 4)); rgba[:, :3] = cor[lv]; attr.data.foreach_set("color", rgba.ravel())
+        vc = mt.node_tree.nodes.new("ShaderNodeVertexColor"); vc.layer_name = "Col"
+        mt.node_tree.links.new(vc.outputs["Color"], bs.inputs["Base Color"])
+    else:
+        bs.inputs["Base Color"].default_value = (*claro, 1)
+    me2.materials.append(mt)
+    if os.environ.get("NETO_BARBA_FIOS"):
+        barba_fios(ob, zl, zt, cb_y, int(os.environ["NETO_BARBA_FIOS"]))
+    return ob
+
+def barba_fios(nucleo, zl, zt, cb_y, N):
+    """Mechas (fitas afinando na ponta) nascendo da massa da barba: bigode que cai sobre a boca, bochecha curta,
+    queixo comprido até o peito, frisadas. Cada mecha segue o osso da pele de onde nasce."""
+    from mathutils.kdtree import KDTree
+    rng = np.random.default_rng(1932)
+    me = nucleo.data; me.calc_loop_triangles()
+    tris = list(me.loop_triangles); areas = np.array([t.area for t in tris]); areas /= areas.sum()
+    kd = KDTree(len(me.vertices))
+    for v in me.vertices: kd.insert(v.co, v.index)
+    kd.balance()
+    nomes = {g.index: g.name for g in nucleo.vertex_groups}
+    verts, faces, cores, pesos, mechas = [], [], [], [], []
+    raiz_c, ponta_c = np.array(_hex_lin("#9f978b")[:3]), np.array(_hex_lin(os.environ.get("NETO_COR_BARBA", "#e8e3da"))[:3])
+    LONGO = float(os.environ.get("NETO_BARBA_COMPRIMENTO", "1.0"))
+    LADOS = float(os.environ.get("NETO_BARBA_LADOS", "0"))   # quanto as laterais abrem (volume)
+    ESPETO = float(os.environ.get("NETO_BARBA_ESPETO", "0.22"))   # desvio aleatório por passo (fios espetados)
+    GRAV = float(os.environ.get("NETO_BARBA_GRAVIDADE", "0.18"))   # quanto cada passo cai
+    def no_bigode(t):
+        c = t.center
+        return c.z > zl - 0.004 and abs(c.x) < 0.05 and c.y < cb_y - 0.005
+    tb = [i for i, t in enumerate(tris) if no_bigode(t)]
+    NB = int(os.environ.get("NETO_BIGODE_FIOS", "0"))
+    escolha = list(rng.choice(len(tris), size=N, p=areas))
+    if tb and NB:
+        ab = np.array([tris[i].area for i in tb]); escolha += list(rng.choice(tb, size=NB, p=ab / ab.sum()))
+    for k in escolha:
+        t = tris[k]; a, b_ = rng.random(2)
+        if a + b_ > 1: a, b_ = 1 - a, 1 - b_
+        A, B_, C = (me.vertices[i].co for i in t.vertices)
+        p = A + (B_ - A) * a + (C - A) * b_; n = t.normal.copy()
+        x, y, z = p
+        bigode = z > zl - 0.004 and abs(x) < 0.05 and y < cb_y - 0.005
+        curva = Vector()
+        if bigode and NB:   # bigode de morsa: sai do meio do lábio para os lados e para baixo, por cima da boca
+            lado_x = math.copysign(1, x) if abs(x) > 0.003 else rng.choice((-1, 1))
+            L = rng.uniform(0.03, 0.042) * (1 + abs(x) * 6)
+            d = Vector((lado_x * 0.5, -0.5, -1)).normalized(); curva = Vector((lado_x * 0.06, 0, 0))
+        elif bigode:
+            L = rng.uniform(0.022, 0.034); d = (n * 0.35 + Vector((0, -0.15, -1))).normalized()
+        elif abs(x) > 0.045 and z > zl - 0.02:
+            L = rng.uniform(0.025, 0.042); d = (n * 0.7 + Vector((0, 0, -0.7))).normalized()
+        else:
+            cf = math.exp(-(x / 0.05) ** 2) * min(max((zl - z) / 0.03, 0), 1)
+            L = (0.04 + 0.09 * cf) * LONGO * rng.uniform(0.75, 1.25); d = (n * 0.5 + Vector((0, -0.25, -1))).normalized()
+        if not bigode and LADOS:   # volume nas laterais: bochecha e mandíbula abrem para fora
+            lat = min(max((abs(x) - 0.02) / 0.04, 0), 1) * math.copysign(1, x)
+            d = (d + Vector((lat * LADOS * 0.6, 0, 0))).normalized(); curva = Vector((lat * LADOS * 0.05, 0, 0))
+        S = 8; passo = L / S; w0 = rng.uniform(0.004, 0.007) if (bigode and NB) else rng.uniform(0.0025, 0.0055)
+        esp = ESPETO * (0.4 if (bigode and NB) else 1)
+        lado = d.cross(n)
+        if lado.length < 1e-6: lado = Vector((1, 0, 0))
+        lado.normalize()
+        fase, amp = rng.uniform(0, 6.28), rng.uniform(0.001, 0.0035)   # frisado
+        tint = rng.uniform(-0.04, 0.04)
+        q = p.copy() - n * 0.001; pts = []
+        for s in range(S + 1):
+            pts.append(q.copy())
+            if s < S:
+                d = (d + curva + Vector((0, 0, -GRAV)) + Vector(rng.normal(0, esp, 3))).normalized()
+                q = q + d * passo
+        _, vi, _ = kd.find(p)
+        gs = [(nomes[g.group], g.weight) for g in me.vertices[vi].groups if g.weight > 0.01]
+        mechas.append((pts, lado, w0, fase, amp, tint, gs))
+    # corte reto: tira CORTE da ponta mais baixa e apara todas as mechas nesse plano (ponta cega, sem afinar)
+    CORTE = float(os.environ.get("NETO_BARBA_CORTE", "0"))
+    z_corte = float(np.percentile([mc[0][-1].z for mc in mechas], 3)) + CORTE if CORTE else -1e9   # a partir de onde a barba termina (sem os fios soltos)
+    for pts, lado, w0, fase, amp, tint, gs in mechas:
+        S = len(pts) - 1; cortada = False
+        for s in range(1, S + 1):
+            if pts[s].z < z_corte:
+                a_, b2 = pts[s - 1], pts[s]; f_ = (a_.z - z_corte) / max(a_.z - b2.z, 1e-9)
+                pts = pts[:s] + [a_ + (b2 - a_) * f_]; cortada = True
+                break
+        if len(pts) < 2: continue
+        base = len(verts); n_ = len(pts) - 1
+        for s, q in enumerate(pts):
+            u = s / S   # posição no fio inteiro: a cor e a largura não mudam com o corte
+            w = w0 * (1 - u) ** 0.8 + 0.0004
+            onda = lado * (math.sin(fase + u * 9) * amp)
+            verts += [tuple(q + onda - lado * w / 2), tuple(q + onda + lado * w / 2)]
+            c = raiz_c * (1 - u ** 0.6) + ponta_c * u ** 0.6 + tint
+            cores += [c, c]
+            if s < n_: faces.append((base + 2 * s, base + 2 * s + 1, base + 2 * s + 3, base + 2 * s + 2))
+        pesos += [gs] * (2 * len(pts))
+    m = bpy.data.meshes.new("barba-fios"); m.from_pydata(verts, [], faces); m.update()
+    ob = nucleo.copy(); ob.data = m; ob.name = "barba-fios"
+    bpy.context.scene.collection.objects.link(ob)
+    for md in list(ob.modifiers):
+        if md.type != "ARMATURE": ob.modifiers.remove(md)
+    ob.vertex_groups.clear()
+    grupos = {}
+    for i, gs in enumerate(pesos):
+        for nome, w in gs:
+            if nome not in grupos: grupos[nome] = ob.vertex_groups.new(name=nome)
+            grupos[nome].add([i], w, "REPLACE")
+    attr = m.color_attributes.new("Col", "BYTE_COLOR", "CORNER")
+    lv = np.empty(len(m.loops), dtype=np.int64); m.loops.foreach_get("vertex_index", lv)
+    C_ = np.clip(np.array(cores), 0, 1); rgba = np.ones((len(m.loops), 4)); rgba[:, :3] = C_[lv]
+    attr.data.foreach_set("color", rgba.ravel())
+    mt = bpy.data.materials.new("barba-fios"); mt.use_nodes = True; mt.use_backface_culling = False
+    bs = mt.node_tree.nodes["Principled BSDF"]; bs.inputs["Roughness"].default_value = 1
+    vc = mt.node_tree.nodes.new("ShaderNodeVertexColor"); vc.layer_name = "Col"
+    mt.node_tree.links.new(vc.outputs["Color"], bs.inputs["Base Color"])
+    m.materials.append(mt)
+    print(f"BARBA fios: {N} mechas + {NB if tb else 0} no bigode ({len(tb)} triângulos), {len(verts)} pontos, {len(faces)} faces")
+    return ob
+if os.environ.get("NETO_BARBA"):
+    BARBA = barba()
+
 if os.environ.get("NETO_TPOSE"):
     # pose T reta: braço, antebraço, mão e dedos num eixo X horizontal; pernas retas; pés para a frente.
     from bl_ext.blender_org.mpfb.services.rigservice import RigService
@@ -346,6 +626,26 @@ if os.environ.get("NETO_TPOSE"):
         q = atual.rotation_difference(V(alvo).normalized())
         nova = Matrix.Translation(mw.to_translation()) @ q.to_matrix().to_4x4() @ mw.to_3x3().to_4x4()
         pb.matrix = rig.matrix_world.inverted() @ nova
+    CURVA = float(os.environ.get("NETO_CURVA", "0"))   # 1 = postura curvada do avô
+    def girar(nome, graus):
+        pb = rig.pose.bones.get("mixamorig:" + nome)
+        if pb is None: return
+        bpy.context.view_layer.update()
+        mw = rig.matrix_world @ pb.matrix
+        q = Matrix.Rotation(math.radians(graus), 4, "X")
+        pb.matrix = rig.matrix_world.inverted() @ (Matrix.Translation(mw.to_translation()) @ q @ mw.to_3x3().to_4x4())
+    if CURVA:
+        # coluna em C: cada vértebra dobra um pouco para a frente; pescoço avança; cabeça levanta para olhar adiante
+        dobra = (("Spine", 3), ("Spine1", 8), ("Spine2", 13), ("Neck", 5))   # pescoço quase reto: senão a cabeça afunda nos ombros
+        for osso, g in dobra: girar(osso, g * CURVA)
+        girar("Head", -sum(g for _, g in dobra) * CURVA + 4)   # cabeça volta a olhar adiante (só um pouco baixa)
+    OMBRO = float(os.environ.get("NETO_OMBRO_CAI", "0"))   # graus: clavícula caída (ombro de velho, trapézio baixo)
+    for lado, sx in (("Left", 1), ("Right", -1)):
+        if OMBRO:
+            pb = rig.pose.bones.get(f"mixamorig:{lado}Shoulder"); bpy.context.view_layer.update()
+            mw = rig.matrix_world @ pb.matrix
+            q = Matrix.Rotation(math.radians(OMBRO * sx), 4, "Y")
+            pb.matrix = rig.matrix_world.inverted() @ (Matrix.Translation(mw.to_translation()) @ q @ mw.to_3x3().to_4x4())
     for lado, sx in (("Left", 1), ("Right", -1)):
         for osso in ("Shoulder", "Arm", "ForeArm", "Hand"):
             if osso == "Shoulder": continue
@@ -353,7 +653,8 @@ if os.environ.get("NETO_TPOSE"):
         for dedo in ("Index", "Middle", "Ring", "Pinky"):
             for i in (1, 2, 3): alinhar(f"{lado}Hand{dedo}{i}", (sx, 0, 0))
         for i in (1, 2, 3): alinhar(f"{lado}HandThumb{i}", (sx * 0.7, -0.7, 0))
-        alinhar(lado + "UpLeg", (0, 0, -1)); alinhar(lado + "Leg", (0, 0, -1))
+        jo = math.radians(9 * CURVA)   # joelhos levemente dobrados no avô
+        alinhar(lado + "UpLeg", (0, -math.sin(jo), -math.cos(jo))); alinhar(lado + "Leg", (0, math.sin(jo), -math.cos(jo)))
         pe = rig.pose.bones.get(f"mixamorig:{lado}Foot")
         if pe:  # mantém a inclinação do pé, tira o giro para fora
             bpy.context.view_layer.update()
@@ -375,6 +676,46 @@ if os.environ.get("NETO_TPOSE"):
         fim.use_deform = False
         bpy.ops.object.mode_set(mode="OBJECT")
     print("TPOSE aplicada")
+    TRAP = os.environ.get("NETO_TRAPEZIO")   # graus da inclinação pescoço -> ombro vista de frente (ex.: 18)
+    if TRAP:
+        # Levantar o braço da pose A para a T sobe a pele do alto do ombro e o trapézio vira um morro até o
+        # queixo. Mede o contorno de frente e rebaixa o que passa de uma reta inclinada, comprimindo para baixo.
+        bpy.context.view_layer.update()
+        Bw = {b.name.split(":")[-1]: rig.matrix_world @ b.head_local for b in rig.data.bones}
+        xs = abs(Bw["LeftArm"].x); z_baixo, z_cima = Bw["Spine2"].z, Bw["Head"].z
+        def pesos_cabeca(ob):
+            g = ob.vertex_groups.get("mixamorig:Head")
+            w = np.zeros(len(ob.data.vertices))
+            if g is None: return w
+            for v in ob.data.vertices:
+                for e in v.groups:
+                    if e.group == g.index: w[v.index] = e.weight
+            return w
+        def mundo(ob):
+            n_ = len(ob.data.vertices); c_ = np.empty(n_ * 3); ob.data.vertices.foreach_get("co", c_)
+            M = np.array(ob.matrix_world); c_ = c_.reshape(n_, 3)
+            return c_ @ M[:3, :3].T + M[:3, 3]
+        Pc = mundo(corpo); wc = pesos_cabeca(corpo)
+        sel = np.zeros(len(Pc), bool); sel[_grupo_idx("body")] = True
+        sel &= (wc < 0.2) & (Pc[:, 2] > z_baixo) & (Pc[:, 2] < z_cima)
+        Q = Pc[sel]; ax = np.abs(Q[:, 0])
+        xb = np.linspace(0.3 * xs, 1.25 * xs, 24); zt = np.array([Q[np.abs(ax - x) < 0.03 * xs][:, 2].max() for x in xb])
+        x_ref = 1.2 * xs; z_ref = np.interp(x_ref, xb, zt)
+        alvo_z = z_ref + (x_ref - xb) * math.tan(math.radians(float(TRAP)))
+        exc = np.maximum(zt - alvo_z, 0)
+        print("TRAPEZIO excesso (cm, escala do modelo):", [round(e * 100, 1) for e in exc])
+        for ob in [o for o in bpy.context.scene.objects if o.type == "MESH" and any(m.type == "ARMATURE" for m in o.modifiers)]:
+            if ob.data.shape_keys: print("TRAPEZIO pulou (chaves):", ob.name); continue
+            P_ = mundo(ob); w_ = pesos_cabeca(ob); a_ = np.abs(P_[:, 0])
+            fx = np.clip((a_ - 0.33 * xs) / (0.12 * xs), 0, 1); fx = fx * fx * (3 - 2 * fx)
+            e_ = np.interp(a_, xb, exc) * fx * np.clip(1 - w_ / 0.2, 0, 1)
+            top = np.interp(a_, xb, zt); base = np.interp(a_, xb, alvo_z) - 0.4 * xs
+            wz = np.clip((P_[:, 2] - base) / np.maximum(top - base, 1e-6), 0, 1)
+            wz[P_[:, 2] > top + 0.02 * xs] = 0
+            P_[:, 2] -= e_ * wz
+            Mi = np.array(ob.matrix_world.inverted()); L_ = P_ @ Mi[:3, :3].T + Mi[:3, 3]
+            ob.data.vertices.foreach_set("co", L_.ravel()); ob.data.update()
+            print("TRAPEZIO", ob.name, "mexeu", int(((e_ * wz) > 1e-4).sum()), "pontos, máx", round(float((e_ * wz).max()) * 100, 1), "cm")
 
 if SEM_ROSTO:
     # recorta lábios e interior da boca e tampa com pele nova encostada na superfície lisa (sem linha de junção)
