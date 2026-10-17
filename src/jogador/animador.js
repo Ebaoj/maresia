@@ -147,7 +147,10 @@ export class Animador {
     }
     mm.espera -= DT
     const fimDoClipe = atual && !entAtual.loop && fAtual >= entAtual.n - 3
-    if (!atual || mm.espera <= 0 || fimDoClipe) {
+    // giro em andamento (meia-volta, virar no lugar): vai até perto do fim sem trocar
+    const travado = mm.trava && mm.trava.chave === mm.chave && fAtual < mm.trava.ate && !fimDoClipe
+    if (!travado) mm.trava = null
+    if (!travado && (!atual || mm.espera <= 0 || fimDoClipe)) {
       mm.espera = 0.1 // procura 10 vezes por segundo
       const pose = atual ? this.banco.linha(atual.userData.e, fAtual) : this.banco.linha(0, 0)
       // ritmo: correndo (ou pedindo corrida) não pega movimento de andar; andando não pega de corrida
@@ -172,6 +175,17 @@ export class Animador {
         mm.chave = chave
         mm.tocando = true
         this.mmUltimo = { nome, f: r.f, custo: +r.custo.toFixed(2) }
+        // começou um giro: trava até 85% do clipe e escala o giro da raiz para terminar na direção pedida
+        const ent = this.banco.entradas[r.e]
+        if (/volta|virar/.test(nome) && s.yawPedido != null) {
+          const giroClipe = ent.R[ent.n - 1].yaw - ent.R[r.f].yaw
+          let falta = s.yawPedido - s.yaw
+          falta = Math.atan2(Math.sin(falta), Math.cos(falta))
+          // mesmo sentido do clipe: se o clipe gira para o outro lado, completa a volta por ele
+          if (Math.sign(falta) !== Math.sign(giroClipe) && Math.abs(falta) > 2.6) falta += Math.sign(giroClipe) * Math.PI * 2
+          const escala = Math.abs(giroClipe) > 0.2 ? THREE.MathUtils.clamp(falta / giroClipe, 0.6, 1.4) : 1
+          mm.trava = { chave, ate: r.f + Math.floor((ent.n - r.f) * 0.85), escala }
+        }
       }
     }
     alvo[mm.chave] = 1
@@ -191,10 +205,14 @@ export class Animador {
     if (ant && ant.chave === mm.chave) {
       // movimento que repete: ao dar a volta, compara com o quadro "depois do fim" (raiz acumulada)
       const fComp = f < ant.f && ent.loop ? Math.min(ent.R.length - 1, f + ent.n - 1) : f
-      this.giroAcumulado = (this.giroAcumulado || 0) + (ent.R[fComp].yaw - ent.R[ant.f].yaw)
+      const esc = mm.trava && mm.trava.chave === mm.chave ? mm.trava.escala : 1
+      this.giroAcumulado = (this.giroAcumulado || 0) + (ent.R[fComp].yaw - ent.R[ant.f].yaw) * esc
     }
     mm.raizAnt = { chave: mm.chave, f }
   }
+
+  // durante um giro travado, o controle não corrige a direção (quem gira é a animação)
+  get girando() { return !!(this.mm?.trava && this.mm.trava.chave === this.mm.chave) }
 
   // o controle lê e zera o giro acumulado
   consumirGiro() {
@@ -235,6 +253,12 @@ export class Animador {
     if (!this.antes.noAr && s.noAr && s.velY > 0) this.disparar('pulo-subida')
     if (!this.antes.sentado && s.sentado) this.disparar('sentar')
     if (this.antes.sentado && !s.sentado) this.disparar('levantar')
+    // gesto de parado (olhar em volta), pouso ou levantar não seguram o corpo quando o jogador manda
+    // andar: corta na hora (sem isso ele deslizava com a animação de parado)
+    if (this.umaVez && this.umaVez !== 'sentar' && !s.sentado && !s.noAr && ((s.velPedida || 0) > 0.3 || s.vel > 0.6)) {
+      if (this.umaVez === 'olhando') this.gesto = null
+      this.umaVez = null
+    }
     if (this.umaVez) {
       const a = this.acoes[this.umaVez]
       if (!a || !a.isRunning() || a.time >= a.getClip().duration - 0.05) this.umaVez = null

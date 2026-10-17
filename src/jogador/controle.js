@@ -79,6 +79,7 @@ export class Jogador {
       yaw: this.yawVisual,
       chao: (x, z) => alturaChao(x, z, y + 0.4) - this.afundado, // na areia fofa o pé afunda junto com o corpo
       velPedida: this.velDesejada.length(),
+      yawPedido: this.velDesejada.lengthSq() > 0.09 ? Math.atan2(this.velDesejada.x, this.velDesejada.z) : null,
       // para onde olhar: o que dá para usar (interacoes.js) ou, parado, para onde a câmera aponta
       olhar: this.olharPara || (this.velHoriz < 0.3 && this.yawCamera !== undefined
         ? new THREE.Vector3(this.pos.x - Math.sin(this.yawCamera) * 10, this.pos.y + 1.4, this.pos.z - Math.cos(this.yawCamera) * 10)
@@ -162,6 +163,8 @@ export class Jogador {
     if (this.naAreiaSeca) alvoVel *= 0.86
     if (this.nadando) alvoVel = teclas.correr ? 4 : 2.6
     else if (profAqui > 0.35 && this.pos.y < 0.2) alvoVel *= 0.6 // água pela canela
+    // girando (meia-volta): quase para enquanto vira, em vez de sair andando de costas para a nova direção
+    if (this.animador?.girando) alvoVel *= 0.3
 
     const acel = this.noChao || this.nadando ? 10 : 3
     this.velDesejada.set(dx * alvoVel, 0, dz * alvoVel) // o motion matching lê para prever a trajetória
@@ -265,7 +268,7 @@ export class Jogador {
         // lugar), e o controle só corrige o desvio aos poucos
         const giro = this.animador.consumirGiro()
         this.yawVisual += giro
-        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 3))
+        if (!this.animador.girando) this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 3))
       } else {
         this.animador?.consumirGiro()
         this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 14))
