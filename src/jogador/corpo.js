@@ -12,6 +12,7 @@ import { criarMultiplos } from './multiplos.js'
 import { criarRosto } from './rosto.js'
 import { criarMolas } from './molas.js'
 import { criarPano } from './pano.js'
+import { criarRoupa } from './roupa.js'
 import { criarDobras } from './dobras.js'
 
 // banco do motion matching: movimentos com deslocamento (os que repetem marcados); os que não repetem
@@ -45,7 +46,7 @@ export function criarAdaptador(alvo) {
 }
 
 // modelo: 'neto' (o personagem da história) ou 'boneco' (o de cápsulas, para testes)
-export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false, estiloRosto = 'minimo-brilho', ombros = 0.9, folgaCamisa = 0.012 } = {}) {
+export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false, estiloRosto = 'minimo-brilho', ombros = 0.9, folgaCamisa = 0.012, roupaJolt = false } = {}) {
   const boneco = criarBoneco()
   const r = await carregarMovimentosMixamo({
     alvo: { ossos: boneco.ossos, raiz: boneco.raiz }, pasta: '/animacoes/mixamo/', nomes: [...NOMES, ...Object.keys(BANCO)],
@@ -74,7 +75,12 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
     if (neto) { alvo = neto; adaptar = criarAdaptador(neto) } else console.warn('Corpo: o neto não carregou; fica o boneco')
   }
   // tecido solto: prepara antes de qualquer pose (precisa do repouso)
-  const pano = alvo.malhas && alvo !== null && modelo === 'neto' ? criarPano(alvo.malhas) : null
+  // roupa: pano de verdade no Jolt (roupa.js) ou as molas só nas bordas (pano.js); o Jolt não carregou, ficam as molas
+  let pano = null
+  if (alvo.malhas && modelo === 'neto') {
+    if (roupaJolt) pano = await criarRoupa(alvo.malhas).catch((e) => { console.warn('Roupa no Jolt falhou; ficam as molas', e); return null })
+    if (!pano) pano = criarPano(alvo.malhas)
+  }
   const clipesAlvo = Object.fromEntries(Object.entries(r.clipes).map(([k, c]) => [k, adaptar(c)]))
   // mesma forma do boneco antigo: raiz (posição e direção) > corpo (estica e amassa) > modelo
   const raiz = new THREE.Group()
