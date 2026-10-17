@@ -239,8 +239,9 @@ async function iniciar() {
     horizonte.atualizar(paleta)
     pessoas.atualizar(dt, t)
     atores?.atualizar(dt, jogador.pos)
-    avo?.atualizar(dt, cfg.personagem.fpsPose)
-    avo2?.atualizar(dt, cfg.personagem.fpsPose)
+    const fpsAvo = cfg.estilo.visual === 'arcane' ? cfg.personagem.fpsAcao : cfg.personagem.fpsPose // Arcane: 24 poses
+    avo?.atualizar(dt, fpsAvo)
+    avo2?.atualizar(dt, fpsAvo)
     mar.atualizar(jogador.pos)
     grama.atualizar(jogador.pos, camera)
     terreno.atualizar(camera)

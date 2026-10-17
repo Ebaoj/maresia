@@ -64,7 +64,8 @@ export class Jogador {
     // "em 2" que muda com a ação: correndo e no ar a pose muda 24 vezes por segundo ("em 1"), andando 12
     const acao = this.velHoriz > cfg.corridaNova * 0.75 || !this.noChao
     Object.assign(a.opcoes, {
-      fps: acao ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
+      // visual Arcane: personagem a 24 poses por segundo sempre (o "em 2" é linguagem do Aranhaverso)
+      fps: acao || this.cfg.estilo.visual === 'arcane' ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
       mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0, clavicula: cfg.clavicula, joelhos: cfg.joelhos,
     })
     // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo

@@ -102,7 +102,8 @@ export async function carregarNeto({ chapeu = false, semRosto = false, ombros = 
     pivo.add(peca)
     ossos.set('Chapeu', pivo)
   }
-  relaxarMaos(ossos)
+  if (arquivo) relaxarMaosMedindo(ossos)
+  else relaxarMaos(ossos)
   apertarCamisa(malhas, folgaCamisa)
   // clavícula mais curta: o braço vem para dentro; o braço volta à escala 1 para não encolher junto
   for (const L of ['Left', 'Right']) {
@@ -295,6 +296,35 @@ function relaxarMaos(ossos) {
     if (p2) giros.push([p2, new THREE.Vector3(0, 0, 1), -s * 0.2])
   }
   // eixos locais calculados todos antes de girar qualquer um (girar o pai muda o mundo do filho)
+  const locais = giros.map(([o, eixo, a]) => [o, eixo.clone().applyQuaternion(o.getWorldQuaternion(new THREE.Quaternion()).invert()), a])
+  for (const [o, eixo, a] of locais) o.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(eixo, a))
+}
+
+// Mão relaxada para qualquer modelo: o eixo de dobra de cada dedo sai da própria mão (a direção do dedo e
+// a linha que atravessa a palma, do indicador ao mindinho), e o lado da palma é o que fecha a ponta para
+// baixo na pose em T. A versão de cima supõe os eixos do MakeHuman; na mão do Tripo dobrava os dedos de
+// lado e a mão virava garra (17/10/2026).
+function relaxarMaosMedindo(ossos) {
+  const curva = { Index: [0.22, 0.32, 0.22], Middle: [0.3, 0.42, 0.28], Ring: [0.38, 0.48, 0.3], Pinky: [0.45, 0.52, 0.32] }
+  const P = (o) => o.getWorldPosition(new THREE.Vector3())
+  const giros = []
+  for (const L of ['Left', 'Right']) {
+    const i1 = ossos.get(`${L}HandIndex1`), p1 = ossos.get(`${L}HandPinky1`)
+    if (!i1 || !p1) continue
+    const atravessa = P(p1).sub(P(i1)).normalize()
+    for (const [dedo, angs] of Object.entries(curva)) {
+      angs.forEach((a, i) => {
+        const o = ossos.get(`${L}Hand${dedo}${i + 1}`)
+        const filho = ossos.get(`${L}Hand${dedo}${i + 2}`) || o?.children.find((c) => c.isBone)
+        if (!o || !filho) return
+        const d = P(filho).sub(P(o)).normalize()
+        const eixo = atravessa.clone().addScaledVector(d, -atravessa.dot(d)).normalize()
+        // sentido: o que leva a ponta do dedo para baixo (palma para baixo na pose em T)
+        const ponta = d.clone().applyAxisAngle(eixo, a)
+        giros.push([o, eixo, ponta.y < d.y ? a : -a])
+      })
+    }
+  }
   const locais = giros.map(([o, eixo, a]) => [o, eixo.clone().applyQuaternion(o.getWorldQuaternion(new THREE.Quaternion()).invert()), a])
   for (const [o, eixo, a] of locais) o.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(eixo, a))
 }
