@@ -108,6 +108,8 @@ export function criarPainel(cfg) {
   p.add(cfg.personagem, 'clavicula', 0, 40, 1).name('ombro: caimento (graus)')
   p.add(cfg.personagem, 'panoSolto', 0, 2, 0.05).name('tecido solto (força)')
   p.add(cfg.personagem, 'roupaJolt').name('roupa no Jolt (recarregar)')
+  p.add(cfg.personagem, 'avo').name('avô perto do começo (recarregar)')
+  p.add(cfg.personagem, 'avoMovimento', ['parado', 'velho-parado']).name('movimento do avô (recarregar)')
   p.add(cfg.personagem, 'dobras', 0, 1.5, 0.05).name('dobras desenhadas')
   p.add(cfg.personagem, 'rostoNeto').name('rosto desenhado no neto (recarregar)')
   p.add(cfg.personagem, 'estiloRostoNeto', ['atual', 'aranhaverso', 'grande', 'grande-mel', 'grande-oval', 'gato', 'gato-ambar', 'gato-palpebra', 'minimo', 'minimo-feijao', 'minimo-brilho', 'brilho-alto', 'brilho-maior', 'brilho-duplo', 'brilho-castanho', 'brilho-sobrancelha', 'brilho-triste-oval']).name('estilo do rosto desenhado').onChange((v) => window.maresia?.jogador?.animador?.rosto?.estilo(v))

@@ -36,6 +36,7 @@ import { carregarCorpo } from './jogador/corpo.js'
 import { definirTonsLuz } from './materiais.js'
 import { CameraTerceiraPessoa } from './jogador/camera.js'
 import { criarInteracoes } from './jogador/interacoes.js'
+import { carregarAvo } from './jogador/avo.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
 import { criarHud } from './ui/hud.js'
 import { criarPainel } from './ui/painel.js'
@@ -117,6 +118,19 @@ async function iniciar() {
       // a gente mais próxima vira ator animado, com os mesmos movimentos (mundo/atores.js)
       atores = criarAtores(cena, pessoas, c.clipes, { passadaAndar: c.passadas.andar || 1.4 })
     }).catch((e) => console.error('Corpo novo:', e))
+  }
+  // o avô parado perto de onde o jogo começa, de frente para o neto (para julgar o modelo com o filtro)
+  let avo = null
+  if (cfg.personagem.avo) {
+    carregarAvo({ movimento: cfg.personagem.avoMovimento }).then((a) => {
+      if (!a) return
+      const x = inicio.x - 2.6, z = inicio.z + 0.9
+      a.raiz.position.set(x, alturaChao(x, z), z)
+      a.raiz.rotation.y = Math.PI / 2 // olha para +x, para onde o neto começa
+      cena.add(a.raiz)
+      avo = a
+      if (window.maresia) window.maresia.avo = a
+    }).catch((e) => console.error('Avô:', e))
   }
   const cam = new CameraTerceiraPessoa(camera, canvas, cfg, Math.PI / 2)
   const interacoes = criarInteracoes({ jogador, fisica, lugares, camera })
@@ -203,6 +217,7 @@ async function iniciar() {
     horizonte.atualizar(paleta)
     pessoas.atualizar(dt, t)
     atores?.atualizar(dt, jogador.pos)
+    avo?.atualizar(dt, cfg.personagem.fpsPose)
     mar.atualizar(jogador.pos)
     grama.atualizar(jogador.pos, camera)
     terreno.atualizar(camera)
