@@ -76,11 +76,16 @@ export async function carregarAvo({ movimento = 'parado', rostoDesenhado = true,
       rosto = criarRosto(ossos.get('Head'), a, estiloRosto)
     }
   }
-  const r = await carregarMovimentosMixamo({ alvo: { raiz, ossos }, pasta: '/animacoes/mixamo/', nomes: [movimento] })
+  // parado e o andar de velho do Mixamo (no lugar: quem anda com ele é quem chama andar())
+  const r = await carregarMovimentosMixamo({ alvo: { raiz, ossos }, pasta: '/animacoes/mixamo/', nomes: [movimento, 'velho-andar'] })
   const mixer = new THREE.AnimationMixer(raiz)
   const clipe = r.clipes[movimento]
-  if (clipe) mixer.clipAction(clipe).play()
+  const aParado = clipe ? mixer.clipAction(clipe) : null
+  const aAndar = r.clipes['velho-andar'] ? mixer.clipAction(r.clipes['velho-andar']) : null
+  if (aParado) aParado.play()
   else console.info(`Avô: falta o movimento ${movimento}; fica na pose de repouso`)
+  if (aAndar) { aAndar.play(); aAndar.setEffectiveWeight(0) }
+  let andando = false
   const grupo = new THREE.Group()
   grupo.add(raiz)
   grupo.userData.peso = 1 // peso do traço
@@ -96,9 +101,18 @@ export async function carregarAvo({ movimento = 'parado', rostoDesenhado = true,
       if (acumulado < passo) return
       const d = acumulado - (acumulado % passo)
       acumulado %= passo
+      // troca suave entre parado e andando (~0,3 s)
+      if (aAndar) {
+        const w = THREE.MathUtils.clamp(aAndar.getEffectiveWeight() + (andando ? 1 : -1) * d / 0.3, 0, 1)
+        aAndar.setEffectiveWeight(w)
+        aParado?.setEffectiveWeight(1 - w)
+      }
       mixer.update(d)
       rosto?.atualizar(d, { vel: 0, yaw: grupo.rotation.y })
     },
+    // liga o andar de velho; a velocidade natural do passo (m/s) é para quem move o avô
+    andar(sim = true) { andando = sim && !!aAndar },
+    passada: r.passadas['velho-andar'] || 0.8,
     rosto,
   }
 }
