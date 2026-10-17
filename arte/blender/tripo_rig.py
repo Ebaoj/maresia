@@ -137,7 +137,7 @@ for lado, nome in ((1, "Left"),):
     print("OMBRO z_axila", round(float(z_axila), 3), "tronco", round(float(w_t), 3), "topo", round(float(topo_o), 3), "ombro", [round(float(c), 3) for c in ombro])
     comp = np.linalg.norm(ponta - ombro); mao = 0.20 * comp     # mão grande: ~1/5 do braço até a ponta
     punho = ombro + (ponta - ombro) * (1 - mao / comp)
-    cotovelo = ombro + (punho - ombro) * 0.5
+    cotovelo = ombro + (punho - ombro) * 0.56   # braço um pouco maior que o antebraço
     # y de cotovelo e punho: centro da malha naquela altura do braço
     for nome_j, p_ in (("cot", cotovelo), ("pun", punho)):
         viz = P[np.linalg.norm(P - p_, axis=1) < 0.035]
@@ -171,7 +171,7 @@ from bl_ext.blender_org.mpfb.services.humanservice import HumanService
 doador = HumanService.create_human(scale=0.1)
 rig_d = HumanService.add_builtin_rig(doador, "mixamo", import_weights=False)
 eixos = {b.name: (b.head_local.copy(), b.tail_local.copy(), (rig_d.matrix_world.to_3x3() @ b.z_axis).normalized(), b.parent.name if b.parent else None) for b in rig_d.data.bones}
-arm = bpy.data.armatures.new("avo-esqueleto"); rig = bpy.data.objects.new("avo-esqueleto", arm)
+arm = bpy.data.armatures.new(f"{NOME}-esqueleto"); rig = bpy.data.objects.new(f"{NOME}-esqueleto", arm)
 cena.collection.objects.link(rig); ativar(rig); bpy.ops.object.mode_set(mode="EDIT")
 V = lambda p: Vector((float(p[0]), float(p[1]), float(p[2])))
 cabecas = {}
@@ -222,6 +222,36 @@ for o in cena.objects: o.select_set(False)
 for o in pecas: o.select_set(True)
 rig.select_set(True); bpy.context.view_layer.objects.active = rig
 bpy.ops.object.parent_set(type="ARMATURE_AUTO")
+if len(pecas) > 1:
+    # emendas: perto de outra peça, os dois lados recebem a MESMA média de pesos (senão a manga e o braço
+    # seguem os ossos de jeitos diferentes e a fresta abre no movimento)
+    from mathutils.kdtree import KDTree
+    R_EM = float(os.environ.get("TRIPO_RAIO_EMENDA", "0.035"))
+    pts = []   # (objeto, índice, posição, {grupo: peso})
+    for o in pecas:
+        nomes_g = {g.index: g.name for g in o.vertex_groups}
+        for v in o.data.vertices:
+            pts.append((o, v.index, o.matrix_world @ v.co, {nomes_g[g.group]: g.weight for g in v.groups}))
+    kd = KDTree(len(pts))
+    for i, p_ in enumerate(pts): kd.insert(p_[2], i)
+    kd.balance()
+    novos = {}
+    for i, (o, vi, co, w) in enumerate(pts):
+        viz = kd.find_range(co, R_EM)
+        if not any(pts[j][0] is not o for _, j, _ in viz): continue   # longe de outra peça: fica como está
+        soma = {}; tot = 0.0
+        for _, j, d in viz:
+            f = math.exp(-(d / (R_EM * 0.5)) ** 2); tot += f
+            for g, x in pts[j][3].items(): soma[g] = soma.get(g, 0) + f * x
+        s_ = sum(soma.values()) or 1
+        novos[i] = {g: x / s_ for g, x in soma.items() if x / s_ > 0.005}
+    for i, w in novos.items():
+        o, vi = pts[i][0], pts[i][1]
+        for g in o.vertex_groups: g.remove([vi])
+        for g, x in w.items():
+            gg = o.vertex_groups.get(g) or o.vertex_groups.new(name=g)
+            gg.add([vi], x, "REPLACE")
+    print("EMENDAS", len(novos), "pontos com pesos iguais dos dois lados")
 sem = sum(1 for o in pecas for v in o.data.vertices if not v.groups)
 print("PESOS", len(malha.vertex_groups), "grupos;", sem, "pontos sem peso")
 
@@ -243,6 +273,12 @@ if CURVA:
     dobra = (("Spine", 3), ("Spine1", 8), ("Spine2", 13), ("Neck", 5))
     for o_, g in dobra: girar(o_, g * CURVA)
     girar("Head", -sum(g for _, g in dobra) * CURVA + 4)
+CLAV = float(os.environ.get("TRIPO_CLAVICULA", "18"))   # graus: braço na horizontal levanta a clavícula junto
+for lado, sx in (("Left", 1), ("Right", -1)):
+    pb = rig.pose.bones.get(f"mixamorig:{lado}Shoulder")
+    if pb and CLAV:   # gira a clavícula para cima em torno do eixo da frente: o acrômio sobe até a linha do trapézio
+        bpy.context.view_layer.update(); mw = rig.matrix_world @ pb.matrix
+        pb.matrix = rig.matrix_world.inverted() @ (Matrix.Translation(mw.to_translation()) @ Matrix.Rotation(math.radians(-CLAV * sx), 4, "Y") @ mw.to_3x3().to_4x4())
 for lado, sx in (("Left", 1), ("Right", -1)):
     for o_ in ("Arm", "ForeArm", "Hand"): alinhar(lado + o_, (sx, 0, 0))
     for dedo in ("Index", "Middle", "Ring", "Pinky"):
