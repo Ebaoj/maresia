@@ -43,7 +43,7 @@ export function criarAdaptador(alvo) {
 }
 
 // modelo: 'neto' (o personagem da história) ou 'boneco' (o de cápsulas, para testes)
-export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false } = {}) {
+export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false, estiloRosto = 'aranhaverso' } = {}) {
   const boneco = criarBoneco()
   const r = await carregarMovimentosMixamo({
     alvo: { ossos: boneco.ossos, raiz: boneco.raiz }, pasta: '/animacoes/mixamo/', nomes: [...NOMES, ...Object.keys(BANCO)],
@@ -84,8 +84,8 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
   animador.multiplos = multiplos
   // rosto desenhado só no boneco: o neto tem olhos, sobrancelhas e boca modelados
   // (o rosto entra depois dos múltiplos: as cópias em retícula ficam sem rosto)
-  if (alvo.raiz === boneco.raiz) animador.rosto = criarRosto(boneco.ossos.get('Head'))
-  else if (alvo.ancorasRosto) animador.rosto = criarRosto(alvo.ossos.get('Head'), alvo.ancorasRosto) // neto de rosto liso
+  if (alvo.raiz === boneco.raiz) animador.rosto = criarRosto(boneco.ossos.get('Head'), {}, estiloRosto)
+  else if (alvo.ancorasRosto) animador.rosto = criarRosto(alvo.ossos.get('Head'), alvo.ancorasRosto, estiloRosto) // neto de rosto liso
   animador.molas = criarMolas(alvo.ossos)
   if (r.faltando.length) console.info('Corpo novo: movimentos que faltam', r.faltando)
   // clipes no esqueleto padrão: a gente da cidade (atores.js) usa o boneco

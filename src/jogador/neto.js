@@ -111,8 +111,9 @@ async function ancorasMedidas(cabeca) {
     if (!r.ok || (r.headers.get('content-type') || '').includes('html')) return null
     const a = await r.json()
     const inv = cabeca.matrixWorld.clone().invert()
-    const local = (p) => new THREE.Vector3(...p).add(new THREE.Vector3(0, 0, 0.003)).applyMatrix4(inv).toArray() // 3 mm para fora
-    return { olho: local(a.olho_esquerdo.superficie), boca: local(a.boca.superficie), tamOlho: 0.042, tamBoca: 0.05, curva: 0.3 }
+    // o olho fica afundado na órbita: o desenho vem 1,2 cm para a frente, senão a testa cobre a sobrancelha
+    const local = (p, dz) => new THREE.Vector3(...p).add(new THREE.Vector3(0, 0, dz)).applyMatrix4(inv).toArray()
+    return { olho: local(a.olho_esquerdo.superficie, 0.012), boca: local(a.boca.superficie, 0.005), tamOlho: 0.042, tamBoca: 0.05, curva: 0.3 }
   } catch { return null }
 }
 
