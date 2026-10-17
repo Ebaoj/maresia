@@ -83,13 +83,27 @@ def subir_jogo(ouvir_desde_o_inicio=False):
         cdp("Runtime.enable")
         cdp("Log.enable")
         cdp("Page.reload", ignoreCache=True)
-    # pronto quando o jogador existe e já se passaram alguns segundos de jogo (shaders compilados)
-    for _ in range(120):
+    esperar_pronto(cdp)
+    return cdp
+
+
+def esperar_pronto(cdp):
+    """Pronto quando o jogador existe com o corpo animado e já se passaram alguns segundos de jogo."""
+    for _ in range(180):
         try:
             if cdp.js("!!(window.maresia && window.maresia.jogador && window.maresia.jogador.animador)"):
                 break
-        except RuntimeError:
+        except Exception:  # página recarregando: o contexto some e volta
             pass
         time.sleep(1)
     time.sleep(8)
-    return cdp
+
+
+def mudar_config(cdp, mudancas):
+    """Mescla `mudancas` ({secao: {chave: valor}}) na configuração salva do jogo e recarrega a página."""
+    js = ("(() => { const K = 'maresia.config.v8'; const v = JSON.parse(localStorage.getItem(K) || '{}'); "
+          f"const m = {json.dumps(mudancas)}; for (const s in m) v[s] = Object.assign(v[s] || {{}}, m[s]); "
+          "localStorage.setItem(K, JSON.stringify(v)); setTimeout(() => location.reload(), 50); return 1 })()")
+    cdp.js(js)
+    time.sleep(3)
+    esperar_pronto(cdp)

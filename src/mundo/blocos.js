@@ -8,8 +8,15 @@ import { solidosCamera } from './solidos.js'
 
 const p = new THREE.Vector3()
 
+// Tamanho padrão do bloco (cfg.desempenho.tamBloco). Bloco maior = menos chamadas de desenho (o gargalo é
+// o processador) e mais cópias desenhadas fora da tela (a placa recorta de graça os pixels; sobra o vértice).
+// Quem troca detalhe por bloco (casas da cidade e do quarteirão, LOD de 96 m) passa tam: TAM_LOD fixo.
+export const TAM_LOD = 96
+let tamPadrao = 96
+export function definirTamBloco(t) { tamPadrao = t }
+
 export function instanciarEmBlocos(cena, geo, material, matrizes, cores = null, opcoes = {}) {
-  const { tam = 96, nome = '', sombra = true, recebe = true, peso, solido = false, semNormal = false } = opcoes
+  const { tam = tamPadrao, nome = '', sombra = true, recebe = true, peso, solido = false, semNormal = false } = opcoes
   const grupos = new Map()
   matrizes.forEach((m, i) => {
     p.setFromMatrixPosition(m)

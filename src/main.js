@@ -8,6 +8,7 @@ import { globais } from './globais.js'
 import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno } from './mundo/terreno.js'
 import { congelar } from './mundo/congelar.js'
+import { definirTamBloco } from './mundo/blocos.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
 import { criarMar } from './mundo/mar.js'
@@ -75,6 +76,7 @@ async function iniciar() {
   const tempos = {}
   let tMarca = performance.now()
   const marcar = (nome) => { const t = performance.now(); tempos[nome] = Math.round(t - tMarca); tMarca = t }
+  definirTamBloco(cfg.desempenho.tamBloco)
   const terreno = criarTerreno(cena)
   marcar('terreno')
   const { mapaAltura } = terreno

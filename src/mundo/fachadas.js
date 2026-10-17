@@ -6,7 +6,7 @@ import * as THREE from 'three'
 import { toon, texturaCanvas, pintar, gradienteToon } from '../materiais.js'
 import { alturaTerreno } from './terreno.js'
 import { criarAleatorio } from '../utils.js'
-import { instanciarEmBlocos } from './blocos.js'
+import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 
 const rnd = criarAleatorio(77)
 
@@ -56,7 +56,7 @@ class Lista {
   }
   criar(cena, { sombra = true, solido = false } = {}) {
     if (!this.matrizes.length) return null
-    return instanciarEmBlocos(cena, this.geo, this.material, this.matrizes, this.cores, { nome: this.nome, sombra, solido })
+    return instanciarEmBlocos(cena, this.geo, this.material, this.matrizes, this.cores, { nome: this.nome, sombra, solido, tam: TAM_LOD })
   }
 }
 

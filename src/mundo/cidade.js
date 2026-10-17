@@ -10,7 +10,7 @@ import { materialPredio } from '../materiais.js'
 import { FACHADAS, CASAS_SIMPLES, CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
-import { instanciarEmBlocos } from './blocos.js'
+import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { criarCasas } from './quarteirao.js'
 import { criarAleatorio } from '../utils.js'
 import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha } from './fortaleza1932.js'
@@ -54,7 +54,7 @@ class Lote {
       new THREE.Quaternion().setFromAxisAngle(eixo, it.rot),
       new THREE.Vector3(it.w, it.h, it.d)
     ))
-    return instanciarEmBlocos(cena, geo, this.material, mats, this.itens.map((it) => it.cor), { nome, solido })
+    return instanciarEmBlocos(cena, geo, this.material, mats, this.itens.map((it) => it.cor), { nome, solido, tam: TAM_LOD })
   }
 }
 

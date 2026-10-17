@@ -16,7 +16,7 @@ import { pintar, gradienteToon, luzFixa, texturizar } from '../materiais.js'
 import { globais } from '../globais.js'
 import { CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarDeck } from './colisao.js'
-import { instanciarEmBlocos } from './blocos.js'
+import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { criarAleatorio } from '../utils.js'
 
 // rua de referência da fatia vertical (z ≈ 152, x -72 a -36): bom lugar para comparar com os filmes
@@ -373,7 +373,7 @@ function materialReboco(desgaste) {
   return texturizar(pintar(mat, 'reboco-casas'), { topo: 'cal', lado: 'cal', tam: 2.5, contraste: 2.5 }) // reboco caiado pintado (visual Arcane)
 }
 
-const TAM_BLOCO = 96
+const TAM_BLOCO = TAM_LOD // o mesmo bloco das caixas de longe (registrarLonge acha a caixa pelo bloco)
 
 // casario: itens do Lote 'casario'; morro: itens do Lote 'favela' (variante simples)
 // Telha canal: colunas de capa (clara, abaulada) e canal (escuro), fiadas a cada ~40 cm, cada telha
@@ -470,7 +470,7 @@ export function criarCasas(cena, casario, morro) {
   }
   const geoCaixa = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0)
   const matInvisivel = luzFixa(new THREE.MeshBasicMaterial()) // nunca é desenhado; luzFixa só por contrato
-  for (const m of instanciarEmBlocos(grupo, geoCaixa, matInvisivel, caixas, null, { nome: 'casas-colisao-camera', sombra: false, recebe: false, solido: true })) m.visible = false
+  for (const m of instanciarEmBlocos(grupo, geoCaixa, matInvisivel, caixas, null, { nome: 'casas-colisao-camera', sombra: false, recebe: false, solido: true, tam: TAM_LOD })) m.visible = false
   cena.add(grupo)
   const escuro = new THREE.Color('#4a3a30')
   const quente = new THREE.Color('#ffb860').multiplyScalar(2.2)
