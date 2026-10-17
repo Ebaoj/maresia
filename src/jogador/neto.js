@@ -99,13 +99,13 @@ export async function carregarNeto({ chapeu = false, semRosto = false } = {}) {
     abaChapeu: new THREE.Vector3(-0.17, topo - 0.09 - pc.y, 0.07).applyQuaternion(inv), // aba do lado direito, um pouco à frente
   }
   let ancorasRosto = null
-  if (liso) ancorasRosto = (await ancorasMedidas(cabeca)) || ancorasDoRosto(raiz, cabeca, malhas)
+  if (liso) ancorasRosto = (await ancorasMedidas(cabeca, malhas)) || ancorasDoRosto(raiz, cabeca, malhas)
   return { raiz, ossos, esqueleto: malhas[0].skeleton, malhas, eixos, ancorasRosto }
 }
 
 // âncoras medidas pela sessão do personagem no próprio modelo (pontos da pele à frente dos olhos e da
 // boca, mundo em repouso): arte/finais/neto-mpfb-sem-rosto-ancoras.json
-async function ancorasMedidas(cabeca) {
+async function ancorasMedidas(cabeca, malhas) {
   try {
     const r = await fetch('/arte/finais/neto-mpfb-sem-rosto-ancoras.json')
     if (!r.ok || (r.headers.get('content-type') || '').includes('html')) return null
@@ -113,7 +113,12 @@ async function ancorasMedidas(cabeca) {
     const inv = cabeca.matrixWorld.clone().invert()
     // o olho fica afundado na órbita: o desenho vem 1,2 cm para a frente, senão a testa cobre a sobrancelha
     const local = (p, dz) => new THREE.Vector3(...p).add(new THREE.Vector3(0, 0, dz)).applyMatrix4(inv).toArray()
-    return { olho: local(a.olho_esquerdo.superficie, 0.012), boca: local(a.boca.superficie, 0.005), tamOlho: 0.042, tamBoca: 0.05, curva: 0.3 }
+    // a boca do JSON (y 1,515) caiu na altura do nariz. Medido nos vértices dos lábios do neto-mpfb.glb já
+    // deformados pelo esqueleto: centro 7,6 cm abaixo e frente 1,6 cm adiante da superfície do olho
+    // (raio contra a malha não serve: o three testa a malha antes da deformação)
+    const [, yo, zo] = a.olho_esquerdo.superficie
+    const boca = [0, yo - 0.0765, zo + 0.016]
+    return { olho: local(a.olho_esquerdo.superficie, 0.012), boca: local(boca, 0.005), tamOlho: 0.042, tamBoca: 0.05, curva: 0.3 }
   } catch { return null }
 }
 

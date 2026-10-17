@@ -72,6 +72,7 @@ const ESTILOS = {
       feliz: (g) => tremido(g, arco(64, 76, 30, 22, Math.PI * 1.12, Math.PI * 1.88), 16),
       susto: (g) => { tremido(g, arco(64, 64, 26, 28, 0, Math.PI * 2, 22), 12); bola(g, 64, 64, 6) },
       determinado: (g) => { tremido(g, [[30, 40], [64, 50], [98, 46]], 16); tremido(g, arco(64, 72, 30, 16, Math.PI * 1.1, Math.PI * 1.9), 12); g.beginPath(); g.ellipse(64, 70, 15, 16, 0, 0, Math.PI * 2); g.fill() },
+      triste: (g) => { tremido(g, [[30, 34], [62, 40], [96, 52]], 12); tremido(g, arco(64, 74, 30, 16, Math.PI * 1.1, Math.PI * 1.9), 12); g.beginPath(); g.ellipse(64, 80, 14, 16, 0, 0, Math.PI * 2); g.fill() },
     },
     bocas: {
       neutra: (g) => tremido(g, [[38, 64], [64, 66], [90, 63]], 14),
@@ -79,6 +80,7 @@ const ESTILOS = {
       aberta: (g) => { g.beginPath(); g.ellipse(64, 64, 14, 18, 0, 0, Math.PI * 2); g.fill() },
       o: (g) => tremido(g, arco(64, 64, 12, 14, 0, Math.PI * 2, 16), 12),
       firme: (g) => tremido(g, [[42, 66], [64, 62], [86, 66]], 14),
+      triste: (g) => tremido(g, arco(64, 84, 24, 16, Math.PI * 1.15, Math.PI * 1.85, 12), 12),
     },
   },
   // Aranhaverso (Miles): amêndoa com o branco à mostra, pálpebra de cima grossa que passa do canto
@@ -103,6 +105,8 @@ const ESTILOS = {
         feliz: (g) => { sobr(g, 30, -4, 3); pincel(g, arco(64, 84, 32, 20, Math.PI * 1.1, Math.PI * 1.9, 14), 5, 12); risco(g) },
         susto: (g) => { sobr(g, 24, -6, 6); olho(g, 1.25, 74, 11); risco(g) },
         determinado: (g) => { sobr(g, 42, -12); olho(g, 0.6, 76, 14) },
+        // triste: a ponta de dentro da sobrancelha sobe (x pequeno é o lado do nariz), olhar baixo
+        triste: (g) => { pincel(g, [[30, 26], [50, 30], [72, 38], [96, 50]], 4, 12); olho(g, 0.75, 82, 13); risco(g) },
       }
     })(),
     bocas: {
@@ -111,6 +115,7 @@ const ESTILOS = {
       aberta: (g) => { encher(g, arco(64, 66, 18, 16, 0, Math.PI * 2, 18), '#2a1414'); pincel(g, arco(64, 66, 20, 18, Math.PI * 1.1, Math.PI * 1.9, 10), 3, 8) },
       o: (g) => { encher(g, arco(64, 66, 10, 12, 0, Math.PI * 2, 14), '#2a1414'); tremido(g, arco(64, 66, 11, 13, 0, Math.PI * 2, 14), 5) },
       firme: (g) => pincel(g, [[40, 64], [64, 60], [88, 64]], 4, 10),
+      triste: (g) => pincel(g, arco(64, 84, 26, 16, Math.PI * 1.12, Math.PI * 1.88, 12), 3, 9),
     },
   },
   // olhos grandes e redondos, íris grande com dois brilhos
@@ -129,6 +134,7 @@ const ESTILOS = {
         feliz: (g) => { sobr(g, 26, -2); tremido(g, arco(64, 86, 30, 22, Math.PI * 1.1, Math.PI * 1.9, 14), 10) },
         susto: (g) => { sobr(g, 18, -4); olho(g, 34, 13) },
         determinado: (g) => { tremido(g, [[34, 34], [64, 46], [94, 44]], 9); olho(g, 18, 17) },
+        triste: (g) => { tremido(g, [[34, 20], [64, 28], [94, 42]], 7); olho(g, 24, 16) },
       }
     })(),
     bocas: {
@@ -137,6 +143,7 @@ const ESTILOS = {
       aberta: (g) => encher(g, arco(64, 64, 16, 18, 0, Math.PI * 2, 18), '#2a1414'),
       o: (g) => tremido(g, arco(64, 66, 10, 12, 0, Math.PI * 2, 14), 7),
       firme: (g) => tremido(g, [[46, 66], [64, 62], [82, 66]], 7),
+      triste: (g) => tremido(g, arco(64, 82, 20, 14, Math.PI * 1.15, Math.PI * 1.85, 12), 7),
     },
   },
   // Gato de Botas 2: olhos enormes e brilhantes, cílios marcados, quase sem branco
@@ -156,6 +163,7 @@ const ESTILOS = {
         feliz: (g) => pincel(g, arco(64, 88, 32, 26, Math.PI * 1.1, Math.PI * 1.9, 14), 6, 14),
         susto: (g) => olho(g, 38, 18),
         determinado: (g) => { pincel(g, [[28, 36], [64, 50], [100, 48]], 6, 14); olho(g, 22, 22) },
+        triste: (g) => { pincel(g, [[30, 22], [64, 30], [100, 46]], 5, 12); olho(g, 30, 30) },
       }
     })(),
     bocas: {
@@ -164,6 +172,7 @@ const ESTILOS = {
       aberta: (g) => encher(g, arco(64, 64, 14, 16, 0, Math.PI * 2, 18), '#2a1414'),
       o: (g) => tremido(g, arco(64, 66, 9, 11, 0, Math.PI * 2, 14), 7),
       firme: (g) => tremido(g, [[48, 66], [64, 63], [80, 66]], 7),
+      triste: (g) => tremido(g, arco(64, 80, 16, 12, Math.PI * 1.15, Math.PI * 1.85, 12), 7),
     },
   },
   // mínimo: olho de ponto e sobrancelha de traço, bem gráfico
@@ -175,6 +184,7 @@ const ESTILOS = {
       feliz: (g) => { tremido(g, [[44, 34], [64, 30], [84, 34]], 9); tremido(g, arco(64, 80, 18, 12, Math.PI * 1.1, Math.PI * 1.9, 10), 10) },
       susto: (g) => { tremido(g, [[44, 26], [64, 22], [84, 26]], 9); tremido(g, arco(64, 70, 14, 16, 0, Math.PI * 2, 16), 7) },
       determinado: (g) => { tremido(g, [[40, 40], [64, 50], [88, 46]], 10); g.beginPath(); g.ellipse(64, 74, 10, 9, 0, 0, Math.PI * 2); g.fill() },
+      triste: (g) => { tremido(g, [[42, 30], [64, 36], [86, 46]], 9); g.beginPath(); g.ellipse(64, 78, 10, 13, 0, 0, Math.PI * 2); g.fill() },
     },
     bocas: {
       neutra: (g) => tremido(g, [[46, 64], [82, 64]], 8),
@@ -182,6 +192,7 @@ const ESTILOS = {
       aberta: (g) => { g.beginPath(); g.ellipse(64, 64, 11, 13, 0, 0, Math.PI * 2); g.fill() },
       o: (g) => tremido(g, arco(64, 64, 8, 10, 0, Math.PI * 2, 12), 7),
       firme: (g) => tremido(g, [[48, 66], [80, 66]], 9),
+      triste: (g) => tremido(g, arco(64, 78, 16, 10, Math.PI * 1.15, Math.PI * 1.85, 10), 9),
     },
   },
 }
@@ -254,12 +265,12 @@ export function criarRosto(cabeca, ancoras = {}, estiloInicial = 'atual') {
       let b = 'neutra'
       if (s.noAr) { olho = 'susto'; b = 'o' } else if (s.vel > 3.6) { olho = 'determinado'; b = 'aberta' } else if (s.vel > 2.2) { olho = 'determinado'; b = 'firme' } else if (s.nadando) { b = 'firme' }
       if (fixo) { fixo.t -= dt; if (fixo.t <= 0) fixo = null; else { olho = fixo.olho || olho; b = fixo.boca || b } }
-      if (fechado > 0 && olho !== 'susto') olho = 'fechado'
+      if (fechado > 0 && olho !== 'susto' && !fixo?.semPiscar) olho = 'fechado'
       atual = { olho, boca: b }
       mostrar()
     },
     // para a história: expressar(olho, boca, segundos), por exemplo ('feliz', 'sorriso', 2)
-    expressar(olho, b, segundos = 2) { fixo = { olho, boca: b, t: segundos } },
+    expressar(olho, b, segundos = 2, semPiscar = false) { fixo = { olho, boca: b, t: segundos, semPiscar } },
     // troca o estilo do desenho na hora (painel), sem recarregar
     estilo(nome) { T = texturas(nome); aplicarEscala(); mostrar() },
     expressoes: { olhos: Object.keys(ESTILOS.atual.olhos), bocas: Object.keys(ESTILOS.atual.bocas) },
