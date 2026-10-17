@@ -165,6 +165,7 @@ export const PADRAO = {
   desempenho: {
     resolucao: 1.25,
     mostrarFps: true,      // contagem de FPS no alto da tela
+    renderizador: 'webgl', // 'webgpu': o motor novo em teste (KAN-67), ainda sem o pós e com parte dos materiais
     tamBloco: 192,         // metros por bloco de cópias (árvores, plantas, objetos); maior = menos chamadas de desenho. A/B na L4 17/10: 96 -> 192 tira 22% das chamadas e dá +6 a +16 FPS parado; 384 oscilou
   },
   audio: {

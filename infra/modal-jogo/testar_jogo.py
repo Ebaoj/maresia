@@ -37,17 +37,19 @@ def modo_webgpu(cdp):
           const m = window.maresia
           if (!m || !m.renderer) return { erro: 'o jogo não abriu' }
           const r = m.renderer
-          const contar = () => (r.info && r.info.render ? r.info.render.frame : 0)
-          const q0 = contar()
+          let q = 0, vivo = true
+          const f = () => { if (!vivo) return; q++; requestAnimationFrame(f) }
+          requestAnimationFrame(f)
           await new Promise((res) => setTimeout(res, 3000))
+          vivo = false
           const backend = r.backend ? (r.backend.isWebGPUBackend ? 'webgpu' : r.backend.isWebGLBackend ? 'webgl2-reserva' : '?') : 'webgl (renderer antigo)'
-          return { webgpuRenderer: !!r.isWebGPURenderer, backend, quadros3s: contar() - q0, temGpu: !!navigator.gpu,
+          return { webgpuRenderer: !!r.isWebGPURenderer, backend, quadros3s: q, temGpu: !!navigator.gpu, faltaPortar: window.__faltaPortar || null,
                    shadersQuebrados: (window.__shadersQuebrados || []).length }
         })()""")
     except Exception as e:
         r = {"erro": str(e)[:300]}
-    ok = bool(r) and not r.get("erro") and r.get("webgpuRenderer") and r.get("backend") == "webgpu" and r.get("quadros3s", 0) > 30 \
-        and r.get("shadersQuebrados", 1) == 0
+    ok = bool(r) and not r.get("erro") and r.get("webgpuRenderer") and r.get("backend") == "webgpu" and (r.get("quadros3s") or 0) > 30 \
+        and (r.get("shadersQuebrados") or 0) == 0
     mudar_config(cdp, {"desempenho": {"renderizador": "webgl"}})
     return {"ok": ok, "medidas": r, "motivo": "" if ok else "o modo webgpu não abriu no WebGPU de verdade"}
 

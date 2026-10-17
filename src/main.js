@@ -9,6 +9,7 @@ import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno } from './mundo/terreno.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
+import { criarRenderizador, prepararCenaWebgpu } from './render/renderizador.js'
 import { definirTamBloco } from './mundo/blocos.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
@@ -50,10 +51,10 @@ import { criarSom } from './audio.js'
 const cfg = carregarConfig()
 definirTonsLuz(cfg.estilo.visual === 'arcane' ? 'liso' : cfg.estilo.tonsLuz) // antes de qualquer material ser criado (Arcane: as faixas são do pintor de luz)
 const canvas = document.getElementById('tela')
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
-renderer.shadowMap.enabled = true
-renderer.shadowMap.type = THREE.PCFShadowMap // borda nítida, combina com o toon
-renderer.shadowMap.autoUpdate = false
+// WebGL de sempre ou WebGPU (cfg.desempenho.renderizador, motor F1, KAN-67): criado no começo de iniciar(),
+// porque o WebGPU espera a placa responder
+let renderer
+let webgpu = false
 
 // a cena nunca se move; congelada, ela para de obrigar todos os filhos a refazer a matriz do mundo
 const cena = congelar(new THREE.Scene())
@@ -73,6 +74,7 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function iniciar() {
   await esperar(50) // deixa a capa de carregamento aparecer antes do trabalho pesado
+  ;({ renderer, webgpu } = await criarRenderizador(cfg, canvas))
 
   const tempos = {}
   let tMarca = performance.now()
@@ -161,9 +163,17 @@ async function iniciar() {
   let esperaBorrifo = 0
   const ondaFila = [] // jatos de uma onda quebrando, um atrás do outro
   const VENTO_FX = new THREE.Vector3(-1, 0, -0.35).normalize()
-  const pos = new Aranhaverso(renderer, cena, camera, cfg, globais)
+  // no modo webgpu ainda não há pós: a cena é desenhada direto (o resto entra na fase 2 do motor)
+  const pos = webgpu
+    ? { render: () => renderer.render(cena, camera), tamanho() {}, coletarExcecoes() {} }
+    : new Aranhaverso(renderer, cena, camera, cfg, globais)
   pos.coletarExcecoes()
-  if (import.meta.env.DEV) {
+  if (webgpu) {
+    prepararCenaWebgpu(cena)
+    setInterval(() => prepararCenaWebgpu(cena), 2000) // o que chega depois (corpo do jogador, partículas)
+  }
+  if (webgpu) window.__shadersQuebrados = [] // o WebGPU não expõe a lista de programas do WebGL
+  if (import.meta.env.DEV && !webgpu) {
     // todo material da cena precisa escrever a saída de luz (gLuz); avisa se algum esqueceu
     const faltando = new Set()
     cena.traverse((o) => {
@@ -313,8 +323,10 @@ async function iniciar() {
     globais.uVentoPalm.value = cfg.interacao.ventoCoqueiros
     interacoes.atualizar()
     fisica.atualizar(dt, jogador)
-    toque.atualizar(dt, pj)
-    areia.atualizar(dt, pj)
+    if (!webgpu) { // os passes de toque e de areia desenham com shader próprio (fase 2 no WebGPU)
+      toque.atualizar(dt, pj)
+      areia.atualizar(dt, pj)
+    }
     hud.atualizar(dt, jogador)
     mapa.atualizar(jogador)
     som.atualizar(distCosta(jogador.pos.x, jogador.pos.z), jogador.pos.y)

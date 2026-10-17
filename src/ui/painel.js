@@ -187,6 +187,7 @@ export function criarPainel(cfg) {
   mundo.add(cfg.mundo, 'nevoaLonge', 100, 2000, 1).name('névoa total (m)')
   mundo.add(cfg.desempenho, 'resolucao', 0.5, 2, 0.05).name('resolução')
   mundo.add(cfg.desempenho, 'mostrarFps').name('mostrar FPS')
+  mundo.add(cfg.desempenho, 'renderizador', ['webgl', 'webgpu']).name('renderizador (recarregar)')
   mundo.add(cfg.desempenho, 'tamBloco', [96, 192, 384]).name('bloco de cópias, m (recarregar)')
   mundo.add(cfg.audio, 'volume', 0, 1, 0.01).name('volume')
 
