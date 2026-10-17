@@ -15,11 +15,11 @@ export const PADRAO = {
     arcLuz: 0.72,          // acima disso, a faixa de luz; entre as duas, o meio-tom
     arcSuave: 0.08,        // largura da passagem entre as faixas
     arcPincel: 0.35,       // quanto a pincelada recorta a borda das faixas
-    arcCorSombra: '#4f5fa8', // sombra fria, com luz rebatida do céu
+    arcCorSombra: '#6b7190', // sombra fria e dessaturada, com luz rebatida do céu (a #4f5fa8 saturava a areia de azul; direção de arte 17/10)
     arcNivelSombra: 0.34,
     arcNivelMeio: 0.8,
     arcNivelLuz: 1.1,
-    arcLinha: 0.7,         // contorno só na silhueta, na cor do objeto escurecida
+    arcLinha: 0,           // contorno automático: o Arcane não tem (linha só desenhada na textura, em detalhe); 0,7 escurecia os troncos
     arcSaturacao: 1.05,
     arcGrao: 0.04,
     arcContraste: 1.18,    // gradação: contraste (curva em S) e exposição, menos lavado
@@ -27,7 +27,7 @@ export const PADRAO = {
     arcTextura: 1.0,
     reflexoLente: 1.0,     // lens flare quando a câmera olha para o sol (fantasmas, faixa anamórfica, anel); 0 desliga
     arcRecorte: 0.6,       // luz de recorte quente nas bordas contra o sol
-    arcAr: 1.8,            // profundidade de ar: o fundo se separa em camadas frias (multiplica névoa e maresia)
+    arcAr: 2.6,            // profundidade de ar: o fundo se separa em camadas (multiplica névoa e maresia); 1,8 deixava o fundo tão nítido quanto a frente
     arcCeu: 1.0,           // céu pintado: pinceladas longas e nuvens de pincel (0 = céu liso)       // força das texturas pintadas do mundo (areia, palha, madeira; public/texturas)
     espessuraLinha: 1.3,
     limiarProfundidade: 0.07,

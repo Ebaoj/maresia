@@ -117,10 +117,12 @@ export function criarGrama(cena, mapaAltura, cfg, toque) {
     uFracaoLonge: { value: cfg.grama.fracaoLonge },
     uLargLonge: { value: cfg.grama.larguraLonge },
     uVirarCamera: { value: cfg.grama.virarCamera },
-    uBase1: { value: new THREE.Color('#3a6a3a') }, // verde de litoral sob sol, não limão
-    uBase2: { value: new THREE.Color('#4a7a36') },
-    uPonta1: { value: new THREE.Color('#9cbc58') },
-    uPonta2: { value: new THREE.Color('#c2c271') },
+    // verde de restinga, oliva e meio seco (o verde de antes era o elemento mais saturado da cena, ao lado
+    // da roupa desbotada do menino; direção de arte 17/10)
+    uBase1: { value: new THREE.Color('#4a5a36') },
+    uBase2: { value: new THREE.Color('#58663a') },
+    uPonta1: { value: new THREE.Color('#9c9f62') },
+    uPonta2: { value: new THREE.Color('#bdb27a') },
   }
 
   const material = new THREE.MeshToonMaterial({

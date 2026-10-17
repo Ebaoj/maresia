@@ -5,7 +5,7 @@
 // de pesca secando em varas, panos no varal, cerca de varas (2987). Ver docs/referencias-fotos-1932.md.
 
 import * as THREE from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { texturizar, toonVertice } from '../materiais.js'
 import { alturaTerreno } from './terreno.js'
 import { linhaCosta, larguraPraia, ruido } from './mapa.js'
@@ -16,6 +16,7 @@ import { criarAleatorio } from '../utils.js'
 import { CAL, ACENTO } from '../paleta.js'
 
 const rnd = criarAleatorio(1932)
+const rndPintura = criarAleatorio(1933) // só a pintura; o rnd acima decide onde as coisas ficam
 const COR = {
   madeira: '#9c8461', madeiraVelha: '#857257', madeiraEscura: '#6b5843', piuba: CAL.piuba,
   palha: '#b49a68', corda: '#b8a37a', barro: '#a8643f', barroClaro: '#c98a5c', cabaca: '#c9a85a',
@@ -38,19 +39,37 @@ function torto(geo, amp = 0.02, freq = 3.1) {
   return geo
 }
 
-// pinta com uma variação de tom por triângulo (pincelada chapada, sem gradiente)
-function pintar(geo, hex, varia = 0.08) {
+// pinta a peça: cor local com manchas suaves pela posição (pincelada na COR, não na geometria; o tom por
+// triângulo de antes virava faceta). alt = 1 marca a parte que usa a textura alternativa do material
+// (a pedra, aTexAlt). A luz e a sombra vêm do materiais.js, nunca da cor.
+// triAntes: quantos triângulos a peça tinha na pintura antiga (um sorteio por triângulo). O sorteio da
+// posição dos objetos é o mesmo rnd, então ele avança igual a antes para a praia sair no mesmo lugar.
+function pintar(geo, hex, varia = 0.08, alt = 0, triAntes = null) {
   const g = geo.index ? geo.toNonIndexed() : geo
   if (g.attributes.uv) g.deleteAttribute('uv')
   const c = new THREE.Color(hex)
-  const n = g.attributes.position.count
+  const p = g.attributes.position
+  const n = p.count
+  for (let i = 0, t = triAntes ?? n / 3; i < t; i++) rnd.proximo()
   const a = new Float32Array(n * 3)
-  for (let i = 0; i < n; i += 3) {
-    const k = 1 + (rnd.proximo() - 0.5) * varia
-    for (let j = 0; j < 3; j++) { a[(i + j) * 3] = c.r * k; a[(i + j) * 3 + 1] = c.g * k; a[(i + j) * 3 + 2] = c.b * k }
+  const s = rndPintura.entre(0, 50)
+  for (let i = 0; i < n; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i)
+    // duas escalas de mancha (~25 cm e ~8 cm), sem repetir entre peças (semente por peça)
+    const k = 1 + (ruido(x * 4 + s, z * 4 + y * 3, 5.1) * 0.7 + ruido(x * 12, z * 12 + y * 9 + s, 6.3) * 0.3) * varia * 1.6
+    a[i * 3] = c.r * k; a[i * 3 + 1] = c.g * k; a[i * 3 + 2] = c.b * k
   }
   g.setAttribute('color', new THREE.BufferAttribute(a, 3))
+  g.setAttribute('aTexAlt', new THREE.BufferAttribute(new Float32Array(n).fill(alt), 1))
   return g
+}
+
+// pedra arredondada e um pouco torta (as de antes eram dodecaedros de 12 faces: facetadas), com a textura
+// de pedra
+function pedra(r, sx = 1, sy = 1, sz = 1) {
+  const g = mergeVertices(new THREE.IcosahedronGeometry(r, 2).deleteAttribute('normal').deleteAttribute('uv'))
+  g.scale(sx, sy, sz)
+  return torto(g, r * 0.22, 1.5 / r)
 }
 
 const cil = (rt, rb, h, seg = 8) => new THREE.CylinderGeometry(rt, rb, h, seg, 2)
@@ -89,8 +108,8 @@ function roloCorda(r = 0.28) {
 }
 function tauacu() {
   // âncora de pedra amarrada numa cruz de madeira
-  const pedra = pintar(torto(new THREE.DodecahedronGeometry(0.2, 0).scale(1.2, 0.8, 1).translate(0, 0.16, 0), 0.04), COR.pedra, 0.15)
-  return mergeGeometries([pedra, pau(V(-0.45, 0.12, 0), V(0.45, 0.12, 0), 0.035, COR.madeiraEscura), pau(V(0, 0.12, -0.4), V(0, 0.12, 0.4), 0.035, COR.madeiraEscura), pau(V(0, 0.1, 0), V(0, 0.7, 0.05), 0.03, COR.madeiraEscura)])
+  const pedraA = pintar(pedra(0.2, 1.2, 0.8, 1).translate(0, 0.16, 0), COR.pedra, 0.15, 1, 36)
+  return mergeGeometries([pedraA, pau(V(-0.45, 0.12, 0), V(0.45, 0.12, 0), 0.035, COR.madeiraEscura), pau(V(0, 0.12, -0.4), V(0, 0.12, 0.4), 0.035, COR.madeiraEscura), pau(V(0, 0.1, 0), V(0, 0.7, 0.05), 0.03, COR.madeiraEscura)])
 }
 function remoEncostado() {
   // remo de governo: cabo comprido e pá larga, encostado (inclinado ~70°)
@@ -165,7 +184,7 @@ function fogareiro() {
   const partes = []
   for (let k = 0; k < 3; k++) {
     const a = (k / 3) * Math.PI * 2
-    partes.push(pintar(torto(new THREE.DodecahedronGeometry(0.11, 0).translate(Math.cos(a) * 0.17, 0.08, Math.sin(a) * 0.17), 0.02), COR.pedra, 0.2))
+    partes.push(pintar(pedra(0.11, 1, 0.85, 1.1).translate(Math.cos(a) * 0.17, 0.08, Math.sin(a) * 0.17), COR.pedra, 0.2, 1, 36))
   }
   const panela = new THREE.LatheGeometry([[0.0, 0], [0.12, 0.0], [0.16, 0.08], [0.15, 0.16], [0.17, 0.18]].map(([x, y]) => new THREE.Vector2(x, y)), 10).translate(0, 0.16, 0)
   partes.push(pintar(torto(panela, 0.008), '#5a4034', 0.08))
@@ -196,7 +215,7 @@ function peixeSecando() {
     f.quadraticCurveTo(-0.1, -0.22, 0, -0.34)
     const peixe = new THREE.ShapeGeometry(f, 4).translate(x + rnd.entre(-0.03, 0.03), 1.26, rnd.entre(-0.02, 0.02))
     peixe.rotateY(rnd.entre(-0.4, 0.4))
-    partes.push(pintar(peixe, rnd.chance(0.5) ? '#c8b9a0' : '#b9a68a', 0.1))
+    partes.push(pintar(peixe, rnd.chance(0.5) ? '#a88e66' : '#9a8259', 0.2)) // peixe salgado secando: âmbar, não branco
   }
   return mergeGeometries(partes)
 }
@@ -264,7 +283,8 @@ export function criarObjetosFatia(cena, casasPalha) {
     else if (ocupacao.livre(x, z, 1.4, 0.4, 0)) ok = pôr('peixe', peixeSecando, x, z, rnd.entre(-0.5, 0.5), { caixa: [1.1, 0.1] })
     if (ok) ocupacao.marcar(x, z, 0.6, 0.6)
   }
-  const mat = texturizar(toonVertice({ side: THREE.DoubleSide }), { topo: 'madeira', lado: 'madeira', tam: 0.8 }) // visual Arcane
+  // madeira em tudo e pedra na parte marcada (aTexAlt): antes as pedras levavam veio de madeira
+  const mat = texturizar(toonVertice({ side: THREE.DoubleSide }), { topo: 'madeira', lado: 'madeira', tam: 0.8, alt: 'pedra', tamAlt: 0.5 })
   let n = 0
   for (const [nome, t] of tipos) {
     if (!t.mats.length) continue

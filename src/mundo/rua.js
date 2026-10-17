@@ -11,7 +11,7 @@ import {
 import { trechosJogo } from './fortaleza1932.js'
 import { LIMITES, densidadeLotes } from './mapa.js'
 import { alturaTerreno } from './terreno.js'
-import { toon, toonVertice, texturaCanvas, pintar, gradienteToon } from '../materiais.js'
+import { toon, toonVertice, texturaCanvas, pintar, gradienteToon, texturizar } from '../materiais.js'
 import { globais } from '../globais.js'
 import { adicionarCaixa, adicionarCirculo } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
@@ -200,13 +200,15 @@ function calcadao(cena) {
       adicionarCaixa(x, z, 1.0, 0.6, yaw)
     }
   }
+  // banco de madeira gasta (era tábua laranja com pé azul-marinho, cara de praça moderna e de objeto sem
+  // pintura ao lado do menino pintado): madeira desbotada com a textura pintada de madeira
   const geoBanco = mergeGeometries([
-    colorir(new THREE.BoxGeometry(1.8, 0.08, 0.5).translate(0, 0.45, 0), '#c98b4b'),
-    colorir(new THREE.BoxGeometry(1.8, 0.45, 0.08).translate(0, 0.75, -0.24), '#c98b4b'),
-    colorir(new THREE.BoxGeometry(0.08, 0.45, 0.45).translate(-0.8, 0.22, 0), '#2a2840'),
-    colorir(new THREE.BoxGeometry(0.08, 0.45, 0.45).translate(0.8, 0.22, 0), '#2a2840'),
+    colorir(new THREE.BoxGeometry(1.8, 0.08, 0.5).translate(0, 0.45, 0), '#8f7a5c'),
+    colorir(new THREE.BoxGeometry(1.8, 0.45, 0.08).translate(0, 0.75, -0.24), '#857154'),
+    colorir(new THREE.BoxGeometry(0.08, 0.45, 0.45).translate(-0.8, 0.22, 0), '#5f4f3d'),
+    colorir(new THREE.BoxGeometry(0.08, 0.45, 0.45).translate(0.8, 0.22, 0), '#5f4f3d'),
   ])
-  instanciar(cena, geoBanco, toonVertice(), bancos, null, 'bancos')
+  instanciar(cena, geoBanco, texturizar(toonVertice(), { topo: 'madeira', lado: 'madeira', tam: 0.8 }), bancos, null, 'bancos')
   const geoLixeira = mergeGeometries([
     colorir(new THREE.CylinderGeometry(0.28, 0.24, 0.7, 10).translate(0, 0.55, 0), '#ff8c1a'),
     colorir(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 4).translate(0, 0.2, 0), '#2a2840'),
