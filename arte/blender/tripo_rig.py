@@ -119,12 +119,18 @@ for lado, nome in ((1, "Left"),):
     linha = np.array(linha)
     ponta = P[np.argmax(P[:, 0] * lado)]                      # ponta dos dedos (o mais afastado)
     # ombro: logo acima da axila, 3,5 cm para dentro da borda de fora do deltoide
-    z_o = z_axila + 0.045 * H / 1.5
-    s_o = fatia(z_o, 0.01, lado=lado)
-    borda_o = np.abs(s_o[:, 0]).max()
-    perto_o = s_o[np.abs(s_o[:, 0]) > borda_o - 0.07 * H / 1.5]
-    ombro = np.array([lado * (borda_o - 0.035 * H / 1.5), perto_o[:, 1].mean(), z_o])
-    print("OMBRO z_axila", round(float(z_axila), 3), "borda", round(float(borda_o), 3))
+    # ombro: sobe pela reta do braço (centro das fatias abaixo da axila) até ficar 4,5 cm abaixo da
+    # superfície de cima do ombro naquele ponto (a junta fica dentro do deltoide)
+    cx = np.polyfit(linha[:, 2], linha[:, 0], 1); cyf = np.polyfit(linha[:, 2], linha[:, 1], 1)
+    ombro = None
+    for z in np.arange(z_axila, z_axila + 0.3, 0.003):
+        x, y = np.polyval(cx, z), np.polyval(cyf, z)
+        col = P[(np.abs(P[:, 0] - x) < 0.012) & (P[:, 2] > z_axila)]   # só o alto do ombro, não o próprio braço
+        if not len(col): continue
+        if z >= col[:, 2].max() - 0.045 * H / 1.5:
+            ombro = np.array([x, y, z]); break
+    if ombro is None: ombro = np.array([np.polyval(cx, z_axila), np.polyval(cyf, z_axila), z_axila + 0.045 * H / 1.5])
+    print("OMBRO z_axila", round(float(z_axila), 3), "ombro", [round(float(c), 3) for c in ombro])
     comp = np.linalg.norm(ponta - ombro); mao = 0.20 * comp     # mão grande: ~1/5 do braço até a ponta
     punho = ombro + (ponta - ombro) * (1 - mao / comp)
     cotovelo = ombro + (punho - ombro) * 0.5
