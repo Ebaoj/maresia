@@ -338,6 +338,7 @@ async function iniciar() {
   function quadro() {
     requestAnimationFrame(quadro)
     contadorFps.quadro()
+    if (window.__primeiroQuadroMs === undefined) window.__primeiroQuadroMs = Math.round(performance.now()) // KAN-67 R3
     const real = relogio.getDelta()
     estatistica.msQuadro += (real * 1000 - estatistica.msQuadro) * 0.05
     if (controle.pausado) return

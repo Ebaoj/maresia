@@ -57,6 +57,7 @@ export function prepararCenaWebgpu(cena) {
       if (reservas.has(m)) { mudou = true; return reservas.get(m) }
       if (vistos.has(m)) return m
       vistos.add(m)
+      if (m.isNodeMaterial) return m // já é do WebGPU (os convertidos aqui mesmo, vistos de novo na volta seguinte)
       const onde = o.name || o.type
       // o visual Arcane (pintar() de materiais.js) tem versão em TSL (arcane-tsl.js); o código extra que
       // alguns materiais somam a ele (vento, janelas, roupa) ainda não, e fica anotado pela chave

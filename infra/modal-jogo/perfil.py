@@ -15,7 +15,7 @@ from pathlib import Path
 
 import modal
 
-from cdp import subir_jogo
+from cdp import mudar_config, subir_jogo
 from jogo import imagem
 
 app = modal.App("maresia-perfil")
@@ -57,8 +57,11 @@ def _subir_jogo():
 
 
 @app.function(gpu="L4", image=imagem_perfil, timeout=30 * 60, cpu=4, memory=8192)
-def perfilar() -> dict:
+def perfilar(renderizador: str = "") -> dict:
     cdp = _subir_jogo()
+    if renderizador:
+        mudar_config(cdp, {"desempenho": {"renderizador": renderizador}})
+        time.sleep(20)
     cdp("Profiler.enable")
     cdp("Profiler.setSamplingInterval", interval=250)  # microssegundos
     saida = {}
@@ -68,7 +71,7 @@ def perfilar() -> dict:
         time.sleep(3)
         # contagem do renderer somada no período (o three zera a cada render(), e o jogo faz várias passadas
         # por quadro) e quadros de tela contados por requestAnimationFrame
-        cdp.js("""(() => { const r = maresia.renderer; r.info.autoReset = false; r.info.reset(); window.__q = 0; window.__f0 = r.info.render.frame;
+        cdp.js("""(() => { const r = maresia.renderer; r.info.autoReset = false; r.info.reset(); window.__q = 0; window.__f0 = r.info.render.frame ?? r.info.render.frames ?? 0;
             if (!window.__contando) { window.__contando = true; const f = () => { window.__q++; requestAnimationFrame(f) }; requestAnimationFrame(f) } })()""")
         cdp("Profiler.start")
         time.sleep(10)
@@ -76,9 +79,9 @@ def perfilar() -> dict:
         info = cdp.js("""(() => { const r = maresia.renderer.info; let objetos = 0, malhas = 0, ossos = 0;
             maresia.cena.traverse(o => { objetos++; if (o.isMesh) malhas++; if (o.isSkinnedMesh) ossos += o.skeleton.bones.length });
             const q = Math.max(1, window.__q);
-            const v = { quadros: window.__q, renders_por_quadro: Math.round((r.render.frame - window.__f0) / q * 10) / 10,
-                     chamadas_por_quadro: Math.round(r.render.calls / q), triangulos_por_quadro: Math.round(r.render.triangles / q),
-                     programas: r.programs.length, geometrias: r.memory.geometries, texturas: r.memory.textures,
+            const v = { quadros: window.__q, renders_por_quadro: Math.round(((r.render.frame ?? r.render.frames ?? 0) - window.__f0) / q * 10) / 10,
+                     chamadas_por_quadro: Math.round((r.render.calls ?? r.render.drawCalls ?? 0) / q), triangulos_por_quadro: Math.round((r.render.triangles ?? 0) / q),
+                     programas: r.programs ? r.programs.length : null, geometrias: r.memory.geometries, texturas: r.memory.textures,
                      objetos, malhas, ossos, msQuadro: Math.round(maresia.estatistica.msQuadro * 10) / 10 };
             r.autoReset = true; r.reset(); return v })()""")
         info["fps"] = round(info["quadros"] / 10, 1)
@@ -182,11 +185,11 @@ def congelamento():
 
 
 @app.local_entrypoint()
-def main():
-    r = perfilar.remote()
+def main(renderizador: str = ""):
+    r = perfilar.remote(renderizador)
     pasta = Path(__file__).parent / "testes"
     pasta.mkdir(exist_ok=True)
-    (pasta / "perfil.json").write_text(json.dumps(r, ensure_ascii=False, indent=1))
+    (pasta / f"perfil{'-' + renderizador if renderizador else ''}.json").write_text(json.dumps(r, ensure_ascii=False, indent=1))
     for nome, c in r.items():
         print(f"\n===== {nome}: {c['render']}")
         print("  por arquivo (ms em 10 s, %):")

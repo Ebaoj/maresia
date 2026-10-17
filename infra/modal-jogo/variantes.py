@@ -35,7 +35,8 @@ MEDIR_JS = """(async () => {
     requestAnimationFrame(f)
     await new Promise(res => setTimeout(res, 8000))
     vivo = false
-    const v = { fps: Math.round(q / 8 * 10) / 10, chamadas: Math.round(r.info.render.calls / Math.max(1, q)) }
+    const chamadas = r.info.render.calls ?? r.info.render.drawCalls ?? 0 // WebGL: calls; WebGPU: drawCalls
+    const v = { fps: Math.round(q / 8 * 10) / 10, chamadas: Math.round(chamadas / Math.max(1, q)) }
     r.info.autoReset = true; r.info.reset()
     return v
   }
@@ -46,15 +47,64 @@ MEDIR_JS = """(async () => {
 })()"""
 
 
+def _cpu_gpu_chrome():
+    """Processador do processo de GPU do Chrome (100 = um núcleo), medido em 3 s pelo top."""
+    pid = subprocess.run("pgrep -f 'type=gpu-process' | head -1", shell=True, capture_output=True, text=True).stdout.strip()
+    if not pid:
+        return None
+    r = subprocess.run(f"top -b -n 2 -d 3 -p {pid} | awk '/^top -/{{n++}} n==2 && $1=={pid} {{print $9}}'", shell=True, capture_output=True, text=True).stdout.strip()
+    try:
+        return float(r.split()[-1].replace(",", "."))
+    except (ValueError, IndexError):
+        return None
+
+
+def _ms_cpu_por_quadro(cdp):
+    """Milissegundos da thread principal por quadro (perfilador do Chrome, 5 s andando em círculo)."""
+    cdp("Profiler.enable")
+    cdp("Profiler.setSamplingInterval", interval=500)
+    cdp.js("for (const k in maresia.teclas) maresia.teclas[k] = false; maresia.teclas.frente = true; maresia.teclas.girarEsq = true;"
+           "window.__q = 0; window.__qv = true; (function f() { if (!window.__qv) return; window.__q++; requestAnimationFrame(f) })()")
+    time.sleep(1)
+    q0 = cdp.js("window.__q")
+    cdp("Profiler.start")
+    time.sleep(5)
+    perfil = cdp("Profiler.stop")["profile"]
+    q = cdp.js("window.__q") - q0
+    cdp.js("window.__qv = false; for (const k in maresia.teclas) maresia.teclas[k] = false")
+    nos = {n["id"]: n["callFrame"]["functionName"] for n in perfil["nodes"]}
+    ocupado = sum(dt for no, dt in zip(perfil["samples"], perfil["timeDeltas"]) if nos.get(no) not in ("(idle)", "(program)")) / 1000
+    return round(ocupado / max(1, q), 2)
+
+
 @app.function(gpu="L4", image=imagem_var, timeout=40 * 60, cpu=4, memory=8192)
-def ab(variantes: dict, rodadas: int = 3) -> dict:
+def ab(variantes: dict, rodadas: int = 3, completo: bool = False) -> dict:
     cdp = subir_jogo()
     saida = {nome: [] for nome in variantes}
     for _ in range(rodadas):
         for nome, mudancas in variantes.items():
             mudar_config(cdp, mudancas)
-            saida[nome].append(cdp.js(MEDIR_JS))
+            m = cdp.js(MEDIR_JS)
+            if completo:
+                m["primeiroQuadroMs"] = cdp.js("window.__primeiroQuadroMs")
+                m["msCpuPorQuadro"] = _ms_cpu_por_quadro(cdp)
+                m["cpuProcessoGpu"] = _cpu_gpu_chrome()
+            saida[nome].append(m)
     return saida
+
+
+@app.local_entrypoint()
+def renderizador(rodadas: int = 3):
+    """KAN-67 R3: WebGL contra WebGPU, alternados na mesma L4."""
+    r = ab.remote({"webgl": {"desempenho": {"renderizador": "webgl"}}, "webgpu": {"desempenho": {"renderizador": "webgpu"}}},
+                  rodadas, True)
+    pasta = Path(__file__).parent / "testes"
+    pasta.mkdir(exist_ok=True)
+    (pasta / "ab-renderizador.json").write_text(json.dumps(r, ensure_ascii=False, indent=1))
+    for nome, lista in r.items():
+        for i, x in enumerate(lista):
+            print(f"{nome:7s} rodada {i + 1}: parado {x['parado']} | andando {x['andando']} | 1º quadro {x.get('primeiroQuadroMs')} ms"
+                  f" | CPU/quadro {x.get('msCpuPorQuadro')} ms | processo GPU {x.get('cpuProcessoGpu')}%")
 
 
 ROTEIRO = """(t, m) => {
