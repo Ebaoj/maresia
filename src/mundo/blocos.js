@@ -13,20 +13,43 @@ const p = new THREE.Vector3()
 // Quem troca detalhe por bloco (casas da cidade e do quarteirão, LOD de 96 m) passa tam: TAM_LOD fixo.
 export const TAM_LOD = 96
 let tamPadrao = 96
-export function definirTamBloco(t) { tamPadrao = t }
+let copiasMin = 0
+let tamMax = 96
+export function definirTamBloco(t, min = 0, max = t) { tamPadrao = t; copiasMin = min; tamMax = Math.max(t, max) }
+
+// Agrupa as cópias em células de chão. Com junção (KAN-70): célula com menos de `copiasMin` cópias sobe para a
+// célula 2x maior que a contém, junto com as vizinhas também ralas, até `tamMax`. Árvores espalhadas davam 1177
+// blocos de 2 ou 3 cópias; cada bloco é um objeto, e no WebGPU do three cada objeto custa CPU por quadro (three.js
+// #30560). Onde é denso nada muda; onde é ralo o bloco cresce (mais vértice fora da tela, que a placa recorta).
+function agrupar(matrizes, tam, juntar) {
+  const pos = matrizes.map((m) => { p.setFromMatrixPosition(m); return [p.x, p.z] })
+  const chave = (i, t) => `${t}:${Math.floor(pos[i][0] / t)},${Math.floor(pos[i][1] / t)}`
+  const prontos = []
+  let soltos = matrizes.map((_, i) => i)
+  for (let t = tam; soltos.length; t *= 2) {
+    const grupos = new Map()
+    for (const i of soltos) {
+      const k = chave(i, t)
+      if (!grupos.has(k)) grupos.set(k, [])
+      grupos.get(k).push(i)
+    }
+    soltos = []
+    const ultimo = !juntar || t * 2 > tamMax
+    for (const g of grupos.values()) {
+      if (ultimo || g.length >= copiasMin) prontos.push(g)
+      else soltos.push(...g)
+    }
+  }
+  return prontos
+}
 
 export function instanciarEmBlocos(cena, geo, material, matrizes, cores = null, opcoes = {}) {
   const { tam = tamPadrao, nome = '', sombra = true, recebe = true, peso, solido = false, semNormal = false } = opcoes
-  const grupos = new Map()
-  matrizes.forEach((m, i) => {
-    p.setFromMatrixPosition(m)
-    const k = `${Math.floor(p.x / tam)},${Math.floor(p.z / tam)}`
-    if (!grupos.has(k)) grupos.set(k, [])
-    grupos.get(k).push(i)
-  })
+  // junção só no tamanho padrão: quem passa tam (casas com LOD de 96 m) depende da grade fixa
+  const grupos = agrupar(matrizes, tam, opcoes.tam === undefined && copiasMin > 0)
   const malhas = []
   const c = new THREE.Color()
-  for (const indices of grupos.values()) {
+  for (const indices of grupos) {
     const im = new THREE.InstancedMesh(geo, material, indices.length)
     indices.forEach((i, j) => {
       im.setMatrixAt(j, matrizes[i])

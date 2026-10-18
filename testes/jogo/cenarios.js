@@ -657,6 +657,43 @@ export const cenarios = {
     return { ok, medidas: { programasNovos: novos, blocos: 10 }, motivo: ok ? '' : 'cada bloco de cópias compilou um programa de vértice próprio' }
   },
 
+  // KAN-70 T1 (17/10/2026): no WebGPU, cada bloco de cópias monta o shader dele no quadro em que aparece pela
+  // primeira vez; andando pela cidade o jogo caía para 1,5 FPS na g4dn. Viaja pelos bancos da orla, olha para os
+  // quatro lados em cada um e mede os quadros seguintes: nenhum pode passar de 150 ms. Chegar de teletransporte é
+  // mais duro que andar (as casas perto montam de uma vez): no Mac o WebGL chega a 100 ms e o WebGPU sem
+  // pré-aquecimento a 5,6 s.
+  async semTravaAoChegar(m) {
+    const bancos = (m.lugares?.bancos || []).filter((_, i) => i % 2 === 0)
+    if (bancos.length < 4) return { ok: false, motivo: 'sem lugares (bancos) para viajar' }
+    const antes = { pausado: m.controle.pausado }
+    m.controle.pausado = true
+    const tempos = []
+    try {
+      for (const b of bancos) {
+        for (const yaw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+          m.irPara(b.x, b.z, yaw)
+          for (let i = 0; i < 4; i++) {
+            const t0 = performance.now()
+            m.passo(1 / 60, true)
+            tempos.push(performance.now() - t0)
+          }
+        }
+      }
+    } finally {
+      m.controle.pausado = antes.pausado
+    }
+    const ordenados = [...tempos].sort((a, b) => a - b)
+    const medidas = {
+      quadros: tempos.length,
+      maiorMs: Math.round(ordenados[ordenados.length - 1]),
+      p95Ms: Math.round(ordenados[Math.floor(ordenados.length * 0.95)]),
+      medianaMs: Math.round(ordenados[Math.floor(ordenados.length / 2)]),
+      acimaDe100: tempos.filter((t) => t > 100).length,
+    }
+    const ok = medidas.maiorMs <= 150
+    return { ok, medidas, motivo: ok ? '' : 'quadro acima de 150 ms ao chegar num lugar novo (shader montado na hora)' }
+  },
+
   // O mínimo de toda mudança: o jogo carregou sem shader quebrado (os erros de console o executor junta)
   async semErros() {
     const quebrados = (window.__shadersQuebrados || []).length

@@ -9,7 +9,7 @@ import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno } from './mundo/terreno.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
-import { criarRenderizador, prepararCenaWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
+import { criarRenderizador, prepararCenaWebgpu, preaquecerWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
 import { definirTamBloco } from './mundo/blocos.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
@@ -56,6 +56,7 @@ const canvas = document.getElementById('tela')
 // porque o WebGPU espera a placa responder
 let renderer
 let webgpu = false
+let preaquecido = false
 
 // a cena nunca se move; congelada, ela para de obrigar todos os filhos a refazer a matriz do mundo
 const cena = congelar(new THREE.Scene())
@@ -80,7 +81,7 @@ async function iniciar() {
   const tempos = {}
   let tMarca = performance.now()
   const marcar = (nome) => { const t = performance.now(); tempos[nome] = Math.round(t - tMarca); tMarca = t }
-  definirTamBloco(cfg.desempenho.tamBloco)
+  definirTamBloco(cfg.desempenho.tamBloco, cfg.desempenho.copiasMinBloco, cfg.desempenho.tamBlocoMax)
   const terreno = criarTerreno(cena)
   marcar('terreno')
   const { mapaAltura } = terreno
@@ -331,7 +332,11 @@ async function iniciar() {
     som.atualizar(distCosta(jogador.pos.x, jogador.pos.z), jogador.pos.y)
 
     if (!desenhar) return
-    if (webgpu) prepararCenaWebgpu(cena) // material novo já sai com a versão do WebGPU no primeiro desenho
+    if (webgpu) {
+      prepararCenaWebgpu(cena) // material novo já sai com a versão do WebGPU no primeiro desenho
+      // primeiro desenho: tudo montado de uma vez (KAN-70 T1), não bloco a bloco andando
+      if (!preaquecido) { preaquecido = true; preaquecerWebgpu(cena, () => pos.desenhar()) }
+    }
     pos.render(t, jogador.velHoriz)
   }
 

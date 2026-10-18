@@ -236,6 +236,32 @@ function quantidadeFixa(o) {
   o.userData.quantidadeReal = () => real
 }
 
+// KAN-70 T1: no WebGPU cada bloco de cópias monta o shader dele no quadro em que aparece pela primeira vez, e andando
+// pela cidade o jogo caía para 1,5 FPS (g4dn). Como a comunidade do three resolve (fórum 86191: compileAsync não
+// adiantou; desenhar tudo uma vez sim): um desenho com tudo visível e sem corte de tela antes do primeiro quadro de
+// verdade, pelo mesmo caminho (MRT, sombra, filtro), para shaders, pipelines e envios saírem prontos. Depois tudo volta
+// como estava; quem chama desenha o quadro normal logo em seguida, então o de aquecimento nunca aparece.
+export function preaquecerWebgpu(cena, desenhar) {
+  const mexidos = []
+  cena.traverse((o) => {
+    if (o.userData.nuncaDesenha) return // caixas de colisão da câmera: invisíveis sempre
+    mexidos.push([o, o.visible, o.frustumCulled, o.geometry?.isInstancedBufferGeometry ? o.geometry.instanceCount : null])
+    o.visible = true
+    o.frustumCulled = false
+    // grama: bloco com zero folhas no momento também precisa do shader pronto
+    if (o.geometry?.isInstancedBufferGeometry && o.geometry.instanceCount === 0) o.geometry.instanceCount = 1
+  })
+  try {
+    desenhar()
+  } finally {
+    for (const [o, visivel, corte, n] of mexidos) {
+      o.visible = visivel
+      o.frustumCulled = corte
+      if (n !== null) o.geometry.instanceCount = n
+    }
+  }
+}
+
 function anotar(peca, onde) {
   if (!falta.has(peca)) falta.set(peca, new Set())
   falta.get(peca).add(onde)

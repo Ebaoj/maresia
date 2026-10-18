@@ -569,7 +569,8 @@ export function criarCasas(cena, casario, morro) {
   }
   const geoCaixa = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0)
   const matInvisivel = luzFixa(new THREE.MeshBasicMaterial()) // nunca é desenhado; luzFixa só por contrato
-  for (const m of instanciarEmBlocos(grupo, geoCaixa, matInvisivel, caixas, null, { nome: 'casas-colisao-camera', sombra: false, recebe: false, solido: true, tam: TAM_LOD })) m.visible = false
+  // nuncaDesenha: o pré-aquecimento do WebGPU (render/renderizador.js) não liga estas caixas
+  for (const m of instanciarEmBlocos(grupo, geoCaixa, matInvisivel, caixas, null, { nome: 'casas-colisao-camera', sombra: false, recebe: false, solido: true, tam: TAM_LOD })) { m.visible = false; m.userData.nuncaDesenha = true }
   cena.add(grupo)
   const escuro = new THREE.Color('#4a3a30')
   const quente = new THREE.Color('#ffb860').multiplyScalar(2.2)

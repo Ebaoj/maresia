@@ -94,8 +94,13 @@ export class AranhaversoGpu {
   }
 
   render(tempo, velocidadeJogador) {
+    this.base.atualizar(tempo, velocidadeJogador)
+    this.desenhar()
+  }
+
+  // só desenha, sem avançar nada (o pré-aquecimento do WebGPU desenha uma vez a mais no primeiro quadro, KAN-70)
+  desenhar() {
     const b = this.base
-    b.atualizar(tempo, velocidadeJogador)
     const e = this.cfg.estilo
     const r = this.renderer
     const cam = this.camera
