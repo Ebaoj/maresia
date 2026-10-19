@@ -1,0 +1,431 @@
+{
+  "ambiente": "AWS, substituição do Modal neste fechamento M1",
+  "resultados": {
+    "semErros": {
+      "ok": true,
+      "medidas": {
+        "shadersQuebrados": 0
+      },
+      "motivo": ""
+    },
+    "pesParados": {
+      "ok": true,
+      "medidas": {
+        "esquerdo": 0.008,
+        "direito": 0.008,
+        "quadros": 402
+      },
+      "motivo": ""
+    },
+    "poseCongelada": {
+      "ok": true,
+      "medidas": [
+        {
+          "nome": "parado",
+          "deriva": 0,
+          "quadros": 267
+        },
+        {
+          "nome": "andando",
+          "deriva": 0.001,
+          "quadros": 270
+        }
+      ],
+      "motivo": ""
+    },
+    "meiaVolta": {
+      "ok": true,
+      "medidas": [
+        {
+          "giro": 0.29,
+          "virou": 0.01,
+          "assentado": 0.067,
+          "quadrosAteVirar": -1,
+          "quadros": 180
+        },
+        {
+          "giro": 3.23,
+          "virou": 3.07,
+          "assentado": 0.019,
+          "quadrosAteVirar": 78,
+          "quadros": 151
+        },
+        {
+          "giro": 3.28,
+          "virou": 3.13,
+          "assentado": 0.021,
+          "quadrosAteVirar": 98,
+          "quadros": 185
+        },
+        {
+          "giro": 3.51,
+          "virou": 3.12,
+          "assentado": 0.053,
+          "quadrosAteVirar": 80,
+          "quadros": 177
+        },
+        {
+          "giro": 3.23,
+          "virou": 3.12,
+          "assentado": 0.024,
+          "quadrosAteVirar": 94,
+          "quadros": 173
+        }
+      ],
+      "motivo": ""
+    },
+    "meiaVoltaRapida": {
+      "ok": true,
+      "medidas": [
+        {
+          "intervalo": 300,
+          "necessario": 1.5,
+          "giro": 1.65,
+          "excesso": 0.14,
+          "erroFinal": 0.08
+        },
+        {
+          "intervalo": 700,
+          "necessario": 0.44,
+          "giro": 0.56,
+          "excesso": 0.12,
+          "erroFinal": 0.01
+        }
+      ],
+      "motivo": ""
+    },
+    "meiaVoltaInterrompida": {
+      "ok": true,
+      "medidas": {
+        "girando": false,
+        "vel": 1.8,
+        "poseMudou": 0.00027
+      },
+      "motivo": ""
+    },
+    "sentarLevantar": {
+      "ok": true,
+      "medidas": {
+        "sentou": true,
+        "maiorSaltoQuadril": 0.1,
+        "quadro": 428,
+        "quadros": 565
+      },
+      "motivo": ""
+    },
+    "copiasUnicas": {
+      "ok": true,
+      "medidas": {
+        "esquerda": 69,
+        "meio": 59,
+        "direita": 63
+      },
+      "motivo": ""
+    },
+    "copiasQueCrescem": {
+      "ok": true,
+      "medidas": {
+        "cima": [
+          62,
+          63,
+          58
+        ],
+        "baixo": [
+          61,
+          64,
+          65
+        ]
+      },
+      "motivo": ""
+    },
+    "sombrasCopias": {
+      "ok": true,
+      "medidas": {
+        "aceso": 765,
+        "sombras": [
+          295,
+          331,
+          353
+        ],
+        "soboFolha": 765,
+        "crescem": [
+          312,
+          306
+        ],
+        "soboTampa": 765
+      },
+      "motivo": ""
+    },
+    "pegadasNaAreia": {
+      "ok": true,
+      "medidas": {
+        "texelsQueMudaram": 1429,
+        "naMarca": 1428
+      },
+      "motivo": ""
+    },
+    "propriedadeEmJogo": {
+      "ok": true,
+      "medidas": {
+        "r": 0,
+        "g": 255,
+        "b": 0
+      },
+      "motivo": ""
+    },
+    "programasReaproveitados": {
+      "ok": true,
+      "medidas": {
+        "programasNovos": 1,
+        "blocos": 10
+      },
+      "motivo": ""
+    },
+    "semRecompilarParado": {
+      "ok": true,
+      "medidas": {
+        "versoesNovas": 0
+      },
+      "motivo": ""
+    },
+    "modoWebgpu": {
+      "ok": true,
+      "medidas": {
+        "webgpuRenderer": true,
+        "backend": "webgpu",
+        "quadros3s": 103,
+        "temGpu": true,
+        "faltaPortar": [],
+        "shadersQuebrados": 0,
+        "cenarios": {
+          "semErros": {
+            "ok": true,
+            "medidas": {
+              "shadersQuebrados": 0
+            },
+            "motivo": ""
+          },
+          "copiasUnicas": {
+            "ok": true,
+            "medidas": {
+              "esquerda": 163,
+              "meio": 149,
+              "direita": 153
+            },
+            "motivo": ""
+          },
+          "copiasQueCrescem": {
+            "ok": true,
+            "medidas": {
+              "cima": [
+                159,
+                156,
+                147
+              ],
+              "baixo": [
+                161,
+                155,
+                163
+              ]
+            },
+            "motivo": ""
+          },
+          "sombrasCopias": {
+            "ok": true,
+            "medidas": {
+              "aceso": 765,
+              "sombras": [
+                296,
+                304,
+                292
+              ],
+              "soboFolha": 765,
+              "crescem": [
+                315,
+                303
+              ],
+              "soboTampa": 765
+            },
+            "motivo": ""
+          },
+          "pegadasNaAreia": {
+            "ok": true,
+            "medidas": {
+              "texelsQueMudaram": 1760,
+              "naMarca": 1422
+            },
+            "motivo": ""
+          },
+          "propriedadeEmJogo": {
+            "ok": true,
+            "medidas": {
+              "r": 0,
+              "g": 255,
+              "b": 0
+            },
+            "motivo": ""
+          },
+          "programasReaproveitados": {
+            "ok": true,
+            "medidas": {
+              "programasNovos": 0,
+              "blocos": 10
+            },
+            "motivo": ""
+          },
+          "semRecompilarParado": {
+            "ok": true,
+            "medidas": {
+              "versoesNovas": 0
+            },
+            "motivo": ""
+          },
+          "uniformsGlobaisUmaVez": {
+            "ok": true,
+            "medidas": {
+              "atualizacoesPorObjeto": 0
+            },
+            "motivo": ""
+          },
+          "sombraSemRecalcularChave": {
+            "ok": true,
+            "medidas": {
+              "recalculosPorQuadro": 0,
+              "quadros": 50
+            },
+            "motivo": ""
+          },
+          "alvosSemLerOQueEscreve": {
+            "ok": true,
+            "medidas": {
+              "erros": []
+            },
+            "motivo": ""
+          }
+        }
+      },
+      "motivo": ""
+    },
+    "console": {
+      "ok": true,
+      "medidas": {
+        "reprovam": [],
+        "outros": [
+          "warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+          "warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+          "warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+          "warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+          "warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+          "warning: THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+          "warning: THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+          "warning: THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+          "warning: THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+          "log warning: [.WebGL-0x283c001a7a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels http://localhost:5195/"
+        ]
+      },
+      "motivo": ""
+    }
+  },
+  "chrome": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/155.0.8059.84",
+    "revision": "@5869fe313571d75152b77813cf0a4ee26a4e6df0",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "jsVersion": "15.5.35.25"
+  },
+  "gpu": "Tesla T4, 595.91.07",
+  "tela": {
+    "largura": 1280,
+    "altura": 720,
+    "pixelRatio": 1
+  },
+  "fontes": {
+    "src/audio.js": "5b9dd15c8c92a6fea9512f92bdffbaac2f4c94a736af94a80ce7cf30e5dccff3",
+    "src/config.js": "738e2572b07d8beb64339bab478155e979774052ae01b1255a82118b60cfdda8",
+    "src/debug/bancada.js": "83c824306faf19ac65691d4faf553927b83c6ebf1bf9348156fcf90d40bd177c",
+    "src/debug/cidade-gerar.js": "c170ac5a9af88ee064975481245f39b6e3acdec5194859e96bf52ee217b6aef4",
+    "src/debug/cidade.js": "38bc4a0a76e596343aa2fc20fc9f7bb5241899db8635fd878feb18f596028e4b",
+    "src/debug/foto-justa.js": "1fa8171c5a432c8b513fe956c077f4f81416e8adeb1b0002f0e41338cd612966",
+    "src/debug/gravador.js": "c8443dd91595b285c3376268f0fbdee133dd94268636c3ecd3d406941ad15a73",
+    "src/debug/kit.js": "9997f05571d190ee261bc150bb70e50b06c6162b13d9f520c6604a5f0330dd5a",
+    "src/debug/medidor.js": "4fa818fc5c796e4eeeb42022062e331db6a9f4f9e7eaa3955706d38cea2da758",
+    "src/debug/motor-sombra.js": "ed5fb467e56d83dbd0435732642af395a1bc109e442f3194cb522c83cc8dbcb5",
+    "src/debug/motor.js": "007170a98c237fb524c8c171624a5ecead26069eb1cca2ef018c750c7f5858e3",
+    "src/debug/prova-raios.js": "d1d621dd95e7d23d5b89830f3e7be7d1f90a602b64d6d63353464a6ef3ed24bc",
+    "src/globais.js": "d1609dca5325ef8e6e60b9134f26bb19071d721e2c75819c4bbd4d4beb859829",
+    "src/jogador/animador.js": "b923ac412023b6d33a21c6805db5f18dbffb6249fab143c7edebfd495ab0b6a7",
+    "src/jogador/avo.js": "cacb4b6b0abb4b7b65c333fca1aafc095b77e4fded36fa722737e19d7b0326f8",
+    "src/jogador/camera.js": "8210f4788121d9b8f4111f8acc65bbd99f4f658bb3d4165e54d20beeb2c12740",
+    "src/jogador/controle.js": "e142fa5b6be28929ce81a1401e752563ab3ec8dc64469c35ec78331c4539ef4f",
+    "src/jogador/corpo.js": "3136021e5782ca1870b379371b5dda3f39b8ca5b51a8cf8c099b8bc77c710427",
+    "src/jogador/dobras-pano.js": "0e79268e3481c783c6864eea8999fcde4e4058ab75b510aff3dc8752dc1f53a1",
+    "src/jogador/dobras.js": "5db0e1e7cab8856d65b4a0284aa904bd682b339116751926345be20c7ce20940",
+    "src/jogador/esqueleto.js": "a5718b681affdeb7182426aff2cbe0332b73e54e6dc10f36f040d504f744ae4c",
+    "src/jogador/interacoes.js": "296dd6185f09318ff84248249e55c4c2ffba5495fffcfddea934982a0a14ac10",
+    "src/jogador/jolt.js": "286b1568f3925b4e4c1b2c35a817bfcdacbe58ac4812702cf7a10f1f2e374572",
+    "src/jogador/molas.js": "f8e1d7551359f819477a691d1bcafa1418770c519b29b130abb13139f00141e1",
+    "src/jogador/motion-matching.js": "6b9258f9f5081c18a5733b106be6c892155e3085caf6e03a6552a13f3e782671",
+    "src/jogador/multiplos.js": "55d8d0045f34cb3920853bd8d88714df1c8a1788e937d09126e9974557cd3d37",
+    "src/jogador/nado-crawl.js": "0fbe60dfeef4d285749fead89824b66e08fb11b7c8f23be01c10355e843e0202",
+    "src/jogador/neto.js": "e28b8feeb0ea949500254763ff13e593eec0f3ecfe2b302bbdce7f3f3925a84e",
+    "src/jogador/pano.js": "a38e118749aa7c02f276fb51afd4d43c60e5fd0eb880b205a7fcbd5e0b69b095",
+    "src/jogador/personagem.js": "bd7c8341eed7c0be7d5aebe016b8df2c42a47befcc389c0511227e3e6bb4a2ec",
+    "src/jogador/retarget.js": "ab2644c6cedfbbab770b7253f1a8e26e96d50f690fbd91851a498760d9afd7a6",
+    "src/jogador/rosto.js": "022c6be436f3e45cd066bf3a4da2abe4c0765d9e546c797ad5c05cbe8f4f37cb",
+    "src/jogador/roupa.js": "04477226bbd4548207893314378702887a1115836e25cd319875e96d31d477af",
+    "src/laboratorio.js": "4f502a79ffc24245c4756bcaba0f40cafad0c976b51681c17b887c3f2cd0ee3d",
+    "src/main.js": "389d159e509f87056cf8bc3fadb9d5a7382110ddb956b1bd450a73cba67e2393",
+    "src/materiais.js": "21f397b91bf4c8fa3d4b1b1414212472e81a03c7947d5ec916f06d5127cea3d5",
+    "src/mundo/areia.js": "663165e7fe42e03d8bed2bcd7301d6b76784a5e0cdb2896d6b291c9efaf2067f",
+    "src/mundo/arvores.js": "55aaf8b8f1519f92973be0539afa465c12f0ddc9c3eb5ae7a0ea0f6470a280dd",
+    "src/mundo/atores.js": "e8a318e94f612ff353c1400aaa67d3715abfc2452a212847b7c824c248164ec0",
+    "src/mundo/blocos.js": "89ff4846efa56b925fd77fc645af03f6d2e2699109b856005123ebe9e3e4f307",
+    "src/mundo/cenografia.js": "70cc06c16a44f4798c8a37898659332ad8d7e122ced6dc1a927ad61cb3e00398",
+    "src/mundo/ceu.js": "88ddd8dc6b1285cbbbc7b04f7df169aa9402fc00a33b5073d3c0fa3efbdaaf6e",
+    "src/mundo/cidade.js": "acd21dfe5e74dc736fd593c8862b584d59d318ed06d64ede9bee125edd450cc7",
+    "src/mundo/colisao.js": "90757b933761214ea4905069d72759a656657e85d117de1e5af6f0509377bb2c",
+    "src/mundo/congelar.js": "6c230b2a3839416a76ea9f158dfe9acc2d7ec625b8d0bfd1d35a3eea3f68eee3",
+    "src/mundo/especies.js": "5567a630964181cf6684fbcdc41bde9b48f06e237f56f3d0b4fb0133f16c4408",
+    "src/mundo/fachadas.js": "43fb7353deec4950ab52980d0301f4bc83110d8d8d51a0e3da281bafc7a37a00",
+    "src/mundo/faixas.js": "947b53bf55ebe700e892279732eda83724b72634b4116e4036d68bad00a315eb",
+    "src/mundo/fatia-objetos.js": "7d3de0ac81bc851570919cb32c21400e3aefff0ffdd29d5724ccd934c11a00d4",
+    "src/mundo/fatia.js": "a7886eb741fa3c5a8c8e182d7d1ecd1d182b0589df27a9800cfadd790f7945da",
+    "src/mundo/fisica.js": "977a8bcdd5522b55517d97e56aca8e78508ed8525e643008a10b00ff3571a6c8",
+    "src/mundo/fortaleza1932.js": "6cd7b3fa9eb2ae370e5b5874dec20569ad4780a51de8e3fcf9daefc8dfdcf961",
+    "src/mundo/grama.js": "0fa97fdcba9ae7715c6544430b0884ebf87862f59e343db08e8f785dd863450d",
+    "src/mundo/horizonte.js": "ef59756fdd5173841af7cef278891cc4b6cc8e6521cc3edd6fff7eb5850c5a0f",
+    "src/mundo/jangada.js": "c890800430ab90942d05fc8965c42f9e12797c928ed2cdac6d5d8752aee4837e",
+    "src/mundo/kit1932.js": "5b2309bdceaf8162d17d56c340724767d8953e5891cc53eb2e438655f0360372",
+    "src/mundo/mapa.js": "839c59720c80b90af2e315e25de8c3d992baaef62c8cd661824d7aedf78081eb",
+    "src/mundo/mar.js": "0865aa24a37893b9420db79f4fc72dd777eca03d6c6487606d56b757cb19bfc5",
+    "src/mundo/marcos.js": "a539cbf2b60da28e2b65076eb095573bac5fcb5f3b1807b74d6a66ae35fabfc6",
+    "src/mundo/ocupacao.js": "9535372ce0110d01437f9e89adbb38392059206885a132851f5cad534eed37bb",
+    "src/mundo/particulas.js": "00cf7ea4545d5771cec56b9b0f9d39a6d23d4772286491abb3c7d617f99c46f5",
+    "src/mundo/pessoas.js": "2d2e2589366e4edf6fb3c3ef1df4d11cfa5296bf05e209588eabcc8e2f79ee3f",
+    "src/mundo/praia.js": "2180e9981e6eb52b4621c512ffda818dd12783bf46f5c3692a3db511df330109",
+    "src/mundo/quarteirao.js": "a4a1d15ed34a4bf6f8288808239f65aacf66f187ecdefc4451ffa968737ff3d4",
+    "src/mundo/rua.js": "0aea43fb2fded74a92c9fb62736c698e55c1ed7ccaa12586fc07ba3081f47f64",
+    "src/mundo/solidos.js": "672f79da125ad0caf6bb679ebfb26a6c2e9b8f2e8428012c40be65a583743177",
+    "src/mundo/terreno.js": "ee617e9ee406e623aa24d02a378cb88122f4c80573e6057287e14aed6abf0b55",
+    "src/mundo/toque.js": "7519b6297fb3911bd774bd6225909d226a3bf2321ae979cf73cb006acb3f7eaf",
+    "src/mundo/vegetacao.js": "4bc2d0118e86adb523977004a9334ea80d9d5b0557f34106efed76c290d245ff",
+    "src/mundo/vilas.js": "763cd7c9b3fca92f7fb3e885bfeb673cc8db2caaae9267c8ebd32f7cb21207d5",
+    "src/paleta.js": "1e20495046a7272160b0eb8d059b0163b74222bca4507d81993e198e54d8fda7",
+    "src/pos/aranhaverso-gpu.js": "445d581b2eb5f8ec1a31a713ab2f1d869bb87121ecd461b5ca3fccc1b809a045",
+    "src/pos/aranhaverso.js": "d90c86ff16c2ce176ef21a223b1daedb5365015202c9235e3c68eab8c5a671c8",
+    "src/render/arcane-tsl.js": "fab5002bbf49fbb01451cee0d48334fb32829b2f39c3086c788e3330f8c99db2",
+    "src/render/gpu/comum.js": "b02535d4108489ee0dded872c653663f286eca0ea449f45a348710cb73b60e53",
+    "src/render/motor-placa.js": "113630097f25dc3e9964b23cbb4bf37be48f14ce674b9db3ab95ce9a72baf8a0",
+    "src/render/renderizador.js": "c08e96f2a0075ceafe3e03e1a41064e0ddb9d6ac1d392aa96c9f6a6f028052a7",
+    "src/ui/contador-fps.js": "13879e4ce08d1f20175a2b1f71688ed46bd24185df22731661e12d7cd8af6cb3",
+    "src/ui/hud.js": "b237f9e94c4e39769b07a2589767736d6c41304454ce15b6063ead4209a681e2",
+    "src/ui/mapa.js": "73836f2000730e15076ce449e342465b1e4e6b4b8a1d48e5703fa4bff4ebb901",
+    "src/ui/painel.js": "7e55ac4127e315325f59136d4bade28c151d9cabb33a4584b30617a818d96e63",
+    "src/utils.js": "eb2932e5b7b6a4f181d83261c15e2de5bea7c9b0f8c4d129f5797776815bf6e1",
+    "testes/jogo/cenarios.js": "8a50d772cf25cdd7e619405d797e1cd7736192be0017e57d5d98587ec57dcb53",
+    "infra/modal-jogo/regressao.py": "115ef653312cc1c1655197644865d1f5b79abf94bfbd6c93ec659c12070c9101",
+    "infra/modal-jogo/cdp.py": "8c1c933af5066e2b26b13ad0c56cd6f14e3c2683ddb2bcafe54f9c32352b4834",
+    "infra/maquina-gpu/testar_jogo.py": "55fa24a0da262e517eaa833de671f36d432944c06975425ef7af2937f325db8a",
+    "package-lock.json": "9f26818b281a4d0fee455b23524c8d99c66173cd99fac51e2c07c8a916b20d11"
+  }
+}

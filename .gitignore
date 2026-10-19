@@ -10,3 +10,6 @@ __pycache__/
 
 # movimentos do Mixamo: licença permite usar no jogo, não redistribuir os arquivos crus
 public/animacoes/mixamo/
+
+# geometria preparada da vg (node scripts/preparar-geometria.mjs gera de novo)
+public/vg/

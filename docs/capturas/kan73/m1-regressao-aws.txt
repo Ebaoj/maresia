@@ -1,0 +1,16 @@
+PASSOU  semErros  
+PASSOU  pesParados  
+PASSOU  poseCongelada  
+PASSOU  meiaVolta  
+PASSOU  meiaVoltaRapida  
+PASSOU  meiaVoltaInterrompida  
+PASSOU  sentarLevantar  
+PASSOU  copiasUnicas  
+PASSOU  copiasQueCrescem  
+PASSOU  sombrasCopias  
+PASSOU  pegadasNaAreia  
+PASSOU  propriedadeEmJogo  
+PASSOU  programasReaproveitados  
+PASSOU  semRecompilarParado  
+PASSOU  modoWebgpu  
+16 de 16 passaram; relatório: /tmp/m1-regressao.json

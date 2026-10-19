@@ -1,0 +1,7 @@
+rodada 1 {"casas": 60000, "copias": 4427892, "msPrimeiroQuadro": 24547, "trechos": {"ruaCentro": {"fps": 57.6, "msCpu": 16.1, "msCpuP95": 21.6, "geometria": {"capacidade": 0.36185275, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 61.6, "msCpu": 16.52, "msCpuP95": 21.9, "geometria": {"capacidade": 0.6875525, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 67.3, "msCpu": 14.88, "msCpuP95": 20.5, "geometria": {"capacidade": 0.42825025, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 63.7, "msCpu": 15.89, "msCpuP95": 22.4, "geometria": {"capacidade": 0.7089325, "estourou": false, "escalaLod": 1}}}}
+  ruaCentro: 58 FPS
+  costaOeste: 62 FPS
+  dunas: 67 FPS
+  alto: 64 FPS
+abertura 24.5 s; 60000 casas
+REPROVA: abertura 24.5 s > 15 s; ruaCentro 58 FPS < 80; costaOeste 62 FPS < 80; dunas 67 FPS < 80; alto 64 FPS < 80

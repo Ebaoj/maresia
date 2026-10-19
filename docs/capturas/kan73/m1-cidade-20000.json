@@ -1,0 +1,79 @@
+{
+  "resultado": {
+    "preparado": true,
+    "preparados": 57,
+    "res": 1,
+    "sombra": true,
+    "triangulosPorPool": 4000000,
+    "terreno": "b",
+    "postes": 3576,
+    "bancos": 1192,
+    "casas": 20000,
+    "arvores": 60000,
+    "coqueiros": 8000,
+    "modelos": 57,
+    "copias": 1824993,
+    "msGerar": 280,
+    "msMontar": 8285,
+    "msCompilar": 5133,
+    "msPrimeiroQuadro": 14366,
+    "trechos": {
+      "ruaCentro": {
+        "fps": 75.5,
+        "msCpu": 11.58,
+        "msCpuP95": 15.1,
+        "geometria": {
+          "capacidade": 0.4732575,
+          "estourou": false,
+          "escalaLod": 1
+        }
+      },
+      "costaOeste": {
+        "fps": 90.2,
+        "msCpu": 10.96,
+        "msCpuP95": 14.4,
+        "geometria": {
+          "capacidade": 0.9141475,
+          "estourou": false,
+          "escalaLod": 1
+        }
+      },
+      "dunas": {
+        "fps": 87.5,
+        "msCpu": 11.37,
+        "msCpuP95": 15.1,
+        "geometria": {
+          "capacidade": 0.40153675,
+          "estourou": false,
+          "escalaLod": 1
+        }
+      },
+      "alto": {
+        "fps": 86.9,
+        "msCpu": 11.49,
+        "msCpuP95": 15.3,
+        "geometria": {
+          "capacidade": 0.79088625,
+          "estourou": false,
+          "escalaLod": 1
+        }
+      }
+    },
+    "vg": {
+      "triangulosDesenhados": 2276529,
+      "visiveis": 513273,
+      "sombra": 1326477,
+      "capacidade": 0.670875,
+      "estourou": false
+    }
+  },
+  "largura": 2560,
+  "altura": 1544,
+  "pixelRatio": 1,
+  "navegador": "Chrome/155.0.8059.84",
+  "fontes": {
+    "src/debug/cidade.js": "38bc4a0a76e596343aa2fc20fc9f7bb5241899db8635fd878feb18f596028e4b",
+    "src/debug/cidade-gerar.js": "c170ac5a9af88ee064975481245f39b6e3acdec5194859e96bf52ee217b6aef4",
+    "public/vg/manifesto.json": "d65a59ef33b59e2d112fbd539df12a7576c6219c3228be4e0a83f36c96d820f8"
+  }
+}

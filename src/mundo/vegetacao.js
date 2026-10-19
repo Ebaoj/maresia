@@ -220,7 +220,8 @@ function balancarCopa(mat, cfg) {
   return mat
 }
 
-export function criarCoqueiros(cena, cfg) {
+// formas e materiais do coqueiro (o jogo e a cidade de estresse do KAN-73 usam os mesmos)
+export function pecasDoCoqueiro(cfg) {
   const { geo: geoTronco, topo } = geometriaTronco()
   const geoCopa = geometriaCopa(topo)
   // casca pintada com os anéis (visual Arcane)
@@ -234,6 +235,11 @@ export function criarCoqueiros(cena, cfg) {
   }), cfg)
   pintar(matCopa, 'copa-pintada')
   texturizar(matCopa, { topo: 'folha', lado: 'folha', tam: 1.2, contraste: 0.9, massa: 0.3 }) // folhagem pintada (visual Arcane)
+  return { geoTronco, geoCopa, matTronco, matCopa }
+}
+
+export function criarCoqueiros(cena, cfg) {
+  const { geoTronco, geoCopa, matTronco, matCopa } = pecasDoCoqueiro(cfg)
 
   const lista = posicoes()
   const matrizes = []

@@ -1,0 +1,13 @@
+
+> maresia@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.2 /Users/joabecornelio/Projetos/maresia-three186
+
+
+ Test Files  4 passed (4)
+      Tests  10 passed (10)
+   Start at  15:36:39
+   Duration  701ms (tests 38%, import 31%, transform 30%, worker 1%)
+

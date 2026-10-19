@@ -1,0 +1,22 @@
+
+> maresia@0.1.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+[plugin vite:resolve] Module "node:module" has been externalized for browser compatibility, imported by "/Users/joabecornelio/Projetos/maresia-three186/node_modules/jolt-physics/dist/jolt-physics.wasm-compat.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+✓ 155 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                           1.40 kB │ gzip:     0.68 kB
+dist/assets/index-Bg400yhf.css            3.38 kB │ gzip:     1.27 kB
+dist/assets/three.tsl-DvtjC5JS.js        25.60 kB │ gzip:     7.09 kB
+dist/assets/index-WhTbimpE.js           241.08 kB │ gzip:    86.32 kB
+dist/assets/three.webgpu-lbVbJR4l.js    715.11 kB │ gzip:   200.16 kB
+dist/assets/index-CmFktZdg.js         7,047.61 kB │ gzip: 2,137.63 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.07s

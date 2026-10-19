@@ -65,6 +65,18 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 | `arte/tripo.py` | Tripo pela API (SDK oficial `tripo3d` 1.x): `saldo`, `gerar IMAGEM PASTA [--partes]`, `baixar TASK_ID PASTA`; rodar só via `arte/tripo.sh` (chave `tripo_api_key` do cofre). Crédito da API é separado da assinatura do site |
 | `src/debug/gravador.js` + `vite.config.js` | Gravador de quadros com passo fixo (só no modo dev) |
 | `src/debug/medidor.js` | `maresia.medir(...)`: custo real do quadro por vazão, fora da tela, com variantes alternadas (só no modo dev) |
+| `src/render/motor-placa.js` | Motor de cópias na GPU, opcional no WebGPU (`cfg.desempenho.motorPlaca`), com a three-virtual-geometry |
+| `src/mundo/kit1932.js` | Casas separadas em peças reutilizáveis, com matrizes e cores por cópia |
+| `src/debug/cidade.js` + `cidade-gerar.js` | Cidade de estresse de 10 × 4 km, casas do kit, vegetação, postes, bancos e relevo; passeio medido por trecho |
+| `scripts/preparar-geometria.mjs` | Prepara os modelos em `public/vg/` fora do navegador; arquivos gerados, fora do git |
+| `infra/maquina-gpu/testar_jogo.py` + `infra/modal-jogo/regressao.py` | Suíte de regressão compartilhada: Chrome da AWS, mesmos cenários e critérios do Modal |
+| `infra/maquina-gpu/regua_cidade.py` | Na g4dn: reprova se faltar conteúdo ou capacidade, algum trecho ficar abaixo de 80 FPS ou a abertura mediana passar de 15 s |
+
+Para a bancada da M1: `node scripts/preparar-geometria.mjs`, `npm run dev` e abrir
+`/bancada-cidade.html?casas=15000&preparado=1&terreno=b`. O resultado fica em
+`window.__resultado` e as fotos dos trechos em `window.__fotos`.
+O relevo preparado é uma malha única com corte por cluster; a capacidade de desenho é por pool da vg, não por mapa inteiro.
+Essa bancada prepara a migração do jogo, que continua numa fase posterior.
 
 ## Regras
 
@@ -100,6 +112,10 @@ Regra do KAN-62 aplicada aqui: bug corrigido não pode voltar sem um teste avisa
 - Jogo rodando num navegador de verdade na L4 do Modal (`testes/jogo/cenarios.js`, ~5 min), de `arte/`:
   `./modal.sh run ../infra/modal-jogo/testar_jogo.py`. Rodar antes de commit que mexe em `src/jogador`,
   `src/mundo`, `src/pos` ou materiais. Também reprova erro no console, shader quebrado, material sem gLuz.
+- Exceção neste fechamento M1 (18/10/2026): na retomada remota, o usuário prosseguiu com a alternativa AWS
+  proposta por indisponibilidade do Touch ID do cofre. A suíte compartilhada foi executada integralmente na T4,
+  com os mesmos cenários e critérios do Modal, em 1280 × 720. Evidências em `docs/capturas/kan73/m1-regressao-aws.*`.
+  Isso substitui a execução Modal apenas neste fechamento; o caminho Modal continua disponível.
 - Bug corrigido: primeiro o teste que reproduz (unidade quando der; cenário do jogo quando precisar do
   personagem animado), **visto falhando no código de antes**; depois a correção, e o teste passa.
   Para ver falhar: `git worktree add --detach PASTA COMMIT_ANTES`, copiar o teste e também

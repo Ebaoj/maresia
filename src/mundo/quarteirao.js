@@ -323,6 +323,16 @@ function casa(it, P, rnd, simples) {
   if (SO_PLANEJAR) adicionarDeck(centro.x, centro.z, F / 2, LARG_CALCADA / 2, ang + it.rot, chao + CALCADA)
 }
 
+// só o planejamento de uma casa (sem geometria), para o teste do kit (testes/unidade/kit1932.test.js) conferir que
+// pecasDaCasa sorteia na mesma ordem
+export function planejarCasa(it, rnd, simples) {
+  const antes = SO_PLANEJAR
+  SO_PLANEJAR = true
+  try {
+    casa(it, { reboco: new Pilha(), pecas: new Pilha(), interior: new Pilha(), aceso: new Pilha(), telhas: new Pilha() }, rnd, simples)
+  } finally { SO_PLANEJAR = antes }
+}
+
 // Material de reboco: cor por vértice, pincelada (pintar) e desgaste preso ao mundo:
 // salitre subindo da base e cal descascada mostrando a taipa.
 function materialReboco(desgaste) {
@@ -390,6 +400,15 @@ function rebocoTsl(desgaste) {
       v.chao.assign(W.attribute('aChao', 'float'))
       return W.positionLocal
     },
+    // peças do kit na three-virtual-geometry (KAN-73): posição e normal já no mundo; o chão da casa ainda não vai
+    // com a peça (a vg não leva atributo próprio por cópia): salitre e degradê contam a partir de y = 0 (no jogo, a
+    // altura do terreno sob a casa; M5)
+    posicaoVg({ W, mundo, normalMundo }) {
+      const v = vars(W)
+      v.mundo.assign(mundo)
+      v.normal.assign(normalMundo)
+      v.chao.assign(W.float(0))
+    },
     cor({ W }, rgb0) {
       const { Fn, vec2, vec3, float, abs, floor, fract, sin, dot, mix, smoothstep, If } = W
       const v = vars(W)
@@ -448,11 +467,17 @@ function telhasTsl() {
       v.norm.assign(normalize(mat3(m.element(0).xyz, m.element(1).xyz, m.element(2).xyz).mul(attribute('normal', 'vec3'))))
       return positionLocal
     },
+    posicaoVg({ W, mundo, normalMundo }) {
+      const v = vars(W)
+      v.mundo.assign(mundo)
+      v.norm.assign(normalMundo)
+    },
     cor({ W }, rgb) {
       const { vec2, vec3, float, floor, fract, sin, dot, normalize, mix, smoothstep, step } = W
       const v = vars(W)
+      const norm = v.norm
       const hashT = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453))
-      const desce = normalize(v.norm.xz.add(vec2(1e-4)))
+      const desce = normalize(norm.xz.add(vec2(1e-4)))
       const lado = vec2(desce.y.negate(), desce.x)
       const u = dot(v.mundo.xz, lado).div(0.23)
       const vv = dot(v.mundo.xz, desce).div(0.42).add(v.mundo.y.mul(0.6))
@@ -464,9 +489,9 @@ function telhasTsl() {
       const t0 = rgb.mul(tom)
       const t1 = t0.mul(mix(curva.mul(0.18).add(0.7), curva.mul(0.22).add(0.9), capa))
       const t2 = t1.mul(float(1.0).sub(smoothstep(0.82, 0.98, fract(vv.add(capa.mul(0.5)))).mul(0.28)))
-      const limo = hashT(floor(v.mundo.xz.mul(0.7))).mul(smoothstep(0.4, 0.0, v.norm.y.sub(0.75)))
+      const limo = hashT(floor(v.mundo.xz.mul(0.7))).mul(smoothstep(0.4, 0.0, norm.y.sub(0.75)))
       const t = mix(t2, t2.mul(vec3(0.72, 0.74, 0.62)), limo.mul(0.35))
-      return mix(rgb, t, step(0.35, v.norm.y))
+      return mix(rgb, t, step(0.35, norm.y))
     },
   }
 }
@@ -508,12 +533,19 @@ function materialTelhas() {
   return texturizar(pintar(mat, 'telhas-1932'), { topo: 'telha', lado: 'telha', tam: 1.5 }) // telha canal pintada (visual Arcane)
 }
 
+// os materiais das casas (o kit de 1932 usa os mesmos, KAN-73)
+export function materiaisDasCasas() {
+  return {
+    reboco: materialReboco(0.4),
+    rebocoMorro: materialReboco(0.85),
+    pecas: texturizar(pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 'toon-pintado'), { topo: 'madeira', lado: 'madeira', tam: 1 }), // portas, janelas, beirais
+    telhas: materialTelhas(),
+  }
+}
+
 export function criarCasas(cena, casario, morro) {
   const rnd = criarAleatorio(1932)
-  const matReboco = materialReboco(0.4)
-  const matRebocoMorro = materialReboco(0.85)
-  const matPecas = texturizar(pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 'toon-pintado'), { topo: 'madeira', lado: 'madeira', tam: 1 }) // portas, janelas, beirais
-  const matTelhas = materialTelhas()
+  const { reboco: matReboco, rebocoMorro: matRebocoMorro, pecas: matPecas, telhas: matTelhas } = materiaisDasCasas()
   const grupo = new THREE.Group()
   grupo.name = 'casas-1932'
   const blocos = new Map()
