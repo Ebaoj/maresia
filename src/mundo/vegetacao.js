@@ -19,7 +19,7 @@ import { instanciarEmBlocos } from './blocos.js'
 
 const rnd = criarAleatorio(99)
 
-function geometriaTronco() {
+export function geometriaTronco() {
   const curva = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0, 0, 0),
     new THREE.Vector3(0.25, 2.6, 0),
@@ -81,7 +81,7 @@ function geometriaTronco() {
   return { geo: mergeGeometries([geo.toNonIndexed(), ...cocos.map((c) => c.toNonIndexed())]), topo }
 }
 
-function geometriaCopa(topo) {
+export function geometriaCopa(topo) {
   const folhas = []
   const nFolhas = 10
   for (let k = 0; k < nFolhas; k++) {

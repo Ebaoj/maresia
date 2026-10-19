@@ -148,12 +148,32 @@ function criarClasse(W) {
       this.nMundo = varyingProperty('vec3', 'vNMundo')
     }
 
+    // a three-virtual-geometry (KAN-71) clona o material para a peça de transição entre níveis de detalhe
+    // (new this.constructor().copy(this)): o original tem de ir junto
+    copy(fonte) {
+      super.copy(fonte)
+      if (fonte.original) this.original = fonte.original
+      return this
+    }
+
     // A etapa de vértice na ordem do GLSL do three: código extra do material sobre a posição crua
     // (begin_vertex), depois morph e esqueleto, depois o código que roda sobre o corpo já animado, e só então a
     // cópia é posta no mundo (instanceMatrix). O three/webgpu aplica positionNode depois da cópia. (three 0.186:
     // quem abre e fecha a pilha do vértice é o setupVertex; aqui só a posição local, devolvida no fim.)
     setupPosition(builder) {
       const { object } = builder
+      // three-virtual-geometry (KAN-71): a geometria não fica em atributos, é lida das listas dela na placa. O
+      // positionNode dela devolve a posição já com a cópia no mundo (o objeto fica na origem) e grava a normal local
+      // e a do mundo (vVgWorldNormal). Antes de ela montar as listas o positionNode ainda não existe
+      if (object.isVirtualMesh || object.isVirtualMeshPart) {
+        if (this.positionNode) positionLocal.assign(this.positionNode)
+        const nMundoVg = normalize(varyingProperty('vec3', 'vVgWorldNormal'))
+        this.nMundo.assign(nMundoVg)
+        // código de vértice do material que lê a posição no mundo (reboco, telhas): na vg a posição já sai no mundo
+        const extraVg = this.original.userData.tsl
+        if (extraVg?.posicaoVg) extraVg.posicaoVg({ W, builder, mundo: positionLocal, normalMundo: nMundoVg, origem: varyingProperty('vec3', 'vVgInstanceOrigin') })
+        return positionLocal
+      }
       const geometry = object.geometry
       const extra = this.original.userData.tsl
       const inst = object.isInstancedMesh && object.instanceMatrix?.isInstancedBufferAttribute ? matrizInstancia(W, object) : null

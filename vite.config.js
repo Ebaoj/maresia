@@ -46,4 +46,7 @@ function gravadorDeQuadros() {
 export default defineConfig({
   plugins: [gravadorDeQuadros()],
   server: { host: 'localhost' },
+  // uma cópia só do three na página: a three-virtual-geometry (bancada do motor, KAN-71) importa three/webgpu e
+  // three/tsl; duas cópias misturam nós do TSL e quebram os shaders
+  resolve: { dedupe: ['three'] },
 })
