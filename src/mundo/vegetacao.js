@@ -251,9 +251,9 @@ export function criarCoqueiros(cena, cfg) {
     matrizes.push(m.clone())
     adicionarCirculo(c.x, c.z, 0.4 * c.escala)
   })
-  instanciarEmBlocos(cena, geoTronco, matTronco, matrizes, null, { nome: 'coqueiros' })
+  instanciarEmBlocos(cena, geoTronco, matTronco, matrizes, null, { nome: 'coqueiros', placa: true })
   // as folhas não entram no passe de normais (a máscara não vale lá); o contorno vem da profundidade
-  instanciarEmBlocos(cena, geoCopa, matCopa, matrizes, null, { nome: 'copas', semNormal: true })
+  instanciarEmBlocos(cena, geoCopa, matCopa, matrizes, null, { nome: 'copas', semNormal: true, placa: true })
   // para a física: onde fica cada coqueiro e de onde o coco cai
   return {
     quantidade: lista.length,

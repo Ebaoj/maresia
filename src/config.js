@@ -169,6 +169,7 @@ export const PADRAO = {
     tamBloco: 192,         // metros por bloco de cópias (árvores, plantas, objetos); maior = menos chamadas de desenho. A/B na L4 17/10: 96 -> 192 tira 22% das chamadas e dá +6 a +16 FPS parado; 384 oscilou
     copiasMinBloco: 12,    // KAN-70: bloco com menos cópias que isso se junta aos vizinhos num bloco 2x maior (árvores espalhadas davam 2 cópias por bloco)
     tamBlocoMax: 768,      // até este tamanho; 0 em copiasMinBloco desliga a junção
+    motorPlaca: false,     // KAN-72: no WebGPU, árvores e plantas no desenho guiado pela placa (three-virtual-geometry): menos objetos por quadro. Desligado até passar na régua
   },
   audio: {
     volume: 0.6,

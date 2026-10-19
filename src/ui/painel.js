@@ -189,6 +189,7 @@ export function criarPainel(cfg) {
   mundo.add(cfg.desempenho, 'mostrarFps').name('mostrar FPS')
   mundo.add(cfg.desempenho, 'renderizador', ['webgl', 'webgpu']).name('renderizador (recarregar)')
   mundo.add(cfg.desempenho, 'tamBloco', [96, 192, 384]).name('bloco de cópias, m (recarregar)')
+  mundo.add(cfg.desempenho, 'motorPlaca').name('árvores na placa, WebGPU (recarregar)')
   mundo.add(cfg.audio, 'volume', 0, 1, 0.01).name('volume')
 
   const acoes = {

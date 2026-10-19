@@ -10,6 +10,7 @@ import { criarTerreno } from './mundo/terreno.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
 import { criarRenderizador, prepararCenaWebgpu, preaquecerWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
+import { ligarMotorPlaca, prepararMotorPlaca } from './render/motor-placa.js'
 import { definirTamBloco } from './mundo/blocos.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
@@ -77,6 +78,7 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms))
 async function iniciar() {
   await esperar(50) // deixa a capa de carregamento aparecer antes do trabalho pesado
   ;({ renderer, webgpu } = await criarRenderizador(cfg, canvas))
+  ligarMotorPlaca(webgpu && cfg.desempenho.motorPlaca) // antes de criar o mundo: instanciarEmBlocos consulta
 
   const tempos = {}
   let tMarca = performance.now()
@@ -339,6 +341,10 @@ async function iniciar() {
     }
     pos.render(t, jogador.velHoriz)
   }
+
+  // motor guiado pela placa (KAN-72): ainda na capa de carregamento, as malhas da vg e os programas dela ficam
+  // prontos (sem isso as árvores apareciam de 2 a 4 s depois do resto); materiais já na versão do WebGPU antes
+  if (webgpu) { prepararCenaWebgpu(cena); await prepararMotorPlaca(renderer, cena, camera) }
 
   const contadorFps = criarContadorFps(cfg)
   function quadro() {

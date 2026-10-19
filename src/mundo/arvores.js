@@ -156,7 +156,7 @@ export function criarArvores(cena, predios, grade) {
   for (const [esp, lista] of Object.entries(ESP)) {
     for (const v of lista) {
       if (!v.mats.length) continue
-      instanciarEmBlocos(cena, v.geo, mat, v.mats, null, { nome: esp })
+      instanciarEmBlocos(cena, v.geo, mat, v.mats, null, { nome: esp, placa: true })
     }
   }
 
@@ -186,6 +186,6 @@ export function criarArvores(cena, predios, grade) {
       vasos.push(m.clone().makeTranslation(x, yv, z))
     }
   }
-  instanciarEmBlocos(cena, geometriaBuganvilia(), mat, bug, null, { nome: 'buganvilias' })
-  instanciarEmBlocos(cena, geometriaVaso(), mat, vasos, null, { nome: 'vasos' })
+  instanciarEmBlocos(cena, geometriaBuganvilia(), mat, bug, null, { nome: 'buganvilias', placa: true })
+  instanciarEmBlocos(cena, geometriaVaso(), mat, vasos, null, { nome: 'vasos', placa: true })
 }

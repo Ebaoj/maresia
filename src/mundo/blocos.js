@@ -5,6 +5,7 @@
 import * as THREE from 'three'
 import { congelar } from './congelar.js'
 import { solidosCamera } from './solidos.js'
+import { motorPlacaLigado, materialServeNaPlaca, enviarAoMotor } from '../render/motor-placa.js'
 
 const p = new THREE.Vector3()
 
@@ -45,6 +46,11 @@ function agrupar(matrizes, tam, juntar) {
 
 export function instanciarEmBlocos(cena, geo, material, matrizes, cores = null, opcoes = {}) {
   const { tam = tamPadrao, nome = '', sombra = true, recebe = true, peso, solido = false, semNormal = false } = opcoes
+  // placa: true (árvores e plantas, KAN-72): no WebGPU com o motor ligado, uma malha da vg no lugar dos blocos.
+  // Fica nos blocos quem troca detalhe por bloco (tam fixo), quem é sólido para a câmera e material sem versão na vg
+  if (opcoes.placa && motorPlacaLigado() && opcoes.tam === undefined && !solido && materialServeNaPlaca(material)) {
+    return enviarAoMotor(cena, geo, material, matrizes, cores, opcoes)
+  }
   // junção só no tamanho padrão: quem passa tam (casas com LOD de 96 m) depende da grade fixa
   const grupos = agrupar(matrizes, tam, opcoes.tam === undefined && copiasMin > 0)
   const malhas = []
