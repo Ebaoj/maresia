@@ -9,9 +9,13 @@ import * as THREE from 'three'
 
 const congelados = []
 
+// o.static é a propriedade que o three 0.186 lê em Object3D (three.core.js:12261) e que o remendo do observador
+// (estaticosSemRefreshTotal, renderizador.js) usa para não refazer os uniforms de quem não se mexe: o parado passa a ser
+// conferido por valor (matriz de mundo, versões de material, geometria e cópias) em vez de refeito todo quadro.
 export function congelar(o) {
   o.updateMatrix()
   o.matrixAutoUpdate = false
+  o.static = true
   congelados.push(o)
   return o
 }
@@ -20,6 +24,7 @@ export function congelar(o) {
 export function alternarCongelamento(ligado) {
   for (const o of congelados) {
     o.matrixAutoUpdate = !ligado
+    o.static = ligado
     if (ligado) o.updateMatrix()
   }
 }

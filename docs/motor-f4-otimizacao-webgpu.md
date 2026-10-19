@@ -1,0 +1,243 @@
+# Otimização do WebGPU no jogo (KAN-74, continuação do F4)
+
+Registro de 19/10/2026. Objetivo: o WebGPU (`cfg.desempenho.renderizador = 'webgpu'`) alcançar o WebGL no jogo real,
+na g4dn (T4, Chrome 155, 1920 × 792, sem vsync). Diagnóstico completo: o gargalo é CPU em dois lugares (thread principal
+do jogo e thread principal do gpu-process do Chrome); a GPU faz 3,5 ms por quadro e fica ociosa. Nenhum commit foi feito;
+backup do estado anterior em `~/claude-f4/backup-pre-otimizacao.patch` e `~/claude-f4/backup-pre-otimizacao-novos.tgz`.
+
+## Como medir (sempre do mesmo jeito)
+
+- `~/claude-f4/otimizacao/medir.sh ROTULO [--reps 3] [--correndo] [--webgl]`: pelo DevTools do Chrome do dono na T4,
+  teleporta para a posição de referência (x 340,6; z −9,1; yaw −1,663; 17h16), mede e devolve o jogador/hora como
+  estavam. Sem `--correndo` a hora do jogo fica parada (determinístico); com `--correndo` a hora anda (o regime do dono:
+  a paleta por hora muda uniforms todo quadro). Por repetição: FPS do rAF (4 s), ms de JS por quadro (do `jogador.update`
+  ao fim do `pos.render`), ms do passe principal (sem a sombra aninhada), da sombra dinâmica e dos quads; objetos
+  (`renderObject`) por passe; comandos WebGPU por quadro contados nos protótipos (nada de `renderer.info`, que acumula).
+  Resultado em `~/claude-f4/otimizacao/medidas/ROTULO.json`; a mediana de 3 repetições é o número reportado, com a
+  variação ao lado.
+- `~/claude-f4/otimizacao/foto.sh ROTULO [--ref REF] [--placa 0|1]`: foto justa WebGPU no Chrome do Mac (Metal,
+  headless), 5 cenas do KAN-74, comparação pixel a pixel com a referência. **Critério: 0 pixel diferente com
+  `--placa 0`** (duas rodadas idênticas, `base-sp` × `base-sp2`, deram 0 nas 5 cenas). Com `motorPlaca` ligado a vg
+  introduz ruído próprio entre rodadas idênticas (`base` × `base2`: 16 a 106 pixels, no máximo 9/255 por canal, em 4 das
+  5 cenas), então `--placa 1` só serve como checagem secundária contra esse piso.
+
+## Linha de base (19/10/2026, mediana de 3 repetições)
+
+| Modo | FPS rAF | quadro (med) | JS/quadro | passe principal | sombra din. | quads | objetos cena+sombra | draws | writeBuffer | submit |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| WebGPU, hora parada | 58,1 (55,7–58,5) | 16,6 ms | 18,7 ms (18,6–19,5) | 10,3 ms | 3,6 ms | 1,1 ms | 263 + 104 | 377 | 60 | 14,3 |
+| WebGPU, hora andando | 38,6 (38,4–39,7) | 24,4 ms | 19,2 ms (18,8–20,3) | 10,9 ms | 3,2 ms | 1,1 ms | 259 + 98 | 369 | **1.022** | 14,6 |
+| WebGL, hora parada | 202,5 (189,7–202,8) | 4,2 ms | 4,8 ms (4,8–5,6) | 3,1 ms | — | 0,2 ms | n/d | n/d | n/d | n/d |
+| WebGL, hora andando | 85,2 (80,9–85,2) | 11,8 ms | 6,8 ms (6,8–7,2) | 4,3 ms | — | 0,3 ms | n/d | n/d | n/d | n/d |
+
+Leitura: com a hora parada o limite é o JS (18,7 ms); com a hora andando o JS não muda, mas o gpu-process recebe ~1.000
+`writeBuffer` por quadro (faixas não contíguas de uniforms `ref()` que mudam com a hora, ~6-7 por binding, ~150 bindings)
+e o quadro vai a 24 ms. O WebGL também cai com a hora andando (202 → 85 FPS) pelo mesmo motivo (uploads de uniform), mas
+parte de 4,8 ms de JS. Outros comandos por quadro no WebGPU: 1.172 `setVertexBuffer`, 577 `setBindGroup`, 185
+`setPipeline`, 98 `setIndexBuffer`, 13 render passes.
+
+Ambiente: o Chrome da T4 roda com `--disable-vulkan-surface` (infra/maquina-gpu/maquina.sh), e a apresentação é por
+readback síncrono (~20 ms por quadro apresentado, 10-27 quadros apresentados/s em qualquer renderizador). Isso não muda
+o custo de JS, mas limita o que a tela remota mostra; fica como recomendação, sem mexer no Chrome do dono.
+
+## Itens (ordem de execução) — preenchido à medida que cada um é medido
+
+| # | Item | Arquivos | Estado | Antes → depois (WebGPU hora parada / andando) | Foto justa |
+|---|---|---|---|---|---|
+| 1 | um `updateMatrixWorld` por quadro | `src/main.js` | aceito (leva 1) | ver leva 1 | 0 px |
+| 2 | conversão de materiais no 1º desenho; propriedades sem getters | `src/render/renderizador.js`, `testes/unidade/renderizador-webgpu.test.js` | aceito (leva 1) | ver leva 1 | 0 px |
+| 3 | limpeza redundante antes do passe principal (−1 submit) | `src/pos/aranhaverso-gpu.js` | aceito (leva 1) | submits 14,3 → 13,1 | 0 px |
+| 4 | malhas da vg registradas como parados no cache de sombra | `src/render/motor-placa.js` | **não aplicado** | — | — |
+| 7 | uma gravação por binding (coalescer faixas de uniform) | `src/render/gpu/faixas-uniform.js` (novo), 2 linhas em `renderizador.js`, `testes/unidade/faixas-uniform.test.js` | aceito | hora andando: writeBuffer 1.015 → 208, FPS 46,2 → 48,1 | 0 px |
+| 5 | parados sem refresh total (remendo no `NodeMaterialObserver`) | `renderizador.js`, `src/mundo/congelar.js`, `testes/unidade/observador-estaticos.test.js` | aceito | parada: 65,3 → 72 FPS, JS 15,1 → 13,7; andando: 48,1 → 52,9 | 0 px (3 de 4 rodadas; 1 rodada com 15 px no avô, não reproduzida) |
+| 8 | personagens: textura de ossos sem matriz; `InstanceNode` do three no caminho dos parados | `src/render/gpu/ossos.js` (novo), `renderizador.js` | **revertido** | sem ganho (72,0 → 71,8 / 52,9 → 50,1) | **26-285 px** em todas as cenas |
+| 6 | render bundles para blocos parados | — | adiado: parados já custam ~10 µs; ganho ≈ 0,5-1 ms por refatoração grande | | |
+
+### Leva 1 (itens 1 + 2 + 3 juntos, medidos em 19/10 15:00; os três entraram ao mesmo tempo, então o ganho é conjunto)
+
+| Modo | FPS rAF | JS/quadro | passe principal | sombra din. | quads | submit | writeBuffer |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| WebGPU, hora parada: base → leva 1 | 58,1 → **63,0** (62,6–65,2) | 18,7 → **15,2 ms** (14,2–16,2) | 10,3 → 7,8 | 3,6 → 2,4 | 1,1 → 1,0 | 14,3 → 13,1 | 60 → 56 |
+| WebGPU, hora andando: base → leva 1 | 38,6 → **46,2** (46,0–47,1) | 19,2 → **16,9 ms** (16,3–17,1) | 10,9 → 9,0 | 3,2 → 2,4 | 1,1 → 1,1 | 14,6 → 13,4 | 1.022 → 1.015 |
+
+Objetos e draws por quadro iguais (263 + 98, ~370 draws), como esperado: os três itens tiram trabalho fixo, não objetos.
+Expectativa por item (do diagnóstico): 1 ≈ 2 ms (os dois `updateMatrixWorld`), 2 ≈ 1 ms (travessia + getters),
+3 ≈ 0,3 ms (um passe/submit). Foto justa `leva1` × `base-sp` (`motorPlaca` desligado): 0 pixel nas 5 cenas, sem erro de
+console, shader quebrado ou material faltando porte. `npm test` 47/47 e `npm run build` ok.
+
+- Item 1: `cena.matrixWorldAutoUpdate = false`; `cena.updateMatrixWorld()` em `passo()` só ao desenhar (mesmo ponto em
+  que o three fazia a primeira) e antes de `prepararMotorPlaca` (o `compileAsync` da vg precisa das matrizes). O cache
+  de sombra WebGL (`cache-sombra.js`) não depende do `updateMatrixWorld` do `render`: só chama o `shadowMap.render`
+  original e um `render()` aninhado numa cena própria.
+- Item 2: gancho `prepararObjetoAoDesenhar` (ex-`alphaTestSemVersaoNaSombra`) converte o objeto no primeiro desenho e
+  passa ao three o material convertido (`materialParaDesenho`, com `trocas.get` para a lista montada antes da
+  conversão); `prepararCenaWebgpu` percorre a cena só na primeira chamada por cena e, por quadro, faz o laço de versões
+  e `sincronizarSeguidos()` (lista `DINAMICAS`: color, opacity, transparent, visible, map, alphaMap, emissive,
+  emissiveIntensity, side, depthWrite, depthTest, alphaTest, blending, gradientMap). Levantamento do que o jogo escreve
+  em material depois de criado: `marcos.js:109` opacity (facho, todo quadro), `rosto.js:499-500` map (olhos/boca);
+  cores mudam no próprio `Color` compartilhado (`ceu.js`, `cenografia.js`, `quarteirao.js`, `horizonte.js`, `praia.js`).
+  Limite novo: propriedade fora de `DINAMICAS` escrita em jogo não chega mais ao WebGPU (antes chegava pelos getters);
+  escrita na versão WebGPU não volta ao original (afeta só `debug/kit.js:79` e `debug/cidade.js:127`).
+- Item 3: sem `r.clear()` antes do passe MRT; conferido no three 0.186 que o `render` com `autoClear` limpa os dois
+  anexos de cor com `_clearColor` (gLuz em 0,0,0,1) e a profundidade com 1 — a limpeza explícita só limpava o anexo 0.
+- Item 4 (não aplicado): a three-virtual-geometry calcula o recorte de sombra no `update()` com a flag
+  `shadow = castShadow && frameCount − lastShadowFrame ≤ 2` (VirtualGeometry.ts:450, GeometryPool.ts:869/881) e
+  `lastShadowFrame` só avança no `onBeforeShadow`; com o F4 os registrados ficam com `castShadow = false` fora do refazer,
+  então o mapa em cache sairia sem sombra de árvore ou com sombra velha. Precisa de mudança em `cache-sombra-gpu.js`
+  (forçar a flag durante o refazer); fica para depois, com ganho pequeno (~0,8 ms).
+
+### Item 7 (medido em 19/10 15:07, sobre a leva 1)
+
+| Modo | FPS rAF | JS/quadro | passe principal | sombra din. | submit | writeBuffer |
+|---|---:|---:|---:|---:|---:|---:|
+| WebGPU, hora parada: leva 1 → item 7 | 63,0 → 65,3 (64,0–69,1) | 15,2 → 15,1 ms | 7,8 → 7,8 | 2,4 → 2,3 | 13,1 → 13,1 | 56 → 48 |
+| WebGPU, hora andando: leva 1 → item 7 | 46,2 → **48,1** (47,0–48,1) | 16,9 → **15,9 ms** | 9,0 → 8,4 | 2,4 → 2,2 | 13,4 → 13,3 | **1.015 → 208** |
+
+`instalarFaixasUnicas` embrulha `WebGPUBindingUtils.updateBinding` (three.webgpu.js 84857-84920): com mais de uma faixa
+e buffer ≤ 4 KB grava o buffer de CPU inteiro numa chamada; as faixas continuam sendo limpas pelo chamador
+(`Bindings._update`/`updateSharedForRender`). Com a hora parada não muda nada (quase nenhum uniform muda por quadro).
+Com a hora andando o JS cai 1 ms e o quadro continua acima do JS (20 ms contra 15,9): o gpu-process ainda processa ~3.300
+comandos de encode por quadro (1.135 `setVertexBuffer`, 567 `setBindGroup`, 189 `setPipeline`, 13 submits) — é o
+que os render bundles (item 6) atacam. Foto justa `item7` × `base-sp`: 0 pixel. Dependência: assinatura de
+`updateBinding` do three 0.186 (rever ao atualizar o three).
+
+### Item 5 (medido em 19/10 15:40, sobre a leva 1 + item 7)
+
+| Modo | FPS rAF | JS/quadro | passe principal | sombra din. | submit | writeBuffer |
+|---|---:|---:|---:|---:|---:|---:|
+| WebGPU, hora parada: item 7 → item 5 | 65,3 → **72,0** (70,8–73,0) | 15,1 → **13,7 ms** (13,4–14,3) | 7,8 → 6,9 | 2,3 → 2,2 | 13,1 → 13,0 | 48 → 48 |
+| WebGPU, hora andando: item 7 → item 5 | 48,1 → **52,9** (52,5–54,1) | 15,9 → **15,6 ms** (14,9–16,1) | 8,4 → 7,8 | 2,2 → 2,4 | 13,3 → 13,4 | 208 → 208 |
+
+`estaticosSemRefreshTotal` troca `NodeMaterialObserver.prototype.needsRefresh`: objeto `static` (marcado em
+`congelar()`) com material de nós cai no `equals()` do próprio three em vez do FULL incondicional, desde que todos os
+nós com atualização por objeto do shader sejam dos tipos que o `equals()` cobre (`elegivel`, uma vez por shader).
+Ao vivo na T4: 248 shaders elegíveis; por quadro ≈ 49 decisões `none` + 48 `shared`, ~273 `original` (objetos não
+estáticos: vg, skinned, pessoas, casas do quarteirão, que não passam por `congelar`); recusas: 65 shaders com o
+`InstanceNode` do three (`EventNode beforeFrame`, materiais `luzFixa` como `lampioes-vidro`) e 18 com `TextureNode` por
+objeto (copas). Avançar 1 h refaz as sombras (FULL pelas luzes); `equals()` nunca lançou. Foto justa: 0 pixel em 3 de 4
+rodadas; uma rodada deu 15 pixels (≤ 5/255) espalhados no contorno do avô (malha skinned, que vai pelo caminho
+original do three) e não se repetiu em outras três rodadas — registrado como não-determinismo raro observado, sem
+causa atribuída ao item. Limite: textura amostrada por nó que não é propriedade do material não é observada pelo
+`equals()`; se for regravada em jogo com `needsUpdate` só sobe quando o shader passar por FULL (as do jogo são montadas
+uma vez, antes do primeiro desenho).
+
+Experimento (não é item): `motorPlaca` desligado no jogo do dono, mesma posição: hora parada 71,5 FPS / 14,4 ms (contra
+72,0 / 13,7 ligado), andando 52,0 / 14,8 (contra 52,9 / 15,6). Neutro no mapa de hoje: a vg tira 45 objetos do passe de
+sombra e 76 `setPipeline`, mas são 11 blocos a mais na cena; os blocos parados, depois do item 5, custam ~10 µs e as
+malhas da vg ~40 µs. Config do dono mantida (ligado).
+
+### Item 8 (medido em 19/10 16:04; revertido)
+
+O que fez: `Skeleton.computeBoneTexture` marcando `boneTexture.matrixAutoUpdate = false` e `TextureNode.setup` zerando
+`updateMatrix` para textura marcada com matriz identidade (os 33 `TextureNode` da textura de ossos por SkinnedMesh
+deixam de ter o uniform mat3 e a atualização por objeto); e `elegivel` aceitando o `EventNode beforeFrame` do
+`instance()` do three em InstancedMesh. Efeito confirmado na T4: grupo de objeto das SkinnedMesh de 41 uniforms /
+1.872 B para 9 / 336 B; recusas `EventNode:frame (antes)` sumiram (90 shaders a mais no caminho dos parados).
+
+| Modo | FPS rAF | JS/quadro | passe principal | sombra din. |
+|---|---:|---:|---:|---:|
+| WebGPU, hora parada: item 5 → item 8 | 72,0 → 71,8 (71,3–71,8) | 13,7 → 14,0 ms | 6,9 → 6,8 | 2,2 → 2,1 |
+| WebGPU, hora andando: item 5 → item 8 | 52,9 → 50,1 (49,5–50,6) | 15,6 → 15,6 ms | 7,8 → 7,8 | 2,4 → 2,2 |
+
+Sem ganho mensurável (o custo da SkinnedMesh não está nesses 33 nós) e **a imagem mudou**: 26 a 285 pixels por cena
+(máx. 104/255), nos personagens, iguais em duas rodadas (determinístico). No WGSL, a leitura de cada osso passou de
+`textureLoad(tex, vec2<i32>((mat3 * vec3(vec2<f32>(ivec2), 1)).xy))` para `textureLoad(tex, ivec2)`: com matriz
+identidade devia dar o mesmo texel, mas não dá; a causa não foi investigada porque o item não traz ganho. Revertido por
+inteiro (inclusive a aceitação do `beforeFrame`, que não pôde ser medida à parte). Testes 101/101 e build passavam.
+
+Revertidos: item 8 (acima). Não aplicado: item 4. Limites conhecidos: os do item 2, a dependência do item 7 e o do item 5.
+
+## Fechamento da fase 1 (19/10/2026, 16:20)
+
+Build final = itens 1, 2, 3, 5 e 7 (4 não aplicado, 8 revertido). Foto justa `final` × `base-sp`: 0 pixel nas 5 cenas;
+`npm test` 91/91; `npm run build` ok. Dispersão: a mesma build final mediu, em cinco rodadas com recargas da página,
+57,4 / 57,6 / 58,2 / 68,3 / 67,0 FPS com a hora parada (JS 17,5 → 14,1 ms), sem mudança de código nem de carga da
+máquina (sem `steal`, clocks iguais; o WebGL repetido no mesmo intervalo deu 187 contra 202 FPS). Comparações entre itens
+foram sempre feitas em sequência na mesma sessão; os números da tabela abaixo são os pares `final6` (última rodada).
+
+| Modo | base | leva 1 (1+2+3) | +7 | +5 | final (rodada 6) | WebGL ref. |
+|---|---:|---:|---:|---:|---:|---:|
+| hora parada: FPS | 58,1 | 63,0 | 65,3 | 72,0 | **67,0** (57–72 entre recargas) | 202,5 (187–202) |
+| hora parada: JS/quadro | 18,7 ms | 15,2 | 15,1 | 13,7 | **14,2 ms** | 4,8–5,1 ms |
+| hora andando: FPS | 38,6 | 46,2 | 48,1 | 52,9 | **49,6** | 85,2 |
+| hora andando: JS/quadro | 19,2 ms | 16,9 | 15,9 | 15,6 | **15,9 ms** | 6,8 ms |
+| writeBuffer/quadro (andando) | 1.022 | 1.015 | 208 | 208 | 206 | n/d |
+| submits/quadro | 14,3 | 13,1 | 13,1 | 13,0 | 13,0 | n/d |
+| objetos cena + sombra din. | 263 + 104 | 263 + 98 | 263 + 98 | 263 + 98 | 263 + 97 | n/d |
+
+Onde fica o JS que sobra (hora parada, ~14 ms): lógica do jogo ~4,5 ms (igual nos dois renderizadores: câmera 1,1,
+física 0,8, jogador 0,6…); malhas da vg ~2,7 ms (68 desenhos a ~40 µs nos dois passes); personagens skinned ~3,4 ms
+(~52 desenhos a 57-72 µs); passes fixos e culling ~1,5 ms; demais objetos não estáticos (pessoas, casas do quarteirão,
+sprites, mar) ~1,5 ms; os ~68 parados por quadro já custam ~10 µs cada (~0,7 ms). O WebGL faz os mesmos ~370
+desenhos em ~3 ms porque cada objeto custa ~7 µs (uniforms por `gl.uniform*`, sem grafo de nós nem bind groups).
+
+Ambiente (recomendação, não aplicada): o Chrome da T4 roda com `--disable-vulkan-surface` e apresenta por readback
+síncrono (~20 ms por quadro apresentado, 10-27 quadros/s na tela remota em qualquer renderizador). Testar sem a flag
+muda o que o dono vê, não o custo do jogo.
+
+### Critério de parada da fase 2 (ver `~/claude-f4/otimizacao/fase-2.md`)
+- 2b (atores de fundo por VAT instanciado): os ~85 SkinnedMesh dos 15 atores respondem pela maior parte dos ~3,4 ms
+  dos personagens; ganho estimado 2,5-3 ms de JS (~+12-15 FPS com a hora parada) — **relevante no mapa de hoje**, e
+  cresce com multidões. Exige aceitar uma tolerância de imagem nos atores (a foto justa não será pixel-idêntica).
+- 2a (parados para a vg): depois do item 5 os parados custam ~10 µs e a vg ~40 µs por malha; no mapa de hoje o ganho é
+  ≤ 1 ms e pode ser negativo. **Só com o mapa crescendo** (M1: 15-20 mil casas), quando o número de blocos visíveis
+  domina.
+
+## Fase 2b — atores de fundo como cópias com a pose em textura de ossos (aprovada pelo dono em 19/10/2026)
+
+Backup antes de começar: `~/claude-f4/backup-pre-fase2.patch` (14 arquivos) e `backup-pre-fase2-novos.tgz` (26 não rastreados).
+
+Decisão de desenho, depois de ler `esqueleto.js`: o boneco dos atores é rígido por osso (cada vértice tem peso 1 num único
+osso, 28 ossos, 6 peças por cor via `pintar()`), então em vez de VAT por vértice grava-se **as matrizes de osso por
+quadro** (`esqueleto.boneMatrices`, exatamente o que o skinning usa) numa `DataTexture` de 112 × ~200 texels, assada
+no navegador na abertura a partir dos mesmos `AnimationClip` (`andar`, `parado`) que os atores usam — rotoscopia
+preservada por construção, e o `AnimationMixer` continua sendo o relógio (tempo, loop, pesos "em 2"). Os 16 atores viram
+6 `InstancedMesh` (uma por peça) com `instanceColor` e dois atributos por cópia (clipe/quadro/fração/peso), e o
+deslocamento entra pelo hook `userData.tsl.posicao` do material pintado; a sombra pelo `positionNode` do material
+convertido. Só WebGPU (`cfg.desempenho.atoresVat`, novo; `cfg.personagem.quantosAtores`, novo); no WebGL os atores
+seguem com esqueleto. Jogador e avôs não mudam.
+
+Diferenças de imagem esperadas, só nos atores: mistura de posições (não de quaternions) durante o crossfade de 0,5 s
+entre andar/parado, e interpolação linear entre quadros de 30 fps. Critério: `mascara.py` — 0 pixel fora da máscara
+dos atores (máscara = onde os atores aparecem em qualquer das duas builds, dilatada 3 px) e 0 pixel entre as builds sem
+atores (`--quantosAtores 0`); dentro da máscara, relata quantidade e maior diferença, para o dono julgar.
+
+Briefings: `~/claude-f4/otimizacao/briefing-2b-{1,2,3}.md` (ossos-textura.js; atores-vat-material.js + hook de sombra
+em `criarVersao`; atores.js + config/main/painel), com contrato de API comum; os três em paralelo (arquivos disjuntos).
+Expectativa: ~85 desenhos skinned por quadro → 12; JS −2 a −3 ms; cena 263 → ~247 objetos, sombra 97 → ~81.
+
+Leva 6 (19/10): 2b-1 aceito (bake fiel: linha k = `mixer.setTime(k/fps)` → `esqueleto.boneMatrices`; teste compara com o
+mixer feito à mão, tol. 1e-6; `bindMatrix` identidade e `skinWeight` (1,0,0,0) confirmados). 2b-3 feito contra o contrato
+(6 `InstancedMesh`, material único, atributos compartilhados; o relógio de cada ator é um `AnimationMixer` com clipes
+vazios da mesma duração — tempo, loop e pesos saem iguais sem avisos de `PropertyBinding`). 2b-2 parou e acertou: no three
+0.186 `NodeMaterial.setupPosition` aplica `positionNode` DEPOIS de `instance()` (three.webgpu.js:22301-22360), então a
+sombra precisa de um `positionNode` com a posição final da cópia: `matrizInstancia(W, builder.object) · (ossos ·
+positionGeometry)`. Contrato ajustado: `materialAtoresVat({ textura, nOssos, opacity, atributos: { animA, animB } })`.
+
+### Fase 2b medida (19/10, 18:15-18:40 UTC; aceita)
+
+Build: `src/mundo/ossos-textura.js` (novo), `src/mundo/atores-vat-material.js` (novo), `src/mundo/atores.js`
+(`criarAtoresVat`; caminho antigo intocado em `criarAtoresSkinned`), `src/config.js` (`desempenho.atoresVat: true`,
+`personagem.quantosAtores: 16`), `src/main.js` (chamada + `maresia.atores()`), `src/ui/painel.js` (toggle), 4 linhas em
+`criarVersao` (`renderizador.js`: `positionNode` de sombra via `tsl.posicaoSombra`), testes
+`ossos-textura`, `atores-vat-material`, `atores-vat` (121/121 no total; build ok).
+
+| Modo (T4, referência) | antes (final6) | VAT desligado (A/B na mesma sessão) | **VAT ligado** |
+|---|---:|---:|---:|
+| hora parada: FPS / JS | 67,0 / 14,2 ms | 69,0 (67,5–70,7) / 14,2 ms | **79,3–83** (78,4–86,2) / **11,4–12,8 ms** |
+| hora andando: FPS / JS | 49,6 / 15,9 ms | — | **56,9** (55,7–57,9) / **13,5 ms** |
+| objetos cena + sombra din. | 263 + 97 | 263 + 98 | **252 + 87** |
+| draws | 371 | 371 | **349** |
+
+Shader WGSL compilou sem erro (`__shadersQuebrados` vazio, `__faltaPortar` vazio); textura de ossos 112 × 335 (andar +
+parado a 30 fps); 6 malhas `atores-*`; 9 SkinnedMesh visíveis (jogador + avôs). Imagem (Mac, `motorPlaca` desligado):
+caminho antigo com `atoresVat = false` × `base-sp`: 0 pixel nas 5 cenas; `mascara.py f2-com f2-sem f2-antigo ref-sem`:
+0 pixel fora da máscara dos atores em todas as cenas e 0 pixel entre as builds sem atores; dentro da máscara só duas cenas
+têm atores: `fundo-manha` 253 px (máx. 53/255; é a sombra de um ator sobre o chão perto do jogador — a sombra VAT
+interpola quadros de 30 fps) e `tauacu` 4 px (máx. 9/255). Fotos em `~/claude-f4/otimizacao/fotos/f2-*`.
+
+Limites: só WebGPU (no WebGL `atoresVat` é ignorado e os atores seguem com esqueleto); o crossfade de 0,5 s entre
+andar/parado mistura posições, não quaternions; cada ator usa um `AnimationMixer` com clipes vazios da mesma duração como
+relógio (tempo, loop e pesos iguais, sem avisos de `PropertyBinding`); `COR_CABELO` fixo em `atores.js` (igual ao
+`COR_PADRAO` do esqueleto; acompanhar se mudar); a textura de ossos é assada na abertura (~335 quadros, imperceptível).
+Jogo do dono: recarregado com a build final, WebGPU + `motorPlaca` + `atoresVat` ligados, posição/hora devolvidas.

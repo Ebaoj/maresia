@@ -109,7 +109,8 @@ export class AranhaversoGpu {
     r.setRenderTarget(this.rtCor)
     r.setMRT(this.mrtCena)
     r.setClearColor(this.corFundo, 1)
-    r.clear()
+    // sem r.clear() antes: com autoClear ligado o próprio render já limpa os dois anexos de cor e a profundidade
+    // com esta mesma cor (gLuz em 0,0,0,1), e a limpeza à parte era um passe e um submit a mais por quadro (KAN-74)
     r.render(this.cena, cam)
     r.setMRT(null)
 
