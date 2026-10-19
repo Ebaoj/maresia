@@ -17,6 +17,7 @@ import { globais } from '../globais.js'
 import { CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarDeck } from './colisao.js'
 import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
+import { registrarEstatico } from '../render/sombra-estatica.js'
 import { criarAleatorio } from '../utils.js'
 import { ref } from '../render/gpu/comum.js'
 
@@ -581,7 +582,7 @@ export function criarCasas(cena, casario, morro) {
     const a = pilhas.aceso.malha(matAceso, 'casas-interior-aceso')
     const t = pilhas.telhas.malha(matTelhas, 'casas-telhas')
     for (const m of [i, a]) if (m) m.castShadow = false
-    for (const m of [r, p, i, a, t]) if (m) { m.visible = b.perto; grupo.add(m); b.malhas.push(m) }
+    for (const m of [r, p, i, a, t]) if (m) { m.visible = b.perto; grupo.add(m); b.malhas.push(m); registrarEstatico(m) }
     b.montado = true
     if (b.perto) for (const m of b.longe) m.visible = false
   }

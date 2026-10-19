@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { texturizar, toonVertice } from '../materiais.js'
 import { alturaTerreno } from './terreno.js'
+import { registrarEstatico } from '../render/sombra-estatica.js'
 import { linhaCosta, larguraPraia, ruido } from './mapa.js'
 import { adicionarCaixa, adicionarCirculo } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
@@ -292,6 +293,7 @@ export function criarObjetosFatia(cena, casasPalha) {
     t.mats.forEach((m, i) => im.setMatrixAt(i, m))
     im.castShadow = true
     im.receiveShadow = true
+    registrarEstatico(im)
     im.name = 'fatia-' + nome
     im.computeBoundingSphere()
     cena.add(im)

@@ -88,6 +88,7 @@ export const PADRAO = {
     corrida: 9.0,
     pulo: 9.0,
     gravidade: 25,
+    quantosAtores: 16,     // atores de fundo perto do jogador (0 desliga; recarregar)
     fpsPose: 12,           // animação "em 2": 12 poses por segundo
     posicaoEm2: false,     // ligado: o corpo inteiro anda em 2 (mais Aranhaverso, mais travado)
     corpoNovo: true,       // esqueleto padrão com os movimentos do Mixamo (jogador/corpo.js); desligado = boneco antigo
@@ -156,6 +157,8 @@ export const PADRAO = {
     passoSombraMin: 4,     // a luz da sombra anda em passos de N minutos de jogo (~1° a cada 4): sem isso a borda das sombras treme; 0 = contínuo
     sombras: true,
     resolucaoSombra: 4096, // 4096 nítida, 2048 mais leve (a sombra é o maior custo do quadro)
+    cacheSombra: true,     // KAN-74 (F4): sombra dos objetos parados em cache (só WebGL); refaz com o sol, ao andar mais que cacheSombraRaio ou quando um parado aparece ou some. Ver docs/motor-f4-cache-sombra.md
+    cacheSombraRaio: 15,   // metros que o jogador anda antes de a janela de sombra (60 m) se recentrar; a sombra sempre cobre pelo menos 60 - raio
     nevoaPerto: 140,
     nevoaLonge: 900,
   },
@@ -170,6 +173,7 @@ export const PADRAO = {
     copiasMinBloco: 12,    // KAN-70: bloco com menos cópias que isso se junta aos vizinhos num bloco 2x maior (árvores espalhadas davam 2 cópias por bloco)
     tamBlocoMax: 768,      // até este tamanho; 0 em copiasMinBloco desliga a junção
     motorPlaca: false,     // KAN-72: no WebGPU, árvores e plantas no desenho guiado pela placa (three-virtual-geometry): menos objetos por quadro. Desligado até passar na régua
+    atoresVat: true,       // KAN-74 fase 2b: atores de fundo como cópias com a pose em textura de ossos; só vale no WebGPU; recarregar
   },
   audio: {
     volume: 0.6,

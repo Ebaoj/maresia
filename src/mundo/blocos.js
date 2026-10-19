@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { congelar } from './congelar.js'
 import { solidosCamera } from './solidos.js'
 import { motorPlacaLigado, materialServeNaPlaca, enviarAoMotor } from '../render/motor-placa.js'
+import { registrarEstatico } from '../render/sombra-estatica.js'
 
 const p = new THREE.Vector3()
 
@@ -64,6 +65,7 @@ export function instanciarEmBlocos(cena, geo, material, matrizes, cores = null, 
     im.computeBoundingSphere()
     im.castShadow = sombra
     im.receiveShadow = recebe
+    registrarEstatico(im) // matriz congelada: a sombra vai para o mapa em cache (F4)
     im.name = nome
     if (peso !== undefined) im.userData.peso = peso
     if (semNormal) im.userData.semNormal = true

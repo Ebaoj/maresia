@@ -91,4 +91,6 @@ A máquina foi desligada depois da coleta das evidências.
 - Agrupamento de commits: KAN-70, KAN-71, KAN-72 e KAN-73, sem incluir os atalhos de arte/animações.
 - Comentários e status no Jira: pendentes; a integração Atlassian foi localizada, mas ainda não está instalada/conectada nesta sessão.
 - CPU da renderização ainda fica em torno de 8–9 ms no cenário de 15 mil, acima do alvo exploratório de 4 ms.
-  Sombra estática em cache (F4) continua como próxima investigação, fora deste fechamento.
+  Sombra estática em cache (F4) continua como próxima investigação, fora deste fechamento. Implementada na bancada
+  (`&cacheSombra=1`) e medida na T4: 20 mil casas passam na régua com o cache (91 a 108 FPS) e reprovam sem ele (76 FPS na
+  rua do centro). Ver `docs/motor-f4-cache-sombra.md` e `docs/capturas/kan74/LEIAME.md`.

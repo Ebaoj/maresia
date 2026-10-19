@@ -1,0 +1,10 @@
+rodada 1 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 13700, "trechos": {"ruaCentro": {"fps": 90, "msCpu": 9.89, "msCpuP95": 13.4, "geometria": {"capacidade": 0.02101325, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 106.3, "msCpu": 9.24, "msCpuP95": 13.8, "geometria": {"capacidade": 0.32651725, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 107.5, "msCpu": 9.18, "msCpuP95": 13.1, "geometria": {"capacidade": 0.36145475, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 107.1, "msCpu": 9.18, "msCpuP95": 15.5, "geometria": {"capacidade": 0.5730991363525391, "estourou": false, "escalaLod": 1}}}}
+rodada 2 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 13688, "trechos": {"ruaCentro": {"fps": 95.7, "msCpu": 9.36, "msCpuP95": 13.5, "geometria": {"capacidade": 0.31493377685546875, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 102.2, "msCpu": 9.06, "msCpuP95": 14.3, "geometria": {"capacidade": 0.3194545, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 107.1, "msCpu": 9.19, "msCpuP95": 12.8, "geometria": {"capacidade": 0.36249375, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 102.1, "msCpu": 9.56, "msCpuP95": 18.4, "geometria": {"capacidade": 0.5711450576782227, "estourou": false, "escalaLod": 1}}}}
+rodada 3 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 14535, "trechos": {"ruaCentro": {"fps": 93.7, "msCpu": 9.59, "msCpuP95": 13.6, "geometria": {"capacidade": 0.33354759216308594, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 104.8, "msCpu": 9.39, "msCpuP95": 14, "geometria": {"capacidade": 0.3204555, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 107.9, "msCpu": 9.15, "msCpuP95": 12.6, "geometria": {"capacidade": 0.35350475, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 103.9, "msCpu": 9.51, "msCpuP95": 18.9, "geometria": {"capacidade": 0.561676025390625, "estourou": false, "escalaLod": 1}}}}
+  ruaCentro: 94 FPS
+  costaOeste: 105 FPS
+  dunas: 108 FPS
+  alto: 104 FPS
+abertura 13.7 s; 20000 casas
+PASSA
+exit=0

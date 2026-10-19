@@ -1,0 +1,111 @@
+{
+ "erros": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ],
+ "avisos": [
+  "THREE.Redefinition of node DirectionalLight",
+  "THREE.Redefinition of node HemisphereLight",
+  "THREE.Redefinition of node AmbientLight",
+  "THREE.Redefinition of node PointLight",
+  "THREE.Redefinition of node SpotLight",
+  "THREE.Redefinition of node RectAreaLight",
+  "THREE.Redefinition of node LightProbe",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+  "THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+  "THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+  "THREE.Redefinition of node DirectionalLight",
+  "THREE.Redefinition of node HemisphereLight",
+  "THREE.Redefinition of node AmbientLight",
+  "THREE.Redefinition of node PointLight",
+  "THREE.Redefinition of node SpotLight",
+  "THREE.Redefinition of node RectAreaLight",
+  "THREE.Redefinition of node LightProbe",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+  "THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+  "THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+  "THREE.Redefinition of node DirectionalLight",
+  "THREE.Redefinition of node HemisphereLight",
+  "THREE.Redefinition of node AmbientLight",
+  "THREE.Redefinition of node PointLight",
+  "THREE.Redefinition of node SpotLight",
+  "THREE.Redefinition of node RectAreaLight",
+  "THREE.Redefinition of node LightProbe",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+  "THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+  "THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+  "THREE.Redefinition of node DirectionalLight",
+  "THREE.Redefinition of node HemisphereLight",
+  "THREE.Redefinition of node AmbientLight",
+  "THREE.Redefinition of node PointLight",
+  "THREE.Redefinition of node SpotLight",
+  "THREE.Redefinition of node RectAreaLight",
+  "THREE.Redefinition of node LightProbe",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.BufferGeometry.toNonIndexed(): BufferGeometry is already non-indexed.",
+  "THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+  "THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial.",
+  "THREE.Material: 'semCache' is not a property of THREE.MeshToonMaterial."
+ ],
+ "webgpu": true,
+ "stats_A1": {
+  "refeitos": 0,
+  "quadros": 0,
+  "motivos": {},
+  "ligado": false
+ },
+ "fotos": [
+  "fundo-manha-1932",
+  "inicio-tarde-1932",
+  "fogareiro-tarde-1932",
+  "barraca-noite-1932",
+  "tauacu-tarde-1881"
+ ],
+ "stats_A2": {
+  "refeitos": 0,
+  "quadros": 0,
+  "motivos": {},
+  "ligado": false
+ },
+ "stats_B": {
+  "refeitos": 6,
+  "quadros": 6,
+  "motivos": {
+   "inicial": 1,
+   "sol": 4,
+   "janela": 1
+  },
+  "ligado": true
+ },
+ "stats_C": {
+  "refeitos": 6,
+  "quadros": 6,
+  "motivos": {
+   "inicial": 1,
+   "sol": 4,
+   "janela": 1
+  },
+  "ligado": true
+ }
+}

@@ -1,0 +1,10 @@
+rodada 1 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 13793, "trechos": {"ruaCentro": {"fps": 85.9, "msCpu": 10.28, "msCpuP95": 14, "geometria": {"capacidade": 0.01927225, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 106.2, "msCpu": 6.38, "msCpuP95": 12.4, "geometria": {"capacidade": 0.6340217590332031, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 107.3, "msCpu": 9.14, "msCpuP95": 12.9, "geometria": {"capacidade": 0.35374875, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 102.7, "msCpu": 9.61, "msCpuP95": 17.1, "geometria": {"capacidade": 0.5711822509765625, "estourou": false, "escalaLod": 1}}}}
+rodada 2 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 13641, "trechos": {"ruaCentro": {"fps": 92, "msCpu": 9.76, "msCpuP95": 13, "geometria": {"capacidade": 0.3103599548339844, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 100.7, "msCpu": 9.19, "msCpuP95": 14.3, "geometria": {"capacidade": 0.6116456985473633, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 109.2, "msCpu": 8.97, "msCpuP95": 12.3, "geometria": {"capacidade": 0.35544, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 101.1, "msCpu": 9.69, "msCpuP95": 19.7, "geometria": {"capacidade": 0.5407800674438477, "estourou": false, "escalaLod": 1}}}}
+rodada 3 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 14607, "trechos": {"ruaCentro": {"fps": 87.6, "msCpu": 10.19, "msCpuP95": 13.6, "geometria": {"capacidade": 0.01978975, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 103, "msCpu": 9.58, "msCpuP95": 14.7, "geometria": {"capacidade": 0.5863418579101562, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 108.9, "msCpu": 9, "msCpuP95": 12.3, "geometria": {"capacidade": 0.35131975, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 102, "msCpu": 9.71, "msCpuP95": 21.4, "geometria": {"capacidade": 0.5793752670288086, "estourou": false, "escalaLod": 1}}}}
+  ruaCentro: 88 FPS
+  costaOeste: 103 FPS
+  dunas: 109 FPS
+  alto: 102 FPS
+abertura 13.8 s; 20000 casas
+PASSA
+exit=0

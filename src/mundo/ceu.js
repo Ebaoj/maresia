@@ -246,6 +246,8 @@ export function criarCeu(cena) {
 
   const nuvens = criarNuvens(cena)
 
+  let cache = null // CacheSombra (F4): com ele ligado, a pose da luz fica congelada enquanto o mapa dos parados vale
+
   function atualizar(hora, centro, dt, cfg) {
     const p = paletaDaHora(hora)
     const dirSol = direcaoSol(hora)
@@ -282,8 +284,11 @@ export function criarCeu(cena) {
     const alinhado = centro.clone()
       .addScaledVector(direita, Math.round(r / texel) * texel - r)
       .addScaledVector(cima, Math.round(u / texel) * texel - u)
-    sol.position.copy(alinhado).addScaledVector(dirLuz, 250)
-    sol.target.position.copy(alinhado)
+    // F4 (KAN-74): com o cache ligado, a pose é a do mapa guardado (congelada) até a política mandar refazer
+    const pose = cache ? cache.pose(alinhado, dirLuz) : null
+    const centroLuz = pose ? pose.centro : alinhado
+    sol.position.copy(centroLuz).addScaledVector(pose ? pose.dir : dirLuz, 250)
+    sol.target.position.copy(centroLuz)
     sol.castShadow = cfg.mundo.sombras
     const res = cfg.mundo.resolucaoSombra
     if (sol.shadow.mapSize.x !== res) {
@@ -310,7 +315,7 @@ export function criarCeu(cena) {
     return p
   }
 
-  return { atualizar, sol }
+  return { atualizar, sol, usarCache: (c) => { cache = c } }
 }
 
 function criarNuvens(cena) {

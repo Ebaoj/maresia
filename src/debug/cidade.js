@@ -2,7 +2,8 @@
 // com conteúdo de verdade: casas do kit de 1932 (kit1932.js), árvores das espécies do jogo e coqueiros, tudo na
 // three-virtual-geometry com o material Arcane e o renderizador WebGPU do jogo. A cidade inteira carregada de uma vez
 // (o pior caso). Passeio de câmera em trechos (rua do centro, costa olhando para oeste, dunas do fundo, do alto) com FPS por trecho.
-// /bancada-cidade.html[?casas=5000][&arvores=60000][&coqueiros=8000][&segundos=8][&simples=0.5][&preparado=1][&res=0.5][&sombra=0][&terreno=b]
+// /bancada-cidade.html[?casas=5000][&arvores=60000][&coqueiros=8000][&segundos=8][&simples=0.5][&preparado=1][&res=0.5][&sombra=0][&terreno=b][&cacheSombra=1][&cacheRaio=15]
+// cacheSombra=1 (F4, KAN-74): a janela de sombra fica parada até a câmera andar mais que cacheRaio metros e o mapa só é refeito aí
 // Resultado em window.__resultado; fotos dos trechos em window.__fotos.
 import * as THREE from 'three'
 import { criarRenderizador } from '/src/render/renderizador.js'
@@ -15,6 +16,7 @@ import { pecasDoCoqueiro } from '/src/mundo/vegetacao.js'
 import { geometriaPoste, geometriaBanco } from '/src/mundo/rua.js'
 import { pintar } from '/src/materiais.js'
 import { criarAleatorio } from '/src/utils.js'
+import { PoliticaCacheSombra } from '/src/render/politica-sombra.js'
 // x de -5000 (Barra do Ceará, oeste) a +5000 (Praia de Iracema, leste); a praia em z = 0, a cidade para z > 0
 import { gerarCidade, X0, X1, Z1, QUARTEIRAO, RUA, altura, geometriaTerreno } from '/src/debug/cidade-gerar.js'
 
@@ -30,6 +32,8 @@ const PREPARADO = q.get('preparado') === '1'
 // para separar placa de processador: res=0.5 desenha com metade da resolução; sombra=0 tira o mapa de sombra
 const RES = +(q.get('res') || 1)
 const COM_SOMBRA = q.get('sombra') !== '0'
+// F4 (KAN-74): sombra em cache. Sem o cache, o three refaz o mapa em todo quadro e a vg corta e desenha a cidade de novo para a luz
+const COM_CACHE = q.get('cacheSombra') === '1' && COM_SOMBRA
 // Capacidade por pool, não a quantidade total de triângulos da cidade. O padrão da biblioteca reserva
 // 168 MB só nos índices de câmera e sombra por pool; terreno e cópias podem abrir vários pools.
 const MAX_TRIANGULOS = +(q.get('triangulos') || 4000000)
@@ -56,6 +60,7 @@ async function iniciar() {
   sol.shadow.mapSize.set(2048, 2048)
   Object.assign(sol.shadow.camera, { left: -150, right: 150, top: 150, bottom: -150, near: 1, far: 800 })
   sol.shadow.camera.updateProjectionMatrix()
+  if (COM_CACHE) sol.shadow.autoUpdate = false // só refaz quando needsUpdate (ver o laço do passeio)
   cena.add(sol, sol.target)
   const chao = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0 + 2000, Z1 + 2000).rotateX(-Math.PI / 2), new THREE.MeshToonMaterial({ color: '#d9c38f' }))
   chao.position.set(0, -0.01, Z1 / 2)
@@ -152,6 +157,53 @@ async function iniciar() {
   const quadros = {}
   const fotos = {}
   let primeiroQuadro = null
+  // F4: a luz fica parada enquanto a câmera estiver a menos que o raio do centro da janela (±150 m): o mapa vale. Refaz em 2
+  // quadros seguidos: a vg só corta a sombra de uma malha que desenhou sombra nos 2 últimos quadros (frameCount - lastShadowFrame <= 2),
+  // então depois de uma pausa o primeiro quadro sai com a seleção velha e o seguinte já sai certo.
+  const politica = new PoliticaCacheSombra({ raio: +(q.get('cacheRaio') || 15) })
+  const DIR_SOL = new THREE.Vector3(120, 260, 80).normalize()
+  let refazer = 0
+  // ajusta o sol ao quadro: sem cache, segue a câmera; com cache, fica parado até a câmera passar do raio e aí refaz em 2 quadros
+  const atualizarSol = () => {
+    let sx = cam.position.x
+    let sz = cam.position.z
+    if (COM_CACHE) {
+      const d = politica.decidir({ x: sx, y: 0, z: sz }, DIR_SOL)
+      if (d.refazer) refazer = 2
+      sx = d.centro.x
+      sz = d.centro.z
+      sol.shadow.needsUpdate = refazer > 0
+      if (refazer > 0) refazer--
+    }
+    sol.position.set(sx + 120, 260, sz + 80)
+    sol.target.position.set(sx, 0, sz)
+    sol.target.updateMatrixWorld()
+  }
+  // fotoSombra=1 (F4): prova da sombra com câmera fixa perto das casas, em 3 poses: A; B a 60 m (passa do raio: o cache refaz);
+  // C a 10 m de B (dentro do raio: o cache não refaz). Cada foto sai depois de 45 quadros parados, em PNG, para comparar pixel a pixel.
+  if (q.get('fotoSombra') === '1') {
+    const zRua = 80 + (QUARTEIRAO + RUA) * 2 - RUA / 2
+    const POSES = { A: [2420, 22, zRua, 2440, 0, zRua], B: [2480, 22, zRua, 2500, 0, zRua], C: [2490, 22, zRua, 2510, 0, zRua] }
+    const fotosS = {}
+    for (const [nome, [x, y, z, lx, ly, lz]] of Object.entries(POSES)) {
+      cam.position.set(x, y, z)
+      cam.lookAt(lx, ly, lz)
+      await new Promise((fim) => {
+        let k = 0
+        const passo = () => {
+          atualizarSol()
+          renderer.render(cena, cam)
+          if (++k >= 45) { fotosS[nome] = canvas.toDataURL('image/png'); return fim() }
+          requestAnimationFrame(passo)
+        }
+        requestAnimationFrame(passo)
+      })
+    }
+    window.__fotosSombra = fotosS
+    window.__resultado = { fotoSombra: true, cacheSombra: COM_CACHE ? { raio: politica.raio, refeitos: politica.refeitos, motivos: politica.motivos } : false }
+    info.textContent = 'fotoSombra pronta'
+    return
+  }
   for (const [nome, mover] of Object.entries(TRECHOS)) {
     etapa('medindo ' + nome)
     const tempos = []
@@ -161,9 +213,7 @@ async function iniciar() {
       const passo = (agora) => {
         const t = (agora - ini) / 1000
         mover(t)
-        sol.position.set(cam.position.x + 120, 260, cam.position.z + 80)
-        sol.target.position.set(cam.position.x, 0, cam.position.z)
-        sol.target.updateMatrixWorld()
+        atualizarSol()
         const a = performance.now()
         renderer.render(cena, cam)
         if (primeiroQuadro === null) primeiroQuadro = Math.round(performance.now() - t0)
@@ -187,7 +237,7 @@ async function iniciar() {
   try { stats = await vg.readStats(renderer) } catch (e) { stats = { erro: e.message } }
   window.__fotos = fotos
   window.__resultado = {
-    preparado: PREPARADO, preparados, res: RES, sombra: COM_SOMBRA, triangulosPorPool: MAX_TRIANGULOS, terreno: TERRENO || 'plano', postes: postes.length, bancos: bancos.length, casas: lotes.length, arvores: arvores.length, coqueiros: coqueiros.length, modelos: tudo.length, copias,
+    preparado: PREPARADO, preparados, res: RES, sombra: COM_SOMBRA, cacheSombra: COM_CACHE ? { raio: politica.raio, refeitos: politica.refeitos, motivos: politica.motivos } : false, triangulosPorPool: MAX_TRIANGULOS, terreno: TERRENO || 'plano', postes: postes.length, bancos: bancos.length, casas: lotes.length, arvores: arvores.length, coqueiros: coqueiros.length, modelos: tudo.length, copias,
     msGerar: Math.round(tGerou - t0), msMontar: Math.round(tMontou - tGerou), msCompilar: Math.round(tCompilou - tMontou), msPrimeiroQuadro: primeiroQuadro,
     trechos: quadros,
     vg: stats && { triangulosDesenhados: stats.drawnTriangles, visiveis: stats.visibleInstances, sombra: stats.shadowTriangles, capacidade: stats.capacityUse, estourou: stats.overflow },

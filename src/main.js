@@ -14,6 +14,8 @@ import { ligarMotorPlaca, prepararMotorPlaca } from './render/motor-placa.js'
 import { definirTamBloco } from './mundo/blocos.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
+import { CacheSombra } from './render/cache-sombra.js'
+import { CacheSombraGpu } from './render/cache-sombra-gpu.js'
 import { criarMar } from './mundo/mar.js'
 import { criarFaixas } from './mundo/faixas.js'
 import { criarCidade } from './mundo/cidade.js'
@@ -61,6 +63,10 @@ let preaquecido = false
 
 // a cena nunca se move; congelada, ela para de obrigar todos os filhos a refazer a matriz do mundo
 const cena = congelar(new THREE.Scene())
+// O jogo atualiza as matrizes uma vez por quadro, em passo(). No WebGPU o three chamaria cena.updateMatrixWorld()
+// em todo render() (passe principal + passe de sombra aninhado): 1,2 ms + 0,9 ms por quadro na T4, porque 1.232
+// objetos ainda têm matrixAutoUpdate (747 ossos de 25 esqueletos etc.)
+cena.matrixWorldAutoUpdate = false
 const camera = new THREE.PerspectiveCamera(cfg.camera.fov, innerWidth / innerHeight, 0.3, 6000)
 
 const teclas = { frente: false, tras: false, esquerda: false, direita: false, correr: false, girarEsq: false, girarDir: false }
@@ -130,7 +136,7 @@ async function iniciar() {
       if (!c) return
       jogador.trocarCorpo(c)
       // a gente mais próxima vira ator animado, com os mesmos movimentos (mundo/atores.js)
-      atores = criarAtores(cena, pessoas, c.clipes, { passadaAndar: c.passadas.andar || 1.4 })
+      atores = criarAtores(cena, pessoas, c.clipes, { passadaAndar: c.passadas.andar || 1.4, vat: webgpu && cfg.desempenho.atoresVat, quantos: cfg.personagem.quantosAtores })
     }).catch((e) => console.error('Corpo novo:', e)))
   }
   // o avô parado perto de onde o jogo começa, de frente para o neto (para julgar o modelo com o filtro)
@@ -173,6 +179,9 @@ async function iniciar() {
     ? new AranhaversoGpu(renderer, cena, camera, cfg, globais)
     : new Aranhaverso(renderer, cena, camera, cfg, globais)
   pos.coletarExcecoes()
+  // F4 (KAN-74): sombra dos objetos parados em cache, no WebGL e no WebGPU; liga em cfg.mundo.cacheSombra e vale ao vivo
+  const cacheSombra = webgpu ? new CacheSombraGpu(renderer, cena, camera, ceu.sol, cfg, moduloWebgpu()) : new CacheSombra(renderer, cena, camera, ceu.sol, cfg)
+  ceu.usarCache(cacheSombra)
   if (import.meta.env.DEV && !webgpu) {
     // todo material da cena precisa escrever a saída de luz (gLuz); avisa se algum esqueceu
     const faltando = new Set()
@@ -334,6 +343,7 @@ async function iniciar() {
     som.atualizar(distCosta(jogador.pos.x, jogador.pos.z), jogador.pos.y)
 
     if (!desenhar) return
+    cena.updateMatrixWorld() // a única do quadro; só ao desenhar, onde o three a fazia (a foto justa não muda)
     if (webgpu) {
       prepararCenaWebgpu(cena) // material novo já sai com a versão do WebGPU no primeiro desenho
       // primeiro desenho: tudo montado de uma vez (KAN-70 T1), não bloco a bloco andando
@@ -344,7 +354,8 @@ async function iniciar() {
 
   // motor guiado pela placa (KAN-72): ainda na capa de carregamento, as malhas da vg e os programas dela ficam
   // prontos (sem isso as árvores apareciam de 2 a 4 s depois do resto); materiais já na versão do WebGPU antes
-  if (webgpu) { prepararCenaWebgpu(cena); await prepararMotorPlaca(renderer, cena, camera) }
+  // (o compileAsync da vg monta listas de desenho e precisa das matrizes do mundo já calculadas)
+  if (webgpu) { prepararCenaWebgpu(cena); cena.updateMatrixWorld(); await prepararMotorPlaca(renderer, cena, camera) }
 
   const contadorFps = criarContadorFps(cfg)
   function quadro() {
@@ -380,7 +391,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, webgpu, pronto: Promise.allSettled(carregamentos),
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos),
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

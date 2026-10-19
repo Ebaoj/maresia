@@ -1,0 +1,7 @@
+12:14:16 início 20000 sem 1
+12:17:22 início 20000 com 1
+12:20:41 início 20000 sem 2
+12:23:47 início 20000 com 2
+12:27:07 início 15000 sem 1
+12:30:00 início 15000 com 1
+12:33:01 fim

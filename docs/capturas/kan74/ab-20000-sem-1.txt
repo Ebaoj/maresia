@@ -1,0 +1,10 @@
+rodada 1 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 14348, "trechos": {"ruaCentro": {"fps": 75.5, "msCpu": 12.06, "msCpuP95": 15.4, "geometria": {"capacidade": 0.36587875, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 82.7, "msCpu": 11.97, "msCpuP95": 15.6, "geometria": {"capacidade": 0.8997675, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 87.7, "msCpu": 11.34, "msCpuP95": 15.4, "geometria": {"capacidade": 0.362164, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 80.9, "msCpu": 12.27, "msCpuP95": 16, "geometria": {"capacidade": 0.82364625, "estourou": false, "escalaLod": 1}}}}
+rodada 2 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 13480, "trechos": {"ruaCentro": {"fps": 76.8, "msCpu": 11.92, "msCpuP95": 14.7, "geometria": {"capacidade": 0.47072875, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 87.8, "msCpu": 11.3, "msCpuP95": 14.8, "geometria": {"capacidade": 0.884575, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 88, "msCpu": 11.21, "msCpuP95": 15.6, "geometria": {"capacidade": 0.379637, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 84.6, "msCpu": 11.78, "msCpuP95": 16, "geometria": {"capacidade": 0.81166375, "estourou": false, "escalaLod": 1}}}}
+rodada 3 {"casas": 20000, "copias": 1824993, "msPrimeiroQuadro": 14137, "trechos": {"ruaCentro": {"fps": 77.6, "msCpu": 11.75, "msCpuP95": 15.6, "geometria": {"capacidade": 0.38277, "estourou": false, "escalaLod": 1}}, "costaOeste": {"fps": 85.4, "msCpu": 11.61, "msCpuP95": 15.1, "geometria": {"capacidade": 0.88597625, "estourou": false, "escalaLod": 1}}, "dunas": {"fps": 86, "msCpu": 11.54, "msCpuP95": 15.3, "geometria": {"capacidade": 0.42475675, "estourou": false, "escalaLod": 1}}, "alto": {"fps": 85.3, "msCpu": 11.66, "msCpuP95": 15.6, "geometria": {"capacidade": 0.8320275, "estourou": false, "escalaLod": 1}}}}
+  ruaCentro: 77 FPS
+  costaOeste: 85 FPS
+  dunas: 88 FPS
+  alto: 85 FPS
+abertura 14.1 s; 20000 casas
+REPROVA: ruaCentro 77 FPS < 80
+exit=1

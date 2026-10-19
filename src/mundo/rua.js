@@ -9,6 +9,7 @@ import {
   NIVEL_CIDADE, pesos,
 } from './mapa.js'
 import { trechosJogo } from './fortaleza1932.js'
+import { registrarEstatico } from '../render/sombra-estatica.js'
 import { LIMITES, densidadeLotes } from './mapa.js'
 import { alturaTerreno } from './terreno.js'
 import { toon, toonVertice, texturaCanvas, pintar, gradienteToon, texturizar } from '../materiais.js'
@@ -286,6 +287,7 @@ function bancas(cena) {
   const im = new THREE.InstancedMesh(geo, materiais, lista.length)
   lista.forEach((m, i) => im.setMatrixAt(i, m))
   im.castShadow = im.receiveShadow = true
+  registrarEstatico(im)
   cena.add(im)
 }
 
