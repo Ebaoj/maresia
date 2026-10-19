@@ -19,16 +19,24 @@ function tipoDe(v) {
 }
 
 const refs = new WeakMap()
-// mesmo objeto, mesmo nó (o three monta um uniform só)
+// mesmo objeto, mesmo nó (o three monta um uniform só). Grupo de desenho (renderGroup): o valor é lido uma vez
+// por desenho e fica num bloco de uniforms compartilhado por todos os objetos. O reference() que havia aqui caía
+// no grupo do objeto: o three relia e regravava cada valor em cada objeto, uns 8 mil por quadro (KAN-70 T5,
+// cenário uniformsGlobaisUmaVez)
 export function ref(obj) {
-  if (!refs.has(obj)) refs.set(obj, W.reference('value', tipoDe(obj.value), obj))
+  if (!refs.has(obj)) refs.set(obj, W.uniform(obj.value, tipoDe(obj.value)).setGroup(W.renderGroup).onRenderUpdate(() => obj.value))
   return refs.get(obj)
 }
 
 // amostra de uma textura guardada num uniform do WebGL ({ value }) que pode trocar de objeto a cada quadro
-// (vaivém de alvos): o nó acompanha obj.value
+// (vaivém de alvos): o nó acompanha obj.value. O valor do nó lê obj.value na hora (o three compara a textura do
+// nó com a da ligação em todo desenho). Até o three 0.170 era um onRenderUpdate, mas no 0.186 o TextureNode zera
+// o updateType ao montar o shader e a troca parava: o passe lia a imagem em que escrevia (KAN-70 T5, cenário
+// alvosSemLerOQueEscreve)
 export function refTex(obj, uv) {
-  return W.texture(obj.value, uv).onRenderUpdate(() => obj.value)
+  const no = W.texture(obj.value, uv)
+  Object.defineProperty(no, 'value', { configurable: true, get: () => obj.value, set() {} })
+  return no
 }
 
 // Alvos de desenho (render targets): no WebGPU a linha 0 da imagem fica em cima, no WebGL embaixo. Os shaders

@@ -110,6 +110,12 @@ async function meiaVoltaRapida(m, intervalo) {
 
 // A luz dos materiais pintados segue a hora do jogo: à noite a luz direta quase some e não sobra sombra para medir
 // (na suíte o jogo roda no relógio de verdade). Meio-dia fixo durante o teste, e a hora volta no fim.
+// espera o próximo quadro do navegador (o WebGPU do three conta quadros por ele); sem requestAnimationFrame (aba
+// escondida) segue depois de 250 ms, e o que depende do quadro novo falha
+function proximoQuadro() {
+  return new Promise((res) => { const t = setTimeout(res, 250); requestAnimationFrame(() => { clearTimeout(t); res() }) })
+}
+
 async function comLuzDoDia(m, f) {
   const antes = { hora: m.cfg.tempo.hora, pausado: m.cfg.tempo.pausado }
   m.cfg.tempo.hora = 12
@@ -422,8 +428,18 @@ export const cenarios = {
       if (W) r.setMRT(W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) }))
       r.setClearColor(0x000000, 1)
       // o primeiro desenho com o bloco vazio; mais dois depois (no WebGPU o mapa de sombra só existe depois do
-      // primeiro desenho)
+      // primeiro desenho). Um quadro do navegador entre os desenhos, como no jogo: desde o three 0.186 o WebGPU
+      // desenha o mapa de sombra uma vez por quadro (ShadowNode, por câmera e quadro), e três desenhos no mesmo
+      // quadro reaproveitavam o mapa do primeiro, ainda sem as cópias que nasceram (KAN-70 T5)
+      const pausado = m.controle.pausado
+      m.controle.pausado = true // o laço do jogo não desenha entre os quadros do teste
       for (let i = 0; i < 3; i++) {
+        if (W) {
+          await proximoQuadro()
+          r.setRenderTarget(rt)
+          r.setMRT(W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) }))
+          r.setClearColor(0x000000, 1)
+        }
         if (i === 1) {
           crescem.setMatrixAt(0, new THREE.Matrix4().makeTranslation(-2, 2, 1))
           crescem.setMatrixAt(1, new THREE.Matrix4().makeTranslation(3.5, 2, 1))
@@ -434,6 +450,7 @@ export const cenarios = {
         r.clear()
         r.render(cena, cam)
       }
+      m.controle.pausado = pausado
       let px
       if (W) { r.setMRT(null); px = await r.readRenderTargetPixelsAsync(rt, 0, 0, L, A) } else {
         px = new Uint8Array(L * A * 4)
@@ -655,6 +672,99 @@ export const cenarios = {
     const novos = contar() - antes
     const ok = novos <= 2
     return { ok, medidas: { programasNovos: novos, blocos: 10 }, motivo: ok ? '' : 'cada bloco de cópias compilou um programa de vértice próprio' }
+  },
+
+  // KAN-70 T3 (17/10/2026): no three 0.186 o PCFSoftShadowMap deixou de existir (o renderizador volta o tipo para
+  // PCFShadowMap dentro do render) e o filtro, que troca o tipo de sombra no visual Arcane, achava a troca nova a
+  // cada quadro e marcava todos os materiais para recompilar: 59 shaders montados por quadro, 0,8 FPS na g4dn no
+  // WebGPU. Desenha quadros parados e confere que nenhum material mudou de versão.
+  async semRecompilarParado(m) {
+    const visual = m.cfg.estilo.visual
+    m.cfg.estilo.visual = 'arcane'
+    const pausado = m.controle.pausado
+    m.controle.pausado = true
+    const versoes = () => {
+      let soma = 0
+      const vistos = new Set()
+      m.cena.traverse((o) => { if (o.material) for (const mt of [].concat(o.material)) if (!vistos.has(mt)) { vistos.add(mt); soma += mt.version } })
+      return soma
+    }
+    for (let i = 0; i < 3; i++) m.passo(1 / 60) // a troca de visual pode recompilar uma vez
+    const antes = versoes()
+    for (let i = 0; i < 4; i++) m.passo(1 / 60)
+    const mudou = versoes() - antes
+    m.cfg.estilo.visual = visual
+    m.controle.pausado = pausado
+    const ok = mudou === 0
+    return { ok, medidas: { versoesNovas: mudou }, motivo: ok ? '' : 'materiais marcados para recompilar em quadro parado' }
+  },
+
+  // KAN-70 T5 (17/10/2026): no WebGPU os uniforms globais do jogo ({ value } do WebGL, ligados por ref() em
+  // render/gpu/comum.js) viravam nós por objeto: o three reescrevia cada um em cada objeto, cerca de 7 mil por
+  // quadro, e o quadro custava 4 vezes o do WebGL por objeto. Conta as atualizações desses nós num quadro.
+  async uniformsGlobaisUmaVez(m) {
+    if (!m.webgpu) return { ok: true, medidas: { pulado: 'só no WebGPU' } }
+    const F = m.renderer._nodes.nodeFrame
+    const orig = F.updateNode
+    let porObjeto = 0
+    F.updateNode = function (no) {
+      if (no.constructor.name === 'ReferenceNode' && no.property === 'value' && no.updateType === 'object' && !no.object?.isMaterial) porObjeto++
+      return orig.call(this, no)
+    }
+    const pausado = m.controle.pausado
+    m.controle.pausado = true
+    try { m.passo(1 / 60) } finally { F.updateNode = orig; m.controle.pausado = pausado }
+    const ok = porObjeto < 100
+    return { ok, medidas: { atualizacoesPorObjeto: porObjeto }, motivo: ok ? '' : 'uniforms globais atualizados objeto a objeto' }
+  },
+
+  // KAN-70 T5 (17/10/2026): no WebGPU o three desenha a sombra de todos os objetos com um material só e copia nele o
+  // alphaTest de cada objeto. Ligar e desligar o alphaTest (folha de coqueiro com, parede sem) sobe a versão do
+  // material; o objeto seguinte vê a versão nova e recalcula a chave inteira do material: uns 160 por quadro, 3 ms na
+  // g4dn. Conta esses recálculos em 1,5 s de jogo rodando.
+  async sombraSemRecalcularChave(m) {
+    if (!m.webgpu) return { ok: true, medidas: { pulado: 'só no WebGPU' } }
+    const r = m.renderer
+    let proto = null
+    const get = r._objects.get
+    r._objects.get = function (...a) { const ro = get.apply(this, a); proto = Object.getPrototypeOf(ro); return ro }
+    await new Promise((res) => setTimeout(res, 300))
+    r._objects.get = get
+    if (!proto) return { ok: false, motivo: 'o jogo não desenhou (sem requestAnimationFrame)' }
+    // quadros de verdade: a sombra é um nó por quadro do three, só roda quando o quadro do navegador avança
+    let recalculos = 0, quadros = 0, vivo = true
+    const chave = proto.getCacheKey
+    proto.getCacheKey = function () { recalculos++; return chave.call(this) }
+    const contar = () => { if (!vivo) return; quadros++; requestAnimationFrame(contar) }
+    requestAnimationFrame(contar)
+    try { await new Promise((res) => setTimeout(res, 1500)) } finally { vivo = false; proto.getCacheKey = chave }
+    if (quadros < 5) return { ok: false, medidas: { quadros }, motivo: 'poucos quadros para medir' }
+    const porQuadro = recalculos / quadros
+    const ok = porQuadro < 20
+    return { ok, medidas: { recalculosPorQuadro: +porQuadro.toFixed(1), quadros }, motivo: ok ? '' : 'chave do material recalculada objeto a objeto no passe de sombra' }
+  },
+
+  // KAN-70 T5 (17/10/2026): no three 0.186 o TextureNode zera o updateType na montagem do shader, e o
+  // onRenderUpdate de refTex() (render/gpu/comum.js) deixou de rodar: o passe de toque e o de afundar a areia, que
+  // trocam a imagem lida a cada quadro (vaivém de alvos), ficavam lendo a imagem em que estavam escrevendo. O WebGPU
+  // recusa o quadro inteiro ("writable usage and another usage in the same synchronization scope"). Roda quadros e
+  // pega os erros de validação do WebGPU.
+  async alvosSemLerOQueEscreve(m) {
+    if (!m.webgpu) return { ok: true, medidas: { pulado: 'só no WebGPU' } }
+    const dev = m.renderer.backend.device
+    const pausado = m.controle.pausado
+    m.controle.pausado = true
+    const erros = []
+    try {
+      for (let i = 0; i < 4; i++) {
+        dev.pushErrorScope('validation')
+        m.passo(1 / 60)
+        const e = await dev.popErrorScope()
+        if (e) erros.push(e.message.split('\n')[0].slice(0, 160))
+      }
+    } finally { m.controle.pausado = pausado }
+    const ok = erros.length === 0
+    return { ok, medidas: { erros: erros.slice(0, 3) }, motivo: ok ? '' : 'passe lendo a imagem em que escreve (erro de validação do WebGPU)' }
   },
 
   // KAN-70 T1 (17/10/2026): no WebGPU, cada bloco de cópias monta o shader dele no quadro em que aparece pela

@@ -524,13 +524,9 @@ export class Aranhaverso {
     gl.uArcCorSombra.value.set(e.arcCorSombra)
     gl.uArcNiveis.value.set(e.arcNivelSombra, e.arcNivelMeio, e.arcNivelLuz)
     gl.uTexForca.value = e.arcTextura
-    // sombra suave no visual Arcane: com a borda pintada dura, o PCF comum virava degraus (cara de baixa
-    // resolução); o soft dá uma linha lisa. Trocar o tipo pede recompilar os materiais
-    const tipoSombra = arc ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap
-    if (this.renderer.shadowMap.type !== tipoSombra) {
-      this.renderer.shadowMap.type = tipoSombra
-      this.cena.traverse((o) => { if (o.material) for (const mt of [].concat(o.material)) mt.needsUpdate = true })
-    }
+    // sombra: desde o three 0.182 o PCFShadowMap já é suave e o PCFSoftShadowMap não existe mais (o renderizador
+    // volta o tipo para PCF dentro do render). A troca por visual que havia aqui achava o tipo diferente a cada
+    // quadro e recompilava todos os materiais (KAN-70 T3, cenário semRecompilarParado)
     gl.uArcRim.value = arc ? e.arcRecorte : 0
     gl.uArcCeu.value = e.arcCeu
     // sol na tela, para o reflexo de lente: só quando está na frente da câmera

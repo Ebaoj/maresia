@@ -40,7 +40,8 @@ case "${1:-}" in
     ;;
   enviar)
     # o projeto vai do Mac para a máquina; nada volta (acesso só de ida)
-    rsync -az --delete -e "ssh -i $PEM -o StrictHostKeyChecking=accept-new" \
+    # -L: segue atalhos (no worktree do KAN-70, arte/finais e public/animacoes apontam para o projeto principal)
+    rsync -azL --delete -e "ssh -i $PEM -o StrictHostKeyChecking=accept-new" \
       --exclude node_modules --exclude .git --exclude docs/capturas --exclude 'arte/saida' --exclude 'arte/entradas' \
       --exclude 'arte/.venv' --exclude 'arte/blender' \
       $JOGO/ ubuntu@$(ip_maquina):maresia/

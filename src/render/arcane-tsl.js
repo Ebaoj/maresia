@@ -86,8 +86,10 @@ function criarClasse(W) {
       reflectedLight.directDiffuse.addAssign(grad.mul(lightColor).mul(BRDF_Lambert({ diffuseColor: diffuseColor.rgb })))
     }
 
-    indirect(ctx, stack, builder) {
-      super.indirect(ctx, stack, builder)
+    // three 0.186: indirect(builder), com os dados em builder.context (no 0.170 era indirect(ctx, stack, builder))
+    indirect(...args) {
+      super.indirect(...args)
+      const ctx = args[0]?.context?.reflectedLight ? args[0].context : args[0]
       const { directDiffuse, indirectDiffuse } = ctx.reflectedLight
       // lampiões a gás (cenografia.js): poça de luz quente em volta, no chão e nas paredes, à noite
       // (máscara em vez de if: a amostra de textura não pode ficar dentro de condição no WGSL)
@@ -148,18 +150,18 @@ function criarClasse(W) {
 
     // A etapa de vértice na ordem do GLSL do three: código extra do material sobre a posição crua
     // (begin_vertex), depois morph e esqueleto, depois o código que roda sobre o corpo já animado, e só então a
-    // cópia é posta no mundo (instanceMatrix). O three/webgpu aplica positionNode depois da cópia.
+    // cópia é posta no mundo (instanceMatrix). O three/webgpu aplica positionNode depois da cópia. (three 0.186:
+    // quem abre e fecha a pilha do vértice é o setupVertex; aqui só a posição local, devolvida no fim.)
     setupPosition(builder) {
       const { object } = builder
       const geometry = object.geometry
       const extra = this.original.userData.tsl
-      builder.addStack()
-      const inst = object.instanceMatrix?.isInstancedBufferAttribute ? matrizInstancia(W, object) : null
+      const inst = object.isInstancedMesh && object.instanceMatrix?.isInstancedBufferAttribute ? matrizInstancia(W, object) : null
       const instMat = inst?.no || null
       const ctx = { W, builder, material: this.original, objeto: object, instancia: instMat }
       if (extra?.posicao) positionLocal.assign(extra.posicao(ctx))
-      if (geometry.morphAttributes.position || geometry.morphAttributes.normal || geometry.morphAttributes.color) W.morphReference(object).append()
-      if (object.isSkinnedMesh === true) W.skinningReference(object).append()
+      if (geometry.morphAttributes.position || geometry.morphAttributes.normal || geometry.morphAttributes.color) W.morphReference(object)
+      if (object.isSkinnedMesh === true) W.skinning(object)
       for (const f of this.original.userData.tslEsqueleto || []) positionLocal.assign(f(ctx, positionLocal))
       const nObjeto = vec3(normalLocal).toVar()
       // mat3(m) do GLSL: as três primeiras colunas (o WGSL não converte mat4 em mat3 direto)
@@ -167,15 +169,12 @@ function criarClasse(W) {
       const nInst = instMat ? m3(instMat).mul(nObjeto) : nObjeto
       this.nMundo.assign(normalize(m3(modelWorldMatrix).mul(nInst)))
       if (instMat) {
-        const no = new W.InstanceNode(object)
-        no.instanceMatrixNode = instMat
-        if (inst.buf) no.buffer = inst.buf // o InstanceNode reenvia as matrizes quando a versão muda
-        W.nodeObject(no).append()
+        // o que a instance() do three faz, com a matriz por atributo
+        positionLocal.assign(instMat.mul(positionLocal).xyz)
+        if (builder.hasGeometryAttribute('normal')) normalLocal.assign(W.transformNormal(normalLocal, instMat))
+        if (inst.cor) W.instanceColor.assign(inst.cor)
       }
-      const mvp = W.modelViewProjection()
-      builder.context.vertex = builder.removeStack()
-      builder.context.mvp = mvp
-      return mvp
+      return positionLocal
     }
 
     // a cor de sempre (já com cor por vértice e por cópia), depois o código extra do material, depois a pintura
@@ -205,15 +204,46 @@ function criarClasse(W) {
   }
 }
 
-// a matriz de cada cópia sempre como atributo de vértice (o caminho que o InstanceNode do three usa acima de 1000
-// cópias). Com a lista em uniform (o caminho dele até 1000), cada objeto ganhava um nome de lista próprio no código
-// do shader, nenhum programa era reaproveitado e o WebGPU compilava um programa de vértice por objeto: 638 no Mac
-// (11 s no primeiro quadro) e minutos na placa NVIDIA do Linux, onde o Chrome derrubava a placa (KAN-68, R7).
+// a matriz de cada cópia sempre como atributo de vértice (o caminho que o three usa para muitas cópias). Com a
+// lista em uniform (o caminho dele para poucas), cada objeto ganhava um nome de lista próprio no código do shader,
+// nenhum programa era reaproveitado e o WebGPU compilava um programa de vértice por objeto: 638 no Mac (11 s no
+// primeiro quadro) e minutos na placa NVIDIA do Linux (KAN-68, R7). Um buffer por objeto (o mesmo no desenho e na
+// sombra), reenviado quando a matriz ou a cor mudam. A conferência é antes de cada desenho do objeto
+// (OnBeforeObjectUpdate): por quadro (OnBeforeFrameUpdate, como a instance() do three 0.186) a cópia nova só ia para
+// a placa no quadro seguinte, e um segundo desenho no mesmo quadro saía com as matrizes velhas (cenários
+// copiasQueCrescem e sombrasCopias, KAN-70 T5).
+const buffersCopias = new WeakMap()
 export function matrizInstancia(W, object) {
   const attr = object.instanceMatrix
-  const buf = new W.InstancedInterleavedBuffer(attr.array, 16, 1)
-  const fn = attr.usage === W.DynamicDrawUsage ? W.instancedDynamicBufferAttribute : W.instancedBufferAttribute
-  return { no: W.mat4(fn(buf, 'vec4', 16, 0), fn(buf, 'vec4', 16, 4), fn(buf, 'vec4', 16, 8), fn(buf, 'vec4', 16, 12)), buf }
+  let b = buffersCopias.get(object)
+  if (!b || b.attr !== attr) {
+    b = { attr, mat: new W.InstancedInterleavedBuffer(attr.array, 16, 1), cor: null, corAttr: null }
+    buffersCopias.set(object, b)
+  }
+  if (object.instanceColor && b.corAttr !== object.instanceColor) {
+    b.corAttr = object.instanceColor
+    b.cor = new W.InstancedBufferAttribute(object.instanceColor.array, 3)
+  }
+  // os nós das colunas ficam guardados com o buffer: cada nó cria a sua vista do buffer (InterleavedBufferAttribute)
+  // uma vez só. Nó novo a cada montagem do shader criava vista nova, o three achava que o atributo era novo e não
+  // reenviava o buffer, que já existia na placa: a cópia mudada depois da primeira montagem ficava no lugar velho
+  const dinamico = attr.usage === W.DynamicDrawUsage
+  if (!b.no || b.dinamico !== dinamico) {
+    const fn = dinamico ? W.instancedDynamicBufferAttribute : W.instancedBufferAttribute
+    b.no = W.mat4(fn(b.mat, 'vec4', 16, 0), fn(b.mat, 'vec4', 16, 4), fn(b.mat, 'vec4', 16, 8), fn(b.mat, 'vec4', 16, 12))
+    b.dinamico = dinamico
+  }
+  if (b.cor && b.corNoDe !== b.cor) {
+    b.corNo = W.vec3((object.instanceColor.usage === W.DynamicDrawUsage ? W.instancedDynamicBufferAttribute : W.instancedBufferAttribute)(b.cor, 'vec3', 3, 0))
+    b.corNoDe = b.cor
+  }
+  const no = b.no
+  const cor = b.cor ? b.corNo : null
+  W.OnBeforeObjectUpdate(() => {
+    if (b.mat.version !== b.attr.version) b.mat.version = b.attr.version
+    if (b.cor && b.cor.version !== b.corAttr.version) b.cor.version = b.corAttr.version
+  })
+  return { no, cor, buf: b.mat }
 }
 
 // Material do WebGPU equivalente a um material que passou por pintar() (MeshToonMaterial do three)

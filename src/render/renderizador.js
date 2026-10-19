@@ -17,9 +17,13 @@ export async function criarRenderizador(cfg, canvas) {
   if (cfg.desempenho.renderizador === 'webgpu') {
     // o three/webgpu do 0.170 é um pacote separado do three (outra cópia do núcleo); a cena continua
     // sendo do three, e o renderizador lê os objetos pelas marcas (isMesh, isTexture...)
-    W = await import('three/webgpu')
+    // desde a r171 as funções do TSL (Fn, vec3, uniform...) vêm de three/tsl e não mais de three/webgpu: o resto do
+    // porte usa as duas pelo mesmo objeto W
+    const [webgpu, tsl] = await Promise.all([import('three/webgpu'), import('three/tsl')])
+    W = { ...tsl, ...webgpu }
+    // atan2(y, x) saiu do TSL: o atan de dois argumentos faz o mesmo
+    if (!W.atan2) W.atan2 = (y, x) => W.atan(y, x)
     usarModulo(W)
-    copiasComoAtributo(W)
     const renderer = new W.WebGPURenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
     // o WebGPU acha o material pelo nome do tipo (funciona com a outra cópia), mas a luz pela classe: sem
     // registrar as classes de luz do three, nenhuma luz da cena era achada e tudo saía preto
@@ -27,8 +31,15 @@ export async function criarRenderizador(cfg, canvas) {
       [W.AmbientLightNode, THREE.AmbientLight], [W.PointLightNode, THREE.PointLight], [W.SpotLightNode, THREE.SpotLight],
       [W.RectAreaLightNode, THREE.RectAreaLight], [W.LightProbeNode, THREE.LightProbe]]) renderer.library.addLight(no, classe)
     await renderer.init()
+    // Matrizes das cópias sempre como atributo de vértice: com elas numa lista em uniform (o que o three faz quando
+    // cabem no limite de 64 KB), cada objeto ganhava um nome de lista próprio no código do shader, nenhum programa
+    // era reaproveitado e o WebGPU compilava um programa de vértice por bloco de cópias (533 de 570 no three
+    // 0.186, KAN-70). O limite só decide isso, os ossos do esqueleto (que passam a vir de uma textura, como no
+    // WebGL) e um nó que o jogo não usa (RangeNode).
+    renderer.backend.capabilities.getUniformBufferLimit = () => 0
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFShadowMap
+    alphaTestSemVersaoNaSombra(renderer)
     // erro de validação do WebGPU (shader que não monta, pipeline inválido) não para o jogo: vai para a
     // mesma lista que o WebGL usa para shader quebrado, e a suíte reprova
     window.__shadersQuebrados = []
@@ -42,30 +53,33 @@ export async function criarRenderizador(cfg, canvas) {
   }
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFShadowMap // borda nítida, combina com o toon
+  renderer.shadowMap.type = THREE.PCFShadowMap // suave desde o three 0.182
   renderer.shadowMap.autoUpdate = false
   return { renderer, webgpu: false }
 }
 
 export function modulo() { return W }
 
-// O InstanceNode do three (passe de sombra e materiais que não são do pintar) guarda as matrizes das cópias numa
-// lista em uniform até 1000 cópias, com um nome próprio por objeto no código do shader: nenhum programa é
-// reaproveitado e o WebGPU compila um programa de vértice por objeto. Aqui ele usa sempre o atributo de vértice (o
-// caminho dele acima de 1000), igual ao MaterialPintado (arcane-tsl.js, matrizInstancia).
-function copiasComoAtributo(W) {
-  const proto = W.InstanceNode.prototype
-  if (proto.__copiasComoAtributo) return
-  const setupOriginal = proto.setup
-  proto.setup = function (builder) {
-    if (this.instanceMatrixNode === null) {
-      const { no, buf } = matrizInstancia(W, this.instanceMesh)
-      this.instanceMatrixNode = no
-      this.buffer = buf
+// A sombra de todos os objetos sai de um material só (o da sombra da luz), e o three copia nele o alphaTest de cada
+// objeto antes de desenhar. O alphaTest do three sobe a versão do material quando liga ou desliga; com folha (com
+// alphaTest) e parede (sem) alternando na lista, cada objeto achava o material mudado e recalculava a chave inteira:
+// uns 160 por quadro, 3 ms na g4dn (KAN-70 T5, cenário sombraSemRecalcularChave). Nesse material o alphaTest passa
+// a não mexer na versão: a chave de cada objeto já guarda se ele tem alphaTest (montada na primeira vez com o valor
+// dele), então o shader certo continua. Limite: material que liga ou desliga o alphaTest em jogo não teria a
+// sombra refeita.
+function alphaTestSemVersaoNaSombra(renderer) {
+  const original = renderer.renderObject
+  renderer.renderObject = function (object, scene, ...resto) {
+    const sobre = scene.overrideMaterial
+    if (sobre && sobre.isShadowPassMaterial && !Object.prototype.hasOwnProperty.call(sobre, 'alphaTest')) {
+      Object.defineProperty(sobre, 'alphaTest', {
+        configurable: true,
+        get() { return this._alphaTest },
+        set(v) { this._alphaTest = v },
+      })
     }
-    return setupOriginal.call(this, builder)
+    return original.call(this, object, scene, ...resto)
   }
-  proto.__copiasComoAtributo = true
 }
 
 // Cor de reserva para o que ainda não tem versão no WebGPU, pelo nome do objeto (só para a cena ficar legível)

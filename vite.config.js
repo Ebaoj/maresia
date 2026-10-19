@@ -13,7 +13,7 @@ function gravadorDeQuadros() {
         const url = new URL(req.url, 'http://local')
         const nome = (url.searchParams.get('nome') || 'gravacao').replace(/[^a-z0-9-]/gi, '')
         const n = parseInt(url.searchParams.get('n') || '0', 10)
-        const pasta = path.resolve('docs/capturas/video', nome)
+        const pasta = path.resolve(import.meta.dirname, 'docs/capturas/video', nome)
         fs.mkdirSync(pasta, { recursive: true })
         let corpo = ''
         req.on('data', (c) => { corpo += c })
@@ -29,7 +29,8 @@ function gravadorDeQuadros() {
         const url = new URL(req.url, 'http://local')
         const rotulo = (url.searchParams.get('rotulo') || 'teste').replace(/[^a-z0-9-]/gi, '')
         const nome = (url.searchParams.get('nome') || 'foto').replace(/[^a-z0-9-]/gi, '')
-        const pasta = path.resolve('infra/modal-jogo/testes/fotos-justas', rotulo)
+        // relativo a este arquivo, não à pasta de onde o Vite foi aberto (o worktree do KAN-70 roda de ~/Projetos)
+        const pasta = path.resolve(import.meta.dirname, 'infra/modal-jogo/testes/fotos-justas', rotulo)
         fs.mkdirSync(pasta, { recursive: true })
         let corpo = ''
         req.on('data', (c) => { corpo += c })

@@ -14,7 +14,7 @@
     "@dimforge/rapier3d-compat": "0.14.0",
     "jolt-physics": "1.1.0",
     "lil-gui": "0.20.0",
-    "three": "0.170.0",
+    "three": "0.186.1",
     "three-mesh-bvh": "0.9.15"
   },
   "devDependencies": {

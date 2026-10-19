@@ -6,7 +6,6 @@ import json
 import subprocess
 import time
 
-from jogo import _bg, _chrome
 
 
 class Cdp:
@@ -70,6 +69,8 @@ def subir_jogo(ouvir_desde_o_inicio=False):
     """Copia o projeto, sobe tela virtual, Vite e Chrome, e espera o jogo terminar de carregar.
     Com ouvir_desde_o_inicio, liga o console antes do carregamento e recarrega a página, para pegar os
     erros do começo também."""
+    from jogo import _bg, _chrome
+
     subprocess.run("rm -rf /tmp/jogo && cp -r /jogo-fonte /tmp/jogo && ln -s /deps/node_modules /tmp/jogo/node_modules", shell=True, check=True)
     _bg("Xvfb :1 -screen 0 1280x720x24 -nolisten tcp")
     _bg("cd /tmp/jogo && npx vite --port 5195 --strictPort --host 127.0.0.1 > /tmp/vite.log 2>&1")

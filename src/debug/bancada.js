@@ -22,7 +22,7 @@ function aleatorio(s) {
 
 async function iniciar() {
   const webgpu = modo !== 'webgl'
-  const L = webgpu ? await import('three/webgpu') : THREE
+  const L = webgpu ? { ...(await import('three/tsl')), ...(await import('three/webgpu')) } : THREE
   const canvas = document.getElementById('tela')
   let renderer
   if (webgpu) {
