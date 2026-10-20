@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import {
   LIMITES, alturaBruta, distCosta, larguraPraia, fbm, smooth, mix,
-  FIM_AVENIDA, densidadeGrama, rioX, RIO_MEIA_LARGURA, densidadeLotes,
+  FIM_AVENIDA, densidadeGrama, rioX, RIO_MEIA_LARGURA, pesoCidade1932,
 } from './mapa.js'
 import { lagoasJogo, lugaresJogo } from './fortaleza1932.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
@@ -98,7 +98,7 @@ const [pfX, pfZ] = lugaresJogo.pracaFerreira
 // calçamento de pedra só no centro de 1932; no resto as ruas eram de areia
 function calcamento(x, z) {
   const centro = 1 - smooth(260, 380, Math.hypot(x - pfX, (z - pfZ) * 1.15))
-  return centro * smooth(0.12, 0.3, densidadeLotes(x, z))
+  return centro * smooth(0.12, 0.3, pesoCidade1932(x, z))
 }
 
 export function corChao(x, z, h, incl, dens, alvo) {
@@ -111,7 +111,7 @@ export function corChao(x, z, h, incl, dens, alvo) {
     alvo.copy(PALETA.areiaMolhada).lerp(PALETA.areiaSeca, smooth(0, 7, s))
   } else {
     // chão de Fortaleza: areia clara do tabuleiro, batida onde havia gente
-    const cidade = smooth(0.05, 0.3, densidadeLotes(x, z))
+    const cidade = smooth(0.05, 0.3, pesoCidade1932(x, z))
     alvo.copy(PALETA.areiaChao).lerp(PALETA.terraBatida, cidade * 0.8)
     // rua da praia: areia batida
     alvo.lerp(PALETA.terraBatida, 1 - smooth(bw + FIM_AVENIDA, bw + FIM_AVENIDA + 4, s))

@@ -7,12 +7,13 @@
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js'
 import {
   costaZ, larguraPraiaX, rioCearaX, distPolilinha, pajeuJogo, lagoasJogo, lugaresJogo,
-  densidadeLotes, nomeBairro, trechosJogo, VILAS,
+  nomeBairro, trechosJogo, VILAS, LIMITES,
 } from './fortaleza1932.js'
+import { pesoCidade1932, naCidade1932, eraRua1932 } from './ocupacao1932.js'
 
 const perlin = new ImprovedNoise()
 
-export const LIMITES = { x0: -1221, x1: 1221, z0: -462, z1: 1002, passo: 3 } // grade de 3 m: Fortaleza é plana; a praia perto do jogador usa a malha fina da areia
+export { LIMITES }
 export const NIVEL_CIDADE = 1.8
 // em 1932 não havia avenida na beira-mar: só uma rua de areia batida entre a praia e as casas
 export const LARG_CALCADAO = 4
@@ -150,7 +151,7 @@ export function densidadeGrama(x, z, h, inclinacao) {
   const bw = larguraPraia(x)
   if (s < bw + FIM_AVENIDA + 2 || h < 0.5) return 0
   // onde havia cidade em 1932 não nasce grama: rua de pedra ou de areia batida (fotos de 1925 a 1936)
-  const cidade = smooth(0.02, 0.1, densidadeLotes(x, z))
+  const cidade = smooth(0.05, 0.35, pesoCidade1932(x, z))
   if (cidade > 0.98) return 0
   const manchas = fbm(x * 0.02, z * 0.02, 3, 61)
   let d = 0.75 * smooth(-0.15, 0.25, manchas) * (1 - cidade)
@@ -174,4 +175,4 @@ export function densidadeGrama(x, z, h, inclinacao) {
   return Math.min(1, Math.max(0, d))
 }
 
-export { densidadeLotes }
+export { pesoCidade1932, naCidade1932, eraRua1932 }

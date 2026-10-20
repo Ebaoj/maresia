@@ -5,7 +5,8 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { linhaCosta, larguraPraia, pesos, NIVEL_CIDADE, LARG_CALCADAO, rioX, RIO_MEIA_LARGURA } from './mapa.js'
 import { trechosJogo, VILAS } from './fortaleza1932.js'
-import { densidadeLotes, distCosta } from './mapa.js'
+import { RUAS, comprimentoRua, pontoNaRua } from './casario1932.js'
+import { eraRua1932, distCosta } from './mapa.js'
 import { alturaChao } from './colisao.js'
 import { alturaTerreno } from './terreno.js'
 import { toonVertice } from '../materiais.js'
@@ -88,39 +89,38 @@ export function criarPessoas(cena, grade) {
     registro.push(andando[andando.push({ tipo: t, idx: t.lista.length, x, faixa: rnd.entre(1.5, LARG_CALCADAO - 1.5), vel: rnd.entre(0.9, 1.5) * (rnd.chance(0.5) ? 1 : -1), ini: x - rnd.entre(15, 35), fim: x + rnd.entre(15, 35), fase: rnd.entre(0, 6), estado: 'andar', matriz: new THREE.Matrix4() }) - 1])
     t.lista.push(andando[andando.length - 1].matriz)
   }
-  // andando pelas calçadas da cidade, ao longo das ruas da grade de Herbster
+  // andando pelas calçadas: as ruas de verdade, a linha da frente dos lotes de 1932
   const [ox, oz] = grade.origem
-  const pX = grade.w + grade.rua
-  const pZ = grade.d + grade.rua
-  const naGrade = (dir, k, t, lado) => {
-    const meio = (k + 0.5) * (dir === 0 ? pZ : pX) + lado * (grade.rua / 2 - 1.1)
-    const a = dir === 0 ? t : meio
-    const b = dir === 0 ? meio : t
-    return [ox + a * grade.ex[0] + b * grade.ez[0], oz + a * grade.ex[1] + b * grade.ez[1]]
-  }
-  const ruaViva = (x, z) => densidadeLotes(x, z) > 0.18 && Math.hypot(x - ox, z - oz) < 520 && distCosta(x, z) > larguraPraia(x) + 12
+  const ruasCidade = RUAS.filter((r) => comprimentoRua(r) > 20)
+  const ruaViva = (x, z) => eraRua1932(x, z) && Math.hypot(x - ox, z - oz) < 520 && distCosta(x, z) > larguraPraia(x) + 12
+  // a linha da frente e a parede da casa: quem anda na rua fica um passo a frente dela
+  const CALCADA = 1.3
   for (let i = 0, tent = 0; i < 150 && tent < 3000; tent++) {
-    const dir = rnd.chance(0.5) ? 0 : 1
-    const k = Math.floor(rnd.entre(-7, 7))
-    const t = rnd.entre(-320, 320)
-    const lado = rnd.chance(0.5) ? 1 : -1
-    const [x, z] = naGrade(dir, k, t, lado)
-    if (!ruaViva(x, z)) continue
+    if (!ruasCidade.length) break
+    const rua = rnd.escolha(ruasCidade)
+    const comp = comprimentoRua(rua)
+    const t = rnd.entre(0, comp)
+    const [x, z, nx, nz] = pontoNaRua(rua, t)
+    if (!ruaViva(x + nx * CALCADA, z + nz * CALCADA)) continue
     const tp = rnd.escolha(emPe)
-    registro.push(andando[andando.push({ tipo: tp, idx: tp.lista.length, grade: true, dir, k, lado, t, vel: rnd.entre(0.8, 1.4) * (rnd.chance(0.5) ? 1 : -1), ini: t - rnd.entre(20, 60), fim: t + rnd.entre(20, 60), fase: rnd.entre(0, 6), estado: 'andar', matriz: new THREE.Matrix4() }) - 1])
+    registro.push(andando[andando.push({ tipo: tp, idx: tp.lista.length, rua: true, r: rua, t, vel: rnd.entre(0.8, 1.4) * (rnd.chance(0.5) ? 1 : -1), ini: 0, fim: comp, fase: rnd.entre(0, 6), estado: 'andar', matriz: new THREE.Matrix4() }) - 1])
     tp.lista.push(andando[andando.length - 1].matriz)
     i++
   }
   // conversando na porta, em grupinhos
   for (let g = 0, tent = 0; g < 45 && tent < 2000; tent++) {
-    const [x, z] = naGrade(rnd.chance(0.5) ? 0 : 1, Math.floor(rnd.entre(-7, 7)), rnd.entre(-320, 320), rnd.chance(0.5) ? 1 : -1)
-    if (!ruaViva(x, z)) continue
+    if (!ruasCidade.length) break
+    const rua = rnd.escolha(ruasCidade)
+    const [x, z, nx, nz] = pontoNaRua(rua, rnd.entre(0, comprimentoRua(rua)))
+    const px0 = x + nx * CALCADA
+    const pz0 = z + nz * CALCADA
+    if (!ruaViva(px0, pz0)) continue
     const n = 2 + Math.floor(rnd.entre(0, 2.99))
     for (let k = 0; k < n; k++) {
       const a = (k / n) * Math.PI * 2
-      const px = x + Math.cos(a) * 0.7
-      const pz = z + Math.sin(a) * 0.7
-      const yaw = Math.atan2(x - px, z - pz)
+      const px = px0 + Math.cos(a) * 0.7
+      const pz = pz0 + Math.sin(a) * 0.7
+      const yaw = Math.atan2(px0 - px, pz0 - pz)
       deFigura(rnd.escolha(emPe), new THREE.Matrix4().compose(new THREE.Vector3(px, alturaChao(px, pz) + 0.02, pz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(1, 1, 1)))
     }
     g++
@@ -188,14 +188,20 @@ export function criarPessoas(cena, grade) {
       acumulado = 0
       const tocados = new Set()
       for (const a of andando) {
-        if (a.grade) {
+        if (a.rua) {
           a.t += a.vel * passo
           if (a.t > a.fim || a.t < a.ini) a.vel *= -1
-          const [x, z] = naGrade(a.dir, a.k, a.t, a.lado)
+          const [px, pz, nx, nz] = pontoNaRua(a.r, a.t)
+          const x = px + nx * CALCADA
+          const z = pz + nz * CALCADA
           const balanco = Math.abs(Math.sin(tempo * 7 + a.fase)) * 0.06
           p.set(x, alturaChao(x, z) + 0.02 + balanco, z)
-          const e = a.dir === 0 ? grade.ex : grade.ez
-          q.setFromAxisAngle(Y, Math.atan2(e[0] * Math.sign(a.vel), e[1] * Math.sign(a.vel)))
+          // o rumo e o da rua: a frente dos lotes de 1932
+          const [ax, az] = pontoNaRua(a.r, a.t - 0.5)
+          const [bx, bz] = pontoNaRua(a.r, a.t + 0.5)
+          const dx = (bx - ax) * Math.sign(a.vel)
+          const dz = (bz - az) * Math.sign(a.vel)
+          q.setFromAxisAngle(Y, Math.atan2(dx, dz))
           a.matriz.compose(p, q, um)
           a.tipo.malha.setMatrixAt(a.idx, a.ator ? ZERO : a.matriz)
           tocados.add(a.tipo.malha)

@@ -9,8 +9,9 @@ import {
   NIVEL_CIDADE, pesos,
 } from './mapa.js'
 import { trechosJogo } from './fortaleza1932.js'
+import { RUAS, comprimentoRua, pontoNaRua } from './casario1932.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
-import { LIMITES, densidadeLotes } from './mapa.js'
+import { LIMITES, pesoCidade1932 } from './mapa.js'
 import { alturaTerreno } from './terreno.js'
 import { toon, toonVertice, texturaCanvas, pintar, gradienteToon, texturizar } from '../materiais.js'
 import { globais } from '../globais.js'
@@ -108,25 +109,26 @@ function geometriaFios(fios, raio = 0.028) {
 // 1932: postes de madeira da Light nas ruas do centro (fios de luz e do bonde), um a cada ~30 m.
 // Nada de poste de concreto, transformador ou "gato" (saíram em 16/10/2026).
 function postesEFios(cena, predios, grade) {
-  const linhas = []
   const favela = []
-  const [ox, oz] = grade.origem
-  const passoX = grade.w + grade.rua
-  const passoZ = grade.d + grade.rua
-  const ponto = (a, b) => [ox + a * grade.ex[0] + b * grade.ez[0], oz + a * grade.ex[1] + b * grade.ez[1]]
-  // ruas na direção ex (leste-sudeste) e na direção ez, na beira da rua (a 3,5 m do eixo)
-  for (let k = -8; k <= 8; k++) {
-    for (const dir of [0, 1]) {
-      let atual = []
-      for (let t = -9 * 43; t <= 9 * 43; t += 30) {
-        const [x, z] = dir === 0 ? ponto(t, (k + 0.5) * passoZ - 3.5) : ponto((k + 0.5) * passoX - 3.5, t)
-        const ok = Math.hypot(x - ox, z - oz) < 360 && densidadeLotes(x, z) > 0.2 &&
-          distCosta(x, z) > larguraPraia(x) + FIM_AVENIDA + 4 && ocupacao.livre(x, z, 0.5, 0.5)
-        if (!ok) { if (atual.length > 1) linhas.push(atual); atual = []; continue }
-        atual.push(new THREE.Vector3(x, alturaTerreno(x, z), z))
-      }
-      if (atual.length > 1) linhas.push(atual)
+  void grade
+  // Os postes ficam nas ruas de verdade: a linha da frente dos lotes de 1932, que
+  // e a propria rede viaria da planta. Um poste a cada ~10 unidades (uns 30 m de
+  // rua), na beira do calco, e os fios de luz e de bonde ligam um ao outro.
+  const linhas = []
+  for (const rua of RUAS) {
+    const comp = comprimentoRua(rua)
+    if (comp < 14) continue
+    const atual = []
+    const passo = 10
+    for (let d = 0; d <= comp; d += passo) {
+      const [x, z, nx, nz] = pontoNaRua(rua, d)
+      const px = x + nx * 0.9
+      const pz = z + nz * 0.9
+      const ok = distCosta(px, pz) > larguraPraia(px) + FIM_AVENIDA + 4 && ocupacao.livre(px, pz, 0.5, 0.5)
+      if (!ok) { if (atual.length > 1) linhas.push(atual); atual.length = 0; continue }
+      atual.push(new THREE.Vector3(px, alturaTerreno(px, pz), pz))
     }
+    if (atual.length > 1) linhas.push(atual)
   }
   void predios
 

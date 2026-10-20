@@ -7,7 +7,7 @@ import {
   linhaCosta, larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA, pesos, fbm,
 } from './mapa.js'
 import { coqueirosDasVilas } from './vilas.js'
-import { LIMITES, densidadeLotes } from './mapa.js'
+import { LIMITES, pesoCidade1932 } from './mapa.js'
 import { alturaTerreno, inclinacao } from './terreno.js'
 import { gradienteToon, texturaCanvas, pintar, texturizar } from '../materiais.js'
 import { adicionarCirculo } from './colisao.js'
@@ -172,7 +172,7 @@ function posicoes() {
     const x = rnd.entre(LIMITES.x0 + 20, LIMITES.x1 - 20)
     const z = rnd.entre(-200, 700)
     if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 4) continue
-    const d = densidadeLotes(x, z)
+    const d = pesoCidade1932(x, z)
     if (d < 0.08 || d > 0.4) continue // quintal da periferia, não o centro
     if (rnd.chance(0.04)) tentar(x, z, rnd.entre(1.0, 1.3))
   }

@@ -181,7 +181,11 @@ function casa(it, P, rnd, simples) {
   reboco.caixa(base, 0, H / 2, -PAREDE / 2, F, H, D - PAREDE, parede)
 
   // vãos: térreo com porta e janelas; sobrado com portas-janelas em cima
-  const slots = simples ? Math.max(1, Math.min(3, Math.floor(F / 2.2))) : Math.max(2, Math.floor(F / 1.85))
+  // a fachada pode ser bem estreita (o lote de 4 m da planta de 1932): os vãos
+  // encolhem para caber, e a casa vira um quarto de janela e porta
+  const portaL = Math.min(simples ? 0.9 : 1.12, F * 0.55)
+  const janelaL = Math.min(simples ? 0.75 : 1.0, F * 0.38)
+  const slots = F < 2.6 ? 1 : (simples ? Math.max(1, Math.min(3, Math.floor(F / 2.2))) : Math.max(2, Math.floor(F / 1.85)))
   const passo = F / slots
   const porta = Math.floor(rnd.entre(0, slots))
   const vaos = []
@@ -189,11 +193,11 @@ function casa(it, P, rnd, simples) {
     const cx = -F / 2 + passo * (i + 0.5)
     const ehPorta = i === porta
     if (simples) {
-      vaos.push({ cx, y0: ehPorta ? 0.05 : 0.95, w: ehPorta ? 0.9 : 0.75, h: ehPorta ? 2.1 : 1.0, porta: ehPorta })
+      vaos.push({ cx, y0: ehPorta ? 0.05 : 0.95, w: ehPorta ? portaL : janelaL, h: ehPorta ? 2.1 : 1.0, porta: ehPorta })
       if (sobrado) vaos.push({ cx, y0: H - 1.9, w: 0.75, h: 1.0, porta: false })
       continue
     }
-    vaos.push({ cx, y0: calcada + (ehPorta ? 0 : 0.95), w: ehPorta ? 1.12 : 1.0, h: ehPorta ? 2.75 : 1.85, porta: ehPorta })
+    vaos.push({ cx, y0: calcada + (ehPorta ? 0 : 0.95), w: ehPorta ? portaL : janelaL, h: ehPorta ? 2.75 : 1.85, porta: ehPorta })
     if (sobrado) vaos.push({ cx, y0: calcada + 4.1, w: 1.0, h: 2.35, porta: true, alto: true })
   }
 
@@ -222,7 +226,8 @@ function casa(it, P, rnd, simples) {
     interior.caixa(base, v.cx, v.y0 + v.h / 2, zf - PAREDE + 0.03, v.w + 0.1, v.h + 0.3, 0.04, interior === interiorAceso ? '#e6d6bc' : '#3a2a22')
     // moldura saliente em volta do vão
     const fora = new THREE.Shape()
-    contornoVao(fora, v.cx, v.y0 - 0.12, v.w + 0.26, v.h + 0.24, arco ? arco + 0.05 : 0)
+    const folga = Math.min(0.26, F * 0.05)
+    contornoVao(fora, v.cx, v.y0 - 0.12, v.w + folga, v.h + 0.24, arco ? arco + 0.05 : 0)
     const dentro = new THREE.Path()
     contornoVao(dentro, v.cx, v.y0, v.w, v.h, arco)
     fora.holes.push(dentro)

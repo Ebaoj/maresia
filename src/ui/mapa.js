@@ -1,10 +1,12 @@
-// Mapa da cidade (tecla M), desenhado como a planta de 1931-1932: papel creme, tinta sépia, mar
-// em hachura, quadras da grade de Herbster, vilas de palha, lugares e bairros com nome.
+// Mapa da cidade (tecla M), desenhado como a planta de 1932: papel creme, tinta sépia, mar
+// em hachura, a planta vera dos lotes (o raster oficial), vilas de palha, lugares e bairros.
 // O desenho do fundo é feito uma vez; a cada quadro só a seta do jogador anda.
 
 import { LIMITES, larguraPraia } from '../mundo/mapa.js'
 import { criarAleatorio } from '../utils.js'
-import { costaJogo, rioJogo, pajeuJogo, lagoasJogo, lugaresJogo, bairrosJogo, trechosJogo } from '../mundo/fortaleza1932.js'
+import { costaJogo, rioJogo, pajeuJogo, lagoasJogo, lugaresJogo, bairrosJogo, trechosJogo, ll } from '../mundo/fortaleza1932.js'
+import { malha1932 } from '../mundo/ocupacao1932.js'
+import dadosMapa from '../mundo/mapa1932-dados.json'
 
 const ESCALA = 0.62 // px por metro
 const MARGEM = 46
@@ -23,7 +25,7 @@ const NOMES_LUGARES = {
 const TINTA = '#3b2a22'
 const PAPEL = '#efe6d2'
 
-export function criarMapa({ quadras, grade, casasPalha }) {
+export function criarMapa({ casasPalha }) {
   const el = document.getElementById('mapa')
   const tela = el.querySelector('canvas')
   const W = Math.round((LIMITES.x1 - LIMITES.x0) * ESCALA + MARGEM * 2)
@@ -108,27 +110,16 @@ export function criarMapa({ quadras, grade, casasPalha }) {
       c.lineWidth = 1
       c.stroke()
     }
-    // quadras da grade (girar como no jogo)
-    const ang = Math.atan2(grade.ex[1], grade.ex[0])
-    for (const q of quadras) {
+    // a planta de 1932: o raster do uso dos lotes, desenhado no lugar
+    const malha = malha1932()
+    if (malha) {
+      const j = dadosMapa.janela
+      const [mx0, mz0] = ll(j.lon_min, j.lat_max)
+      const [mx1, mz1] = ll(j.lon_max, j.lat_min)
       c.save()
-      c.translate(px(q.cx), pz(q.cz))
-      c.rotate(ang)
-      const w = grade.w * ESCALA
-      const d = grade.d * ESCALA
-      if (q.reservada) {
-        c.strokeStyle = TINTA
-        c.setLineDash([3, 2])
-        c.lineWidth = 1
-        c.strokeRect(-w / 2, -d / 2, w, d)
-        c.setLineDash([])
-      } else {
-        c.fillStyle = 'rgba(181, 96, 63, 0.55)'
-        c.fillRect(-w / 2, -d / 2, w, d)
-        c.strokeStyle = 'rgba(59, 42, 34, 0.55)'
-        c.lineWidth = 0.7
-        c.strokeRect(-w / 2, -d / 2, w, d)
-      }
+      c.globalAlpha = 0.92
+      c.imageSmoothingQuality = 'high'
+      c.drawImage(malha, px(mx0), pz(mz0), px(mx1) - px(mx0), pz(mz1) - pz(mz0))
       c.restore()
     }
     // casas de palha das vilas

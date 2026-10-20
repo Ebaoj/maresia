@@ -12,7 +12,7 @@ import { ocupacao } from './ocupacao.js'
 import { criarAleatorio } from '../utils.js'
 import { instanciarEmBlocos } from './blocos.js'
 import { lugaresJogo } from './fortaleza1932.js'
-import { LIMITES, densidadeLotes, linhaCosta } from './mapa.js'
+import { LIMITES, pesoCidade1932, linhaCosta } from './mapa.js'
 import { cajueiro, carnauba, mangueVermelho, murici, guajiru, oiti } from './especies.js'
 
 const rnd = criarAleatorio(555)
@@ -104,7 +104,7 @@ export function criarArvores(cena, predios, grade) {
       const b = (k + 0.5) * pZ + lado * 3.4
       const x = ox + t * grade.ex[0] + b * grade.ez[0]
       const z = oz + t * grade.ex[1] + b * grade.ez[1]
-      if (Math.hypot(x - ox, z - oz) > 480 || densidadeLotes(x, z) < 0.15) continue
+      if (Math.hypot(x - ox, z - oz) > 480 || pesoCidade1932(x, z) < 0.15) continue
       if (distCosta(x, z) < larguraPraia(x) + FIM_AVENIDA + 5) continue
       if (rnd.chance(0.45)) plantar('oiti', x, z, rnd.entre(0.9, 1.2))
     }
@@ -125,7 +125,7 @@ export function criarArvores(cena, predios, grade) {
     const x = rnd.entre(inicioDunas, LIMITES.x1 - 10)
     const z = rnd.entre(linhaCosta(x), LIMITES.z1 - 10)
     const s = distCosta(x, z)
-    if (s < larguraPraia(x) + 3 || inclinacao(x, z) > 0.7 || densidadeLotes(x, z) > 0.2) continue
+    if (s < larguraPraia(x) + 3 || inclinacao(x, z) > 0.7 || pesoCidade1932(x, z) > 0.2) continue
     if (!rnd.chance(0.06)) continue
     plantar(sortear([['guajiru', 0.4], ['murici', 0.35], ['cajueiro', 0.25]]), x, z, rnd.entre(0.8, 1.2))
   }
@@ -140,7 +140,7 @@ export function criarArvores(cena, predios, grade) {
     if (h > 60 || inclinacao(x, z) > 0.8) continue
     const verde = fbm(x * 0.02, z * 0.02, 3, 61)
     // terreno vazio entre os bairros e quintais: mais árvore onde a cidade rareia
-    const dl = densidadeLotes(x, z)
+    const dl = pesoCidade1932(x, z)
     const chance = (dl > 0.35 ? 0.01 : 0.05) * (verde > -0.05 ? 1.4 : 0.6)
     if (!rnd.chance(chance)) continue
     // só Fortaleza (decisão de 16/10/2026): a mesma mistura em todo o mapa; na serra, mata (oiti por

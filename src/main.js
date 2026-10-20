@@ -18,7 +18,9 @@ import { CacheSombra } from './render/cache-sombra.js'
 import { CacheSombraGpu } from './render/cache-sombra-gpu.js'
 import { criarMar } from './mundo/mar.js'
 import { criarFaixas } from './mundo/faixas.js'
-import { criarCidade } from './mundo/cidade.js'
+import { criarCidade, RECUSA } from './mundo/cidade.js'
+import { criarEstacao } from './mundo/estacao.js'
+import * as ocup1932 from './mundo/ocupacao1932.js'
 import { criarFachadas } from './mundo/fachadas.js'
 import { criarRua } from './mundo/rua.js'
 import { criarArvores } from './mundo/arvores.js'
@@ -91,6 +93,8 @@ async function iniciar() {
   let tMarca = performance.now()
   const marcar = (nome) => { const t = performance.now(); tempos[nome] = Math.round(t - tMarca); tMarca = t }
   definirTamBloco(cfg.desempenho.tamBloco, cfg.desempenho.copiasMinBloco, cfg.desempenho.tamBlocoMax)
+  await ocup1932.carregarOcupacao1932() // a planta de 1932: onde havia lote, onde era rua (o terreno pergunta isso)
+  marcar('ocupacao')
   const terreno = criarTerreno(cena)
   marcar('terreno')
   const { mapaAltura } = terreno
@@ -100,6 +104,7 @@ async function iniciar() {
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
   void criarFaixas
   const { predios, casas, grade, quadras } = criarCidade(cena)
+  criarEstacao(cena) // a Estação Central de 1880
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')
@@ -205,7 +210,7 @@ async function iniciar() {
     }, 4000)
   }
   const hud = criarHud(camera)
-  const mapa = criarMapa({ quadras, grade, casasPalha })
+  const mapa = criarMapa({ casasPalha })
   const som = criarSom(cfg)
   const painel = criarPainel(cfg)
 
@@ -417,7 +422,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos),
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

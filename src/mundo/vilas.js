@@ -11,13 +11,13 @@
 
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { linhaCosta, larguraPraia, rioX, RIO_MEIA_LARGURA } from './mapa.js'
+import { linhaCosta, larguraPraia, rioX, RIO_MEIA_LARGURA, naCidade1932 } from './mapa.js'
 import { alturaTerreno } from './terreno.js'
 import { texturizar, toonVertice } from '../materiais.js'
 import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { instanciarEmBlocos } from './blocos.js'
-import { trechosJogo, VILAS, densidadeLotes } from './fortaleza1932.js'
+import { trechosJogo, VILAS } from './fortaleza1932.js'
 import { criarAleatorio } from '../utils.js'
 import { CAL } from '../paleta.js'
 
@@ -268,7 +268,7 @@ export function criarVilas(cena) {
   const podeCasa = (x, z) => {
     const s = z - linhaCosta(x)
     if (s < larguraPraia(x) * 0.8) return false // não na areia molhada
-    if (densidadeLotes(x, z) > 0.08) return false // ali a planta de 1932 já tem lote de cidade
+    if (naCidade1932(x, z)) return false // ali a planta de 1932 já tem lote de cidade
     if (Math.abs(x - rioX(z)) < RIO_MEIA_LARGURA * 2.5) return false
     return true
   }
@@ -342,7 +342,7 @@ export function criarVilas(cena) {
     // o coqueiral contínuo atrás das vilas (Nirez, "a tranquilidade da Praia de Iracema")
     for (let x = a; x < b; x += rnd.entre(4, 9)) {
       const z = linhaCosta(x) + larguraPraia(x) + rnd.entre(30, 75)
-      if (densidadeLotes(x, z) > 0.08) continue
+      if (naCidade1932(x, z)) continue
       coqueiro(x, z, rnd.entre(1.0, 1.45))
     }
   }

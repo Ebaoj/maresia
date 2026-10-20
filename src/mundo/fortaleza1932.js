@@ -3,8 +3,6 @@
 // No jogo: x cresce para leste, z cresce para o sul (o mar fica em z negativo), 1 unidade = 1 m.
 // O que é documentado e o que é hipótese está marcado no documento; aqui ficam só os números.
 
-import lotesBrutos from './lotes1932.json'
-
 // interpolação cúbica monótona (sem ondas nem quinas entre os pontos)
 function pchip(xs, ys) {
   const n = xs.length
@@ -39,6 +37,48 @@ export const DESLOC = { x: 1220, z: 420 }
 export function ll(lon, lat) {
   return [fx(lon) - DESLOC.x, fy(lat) - DESLOC.z]
 }
+
+// A inversa das compressões: do ponto do jogo de volta para lon/lat. Serve para
+// ler o raster do uso dos lotes (src/mundo/mapa1932-malha.png) e para conferir
+// que uma marca do mapa caiu onde devia.
+// As tabelas são montadas uma vez, com busca binaria dentro da pchip; depois de
+// montadas a consulta é direta (índice + interpolação), porque o terreno pergunta
+// isso umas centenas de milhares de vezes.
+function tabelaInversa(f, dominio, faixa, passo) {
+  const n = Math.ceil((faixa[1] - faixa[0]) / passo) + 1
+  const tabela = new Float64Array(n)
+  const crescente = f(dominio[1]) > f(dominio[0])
+  for (let i = 0; i < n; i++) {
+    const alvo = faixa[0] + i * passo
+    let a = dominio[0]
+    let b = dominio[1]
+    for (let k = 0; k < 40; k++) {
+      const m = (a + b) / 2
+      if (crescente ? f(m) < alvo : f(m) > alvo) a = m
+      else b = m
+    }
+    tabela[i] = (a + b) / 2
+  }
+  return (v) => {
+    const t = (v - faixa[0]) / passo
+    if (t <= 0) return tabela[0]
+    if (t >= n - 1) return tabela[n - 1]
+    const i = t | 0
+    const r = t - i
+    return tabela[i] * (1 - r) + tabela[i + 1] * r
+  }
+}
+
+// x do jogo -> longitude; z do jogo -> latitude (fy é decrescente: a latitude
+// cresce para o norte e o z do jogo cresce para o sul)
+const LON_POR_X_BRUTO = tabelaInversa(fx, [-38.612, -38.44], [0, 2560], 0.5)
+const LAT_POR_Z_BRUTO = tabelaInversa(fy, [-3.77, -3.688], [0, 1420], 0.5)
+export const LON_POR_X = (x) => LON_POR_X_BRUTO(x + DESLOC.x)
+export const LAT_POR_Z = (z) => LAT_POR_Z_BRUTO(z + DESLOC.z)
+
+// os limites do mundo em coordenadas de jogo: a compressão vai de -38,612 a
+// -38,44 de longitude e de -3,77 a -3,688 de latitude (a grade do terreno, 3 m)
+export const LIMITES = { x0: -1221, x1: 1221, z0: -462, z1: 1002, passo: 3 }
 
 // costa de 1932 (hipótese guiada pela borda norte dos lotes; refinar sobre a planta de 1931-1932)
 const COSTA = [
@@ -95,6 +135,17 @@ export const LUGARES = {
   favela1932: [-38.5261, -3.7296],
   barraCeara: [-38.598, -3.695],
 }
+
+// Os lugares que a cidade de 1932 nao pode cobrir: a reconstituicao de cada um
+// entra por cima (a estacao, as pracas, o forte). O numero e o raio em unidades
+// de jogo; o mesmo raio serve para o chao: dentro dele e cidade (rua de pedra),
+// nao mato, mesmo que a planta oficial nao tenha lote ali.
+export const LUGARES_RESERVADOS = [
+  ['pracaFerreira', 26], ['passeioPublico', 20], ['forte', 10], ['se', 12], ['santaCasa', 12],
+  ['pracaLeoes', 10], ['mercado', 16], ['theatro', 12], ['estacao', 20], ['pracaEstacao', 12],
+  ['cemiterio', 22], ['seminario', 12], ['campoOtavioBonfim', 16], ['pracaMestres', 10],
+  ['parqueLiberdade', 16], ['favela1932', 8],
+]
 
 // bairros (para o nome na tela): o mais perto vence
 const BAIRROS = [
@@ -197,62 +248,9 @@ export function nomeBairro(x, z) {
   return melhor
 }
 
-// lotes ocupados em 1932, já em coordenadas do jogo
-export const lotesJogo = (() => {
-  const { base, escala, xy } = lotesBrutos
-  const out = new Float32Array(xy.length)
-  for (let i = 0; i < xy.length; i += 2) {
-    const [x, z] = ll(base[0] + xy[i] * escala, base[1] + xy[i + 1] * escala)
-    out[i] = x
-    out[i + 1] = z
-  }
-  return out
-})()
-
 // grade de Herbster: as ruas do centro correm a 72,5 graus do leste (medido nos lotes de 1932).
 // No jogo (z para o sul) a direção da rua "norte-nordeste" é (cos, -sin).
 export const ANGULO_GRADE = (72.5 * Math.PI) / 180
-
-// densidade de lotes de 1932 (0 a 1), em células de 6 m e suavizada: onde havia cidade
-const CEL = 6
-const DX0 = -1240
-const DZ0 = -480
-const DW = Math.ceil(2500 / CEL)
-const DH = Math.ceil(1520 / CEL)
-const densidade = (() => {
-  const conta = new Float32Array(DW * DH)
-  for (let i = 0; i < lotesJogo.length; i += 2) {
-    const ci = Math.floor((lotesJogo[i] - DX0) / CEL)
-    const cj = Math.floor((lotesJogo[i + 1] - DZ0) / CEL)
-    if (ci >= 0 && cj >= 0 && ci < DW && cj < DH) conta[cj * DW + ci]++
-  }
-  // desfoque em caixa, duas passadas (raio 2 células)
-  const tmp = new Float32Array(DW * DH)
-  const R = 2
-  for (let j = 0; j < DH; j++) for (let i = 0; i < DW; i++) {
-    let s = 0
-    for (let k = -R; k <= R; k++) { const ii = Math.min(DW - 1, Math.max(0, i + k)); s += conta[j * DW + ii] }
-    tmp[j * DW + i] = s / (2 * R + 1)
-  }
-  const out = new Float32Array(DW * DH)
-  for (let j = 0; j < DH; j++) for (let i = 0; i < DW; i++) {
-    let s = 0
-    for (let k = -R; k <= R; k++) { const jj = Math.min(DH - 1, Math.max(0, j + k)); s += tmp[jj * DW + i] }
-    out[j * DW + i] = Math.min(1, s / (2 * R + 1) / 1.2)
-  }
-  return out
-})()
-export function densidadeLotes(x, z) {
-  const fi = (x - DX0) / CEL - 0.5
-  const fj = (z - DZ0) / CEL - 0.5
-  const i = Math.floor(fi)
-  const j = Math.floor(fj)
-  if (i < 0 || j < 0 || i >= DW - 1 || j >= DH - 1) return 0
-  const tx = fi - i
-  const tz = fj - j
-  const v = (a, b) => densidade[b * DW + a]
-  return (v(i, j) * (1 - tx) + v(i + 1, j) * tx) * (1 - tz) + (v(i, j + 1) * (1 - tx) + v(i + 1, j + 1) * tx) * tz
-}
 
 // trechos da praia por longitude: onde ficavam as vilas de pescadores e as jangadas
 const TRECHOS = {
