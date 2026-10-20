@@ -8,5 +8,19 @@ arte/.venv/
 arte/saida/
 __pycache__/
 
+# arte/entradas: 6,3 GB de entradas e downloads do Tripo/Meshy.
+# Os binários ficam fora; os prompts e logs (1,5 MB) entram, porque documentam
+# como cada peça do Neto foi pedida e o que cada geração respondeu.
+arte/entradas/**
+!arte/entradas/**/
+!arte/entradas/**/*.txt
+!arte/entradas/**/*.json
+!arte/entradas/**/*.md
+
+# arte/finais: 1,9 GB de trabalho intermediário (renders, vídeos, iterações do
+# gato e da rotoscopia). Fora do git. Os arquivos que o jogo carrega entram em
+# LFS na fase da integração (ver .gitattributes).
+arte/finais
+
 # movimentos do Mixamo: licença permite usar no jogo, não redistribuir os arquivos crus
-public/animacoes/mixamo/
+public/animacoes
