@@ -35,8 +35,8 @@ point.applyMatrix4(s.mesh.matrixWorld);s.g.attributes.position.setXYZ(i,point.x,
  const center=alvo.ossos.get('Hips').getWorldPosition(new T.Vector3());let tested=0,leaks=0,examples=[],porMaterial={};
  for(const angle of [0,Math.PI])for(let x=-.16;x<=.16;x+=.01)for(let y=.06;y<=.34;y+=.01){
   const vx=Math.sin(angle),vz=Math.cos(angle);ray.origin.set(center.x+vx*2+Math.cos(angle)*x,center.y+y,center.z+vz*2-Math.sin(angle)*x);ray.direction.set(-vx,0,-vz);let skin=null,clothHit=null;
-  for(const s of surfaces){const h=s.bvh.raycastFirst(ray,T.DoubleSide);if(h){if(s.body){if(!skin||h.distance<skin.distance)skin={...h,source:s.source};}else if(!clothHit||h.distance<clothHit.distance)clothHit=h;}}
-  if(skin){tested++;porMaterial[skin.source]??={tested:0,leaks:0};porMaterial[skin.source].tested++;if(!clothHit||skin.distance<clothHit.distance-.001){leaks++;porMaterial[skin.source].leaks++;if(examples.length<8)examples.push({point:skin.point.toArray(),source:skin.source,angle,depth:clothHit?(clothHit.distance-skin.distance)*1000:null});}}
+  for(const s of surfaces){const h=s.bvh.raycastFirst(ray,T.DoubleSide);if(h){if(s.body){if(!skin||h.distance<skin.distance)skin={...h,source:s.source};}else if(!clothHit||h.distance<clothHit.distance)clothHit={...h,source:s.source};}}
+  if(skin){tested++;porMaterial[skin.source]??={tested:0,leaks:0};porMaterial[skin.source].tested++;if(!clothHit||skin.distance<clothHit.distance-.001){leaks++;porMaterial[skin.source].leaks++;if(examples.length<8)examples.push({point:skin.point.toArray(),source:skin.source,roupa:clothHit?clothHit.source:null,angle,depth:clothHit?(clothHit.distance-skin.distance)*1000:null});}}
  }
  report.push({motion:name,physics:process.env.PHYSICS==='1',time,tested,leaks,porMaterial,examples});if(leaks)console.log(JSON.stringify(report.at(-1)));
 }
