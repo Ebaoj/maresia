@@ -84,6 +84,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 - **Época**: `cfg.estilo.memoria` 0 = 1932 (quadrinho baixo, sem aberração), 1 = 1881 (memória impressa em 5 tintas). Tudo novo precisa ficar legível nos dois modos.
 - **Shader quebrado some sem aviso na tela**: no modo dev o console lista "Shaders que não compilaram" (`window.__shadersQuebrados`). Conferir depois de mexer em shader.
 - **Anacronismo**: evitar; só quando não houver alternativa e a peça for muito importante, registrando a licença em `docs/direcao-de-arte.md`.
+- **Movimento de ser vivo é rotoscopia** (identidade visual, 18/10/2026): gente e bicho são animados copiando um vídeo real quadro a quadro, com a skill `animar-de-video`. Não compor pose de cabeça; trecho sem vídeo só o mínimo, ancorado no quadro copiado e com a deformação da pele medida. Detalhes em `docs/direcao-de-arte.md` (seção "Movimento: rotoscopia").
 
 ## SDD neste projeto
 

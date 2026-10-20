@@ -1,0 +1,1144 @@
+{
+  "data": "2026-10-18",
+  "videos": [
+    {
+      "id": "P01",
+      "commons_file": "Video_Codec_Test_pedestrian_area_1080p25.y4m.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Video_Codec_Test_pedestrian_area_1080p25.y4m.webm",
+      "titulo": "Pedestres em rua de Munique",
+      "autor": "Taurus Media Technik",
+      "licenca": "CC0",
+      "avaliacao": {
+        "score": 6,
+        "status": "reserva",
+        "acao": "Caminhada lateral",
+        "observacao": "Câmera fixa e corpo inteiro. A pessoa de preto passa de perfil entre 6,20 e 8,04 s. Nos quadros originais há borrão de movimento forte e a bolsa encobre parte do braço; não aprovar marcação fina de juntas.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "caminhada-perfil",
+          "inicio_s": 6.2,
+          "fim_s": 8.04,
+          "alvo": "pessoa de roupa preta, esquerda para direita"
+        }
+      ]
+    },
+    {
+      "id": "P02",
+      "commons_file": "Kids_playing_Lagori_in_a_Bangalore_street.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Kids_playing_Lagori_in_a_Bangalore_street.webm",
+      "titulo": "Crianças jogando Lagori em Bangalore",
+      "autor": "Subhashish Panigrahi",
+      "licenca": "CC BY-SA 3.0",
+      "avaliacao": {
+        "score": 5,
+        "status": "reserva",
+        "acao": "Agachar e esquivar durante brincadeira",
+        "observacao": "A criança de camisa roxa agacha e se apoia na mão entre 133,85 e 138,15 s; não é uma queda acidental nem sentar numa cadeira. Vista oblíqua, sujeito pequeno e circulação de pessoas/bicicletas.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "agachar-esquivar",
+          "inicio_s": 133.85,
+          "fim_s": 138.15,
+          "alvo": "criança de camisa roxa"
+        }
+      ]
+    },
+    {
+      "id": "P03",
+      "commons_file": "Playing.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Playing.webm",
+      "titulo": "Criança correndo atrás de um pneu",
+      "autor": "Salifu Wumpini Hussein",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 5,
+        "status": "reserva",
+        "acao": "Corrida infantil com objeto",
+        "observacao": "Entre 0,50 e 4,40 s há corpo inteiro, corrida e correção do pneu. A câmera acompanha a criança, que vem em 3/4/frente; a saia oculta as pernas e o final corta o corpo. Bom comportamento, ruim para traçar esqueleto.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P04",
+      "commons_file": "People_cooking_outdoors_in_a_wedding_day.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:People_cooking_outdoors_in_a_wedding_day.webm",
+      "titulo": "Cozinha coletiva numa festa",
+      "autor": "Wann Majaw",
+      "licenca": "CC BY 4.0",
+      "avaliacao": {
+        "score": 2,
+        "status": "descartado",
+        "acao": "Postura e conversa sentada",
+        "observacao": "Pouca ação de trabalho visível: câmera gira, corpo é cortado e muitas pessoas olham/interagem com quem filma. Não há ciclo completo e isolado para rotoscopia.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P05",
+      "commons_file": "Fruits_and_Vegetables_(20150209-FPAC-KLS-0003).webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Fruits_and_Vegetables_(20150209-FPAC-KLS-0003).webm",
+      "titulo": "Corte de cebola — USDA",
+      "autor": "USDA / Kirsten Strough",
+      "licenca": "Domínio público nos EUA (fonte USDA)",
+      "avaliacao": {
+        "score": 2,
+        "status": "descartado",
+        "acao": "Mãos cortando alimento",
+        "observacao": "O vídeo mostra mãos e faca em close; não mostra tronco/pernas. Não serve para cozinha de corpo inteiro. O plano de tarefa gravada não estabelece espontaneidade; manter apenas se futuramente precisarmos estudar dedos.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P06",
+      "commons_file": "Street_Vendors_of_Cairo.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Street_Vendors_of_Cairo.webm",
+      "titulo": "Vendedores ambulantes no Cairo",
+      "autor": "Wex Major 98",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 5,
+        "status": "reserva",
+        "acao": "Arrumar objetos no chão",
+        "observacao": "O plano 139,80–143,30 s mostra vendedor organizando livros já curvado; há corte para close depois. Outro plano 149,50–152,60 s mostra endireitar parcialmente, com cabeça saindo do quadro. Não há pegar/levantar completo; a maior parte do filme é entrevista.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "arrumar-livros",
+          "inicio_s": 139.8,
+          "fim_s": 143.3,
+          "alvo": "vendedor de camisa listrada"
+        }
+      ]
+    },
+    {
+      "id": "A01",
+      "commons_file": "Puppy_playing.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Puppy_playing.webm",
+      "titulo": "Filhote andando e farejando dentro de casa",
+      "autor": "Subhashish Panigrahi",
+      "licenca": "CC BY-SA 3.0",
+      "avaliacao": {
+        "score": 4,
+        "status": "reserva",
+        "acao": "Andar, cheirar e girar",
+        "observacao": "Passagem lateral curta entre 1,50 e 2,80 s; filhote pequeno no quadro, imagem tremida e borrada. A maior parte é farejar de frente. PTS irregulares; preservar os tempos dos quadros.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "A02",
+      "commons_file": "Gato_escalando.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Gato_escalando.webm",
+      "titulo": "Gato tentando escalar uma tela",
+      "autor": "Bone Bone",
+      "licenca": "CC BY 3.0 indicada; revisão pendente no Commons",
+      "avaliacao": {
+        "score": 1,
+        "status": "descartado",
+        "acao": "Escalada",
+        "observacao": "A tela de arame e as travessas encobrem patas e tronco; vários closes frontais e rotação da câmera. Não serve para copiar uma escalada de corpo inteiro.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "A03",
+      "commons_file": "Âne_amble.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Âne_amble.webm",
+      "titulo": "Burro aproximando-se da câmera",
+      "autor": "Consultar página do arquivo",
+      "licenca": "CC BY-SA 4.0 indicada",
+      "avaliacao": {
+        "score": 1,
+        "status": "descartado",
+        "acao": "Caminhada de burro",
+        "observacao": "Burro claro pequeno e quase frontal; vegetação cobre as patas no final, resolução 640×480 com barras. Não fornece o ciclo lateral prometido anteriormente.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "A04",
+      "commons_file": "Horses_running_in_a_pasture.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Horses_running_in_a_pasture.webm",
+      "titulo": "Cavalos soltos no pasto",
+      "autor": "Field of Dreams",
+      "licenca": "CC BY 3.0",
+      "avaliacao": {
+        "score": 6,
+        "status": "condicional",
+        "acao": "Corrida e curva de cavalo",
+        "observacao": "Trecho 41,90–42,55 s: cavalo castanho de perfil com patas legíveis em parte da passagem. A câmera acompanha e o cavalo branco passa à frente; trecho curto demais para ciclo limpo completo. Preparado para estudo, exige outra seleção/estabilização para marcar.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "corrida-perfil",
+          "inicio_s": 41.9,
+          "fim_s": 42.55,
+          "alvo": "cavalo castanho atrás do branco"
+        }
+      ]
+    },
+    {
+      "id": "A05",
+      "commons_file": "Arabian_horses_prancing_around.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Arabian_horses_prancing_around.webm",
+      "avaliacao": {
+        "status": "aguardando-video",
+        "score": null
+      }
+    },
+    {
+      "id": "A06",
+      "commons_file": "Video_of_a_horse_rolling.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Video_of_a_horse_rolling.webm",
+      "avaliacao": {
+        "score": 6,
+        "status": "reserva",
+        "acao": "Rolar e levantar do chão",
+        "observacao": "Cavalo já está deitado no início. Rola, depois se levanta aproximadamente entre 22 e 25 s; não mostra a transição de ficar em pé para deitar. Perspectiva traseira oblíqua elevada, câmera inclinada e móvel, sobreposição de membros. Reservar sequência comportamental, sem aprovação de juntas para perfil.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Cavalo rolando no chão e se levantando",
+      "autor": "Amada44",
+      "licenca": "CC BY-SA 4.0",
+      "trechos": [
+        {
+          "nome": "levantar-inspecao",
+          "inicio_s": 21.5,
+          "fim_s": 25.5,
+          "alvo": "cavalo saindo do chão",
+          "uso": "reserva; não marcar membros ocultos"
+        }
+      ]
+    },
+    {
+      "id": "A07",
+      "commons_file": "Birds_at_a_dock.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Birds_at_a_dock.webm",
+      "avaliacao": {
+        "status": "aguardando-video",
+        "score": null
+      }
+    },
+    {
+      "id": "A08",
+      "commons_file": "Pollakken_leven_rond_wrakken-4885756.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Pollakken_leven_rond_wrakken-4885756.webm",
+      "avaliacao": {
+        "status": "aguardando-video",
+        "score": null
+      }
+    },
+    {
+      "id": "A00",
+      "commons_file": "Katzensprung_in_Zeitlupe.webm",
+      "arquivo_local": "arte/entradas/referencias/gato-pulo/katzensprung-zeitlupe.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Katzensprung_in_Zeitlupe.webm",
+      "titulo": "Gato saltando sobre vegetação em câmera lenta",
+      "autor": "MixiMix22",
+      "licenca": "CC BY 2.0 (crédito já existente)",
+      "avaliacao": {
+        "score": 6,
+        "status": "reserva",
+        "acao": "Salto — fase aérea",
+        "observacao": "9,65–13,15 s mostra fase aérea de perfil; grama oculta preparação e parte da chegada, e o contato final sai do quadro. 480×360 e fator de câmera lenta não aferido; não usar o tempo do arquivo como tempo real.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "salto-no-ar",
+          "inicio_s": 9.65,
+          "fim_s": 13.15,
+          "alvo": "gato preto/branco; somente fase aérea"
+        }
+      ]
+    },
+    {
+      "id": "P07",
+      "commons_file": "Jogging_-_near_arakawa_river_-_tokyo_japan_-_2022_may_3.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Jogging_-_near_arakawa_river_-_tokyo_japan_-_2022_may_3.webm",
+      "avaliacao": {
+        "score": 8,
+        "status": "aprovado",
+        "acao": "Corrida leve de perfil",
+        "observacao": "Corredor de camiseta branca entre 7,85 e 9,90 s, da esquerda para a direita. Corpo inteiro, perfil levemente elevado, braços e pernas legíveis; a câmera fica estável neste trecho e ninguém o encobre. Sujeito tem cerca de 200 px de altura no original. Aprovação apenas desta corrida contínua: não há arrancada, frenagem ou disparada. Marcar só juntas visíveis, sem completar o lado oculto.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Corrida junto ao rio Arakawa",
+      "autor": "Nesnad",
+      "licenca": "CC BY 4.0",
+      "trechos": [
+        {
+          "nome": "corrida-perfil-aprovada",
+          "inicio_s": 7.85,
+          "fim_s": 9.9,
+          "alvo": "corredor de camiseta branca; esquerda para direita",
+          "uso": "aprovado para marcar juntas visíveis"
+        }
+      ],
+      "estudo_animacao": {
+        "estado": "reprovado pelo Joabe em 18/10/2026; não usar como animação aprovada",
+        "inicio_original_s": 7.875,
+        "fim_original_s": 9.743,
+        "quadros": 57,
+        "poses_manuais": 15,
+        "comparacao": "arte/finais/rotoscopia-p07/comparacao.mp4",
+        "glb": "arte/finais/rotoscopia-p07/neto-corrida-p07.glb",
+        "marcas": "arte/finais/rotoscopia-p07/marcas.json",
+        "limites": "quadros intermediários interpolados; dedos em postura estática aproximada; braço distante calculado por IK; profundidade não medida",
+        "retorno_usuario": "Não ficou bom. Vamos tentar outro vídeo."
+      }
+    },
+    {
+      "id": "P08",
+      "commons_file": "Childrens_jumping_to_lake_together.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Childrens_jumping_to_lake_together.webm",
+      "avaliacao": {
+        "score": 7,
+        "status": "parcial",
+        "acao": "Impulso e voo de salto na água",
+        "observacao": "Brincadeira recreativa, sem demonstração de animação aparente. Terceiro menino, de calção vermelho, salta entre 1,00 e 1,67 s. Corpo descoberto e nítido; vista oblíqua elevada e movimento da câmera. Serve para estudar impulso, recolhimento e braços, com limitação de projeção. Não fornece pouso em terra; o salto mortal do primeiro menino não é um salto genérico.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Crianças pulando num lago",
+      "autor": "KEmel49",
+      "licenca": "CC BY-SA 4.0",
+      "trechos": [
+        {
+          "nome": "salto-agua-inspecao",
+          "inicio_s": 0.65,
+          "fim_s": 1.75,
+          "alvo": "terceiro menino, calção vermelho; ação 1,00–1,67 s",
+          "uso": "somente impulso/voo; câmera oblíqua; sem pouso terrestre"
+        }
+      ]
+    },
+    {
+      "id": "P09",
+      "commons_file": "Men_at_work_in_building_site.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Men_at_work_in_building_site.webm",
+      "avaliacao": {
+        "score": 5,
+        "status": "reserva",
+        "acao": "Trabalho com pá",
+        "observacao": "Trabalhador realmente mistura material. Vista oblíqua elevada e câmera na mão; cabeça sai do quadro quando ele se ergue. Reservar gesto de ferramenta; não resolve corpo inteiro, levantar completo ou carregar.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Trabalhador misturando argamassa",
+      "autor": "Akum20",
+      "licenca": "CC0",
+      "trechos": []
+    },
+    {
+      "id": "P10",
+      "commons_file": "Hong_Kong_Protestors_Deliver_Supplies_on_Human_Assembly_Line.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Hong_Kong_Protestors_Deliver_Supplies_on_Human_Assembly_Line.webm",
+      "avaliacao": {
+        "score": 6,
+        "status": "reserva",
+        "acao": "Receber e passar objeto",
+        "observacao": "Registro de ação coletiva real. Entre 12,05 e 14,80 s a mulher de óculos no centro, roupa preta com faixa clara lateral, recebe e repassa pequenos objetos. Braços legíveis em parte, objeto nem sempre visível; corpo em 3/4 de costas e câmera móvel. Bom comportamento de entrega, sem copiar o corpo inteiro para perfil nem inferir carga pesada.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Entrega de suprimentos em corrente humana em Hong Kong",
+      "autor": "Voice of America",
+      "licenca": "Domínio público nos EUA (fonte VOA)",
+      "trechos": [
+        {
+          "nome": "passar-objeto-inspecao",
+          "inicio_s": 12.05,
+          "fim_s": 14.8,
+          "alvo": "mulher de óculos no centro, roupa preta com faixa lateral",
+          "uso": "referência de comportamento; vista 3/4"
+        }
+      ]
+    },
+    {
+      "id": "P11",
+      "commons_file": "Outdoor_swimming_pool_1_2019-09-13.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Outdoor_swimming_pool_1_2019-09-13.webm",
+      "avaliacao": {
+        "score": 0,
+        "status": "descartado",
+        "acao": "Nenhuma ação humana",
+        "observacao": "O arquivo mostra apenas água da piscina, sem nadadores. O título não era evidência de nado; descartado após inspeção.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Piscina externa — tomada 1",
+      "autor": "Consultar página do arquivo",
+      "licenca": "Pendente de registro",
+      "trechos": []
+    },
+    {
+      "id": "P12",
+      "commons_file": "Outdoor_swimming_pool_2_2019-09-13.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Outdoor_swimming_pool_2_2019-09-13.webm",
+      "avaliacao": {
+        "score": 0,
+        "status": "descartado",
+        "acao": "Nenhuma ação humana",
+        "observacao": "Novamente apenas água da piscina, sem nadadores. Não é referência para nado nem boiar.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Piscina externa — tomada 2",
+      "autor": "Consultar página do arquivo",
+      "licenca": "Pendente de registro",
+      "trechos": []
+    },
+    {
+      "id": "C01",
+      "arquivo_local": "arte/entradas/referencias/gato-pulo/pexels-4807151-sofa-desce.mp4",
+      "url": "https://www.pexels.com/video/4807151/",
+      "titulo": "Gato descendo do sofá — acervo anterior",
+      "autor": "Consultar crédito anterior",
+      "licenca": "Pexels (registro anterior do projeto)",
+      "avaliacao": {
+        "score": 3,
+        "status": "descartado",
+        "acao": "Descer de sofá",
+        "observacao": "Clip curto, câmera acompanha o animal, borrão forte no impulso e no pouso. Perspectiva oblíqua. Não há patas nítidas suficientes para copiar juntas.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "C02",
+      "arquivo_local": "arte/entradas/referencias/gato-pulo/pexels-6853178-estante-sobe.mp4",
+      "url": "https://www.pexels.com/video/6853178/",
+      "titulo": "Gato numa estante — acervo anterior",
+      "autor": "cottonbro studio",
+      "licenca": "Pexels (registro anterior do projeto)",
+      "avaliacao": {
+        "score": 3,
+        "status": "descartado",
+        "acao": "Subir/descer e explorar",
+        "observacao": "Gato branco filmado principalmente de costas/frente. A prateleira esconde apoios e o corpo é pequeno; trechos laterais não resolvem as articulações.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "C03",
+      "arquivo_local": "arte/entradas/referencias/gato-pulo/pexels-6853400-piano-desce.mp4",
+      "url": "https://www.pexels.com/video/6853400/",
+      "titulo": "Gato descendo do piano — acervo anterior",
+      "autor": "cottonbro studio",
+      "licenca": "Pexels (registro anterior do projeto)",
+      "avaliacao": {
+        "score": 2,
+        "status": "descartado",
+        "acao": "Descer de móvel",
+        "observacao": "Vista 3/4 e corpo branco pouco legível, patas dianteiras encobertas pelo piano/banqueta. Compatível com a reprovação já registrada na skill.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "C04",
+      "arquivo_local": "arte/entradas/referencias/gato-pulo/pexels-6853903-poltrona-sobe-desce.mp4",
+      "url": "https://www.pexels.com/video/6853903/",
+      "titulo": "Gato na poltrona — acervo anterior",
+      "autor": "cottonbro studio",
+      "licenca": "Pexels (registro anterior do projeto)",
+      "avaliacao": {
+        "score": 4,
+        "status": "reserva",
+        "acao": "Subir e descer de cadeira",
+        "observacao": "Câmera relativamente estável, mas visão traseira oblíqua; braços da cadeira ocultam patas. Útil para comportamento de exploração, não para marcação lateral limpa.",
+        "metodo": "sequências de quadros locais; ampliação de quadros originais para P01/A04; inspeção densa dos cinco trechos preparados",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "A09",
+      "commons_file": "Flagfish.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Flagfish.webm",
+      "avaliacao": {
+        "score": 3,
+        "status": "descartado",
+        "acao": "Nado de peixe",
+        "observacao": "Água verde, ruído e vegetação ocultam cauda e nadadeiras. Contorno pouco nítido para marcar propulsão com precisão.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Flagfish em aquário",
+      "autor": "Consultar página do arquivo",
+      "licenca": "CC0 indicada; autoria a registrar",
+      "trechos": []
+    },
+    {
+      "id": "A10",
+      "commons_file": "Brewer's_blackbird_by_Crissy_Field_(16898).webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Brewer's_blackbird_by_Crissy_Field_(16898).webm",
+      "avaliacao": {
+        "score": 7,
+        "status": "parcial",
+        "acao": "Cabeça e bico de ave pousada",
+        "observacao": "Ave real pousada, câmera fixa, imagem nítida. Trecho 6,00–9,50 s mostra giro da cabeça e abertura/fechamento do bico. Usar só como estudo de cabeça/bico em vista oblíqua frontal; não resolve caminhada, asas nem projeção lateral do corpo. Euphagus cyanocephalus não é ave nativa de Fortaleza: é referência comportamental de outra espécie, sem equivalência anatômica automática.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Ave pousada em Crissy Field",
+      "autor": "Rhododendrites",
+      "licenca": "CC BY-SA 4.0",
+      "trechos": [
+        {
+          "nome": "cabeca-bico",
+          "inicio_s": 6,
+          "fim_s": 9.5,
+          "alvo": "ave pousada; cabeça e bico",
+          "uso": "parcial; não copiar corpo inteiro para perfil"
+        }
+      ]
+    },
+    {
+      "id": "A11",
+      "commons_file": "Slow_motion_of_running_greyhound.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Slow_motion_of_running_greyhound.webm",
+      "avaliacao": {
+        "score": 6,
+        "status": "condicional",
+        "acao": "Galope de cão — passagem lateral",
+        "observacao": "Passagem lateral aproximadamente 5,00–5,95 s com fases de suspensão visíveis. A câmera acompanha o cão e o corpo começa a sair pela direita perto de 6 s; pernas cruzam e a grama cobre apoios em parte. O trecho preparado termina em 6,20 s para registrar a saída, não para inventar membros fora do quadro. Fator de câmera lenta desconhecido. Não é corrida cotidiana humana nem andamento de todo cão; galgo tem proporções e galope próprios.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Galgo correndo em câmera lenta",
+      "autor": "Supreme Chungus",
+      "licenca": "CC BY-SA 4.0",
+      "trechos": [
+        {
+          "nome": "corrida-lateral",
+          "inicio_s": 5,
+          "fim_s": 6.2,
+          "alvo": "galgo; trecho lateral antes de sair do quadro",
+          "uso": "condicional; tempo real ainda não aferido"
+        }
+      ]
+    },
+    {
+      "id": "P13",
+      "commons_file": "2011-07-11-hyeres-22.ogv",
+      "url": "https://commons.wikimedia.org/wiki/File:2011-07-11-hyeres-22.ogv",
+      "avaliacao": {
+        "score": 1,
+        "status": "descartado",
+        "acao": "Pessoas distantes na praia",
+        "observacao": "Panorâmica muito aberta de praia e horizonte; pessoas são pequenas demais e não há braços/pernas legíveis para nado. Pode servir de ambiente, não de juntas.",
+        "metodo": "folhas de contato locais com PTS; inspeção densa dos trechos quando preparados; ampliação original do corredor P07",
+        "data": "2026-10-18"
+      },
+      "titulo": "Praia em Hyères — plano panorâmico",
+      "autor": "Consultar página do arquivo",
+      "licenca": "Pendente de registro",
+      "trechos": []
+    },
+    {
+      "id": "P14",
+      "commons_file": "Kidplayingjumprope-tokyoarea-fall2018.ogv",
+      "url": "https://commons.wikimedia.org/wiki/File:Kidplayingjumprope-tokyoarea-fall2018.ogv",
+      "avaliacao": {
+        "score": 4,
+        "status": "reserva",
+        "acao": "Pular corda — brincadeira",
+        "observacao": "Brincadeira real com adulto segurando uma ponta da corda. Vista alta e oblíqua, ramos atravessando o corpo, criança pequena e roupa cobrindo joelhos. Não fornece salto lateral limpo com pouso legível.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "titulo": "Criança pulando corda no Japão",
+      "autor": "Nesnad",
+      "licenca": "CC BY 4.0",
+      "trechos": []
+    },
+    {
+      "id": "P15",
+      "commons_file": "CI_2011_swim_04_jeh.theora.ogv",
+      "url": "https://commons.wikimedia.org/wiki/File:CI_2011_swim_04_jeh.theora.ogv",
+      "avaliacao": {
+        "score": 4,
+        "status": "reserva",
+        "acao": "Andar dentro da água rasa",
+        "observacao": "Há pessoas reais correndo e andando na água, mas não um ciclo claro de natação. 640×480, 15 fps, câmera móvel, corpos distantes e água ocultando pés. Não preenche a lacuna de nadar/boiar.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "titulo": "Banhistas em Coney Island",
+      "autor": "Jim.henderson",
+      "licenca": "CC0",
+      "trechos": []
+    },
+    {
+      "id": "A12",
+      "commons_file": "Black_Cat_walking.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Black_Cat_walking.webm",
+      "avaliacao": {
+        "score": 5,
+        "status": "reserva",
+        "acao": "Andar, parar, girar e mexer o rabo — gato",
+        "observacao": "Animal nítido e contrastante; comportamento espontâneo. Caminha principalmente em direção à câmera. No perfil breve em torno de 5–6 s ele já está quase parado; vista elevada, câmera acompanha e vegetação cobre patas. Útil para cabeça/rabo e repertório, sem ciclo lateral aprovado.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "titulo": "Gato preto caminhando e interagindo com a câmera",
+      "autor": "Dzkouslavia",
+      "licenca": "CC0",
+      "trechos": []
+    },
+    {
+      "id": "A13",
+      "commons_file": "Fish1001.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Fish1001.webm",
+      "avaliacao": {
+        "score": 4,
+        "status": "reserva",
+        "acao": "Nadar e virar — peixe",
+        "observacao": "Peixes reais de várias cores, com alguns perfis, mas cruzam continuamente uns diante dos outros. Imagem pequena e macia, barras pretas e câmera móvel. A trajetória geral é legível; coluna, cauda e nadadeiras ficam ocultas em trechos. Não copiar um ciclo completo como se estivesse desobstruído.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "titulo": "Cardume em aquário — Fish1001",
+      "autor": "Jon Houseman",
+      "licenca": "CC BY-SA 4.0",
+      "trechos": []
+    },
+    {
+      "id": "P16",
+      "commons_file": "Cruce_peatonal_de_Eje_Central_Lázaro_Cárdenas_y_Avenida_Madero,_Ciudad_de_México.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Cruce_peatonal_de_Eje_Central_L%C3%A1zaro_C%C3%A1rdenas_y_Avenida_Madero%2C_Ciudad_de_M%C3%A9xico.webm",
+      "titulo": "Travessia de rua na Cidade do México",
+      "autor": "ProtoplasmaKid",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 6,
+        "status": "reserva",
+        "acao": "Caminhar, esperar e atravessar rua",
+        "observacao": "Registro cotidiano em 4K; permite observar espera, começo da travessia e passos variados. Quase todos os corpos estão em vista elevada oblíqua; muita sobreposição no início, pouca luz e câmera gira no segundo trecho. Ampliei quadro original de 60 s: há mais detalhe que nas folhas, mas a resolução não elimina a perspectiva. Não aprovado como ciclo lateral limpo.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P17",
+      "commons_file": "Pasejo_en_Hong_Kong_Island_(2014).webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Pasejo_en_Hong_Kong_Island_%282014%29.webm",
+      "titulo": "Pedestre num corredor em Hong Kong",
+      "autor": "RG72",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 2,
+        "status": "descartado",
+        "acao": "Caminhar de costas",
+        "observacao": "Pessoa afasta-se diretamente da câmera em corredor, cada vez menor. Não há passagem lateral. Não serve à seleção de perfil.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P18",
+      "commons_file": "CHILDREN.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:CHILDREN.webm",
+      "titulo": "Crianças sentadas e em pé junto a um banco",
+      "autor": "Salifu Wumpini Hussein",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 1,
+        "status": "descartado",
+        "acao": "Postura sentada e em pé",
+        "observacao": "Grupo já posicionado, olhando/interagindo com a câmera; não há transição contínua de sentar e levantar. Os pés de quem está sentado são cortados e outras crianças encobrem braços/pernas. Não representa a referência cotidiana de corpo inteiro procurada.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P19",
+      "commons_file": "Women's_Long_Jump_Final_-_28th_Summer_Universiade_2015.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Women%27s_Long_Jump_Final_-_28th_Summer_Universiade_2015.webm",
+      "titulo": "Salto em distância — competição Universíade 2015",
+      "autor": "FISUTV",
+      "licenca": "CC BY 3.0",
+      "avaliacao": {
+        "score": 6,
+        "status": "condicional",
+        "acao": "Corrida de aproximação, salto e pouso na areia",
+        "observacao": "Competição real, sem ator demonstrando animação. A primeira tomada 8–13 s cobre aproximação, voo e chegada; câmera panorâmica elevada, atleta pequena, borrão/interlace aparente e equipe de filmagem cruza o corpo. Replay 16–24 s é frontal, não um segundo salto. Serve para comportamento esportivo, sem aprovação de juntas de perfil nem equivalência com salto casual.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "A14",
+      "commons_file": "Pigeon_take_off.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Pigeon_take_off.webm",
+      "titulo": "Pombo decolando",
+      "autor": "Karthik Easvur",
+      "licenca": "CC BY-SA 3.0",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-video"
+      }
+    },
+    {
+      "id": "A15",
+      "commons_file": "Gulls_foot_paddling.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Gulls_foot_paddling.webm",
+      "titulo": "Gaivotas movimentando os pés no solo",
+      "autor": "Shyamal",
+      "licenca": "A registrar",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-video"
+      }
+    },
+    {
+      "id": "A16",
+      "commons_file": "Rainbow_trout_underwater_(Oncorhynchus_mykiss).webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Rainbow_trout_underwater_%28Oncorhynchus_mykiss%29.webm",
+      "titulo": "Trutas nadando debaixo da água",
+      "autor": "Liquid Art",
+      "licenca": "A registrar",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-video"
+      }
+    },
+    {
+      "id": "P20",
+      "commons_file": "BRICKS_•_Traditional_Craftsmen_•_Qom_•_IRAN.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:BRICKS_%E2%80%A2_Traditional_Craftsmen_%E2%80%A2_Qom_%E2%80%A2_IRAN.webm",
+      "titulo": "Fabricantes de tijolos trabalhando",
+      "autor": "Oxlaey",
+      "licenca": "CC BY-SA 3.0",
+      "avaliacao": {
+        "score": 6,
+        "status": "reserva",
+        "acao": "Usar pá, moldar e empilhar tijolos",
+        "observacao": "Trabalho real documentado. Há gesto de pá em 13–17 s, moldagem agachada em 25–38 s e manipulação/empilhamento em 43–53 s. Montagem com cortes frequentes e closes que escondem pés ou cabeça; roupas largas ocultam joelhos. Boa referência da tarefa, sem ciclo contínuo de corpo inteiro aprovado.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "trechos": [],
+      "url_original": "https://vimeo.com/115835357"
+    },
+    {
+      "id": "P21",
+      "commons_file": "Boat_Ramp_•_Fishermen_Launching_Freestyle_•_Bandar_Abbas_•_IRAN.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Boat_Ramp_%E2%80%A2_Fishermen_Launching_Freestyle_%E2%80%A2_Bandar_Abbas_%E2%80%A2_IRAN.webm",
+      "titulo": "Pescadores colocando barcos no mar",
+      "autor": "Oxlaey",
+      "licenca": "CC BY-SA 3.0",
+      "avaliacao": {
+        "score": 7,
+        "status": "parcial",
+        "acao": "Empurrar barco pesado",
+        "observacao": "Plano 24,85–26,45 s mostra homem de camisa escura listrada, corpo inteiro, apoiando as mãos na proa e dando passos sob carga. Câmera estável nesse plano, contraste bom e contato com o objeto visível. Corpo levemente oblíquo, braços se sobrepõem e o plano termina por corte. Aproveitar juntas visíveis/apoios; não inventar o braço oculto ou começo/fim de um ciclo maior. Outros planos mostram puxar carreta com corda, mas cortam partes do corpo.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "empurrar-barco",
+          "inicio_s": 24.85,
+          "fim_s": 26.45,
+          "alvo": "homem de camisa escura listrada, mãos na proa",
+          "uso": "parcial: juntas visíveis e apoios sob carga; vista levemente oblíqua"
+        }
+      ],
+      "url_original": "https://vimeo.com/144724857",
+      "selecionado_proximo_estudo": "Joabe escolheu o homem empurrando o barco; marcar os 39 quadros do trecho 24,887–26,407 s.",
+      "marcacao": {
+        "revisao": 2,
+        "estado": "revisada após usuário apontar erros; não aprovada pelo usuário",
+        "quadros": 39,
+        "arquivo": "arte/finais/rotoscopia-p21/marcas.json",
+        "video": "arte/finais/rotoscopia-p21/marcacao-revisada.mp4",
+        "antes_depois": "arte/finais/rotoscopia-p21/marcas-antes-depois.jpg",
+        "nota": "Orelha e quadris não observáveis foram retirados; pontos sob tecido são estimativas; articulações ocultas ficam null. Render anterior interrompido."
+      },
+      "estudo_animacao": {
+        "revisao": 4,
+        "revisao_marcas": 2,
+        "estado": "sentido de flexão do joelho direito corrigido após feedback; não aprovado pelo usuário",
+        "video": "arte/finais/rotoscopia-p21-v4/comparacao.mp4",
+        "antes_depois": "arte/finais/rotoscopia-p21-v4/joelho-antes-depois.mp4",
+        "notas": "arte/finais/rotoscopia-p21-v4/README.md"
+      }
+    },
+    {
+      "id": "P22",
+      "commons_file": "Mary's_Swim_Boot_Camp_-_Debbie's_underwater_freestyle.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Mary%27s_Swim_Boot_Camp_-_Debbie%27s_underwater_freestyle.webm",
+      "titulo": "Natação em treino real — Debbie, vista subaquática",
+      "autor": "koolkatkari",
+      "licenca": "CC BY 3.0",
+      "avaliacao": {
+        "score": 7,
+        "status": "parcial",
+        "acao": "Braçada de crawl submersa",
+        "observacao": "Registro de treino de natação, pessoa realmente nadando; não é pantomima em seco nem captura para animação. Em 7–9 s se aproxima e passa lateralmente, revelando cotovelo, punho e tração da braçada. A câmera inclina/acompanha; corpo inteiro não permanece no quadro, e o braço de recuperação passa pela superfície. Bom para braçada submersa visível, sem aprovação de ciclo completo de braços/pernas ou nado cotidiano espontâneo.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "nado-inspecao",
+          "inicio_s": 7,
+          "fim_s": 11,
+          "alvo": "nadadora de maiô azul, braçada submersa",
+          "uso": "parcial: braços; câmera móvel e corpo cortado ao passar"
+        }
+      ],
+      "url_original": "https://www.youtube.com/watch?v=3gimynmehxA"
+    },
+    {
+      "id": "P23",
+      "commons_file": "Floating_while_swimming.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Floating_while_swimming.webm",
+      "titulo": "Pessoa flutuando num lago — Floating while swimming",
+      "autor": "KEmel49",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 2,
+        "status": "descartado",
+        "acao": "Flutuação na água",
+        "observacao": "A própria fonte descreve uma manobra para a câmera. Na inspeção aparecem principalmente mãos/pés na superfície; corpo sob água opaca, câmera alta e móvel. Não serve para copiar juntas de boiar, nem atende bem à prioridade de observação espontânea.",
+        "metodo": "sequências locais com PTS; P21/P22 examinados em sequência densa; P16/P19/P21 ampliados no quadro original",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P24",
+      "commons_file": "Shibuya_Crossing,_Tokyo,_Japan_(video).webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Shibuya_Crossing%2C_Tokyo%2C_Japan_%28video%29.webm",
+      "titulo": "Pedestres atravessando Shibuya",
+      "autor": "Basile Morin",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 4,
+        "status": "reserva",
+        "acao": "Caminhada em multidão",
+        "observacao": "Gente real atravessando, mas filmada de uma posição alta. Muitas sobreposições, zooms e mudanças de enquadramento; primeiros planos são extremamente abertos. Não há sujeito isolado contínuo suficiente para copiar perfil.",
+        "metodo": "folhas de contato locais; P26/P27 em sequência densa; P26 com ampliação original",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P25",
+      "commons_file": "Pedestrians_in_Buchanan_Street,_Glasgow.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Pedestrians_in_Buchanan_Street%2C_Glasgow.webm",
+      "titulo": "Pedestres na Buchanan Street em Glasgow",
+      "autor": "Learning, Teaching and Web Services, University of Edinburgh",
+      "licenca": "CC BY-SA 3.0",
+      "avaliacao": {
+        "score": 5,
+        "status": "reserva",
+        "acao": "Caminhar de frente e de costas",
+        "observacao": "Câmera fixa, boa luz e pessoas espontâneas; quase todos caminham em direção à câmera ou se afastam. Serve para observar comportamento e distribuição de peso frontal, sem resolver ciclo lateral. Não confundir arquivo de 1080p com perfil útil.",
+        "metodo": "folhas de contato locais; P26/P27 em sequência densa; P26 com ampliação original",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P26",
+      "commons_file": "Street_traffic.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Street_traffic.webm",
+      "titulo": "Pedestres e trânsito em São Francisco",
+      "autor": "Editor — consultar fonte",
+      "licenca": "CC BY 3.0",
+      "avaliacao": {
+        "score": 8,
+        "status": "aprovado",
+        "acao": "Caminhar de perfil carregando bolsa pequena",
+        "observacao": "Mulher de casaco preto, bolsa bege e sapatos de salto passa da direita para a esquerda. Seleção 33,60–35,00 s: corpo inteiro de perfil, câmera fixa, pernas e contato dos pés legíveis, sem oclusão por outros passantes no trecho escolhido. Há 42 quadros nativos. Bolsa e casaco limitam o braço distante; marcar apenas juntas visíveis. A referência é caminhada com salto e bolsa, não caminhada livre descalça, carga pesada ou transição de parada. O quadro original de 34 s foi ampliado para conferir nitidez. Os tempos correspondem à cópia Commons; a reprodução do original no YouTube não foi conferida.",
+        "metodo": "folhas de contato locais; P26/P27 em sequência densa; P26 com ampliação original",
+        "data": "2026-10-18"
+      },
+      "url_original": "https://www.youtube.com/watch?v=_7sCYyxw4Ic",
+      "trechos": [
+        {
+          "nome": "caminhada-com-bolsa",
+          "inicio_s": 33.6,
+          "fim_s": 35,
+          "alvo": "mulher de casaco preto e bolsa bege, direita para esquerda",
+          "uso": "aprovado: caminhada de salto com bolsa; juntas visíveis"
+        }
+      ]
+    },
+    {
+      "id": "P27",
+      "commons_file": "Traffic_on_Slovenska_street.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Traffic_on_Slovenska_street.webm",
+      "titulo": "Pedestres junto a ponto de ônibus em Ljubljana",
+      "autor": "Sounds of Changes",
+      "licenca": "CC BY 3.0",
+      "avaliacao": {
+        "score": 6,
+        "status": "reserva",
+        "acao": "Caminhar, parar e mudar orientação durante conversa",
+        "observacao": "Duas pessoas atravessam a rua e param perto da calçada entre aproximadamente 4,5 e 14,5 s. Câmera fixa, ação real, mas deslocamento diagonal em 3/4 e corpos pequenos. A pessoa de calça clara vira para a outra ao se aproximar da calçada; não é meia-volta lateral limpa. Útil para gesto/conversa e combinação de caminhada/parada, sem aprovação de juntas de perfil.",
+        "metodo": "folhas de contato locais; P26/P27 em sequência densa; P26 com ampliação original",
+        "data": "2026-10-18"
+      },
+      "url_original": "https://www.youtube.com/watch?v=TuhKBpdiE4g",
+      "trechos": [
+        {
+          "nome": "parar-conversar-inspecao",
+          "inicio_s": 4.5,
+          "fim_s": 14.5,
+          "alvo": "duas pessoas atravessando e parando à esquerda",
+          "uso": "reserva: movimento cotidiano, vista oblíqua"
+        }
+      ]
+    },
+    {
+      "id": "Y01",
+      "youtube_id": "F6N4kvQm8HI",
+      "url": "https://www.youtube.com/watch?v=F6N4kvQm8HI",
+      "titulo": "[4K 60P] People watching in New York City - Bryant Park",
+      "autor": "4K Watch",
+      "duracao_indicada": "8:28",
+      "licenca": "Consultar titular; link de pesquisa, sem cópia do vídeo",
+      "objetivo_busca": "Observar caminhada, espera e uso de cadeiras no parque",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-inspecao-visual",
+        "observacao": "Encontrado na busca pública direta do YouTube; título, canal e link confirmados. A tentativa de reprodução de Y01 nesta sessão recebeu verificação de tráfego automatizado. Este candidato ainda não foi examinado visualmente e não tem score nem intervalo aprovado."
+      }
+    },
+    {
+      "id": "Y02",
+      "youtube_id": "aujkOV8Yr50",
+      "url": "https://www.youtube.com/watch?v=aujkOV8Yr50",
+      "titulo": "[4K 60P] People watching in New York City - Washington Square park",
+      "autor": "4K Watch",
+      "duracao_indicada": "9:59",
+      "licenca": "Consultar titular; link de pesquisa, sem cópia do vídeo",
+      "objetivo_busca": "Observar caminhada, paradas e gestos em praça",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-inspecao-visual",
+        "observacao": "Encontrado na busca pública direta do YouTube; título, canal e link confirmados. A tentativa de reprodução de Y01 nesta sessão recebeu verificação de tráfego automatizado. Este candidato ainda não foi examinado visualmente e não tem score nem intervalo aprovado."
+      }
+    },
+    {
+      "id": "Y03",
+      "youtube_id": "3giKgPf3muY",
+      "url": "https://www.youtube.com/watch?v=3giKgPf3muY",
+      "titulo": "The Ramble, Central Park: People Watching by the Water | 4K NYC Ambience",
+      "autor": "Everyday New York",
+      "duracao_indicada": "9:48",
+      "licenca": "Consultar titular; link de pesquisa, sem cópia do vídeo",
+      "objetivo_busca": "Observar movimentos e permanência junto à água",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-inspecao-visual",
+        "observacao": "Encontrado na busca pública direta do YouTube; título, canal e link confirmados. A tentativa de reprodução de Y01 nesta sessão recebeu verificação de tráfego automatizado. Este candidato ainda não foi examinado visualmente e não tem score nem intervalo aprovado."
+      }
+    },
+    {
+      "id": "Y04",
+      "youtube_id": "ZvBLCeOZHDU",
+      "url": "https://www.youtube.com/watch?v=ZvBLCeOZHDU",
+      "titulo": "Dock Workers (1930-1939)",
+      "autor": "British Pathé",
+      "duracao_indicada": "2:58",
+      "licenca": "Consultar titular; link de pesquisa, sem cópia do vídeo",
+      "objetivo_busca": "Investigar carregamento, descarregamento e transporte manual",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-inspecao-visual",
+        "observacao": "Encontrado na busca pública direta do YouTube; título, canal e link confirmados. A tentativa de reprodução de Y01 nesta sessão recebeu verificação de tráfego automatizado. Este candidato ainda não foi examinado visualmente e não tem score nem intervalo aprovado."
+      }
+    },
+    {
+      "id": "Y05",
+      "youtube_id": "sU2vVqbtRAY",
+      "url": "https://www.youtube.com/watch?v=sU2vVqbtRAY",
+      "titulo": "William “Holly” Whyte in His Own Words, “The Social Life of Small Urban Spaces” (1980)",
+      "autor": "Streetfilms®",
+      "duracao_indicada": "3:18",
+      "licenca": "Consultar titular; link de pesquisa, sem cópia do vídeo",
+      "objetivo_busca": "Investigar sentar/levantar e gestos cotidianos observacionais",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-inspecao-visual",
+        "observacao": "Encontrado na busca pública direta do YouTube; título, canal e link confirmados. A tentativa de reprodução de Y01 nesta sessão recebeu verificação de tráfego automatizado. Este candidato ainda não foi examinado visualmente e não tem score nem intervalo aprovado."
+      }
+    },
+    {
+      "id": "Y06",
+      "youtube_id": "Wn24oltYkMA",
+      "url": "https://www.youtube.com/watch?v=Wn24oltYkMA",
+      "titulo": "Fishermen Haul In Nets To Catch Fish,Squid | Selling The Catch To Earn Money | Fishing Net",
+      "autor": "Tam Life",
+      "duracao_indicada": "5:04",
+      "licenca": "Consultar titular; link de pesquisa, sem cópia do vídeo",
+      "objetivo_busca": "Investigar puxar rede e manipular carga em trabalho real",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-inspecao-visual",
+        "observacao": "Encontrado na busca pública direta do YouTube; título, canal e link confirmados. A tentativa de reprodução de Y01 nesta sessão recebeu verificação de tráfego automatizado. Este candidato ainda não foi examinado visualmente e não tem score nem intervalo aprovado."
+      }
+    },
+    {
+      "id": "Y07",
+      "youtube_id": "hNv5Gb0fY-A",
+      "url": "https://www.youtube.com/watch?v=hNv5Gb0fY-A",
+      "titulo": "Faces of Iranian Workers — Everyday Life in the Bazaar",
+      "autor": "IRANIAN PEOPLE",
+      "duracao_indicada": "3:48",
+      "licenca": "Consultar titular; link de pesquisa, sem cópia do vídeo",
+      "objetivo_busca": "Investigar trabalho e transporte de objetos no bazar",
+      "avaliacao": {
+        "score": null,
+        "status": "aguardando-inspecao-visual",
+        "observacao": "Encontrado na busca pública direta do YouTube; título, canal e link confirmados. A tentativa de reprodução de Y01 nesta sessão recebeu verificação de tráfego automatizado. Este candidato ainda não foi examinado visualmente e não tem score nem intervalo aprovado."
+      }
+    },
+    {
+      "id": "P28",
+      "commons_file": "Men_kicking_footballs.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Men_kicking_footballs.webm",
+      "titulo": "Homens jogando futebol",
+      "autor": "Learning, Teaching and Web Services, University of Edinburgh",
+      "licenca": "CC BY-SA 3.0",
+      "avaliacao": {
+        "score": 2,
+        "status": "descartado",
+        "acao": "Toques na bola — pés em close",
+        "observacao": "Arquivo real de futebol, mas enquadrado nos pés e pernas. Não mostra tronco/cabeça e os jogadores cruzam diante uns dos outros. Não preenche corrida, parada, giro ou chute de corpo inteiro.",
+        "metodo": "folhas de contato locais; P26/P27 em sequência densa; P26 com ampliação original",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    },
+    {
+      "id": "P29",
+      "commons_file": "Boy_working_on_palm_oil_in_Niger_Delta_creeks,_Bayelsa_state_2.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Boy_working_on_palm_oil_in_Niger_Delta_creeks%2C_Bayelsa_state_2.webm",
+      "titulo": "Trabalho real na produção de óleo de palma",
+      "autor": "Christopher Wonder Osariemen",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 6,
+        "status": "reserva",
+        "acao": "Pegar dois baldes e carregar água",
+        "observacao": "Trabalho real: começa com o corpo inteiro, curva para os recipientes na água, levanta ambos e caminha em direção à câmera por volta de 1–7 s. Tronco sem roupa ajuda a ver o esforço. Vista frontal/oblíqua, água encobre apoios e a câmera vira quando ele passa muito perto. Depois o sujeito fica pequeno no fundo. Trecho preservado para estudar sequência e carga bilateral, sem aprovação para copiar todas as juntas de perfil.",
+        "metodo": "folhas de contato de quadros locais com PTS; P29/P30 com trecho preparado para inspeção",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "pegar-carregar-baldes",
+          "inicio_s": 0.5,
+          "fim_s": 7.5,
+          "alvo": "pessoa de bermuda vermelha com dois baldes",
+          "uso": "reserva: sequência de pegar/carregar, vista frontal e apoios sob água"
+        }
+      ]
+    },
+    {
+      "id": "P30",
+      "commons_file": "Mama_palm_oil_in_Agbura_community,_Bayelsa_state_ii.webm",
+      "url": "https://commons.wikimedia.org/wiki/File:Mama_palm_oil_in_Agbura_community%2C_Bayelsa_state_ii.webm",
+      "titulo": "Mulher trabalhando com óleo de palma",
+      "autor": "Christopher Wonder Osariemen",
+      "licenca": "CC BY-SA 4.0",
+      "avaliacao": {
+        "score": 7,
+        "status": "parcial",
+        "acao": "Receber, levantar e despejar um balde",
+        "observacao": "Trabalho real, não demonstração para animação. Entre 8,50 e 14,50 s a mulher recebe um balde amarelo, ergue com as duas mãos e despeja num recipiente grande. Braços, pega e inclinação do balde são legíveis. O recipiente esconde quadril e pernas; vista oblíqua elevada, câmera móvel. Usar apenas estudo de braços/tronco e contato com objeto, não rotoscopia de corpo inteiro.",
+        "metodo": "folhas de contato de quadros locais com PTS; P29/P30 com trecho preparado para inspeção",
+        "data": "2026-10-18"
+      },
+      "trechos": [
+        {
+          "nome": "despejar-balde",
+          "inicio_s": 8.5,
+          "fim_s": 14.5,
+          "alvo": "mulher de roupa rosa/vermelha com balde amarelo",
+          "uso": "parcial: braços, tronco e objeto; pernas ocultas"
+        }
+      ]
+    },
+    {
+      "id": "P31",
+      "commons_file": "Worker_dismantling_scaffoldings.ogv",
+      "url": "https://commons.wikimedia.org/wiki/File:Worker_dismantling_scaffoldings.ogv",
+      "titulo": "Trabalhador desmontando andaime",
+      "autor": "Pleclown",
+      "licenca": "CC BY-SA 3.0",
+      "avaliacao": {
+        "score": 5,
+        "status": "reserva",
+        "acao": "Alcançar, soltar e recolher peças de andaime",
+        "observacao": "Trabalhador realmente desmontando andaime. Move braços, inclina tronco e muda apoios, mas a estrutura encobre pernas/quadril e há zoom e rotação da câmera; vista 3/4 de baixo. Não fornece levantar carga ou alcançar de perfil sem oclusões.",
+        "metodo": "folhas de contato de quadros locais com PTS; P29/P30 com trecho preparado para inspeção",
+        "data": "2026-10-18"
+      },
+      "trechos": []
+    }
+  ],
+  "criterio_score": "0–3 descartar para juntas; 4–6 repertório ou preparação adicional; 7 aproveitar parte do corpo; 8–10 pronto para marcação do trecho especificado. Nota visual para a ação indicada, não popularidade ou tamanho do acervo.",
+  "legado": [
+    {
+      "titulo": "Slow Mo Guys — gato soltando do tronco e aterrissando",
+      "url": "https://www.youtube.com/watch?v=-xN12kR4TLc",
+      "inicio_s": 40.5,
+      "fim_s": 60.2,
+      "status": "já marcado no trabalho anterior; não reavaliado neste levantamento",
+      "arquivos": [
+        "arte/entradas/referencias/gato-pulo/marcas-slowmo-tronco.json",
+        "arte/entradas/referencias/gato-pulo/marcas-slowmo-queda.json"
+      ],
+      "observacao": "Captura técnica em câmera lenta. Tratar como legado; não confundir com o arquivo Katzensprung."
+    }
+  ],
+  "rodadas": [
+    {
+      "inicio_utc": "2026-10-18T19:34:44Z",
+      "descricao": "Ampliação de referências reais: travessias, trabalho, recreação, natação e animais. Inspeção local e recorte só após observar."
+    }
+  ],
+  "prioridade_atual": "Pessoas primeiro, incluindo pesquisa no YouTube; manter espontaneidade/atividade real como requisito."
+}

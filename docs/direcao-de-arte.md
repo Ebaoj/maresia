@@ -152,6 +152,25 @@ reduz a imagem a essa paleta), com retícula grande e desalinho de impressão.
   - o caderno do neto para tarefas e para o que aprendeu do ofício;
   - nas memórias, a interface some e a página impressa ocupa tudo.
 
+### Movimento: rotoscopia (decisão do Joabe, 18/10/2026)
+
+**Tudo que se move como ser vivo é animado por rotoscopia**: gente, gato, cachorro, galinha, peixe, ave, jumento.
+As juntas do ser real são marcadas quadro a quadro num vídeo filmado de lado e o esqueleto é posto em cima. É parte
+da identidade visual do jogo, não só uma técnica: o movimento tem o peso e o tempo do ser real, mesmo com a imagem
+pintada.
+
+- Por que: toda pose inventada para o gato foi reprovada ("duro", "concreto", "se jogando"); a primeira cópia de
+  vídeo real passou (descer da caixa, `arte/finais/gato-anythingworld/anatomico/pulo_descer_roto-mola.glb`).
+- Como: skill global `animar-de-video` (`~/.claude/skills/animar-de-video/SKILL.md`), implementação de referência em
+  `arte/blender/roto_pulo.py`. Vídeo de perfil, câmera parada, juntas visíveis; marcas conferidas pelo Joabe no
+  overlay antes do retarget; trava de deformação da pele medida antes de mostrar.
+- Trecho sem vídeo (emendas, começo e fim): o mínimo possível, montado de trás para a frente a partir do quadro
+  copiado e medido. Se o trecho é grande, procurar vídeo em vez de inventar.
+- Coisas (vela, rede, água, folhas, roupa, fumaça) seguem física e molas; a regra vale para os seres vivos.
+- Gente também (decidido em 18/10): as animações do Mixamo (`public/animacoes/mixamo`) vão ser trocadas, ação por
+  ação, por rotoscopia de vídeo escolhido. Começa pelo andar do neto (adolescente). Até cada uma ser trocada, a do
+  Mixamo continua no jogo.
+
 ---
 
 ## 5. As 10 lacunas da Revisão 2, resolvidas pela direção
