@@ -241,3 +241,70 @@ andar/parado mistura posições, não quaternions; cada ator usa um `AnimationMi
 relógio (tempo, loop e pesos iguais, sem avisos de `PropertyBinding`); `COR_CABELO` fixo em `atores.js` (igual ao
 `COR_PADRAO` do esqueleto; acompanhar se mudar); a textura de ossos é assada na abertura (~335 quadros, imperceptível).
 Jogo do dono: recarregado com a build final, WebGPU + `motorPlaca` + `atoresVat` ligados, posição/hora devolvidas.
+
+## Robustez no MacBook Air M1 sob carga (meta do dono, 19/10/2026)
+
+Meta de aceite: 1440 × 800 CSS px com DPR 2 (canvas 1800 × 1000 com `resolucao` 1,25), p99 do tempo de quadro ≤ 20 ms e
+≥ 95% dos quadros ≤ 16,7 ms (+20%) sob estresse definido, andando e com a hora andando.
+
+### Rig de estresse (`~/claude-f4/estresse/`, roda NA máquina do dono e a deixa lenta durante a medição)
+- `rig.sh NIVEL SEGUNDOS [LOG]`: nível 0 = nada; nível 1 = 4 processos de CPU ocupados (Python) + 1 Chrome headless
+  com `gpu-carga.html` (shader de 400 iterações por pixel em 1920 × 1080, sem limite de quadro); nível 2 = 8 processos +
+  2 páginas. Duração limitada por `timeout`, `trap` em EXIT/INT/TERM mata tudo; registra `vm.loadavg` e `pmset -g
+  therm` (CPU_Speed_Limit < 100 = throttling) a cada 15 s.
+- `medir_m1.py`: Chrome headless (Playwright, `--use-angle=metal`), 1440 × 800 @ DPR 2, servidor 5190, posição/hora de
+  referência fixas (`irPara` + relógio parado) ou regime andando (frente/trás a cada 4 s, hora andando); por rAF: p50/p95/p99,
+  % > 16,7 ms, % > 33 ms, picos > 40 ms, FPS, JS por quadro; `--semlimite` tira o vsync (capacidade); `--js` para ablações.
+  Linhas JSON em `medidas.jsonl`. `rodada.sh ROTULO "0 1 2" REPS SEG [MATRIZ]` intercala a matriz por nível.
+- Não usar `trackTimestamp` do three no M1 (inutilizável); separar CPU de GPU por ablação A/B/A/B intercalada.
+
+### Linha de base (19/10, 16:40-17:10 BRT; o "nível 0" NÃO foi Mac quieto: load 3-6, WindowServer ~47%, Codex ~50%,
+`mediaanalysisd` ~33% — carga ambiente real do dono)
+| Config (parado, ref.) | vsync 60 Hz: FPS / p50 / p95 / p99 / >33 ms | sem limite: FPS / p50 / p99 / JS p50 |
+|---|---|---|
+| WebGPU 1,25 (1800×1000), nível 0 | 23,9–42,7 / 20,8–50 / 36–84 / 88–137 / 5–52 % (e uma rodada a 11,6 FPS, p50 107) | 43–51 / 18–19,5 / 46–53 / 18–19 ms |
+| WebGL 1,25, nível 0 | 34–41 / 24 / 30–83 / 51–87 / 4–11 % | 40 / 24,5 / 53–55 / 24 ms (JS inclui bloqueio de GPU) |
+| WebGPU 1,0 (1440×800), nível 0 | 18–33 / 32–52 / 79–98 / 86–203 / 45–67 % | — |
+| WebGPU 1,25 andando, nível 0 | 19–22 / 31–41 / 85–151 / 124–155 / 44–58 % | — |
+| WebGPU 1,25, nível 1 | 25,5 / 21,7 / 124 / 145 / 25 % | — |
+| WebGL 1,25, nível 1 | **9,3** / 131 / 137 / 143 / 95 % | — |
+| WebGPU 1,0, nível 1 | 18,4 / 35 / 148 / 162 / 63 % | — |
+| WebGPU 1,25 andando, nível 1 | 19,8 / 34 / 149 / 161 / 53 % | — |
+
+Leitura: com a carga ambiente, o JS do jogo fica em 9-13 ms por quadro (p50) e o tempo de quadro em 20-50 ms — o
+quadro trava FORA do JS (GPU disputada com WindowServer/Codex/página pesada, e o pacing do vsync: cada quadro que perde
+o vsync vira 33 ou 50 ms). Sem limite de quadro o WebGPU entrega 43-51 FPS (capacidade) e o WebGL 40 com o `render`
+bloqueando 24 ms (fila da GPU cheia). Sob nível 1 o WebGL desaba (9 FPS) e o WebGPU resiste melhor (25 FPS), mas ambos
+longe da meta; baixar a resolução para 1,0 não devolveu pacing nessas rodadas (variância de carga ambiente domina).
+Nenhum dos dois renderizadores é robusto hoje; a variância entre repetições idênticas é enorme (11,6 → 42,7 FPS).
+
+### Ablação de GPU (WebGPU, parado, sem limite de quadro, intercalada ×2; rep 1 com load ~4, rep 2 com load ~6)
+| Variante | rep 1: FPS / p50 / p99 / JS p50 | rep 2: FPS / p50 / p99 / JS p50 |
+|---|---|---|
+| res 1,25 (1800×1000) | 52,0 / 18,8 / 45 / 18,3 | 48,1 / 18,9 / 49 / 18,3 |
+| res 1,0 (1440×800) | 58,3 / 16,4 / 39 / 15,9 | 38,8 / 23,4 / 59 / 22,5 |
+| res 0,75 (1080×600) | **70,1 / 13,8 / 21 / 13,4** | 35,6 / 22,5 / 96 / 21,6 |
+| res 1,25 + sombra 2048 | 50,7 / 18,3 / 47 / 16,9 | 40,1 / 23,1 / 51 / 21,4 |
+| res 1,25 + oclusão 0 | 38,1 / 21,7 / 83 / 20,8 | 47,6 / 19,3 / 48 / 18,8 |
+| res 1,25 + brilho 0 | 49,0 / 19,1 / 38 / 18,4 | 52,2 / 18,4 / 36 / 17,8 |
+
+Leitura (rep 1, a mais limpa): a resolução é a única alavanca de GPU que rende — 1,25 → 0,75 dá +35% de capacidade e o
+"JS" por quadro (que inclui a espera da fila da GPU) cai de 18,3 para 13,4 ms, o piso de CPU sob a carga ambiente;
+mapa de sombra 2048, oclusão e brilho desligados não mudam nada mensurável: o custo de GPU está nos passes de tela cheia
+(cena MRT em meia-float, passada `tela`), proporcional aos pixels. A rep 2 inteira saiu pior (carga ambiente subiu):
+a variância ambiente é maior que qualquer efeito fino, por isso só A/B intercalado vale.
+
+Anomalia do vsync headless: com limite de 60 Hz, baixar a resolução PIOROU monotonicamente (1,25: 41,9 FPS, p50 21,6;
+1,0: 31,5, p50 25,7; 0,75: 20,4, p50 47 ms com JS de 10 ms). Mesma observação do coordenador em rodada anterior. A
+medida em "regime real" num Chrome headless não é confiável no M1; a capacidade (sem limite) é. Validação do regime real
+fica para uma janela visível (Playwright `headless=False`, com o dono de acordo), ao fim.
+
+### Plano de robustez (ranqueado por retorno/esforço)
+| # | Item | Expectativa | Custo | Validação |
+|---|---|---|---|---|
+| R1 | **Resolução dinâmica guiada pelo tempo de quadro** (`cfg.desempenho.resolucaoDinamica`, nasce desligada; `resolucaoMin` 0,6; p75 da janela > 18 ms → −0,1; < 12,5 ms por 2 s → +0,05) | é a única alavanca que se adapta à carga: quando a GPU é disputada, menos pixels devolvem o vsync; esperado p99 ≤ 20 ms no nível 1 com escala ~0,8-1,0, e no nível 2 com ~0,6-0,8; sem efeito quando o limite é CPU | baixo (módulo puro + ligação no `quadro()`) | foto justa 0 px com a chave desligada e com a chave ligada travada (`tamanhoFixo`); `medir_m1.py --resDinamica 1` níveis 1 e 2, lendo `maresia.resolucaoDinamica.escala` |
+| R2 | **Qualidade adaptativa além da resolução** (mapa de sombra 4096 → 2048 e oclusão/brilho desligados quando a escala bate no mínimo e o quadro ainda estoura; volta ao normal quando sobra) | cada fatia conforme a ablação abaixo; só entra quando R1 sozinha não basta | médio | mesma medida de R1; foto justa com os cortes desligados |
+| R3 | **Custo por pixel do pós** (fundir `claro` no 1º desfoque, 4 desfoques → 2; oclusão já a meia resolução) | ~10-15% do tempo de GPU do quadro (a confirmar na ablação) | médio; muda pixels do brilho (precisa tolerância aprovada) | foto justa com tolerância só no brilho |
+| R4 | **Picos de 40-70 ms por alocação/GC**: `animador.js` aloca `Vector3`/`Quaternion` por chamada (`ikDuas`, `apontar`, `girarNoMundo`: `new` dentro do laço de quadro), `getWorldPosition(new Vector3())`, `particulas.js` | tira os picos esporádicos (na T4: 4 picos/30 s coincidindo com queda de heap); não muda o p50 | baixo-médio (vetores reutilizados por módulo) | `medir_m1.py` picos > 40 ms e `performance.memory` ao longo de 60 s; foto justa 0 px |
+| R5 | **Abertura**: quadro de ~2 s do pré-aquecimento WebGPU (`preaquecerWebgpu`) | não afeta a robustez em jogo; melhora a abertura | médio (compilar em lotes com `compileAsync`) | tempo até o 1º quadro |
+| R6 | **Padrão menor para M1/Air** (`resolucao` 1,0 ou 1,1 quando `devicePixelRatio ≥ 2` e GPU integrada) | decisão do dono (muda a imagem padrão); R1 torna isso menos necessário | trivial | — |
