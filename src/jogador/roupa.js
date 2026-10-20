@@ -6,6 +6,7 @@
 // Mesma interface do pano de molas (pano.js): atualizar(dt, { vento, ventoDir, forca }).
 
 import * as THREE from 'three'
+import { MeshBVH } from 'three-mesh-bvh'
 import { criarColisores } from './roupa-colisores.js'
 import { PADRAO } from '../config.js'
 import { carregarJolt, CAMADA } from './jolt.js'
@@ -14,8 +15,50 @@ const CELULA = 0.045
 const _m = new THREE.Matrix4()
 const _v = new THREE.Vector3()
 
+// O molde da roupa foi gerado sobre um corpo um pouco diferente do que está no jogo: parte da malha
+// nasce dentro da pele (no tronco do neto v5 são 943 pontos, até 8 cm para dentro). O limite de
+// distância do pano no Jolt é a folga (4,5 cm), então o solver não alcança tirar o tecido de dentro do
+// corpo: ele puxa de volta e a camisa atravessa a pele.
+// Aqui mede-se quanto cada pedaço da roupa nasce dentro da pele, para a folga daquele pedaço
+// conseguir chegar lá fora. A profundidade é medida na pose de repouso, que é a pose em que o pano
+// é criado: é nela que o limite vale.
+export function criarMedidorDeProfundidade (pele) {
+  if (!pele?.geometry?.index) return null
+  const geo = pele.geometry, pos = geo.attributes.position, indices = geo.index.array
+  const bvh = new MeshBVH(geo, { targetLeafSize: 8 })
+  const alvo = { point: new THREE.Vector3(), distance: 0, faceIndex: 0 }
+  const fora = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3()
+  return (fonte) => {
+    const atributos = fonte.attributes.position
+    const profundidades = new Float32Array(atributos.count)
+    for (let i = 0; i < profundidades.length; i++) {
+      _v.fromBufferAttribute(atributos, i)
+      bvh.closestPointToPoint(_v, alvo)
+      const t = alvo.faceIndex * 3
+      a.fromBufferAttribute(pos, indices[t]); b.fromBufferAttribute(pos, indices[t + 1]); c.fromBufferAttribute(pos, indices[t + 2])
+      n.crossVectors(b.sub(a), c.sub(a)).normalize()
+      // vetor do vértice para a pele mais próxima: se aponta para fora, o vértice está dentro
+      fora.copy(_v).sub(alvo.point)
+      profundidades[i] = fora.dot(n) < 0 ? alvo.distance : 0
+    }
+    return profundidades
+  }
+}
+
+// O limite de distância de um ponto do pano: a folga mais o quanto aquele pedaço nasce dentro da
+// pele. Sem a profundidade, o solver segura o pano dentro do corpo e a roupa atravessa a pele.
+export const limiteDoPonto = (folga, profundidade) => folga + profundidade
+
+// Os limites de todos os pontos do pano, na mesma ordem dos pontos. É esta conta que o Jolt usa e
+// que o teste do encaixe confere: se a profundidade sumir daqui, a roupa volta a atravessar a pele.
+export function limitesDoPano (pontos, folgaDe, profundidades = null) {
+  return pontos.map((p, i) => limiteDoPonto(folgaDe(p), profundidades ? profundidades[i] : 0))
+}
+
+export const TAMANHO_CELULA = CELULA
+
 // ---- pano invisível: agrupa os vértices em células e refaz as faces entre os grupos ----
-function montarProxy(geo, celula, geoRender = geo) {
+function montarProxy(geo, celula, geoRender = geo, profundidades = null) {
   const pos = geo.attributes.position, si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight
   const N = pos.count
   const superficieFornecida = geoRender !== geo
@@ -26,6 +69,9 @@ function montarProxy(geo, celula, geoRender = geo) {
   // osso que mais pesa em cada vértice: entra na chave do grupo (perna esquerda e direita não se juntam
   // na virilha, nem braço e tronco no sovaco; senão um lado puxava o outro e o pano rasgava na corrida)
   const dono = new Int32Array(N)
+  // o quanto cada célula nasce dentro da pele: o limite de distância do ponto tem de alcançar essa
+  // profundidade, senão o solver puxa o pano de volta para dentro do corpo
+  const dentro = new Float32Array(N)
   for (let i = 0; i < N; i++) {
     let mw = -1
     for (let c = 0; c < 4; c++) if (sw.getComponent(i, c) > mw) { mw = sw.getComponent(i, c); dono[i] = si.getComponent(i, c) }
@@ -42,6 +88,7 @@ function montarProxy(geo, celula, geoRender = geo) {
       porCelula.get(kc).push(g)
     }
     soma[g].x += x; soma[g].y += y; soma[g].z += z; conta[g]++
+    if (profundidades && profundidades[i] > dentro[g]) dentro[g] = profundidades[i]
     grupoDe[i] = g
   }
   const pontos = soma.map((s, g) => s.divideScalar(conta[g]))
@@ -103,7 +150,7 @@ function montarProxy(geo, celula, geoRender = geo) {
     }
     for (let k = 0; k < 4; k++) pesos[i * 4 + k] /= total
   }
-  return { pontos, pele, faces, indices, pesos }
+  return { pontos, pele, faces, indices, pesos, dentro }
 }
 
 // ---- shader: soma o deslocamento do pano depois do esqueleto ----
@@ -166,12 +213,15 @@ function regrasCalca(pontos, { barraPorCima = Infinity } = {}) {
 // uma peça: malha desenhada com esqueleto + regra de folga -> corpo mole no Jolt
 // barraPorCima: altura (repouso) da barra da peça que vai por cima; o que esta peça tem acima dela fica
 // preso e 1,5 cm para dentro, para a de cima ganhar sempre (o Jolt não bate pano com pano)
-function criarPeca(jolt, malha, regra, { barraPorCima = Infinity, camada = CAMADA.PANO_SOLTO, fisica = PADRAO.personagem } = {}) {
+function criarPeca(jolt, malha, regra, { barraPorCima = Infinity, camada = CAMADA.PANO_SOLTO, fisica = PADRAO.personagem, medirProfundidade = null } = {}) {
   const { J } = jolt
   const geo = malha.geometry
-  const proxy = montarProxy(malha.userData.roupaProxy || geo, CELULA, geo)
+  const fonte = malha.userData.roupaProxy || geo
+  const proxy = montarProxy(fonte, CELULA, geo, medirProfundidade ? medirProfundidade(fonte) : null)
   const P = proxy.pontos.length
   const folga = regra(proxy.pontos, { barraPorCima, fisica })
+  // o limite de cada ponto: a folga mais a profundidade em que ele nasce dentro da pele
+  const limites = limitesDoPano(proxy.pontos, folga, proxy.dentro)
   const bones = malha.skeleton.bones
   const nJ = bones.length
 
@@ -181,7 +231,7 @@ function criarPeca(jolt, malha, regra, { barraPorCima = Infinity, camada = CAMAD
   const maxDist = new Float32Array(P)
   for (let i = 0; i < P; i++) {
     const p = proxy.pontos[i]
-    maxDist[i] = folga(p)
+    maxDist[i] = limites[i]
     presos[i] = maxDist[i] < 0.002 ? 1 : 0
     vert.mPosition = new J.Float3(p.x, p.y, p.z)
     vert.mInvMass = presos[i] ? 0 : 1 / 0.002 // ~2 g por ponto
@@ -266,8 +316,11 @@ export async function criarRoupa(malhas, ajustes = PADRAO.personagem, mundo = nu
   for (let i = 0; i < pc.count; i++) barra = Math.min(barra, pc.getY(i))
   const pele = malhas.find((m) => /^human|^base$|^corpo/i.test(m.name) && m.isSkinnedMesh)
   const colisores = pele ? criarColisores(jolt, pele) : null
-  pecas.push(criarPeca(jolt, camisa, regrasCamisa, { fisica }))
-  if (calca) pecas.push(criarPeca(jolt, calca, regrasCalca, { barraPorCima: barra, camada: CAMADA.PANO_JUSTO, fisica }))
+  // mede o quanto cada pedaço da roupa nasce dentro da pele, para o limite de distância do pano
+  // alcançar esse tanto (sem isso a camisa é puxada de volta para dentro do corpo)
+  const medirProfundidade = criarMedidorDeProfundidade(pele)
+  pecas.push(criarPeca(jolt, camisa, regrasCamisa, { fisica, medirProfundidade }))
+  if (calca) pecas.push(criarPeca(jolt, calca, regrasCalca, { barraPorCima: barra, camada: CAMADA.PANO_JUSTO, fisica, medirProfundidade }))
   const raizId = new J.RMat44().sIdentity()
   const juntas = new J.ArrayMat44()
   const maxJ = Math.max(...pecas.map((p) => p.nJ))

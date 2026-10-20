@@ -49,3 +49,6 @@ public/animacoes
 
 # geometria preparada da vg (node scripts/preparar-geometria.mjs gera de novo)
 public/vg/
+
+# relatório da medição da roupa: sai a cada rodada da bancada (arte/visor/medir-cobertura-motores.mjs)
+arte/visor/cobertura-jolt.json
