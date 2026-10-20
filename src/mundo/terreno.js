@@ -101,7 +101,7 @@ function calcamento(x, z) {
   return centro * smooth(0.12, 0.3, densidadeLotes(x, z))
 }
 
-function corChao(x, z, h, incl, dens, alvo) {
+export function corChao(x, z, h, incl, dens, alvo) {
   const s = distCosta(x, z)
   const bw = larguraPraia(x)
   const variacao = fbm(x * 0.09, z * 0.09, 2, 71)

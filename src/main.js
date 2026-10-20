@@ -124,7 +124,7 @@ async function iniciar() {
   const carregamentos = [] // modelos em segundo plano (a foto justa espera todos)
   // corpo novo (esqueleto padrão + mocap do Mixamo): carrega em segundo plano e substitui o boneco antigo
   if (cfg.personagem.corpoNovo) {
-    carregamentos.push(carregarCorpo({ modelo: cfg.personagem.modeloJogador, chapeu: cfg.personagem.chapeu, rostoDesenhado: cfg.personagem.rostoNeto, estiloRosto: cfg.personagem.estiloRostoNeto, ombros: cfg.personagem.ombros, folgaCamisa: cfg.personagem.folgaCamisa, roupaJolt: cfg.personagem.roupaJolt }).then((c) => {
+    carregamentos.push(carregarCorpo({ modelo: cfg.personagem.modeloJogador, chapeu: cfg.personagem.chapeu, rostoDesenhado: cfg.personagem.rostoNeto, estiloRosto: cfg.personagem.estiloRostoNeto, ombros: cfg.personagem.ombros, folgaCamisa: cfg.personagem.folgaCamisa, roupaJolt: cfg.personagem.roupaJolt, fisicaRoupa: cfg.personagem }).then((c) => {
       if (!c) return
       jogador.trocarCorpo(c)
       // a gente mais próxima vira ator animado, com os mesmos movimentos (mundo/atores.js)

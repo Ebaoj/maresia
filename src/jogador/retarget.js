@@ -7,6 +7,10 @@ import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { nomeCanonico, NOMES } from './esqueleto.js'
+import { usarDedosGravados, prepararTransferenciaDedos } from './dedos.js'
+import { PADRAO } from '../config.js'
+
+export const ehDedo = nome => /^(Left|Right)Hand(Thumb|Index|Middle|Ring|Pinky)[1-4]$/.test(nome)
 
 const fbx = new FBXLoader()
 const gltf = new GLTFLoader()
@@ -63,13 +67,15 @@ export function converter(clipe, fonte, alvo, { fps = 30, noLugar = true, nome =
   acao.play()
   const n = Math.max(2, Math.round(clipe.duration * fps) + 1)
   const tempos = new Float32Array(n)
-  const nomes = NOMES.filter((k) => fonte.ossos.has(k) && alvo.ossos.has(k))
+  const candidatos = [...new Set([...NOMES, ...[...fonte.ossos.keys()].filter(ehDedo)])]
+  const nomes = candidatos.filter((k) => fonte.ossos.has(k) && alvo.ossos.has(k))
   // ordem do pai para o filho, para ter o mundo do pai antes do filho
   const ordem = nomes.slice().sort((a, b) => profundidade(alvo.ossos.get(a)) - profundidade(alvo.ossos.get(b)))
   const qs = new Map(ordem.map((k) => [k, new Float32Array(n * 4)]))
   const posQuadril = new Float32Array(n * 3)
   const escala = alturaQuadril(alvo.rep) / alturaQuadril(fonte.rep)
   const paiQuadrilAlvo = alvo.ossos.get('Hips').parent
+  const transferirDedo = prepararTransferenciaDedos(fonte, alvo)
   const dq = new THREE.Quaternion()
   const tmp = new THREE.Quaternion()
   const p0 = new THREE.Vector3()
@@ -82,7 +88,7 @@ export function converter(clipe, fonte, alvo, { fps = 30, noLugar = true, nome =
     for (const k of ordem) {
       // giro no mundo desde o repouso, na fonte
       dq.copy(atual.get(k).q).multiply(tmp.copy(fonte.rep.get(k).q).invert())
-      const qMundo = dq.clone().multiply(alvo.rep.get(k).q)
+      const qMundo = transferirDedo(k, atual, mundoAlvo) || dq.clone().multiply(alvo.rep.get(k).q)
       mundoAlvo.set(k, qMundo)
       // local = inverso do mundo do pai × mundo
       const pai = alvo.ossos.get(k).parent
@@ -145,8 +151,8 @@ export function medirPassada(clipe, alvo, raiz) {
 }
 
 // Carrega o Y Bot (repouso da fonte) e cada movimento do Mixamo da pasta, já convertidos para o alvo.
-// alvo: { ossos (Map), raiz }. Devolve { clipes, crus, passadas, faltando, ybot }.
-export async function carregarMovimentosMixamo({ alvo, pasta, nomes, semDeslocamento = ['sentar', 'levantar', 'empurrar'] }) {
+// alvo: { ossos (Map), raiz }. Devolve { clipes, crus, passadas, faltando, ybot, fontes: crus }.
+export async function carregarMovimentosMixamo({ alvo, pasta, nomes, dedos = PADRAO.personagem, semDeslocamento = ['sentar', 'levantar', 'empurrar'] }) {
   const existe = async (url) => {
     try {
       const r = await fetch(url, { method: 'HEAD' })
@@ -173,6 +179,11 @@ export async function carregarMovimentosMixamo({ alvo, pasta, nomes, semDeslocam
     f.raiz.updateMatrixWorld(true)
     crus[nome] = { raiz: f.raiz, clipe: f.clipes[0] }
   }))
+  const refNome = dedos.dedosReferenciaAndar
+  if (crus.andar && refNome && refNome !== 'andar' && await existe(pasta + refNome + '.fbx')) {
+    const ref = await carregar(pasta + refNome + '.fbx')
+    if (ref.clipes[0]) crus.andar.referenciaDedos = { registro: { raiz: ref.raiz, clipe: ref.clipes[0] }, fechamento: dedos.dedosFecharCiclo }
+  }
   // a conversão mexe nos ossos do alvo só pela leitura do repouso; uma por vez
   for (const nome of nomes) {
     const c = crus[nome]
@@ -180,10 +191,33 @@ export async function carregarMovimentosMixamo({ alvo, pasta, nomes, semDeslocam
     const ossosF = ossosPorNome(c.raiz)
     const fonte = { raiz: c.raiz, ossos: ossosF, rep: repFonte || repouso(ossosF) }
     clipes[nome] = converter(c.clipe, fonte, destino, { nome, noLugar: !semDeslocamento.includes(nome) })
+    if (c.referenciaDedos) {
+      const ref = c.referenciaDedos, ossos = ossosPorNome(ref.registro.raiz)
+      const dedosConvertidos = converter(ref.registro.clipe, { raiz: ref.registro.raiz, ossos, rep: repFonte || repouso(ossos) }, destino, { nome })
+      clipes[nome] = usarDedosGravados(clipes[nome], dedosConvertidos, { fechamento: ref.fechamento })
+    }
   }
   const passadas = {}
   for (const k of ['andar', 'correr', 'disparada', 'velho-andar', 'carregar-andando']) {
     if (clipes[k]) passadas[k] = medirPassada(clipes[k], destino, alvo.raiz)
   }
-  return { clipes, crus: Object.fromEntries(Object.entries(crus).map(([k, v]) => [k, v.clipe])), passadas, faltando, ybot }
+  return { clipes, crus: Object.fromEntries(Object.entries(crus).map(([k, v]) => [k, v.clipe])), passadas, faltando, ybot, fontes: crus }
+}
+
+// O caminho Mixamo -> boneco simplificado -> Neto perdia os dedos no primeiro passo.
+// Reaproveita os registros originais para essas falanges; mantém as demais trilhas do jogo.
+export function anexarDedos(clipe, registro, alvo, repFonte) {
+  if (!registro || ![...alvo.ossos.keys()].some(ehDedo)) return clipe
+  if (registro.referenciaDedos) {
+    const ref = registro.referenciaDedos, ossos = ossosPorNome(ref.registro.raiz)
+    const direto = converter(ref.registro.clipe, { raiz: ref.registro.raiz, ossos, rep: repFonte || repouso(ossos) }, alvo, { nome: clipe.name })
+    return usarDedosGravados(clipe, direto, { fechamento: ref.fechamento })
+  }
+  const ossos = ossosPorNome(registro.raiz)
+  if (![...ossos.keys()].some(ehDedo)) return clipe
+  const fonte = { raiz: registro.raiz, ossos, rep: repFonte || repouso(ossos) }
+  const direto = converter(registro.clipe, fonte, alvo, { nome: clipe.name })
+  const dedos = direto.tracks.filter(t => ehDedo(t.name.replace(/\.quaternion$/, '').replace(/^mixamorig\d*[:_]?/i, '')))
+  clipe.tracks = [...clipe.tracks.filter(t => !ehDedo(t.name.replace(/\.quaternion$/, '').replace(/^mixamorig\d*[:_]?/i, ''))), ...dedos]
+  return clipe
 }

@@ -8,6 +8,8 @@ export function criarPainel(cfg) {
   const gui = new GUI({ title: 'Maresia · ajustes (H esconde)' })
   let visivel = true
 
+  const lab=gui.addFolder('Laboratório Jolt / Ammo (recarregar)').close()
+  for(const [chave,min,max,passo] of [['lado',8,24,1],['passoTerreno',.25,2,.25],['semente',1,9999,1],['bolas',1,12,1],['cocos',0,30,1],['alturaQueda',.5,5,.25],['gravidade',5,35,1],['subpassos',1,4,1],['raioRoteiro',1,4,.25],['duracaoMedicao',6,30,1],['cameraDistancia',3,12,.5],['cameraAltura',1,8,.25],['resolucao',.5,2,.25]]) lab.add(cfg.laboratorioFisica,chave,min,max,passo)
   const tempo = gui.addFolder('Hora do dia')
   tempo.add(cfg.tempo, 'hora', 0, 24, 0.01).name('hora').listen()
   tempo.add(cfg.tempo, 'velocidade', 0, 30, 0.1).name('horas por minuto')
@@ -127,6 +129,38 @@ export function criarPainel(cfg) {
   p.add(cfg.personagem, 'folgaCamisa', 0, 0.05, 0.002).name('folga da camisa (recarregar)')
   p.add(cfg.personagem, 'clavicula', 0, 40, 1).name('ombro: caimento (graus)')
   p.add(cfg.personagem, 'panoSolto', 0, 2, 0.05).name('tecido solto (força)')
+  for (const [chave,min,max,passo,nome] of [
+    ['roupaEspessura',.002,.012,.001,'tecido: margem de contato'],
+    ['roupaFolga',.01,.10,.005,'camisa: liberdade no tronco'],
+    ['roupaBarra',.02,.15,.005,'camisa: liberdade da barra'],
+    ['roupaManga',.01,.10,.005,'camisa: liberdade das mangas'],
+    ['roupaGola',.005,.04,.005,'camisa: sustentação da gola'],
+    ['roupaFlexao',.001,.08,.001,'tecido: flexibilidade'],
+    ['roupaAmortecimento',.1,2,.1,'tecido: amortecimento'],
+    ['roupaIteracoes',4,16,1,'tecido: iterações'],
+  ]) p.add(cfg.personagem,chave,min,max,passo).name(nome+' (recarregar)')
+  p.add(cfg.personagem, 'dedosReferenciaAndar', ['andar', 'mm-andar', 'mm-curva-andando']).name('dedos: referência ao andar (recarregar)')
+  p.add(cfg.personagem, 'dedosFecharCiclo', 0, .3, .01).name('dedos: emenda do ciclo (recarregar)')
+  p.add(cfg.personagem, 'ammoSubpassos', 1, 4, 1).name('Ammo: subpassos nativos (recarregar)')
+  p.add(cfg.personagem, 'ammoPassosAssentar', 0, 120, 1).name('Ammo: passos de assentamento (recarregar)')
+  const ammo = p.addFolder('Ammo: contato da camisa (recarregar)').close()
+  for (const [chave,min,max,passo,nome] of [
+    ['ammoIteracoes',2,12,1,'iterações'],
+    ['ammoPeleMargem',.002,.012,.001,'margem da pele (m)'],
+    ['ammoPeleAltura',0,.8,.05,'início do contato no tórax'],
+    ['ammoPeleLargura',.4,1,.05,'largura do contato'],
+    ['ammoPeleReducao',0,.8,.1,'redução do colisor'],
+    ['ammoBracoMargem',.004,.016,.001,'braço: margem de contato (m)'],
+    ['ammoBracoInicio',.1,.3,.01,'braço: início do contato (m)'],
+    ['ammoBracoFim',.3,.6,.01,'braço: fim do contato (m)'],
+    ['ammoBracoReducao',0,.8,.1,'braço: redução do colisor'],
+    ['ammoCalcaAltura',.65,.85,.01,'calça: início do contato (m)'],
+    ['ammoCalcaReducao',0,.9,.05,'calça: redução do colisor'],
+    ['ammoEncaixeFolga',.002,.025,.001,'folga inicial (m)'],
+    ['ammoEncaixeMaximo',.01,.08,.005,'ajuste máximo (m)'],
+    ['ammoBarraExtra',0,.03,.002,'extensão da barra (m)'],
+    ['ammoBarraTransicao',.01,.06,.005,'transição da barra (m)'],
+  ]) ammo.add(cfg.personagem,chave,min,max,passo).name(nome)
   p.add(cfg.personagem, 'roupaJolt').name('roupa no Jolt (recarregar)')
   p.add(cfg.personagem, 'avo').name('avô perto do começo (recarregar)')
   p.add(cfg.personagem, 'avoMovimento', ['parado', 'velho-parado']).name('movimento do avô (recarregar)')

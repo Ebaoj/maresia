@@ -3,7 +3,7 @@
 
 import * as THREE from 'three'
 import { criarBoneco, criarEsqueleto } from './esqueleto.js'
-import { carregarMovimentosMixamo, converter, repouso } from './retarget.js'
+import { carregarMovimentosMixamo, converter, repouso, ossosPorNome, anexarDedos } from './retarget.js'
 import { carregarNeto } from './neto.js'
 import { Animador } from './animador.js'
 import { criarNadoCrawl } from './nado-crawl.js'
@@ -47,9 +47,10 @@ export function criarAdaptador(alvo) {
 }
 
 // modelo: 'neto-tripo' (o padrão), 'neto' (MakeHuman) ou 'boneco' (o de cápsulas, para testes)
-export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false, estiloRosto = 'minimo-brilho', ombros = 0.9, folgaCamisa = 0.012, roupaJolt = false } = {}) {
+export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDesenhado = false, estiloRosto = 'minimo-brilho', ombros = 0.9, folgaCamisa = 0.012, roupaJolt = false, fisicaRoupa } = {}) {
   const boneco = criarBoneco()
   const r = await carregarMovimentosMixamo({
+    dedos: fisicaRoupa,
     alvo: { ossos: boneco.ossos, raiz: boneco.raiz }, pasta: '/animacoes/mixamo/', nomes: [...NOMES, ...Object.keys(BANCO)],
     // no jogo o corpo fica onde o controle manda; só o banco do motion matching guarda o deslocamento
     semDeslocamento: Object.keys(BANCO),
@@ -73,17 +74,19 @@ export async function carregarCorpo({ modelo = 'neto', chapeu = false, rostoDese
   let adaptar = (c) => c
   if (modelo.startsWith('neto')) {
     const arquivo = { 'neto-tripo': '/arte/finais/neto-tripo.glb', 'neto-tripo-partes': '/arte/finais/neto-tripo-partes.glb', 'neto-tripo-p2': '/arte/finais/neto-tripo-p2.glb', 'neto-vestido': '/arte/finais/neto-vestido.glb' }[modelo]
-    const neto = await carregarNeto(arquivo ? { arquivo, ombros: 1 } : { chapeu, semRosto: rostoDesenhado, ombros, folgaCamisa })
+    const neto = await carregarNeto(arquivo ? { arquivo, ombros: 1, maosAnimadas: true } : { chapeu, semRosto: rostoDesenhado, ombros, folgaCamisa, maosAnimadas: true })
     if (neto) { alvo = neto; adaptar = criarAdaptador(neto) } else console.warn('Corpo: o neto não carregou; fica o boneco')
   }
   // tecido solto: prepara antes de qualquer pose (precisa do repouso)
   // roupa: pano de verdade no Jolt (roupa.js) ou as molas só nas bordas (pano.js); o Jolt não carregou, ficam as molas
   let pano = null
   if (alvo.malhas && modelo === 'neto') { // o do Tripo tem a roupa grudada no corpo, sem peças para o pano
-    if (roupaJolt) pano = await criarRoupa(alvo.malhas).catch((e) => { console.warn('Roupa no Jolt falhou; ficam as molas', e); return null })
+    if (roupaJolt) pano = await criarRoupa(alvo.malhas, fisicaRoupa).catch((e) => { console.warn('Roupa no Jolt falhou; ficam as molas', e); return null })
     if (!pano) pano = criarPano(alvo.malhas)
   }
-  const clipesAlvo = Object.fromEntries(Object.entries(r.clipes).map(([k, c]) => [k, adaptar(c)]))
+  const destinoDedos = { raiz: alvo.raiz, ossos: alvo.ossos, rep: repouso(alvo.ossos) }
+  const repDedosFonte = r.ybot ? repouso(ossosPorNome(r.ybot)) : null
+  const clipesAlvo = Object.fromEntries(Object.entries(r.clipes).map(([k, c]) => [k, anexarDedos(adaptar(c), r.fontes?.[k], destinoDedos, repDedosFonte)]))
   // mesma forma do boneco antigo: raiz (posição e direção) > corpo (estica e amassa) > modelo
   const raiz = new THREE.Group()
   raiz.userData.peso = 1
