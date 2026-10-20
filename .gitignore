@@ -21,10 +21,31 @@ arte/entradas/**
 # imagem em base64. O que vale guardar é o pedido (pedido-*.txt), que é pequeno.
 arte/entradas/**/log-*.txt
 
-# arte/finais: 1,9 GB de trabalho intermediário (renders, vídeos, iterações do
-# gato e da rotoscopia). Fora do git. Os arquivos que o jogo carrega entram em
-# LFS na fase da integração (ver .gitattributes).
-arte/finais
+# arte/finais tem 1,9 GB. Só o que o jogo carrega entra no git (41 MB em 17
+# arquivos); o resto é trabalho intermediário (renders, vídeos, iterações do gato
+# e da rotoscopia) e fica fora.
+arte/finais/*
+!arte/finais/avo-mpfb-receita.txt
+!arte/finais/avo-mpfb-sem-rosto-ancoras.json
+!arte/finais/avo-mpfb-sem-rosto.glb
+!arte/finais/avo-mpfb.glb
+!arte/finais/avo-tripo.glb
+!arte/finais/neto-base.glb
+!arte/finais/neto-folha-final.png
+!arte/finais/neto-mpfb-sem-rosto-ancoras.json
+!arte/finais/neto-mpfb-sem-rosto.glb
+!arte/finais/neto-mpfb.glb
+!arte/finais/neto-tripo-p2.glb
+!arte/finais/neto-tripo-partes.glb
+!arte/finais/neto-tripo-v3.glb
+!arte/finais/neto-tripo.glb
+!arte/finais/neto-v5-jolt.glb
+!arte/finais/neto-v6-corpo.glb
+!arte/finais/neto-vestido-folha.jpg
+!arte/finais/neto-vestido.glb
 
 # movimentos do Mixamo: licença permite usar no jogo, não redistribuir os arquivos crus
 public/animacoes
+
+# geometria preparada da vg (node scripts/preparar-geometria.mjs gera de novo)
+public/vg/
