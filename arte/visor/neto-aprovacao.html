@@ -1,0 +1,40 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Neto · aprovação da roupa</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#e9dfcb;color:#30271f;font:14px system-ui;header{position:absolute;z-index:3;top:0;width:100%;padding:16px 24px;display:flex;gap:12px;align-items:center;background:#e9dfcbe8}h1{font-size:19px;margin:0 16px 0 0}button,select{font:inherit;padding:8px 12px;color:inherit;background:#fff6e7;border:1px solid #b5a48e;border-radius:7px;cursor:pointer}canvas{display:block;position:absolute;inset:0}.rotulo{position:absolute;z-index:3;left:24px;top:76px;font-size:26px;font-weight:700;pointer-events:none;text-shadow:0 2px 10px #e9dfcbcc}.rotulo small{display:block;font:14px system-ui;margin-top:4px;font-weight:400;color:#5b4a39}footer{position:absolute;z-index:3;bottom:12px;width:100%;text-align:center;font-size:12px;color:#75614e;pointer-events:none}</style>
+<header><h1>Neto · aprovação da roupa</h1><select id="mov" aria-label="Movimento"><option value="andar">Caminhar</option><option value="correr">Correr</option><option value="olhando">Olhar em volta</option><option value="carregar-andando">Carregar andando</option><option value="empurrar">Empurrar</option></select><button id="perto">Camisa de perto</button><button id="inteiro">Corpo inteiro</button><button id="costas">Costas</button></header>
+<div class="rotulo"><span id="nome">Caminhar</span><small id="sub"></small></div>
+<footer>Roupa por esqueleto (decisão de 20/10/2026): a camisa e a calça acompanham os ossos</footer>
+<script type="module">
+import * as T from 'three';import { OrbitControls } from 'three/addons/controls/OrbitControls.js';import { carregar, ossosPorNome, carregarMovimentosMixamo } from '/src/jogador/retarget.js';
+const scene=new T.Scene();scene.background=new T.Color('#e9dfcb');
+const camera=new T.PerspectiveCamera(35,innerWidth/innerHeight,.01,50);camera.position.set(.7,1.02,3.1);
+const renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.toneMapping=T.AgXToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,.76,0);controls.enableDamping=true;controls.minDistance=.55;controls.maxDistance=6;controls.update();
+scene.add(new T.HemisphereLight(0xfff7e8,0x756a53,1.8));const sol=new T.DirectionalLight(0xfff2da,2.7);sol.position.set(-3,5,4);sol.castShadow=true;sol.shadow.mapSize.set(2048,2048);sol.shadow.normalBias=(sol.shadow.camera.right-sol.shadow.camera.left)/2048;scene.add(sol);const fill=new T.DirectionalLight(0xcbd8ed,.9);fill.position.set(3,2,-2);scene.add(fill);
+const floor=new T.Mesh(new T.PlaneGeometry(200,200),new T.MeshStandardMaterial({color:'#cfc0a6',roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.012;floor.receiveShadow=true;scene.add(floor);
+const {raiz}=await carregar('/arte/finais/neto-vestido.glb');scene.add(raiz);raiz.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;}});
+const ossos=ossosPorNome(raiz);const rest=new Map([...ossos].map(([n,b])=>[n,{p:b.position.clone(),q:b.quaternion.clone()}]));
+const NOMES=['andar','correr','olhando','carregar-andando','empurrar'];
+const {clipes,faltando}=await carregarMovimentosMixamo({alvo:{raiz,ossos},pasta:'/animacoes/mixamo/',nomes:NOMES});if(faltando.length)throw new Error('Movimentos ausentes: '+faltando.join(','));
+const mixer=new T.AnimationMixer(raiz);let paused=false;
+const play=nome=>{mixer.stopAllAction();for(const[n,b]of ossos){b.position.copy(rest.get(n).p);b.quaternion.copy(rest.get(n).q)}if(clipes[nome])mixer.clipAction(clipes[nome]).play();mixer.update(0);raiz.updateMatrixWorld(true);};
+const VISTAS={corpo:{pos:[.7,1.02,3.1],alvo:[0,.76,0],nome:'corpo inteiro'},camisa:{pos:[.55,1.25,1.35],alvo:[0,1.05,0],nome:'camisa de perto'},costas:{pos:[-.55,1.25,-1.35],alvo:[0,1.05,0],nome:'costas de perto'}};
+const view=v=>{controls.enableDamping=false;camera.position.set(...v.pos);controls.target.set(...v.alvo);controls.update();};
+const rotular=(nome,vista)=>{document.querySelector('#nome').textContent=nome;document.querySelector('#sub').textContent=vista;};
+document.querySelector('#mov').onchange=e=>{const n=e.target.value;play(n);rotular(document.querySelector('#mov').selectedOptions[0].textContent,VISTAS.corpo.nome);};
+document.querySelector('#pause')?.addEventListener('click',()=>paused=!paused);
+document.querySelector('#perto').onclick=()=>{view(VISTAS.camisa);rotular(document.querySelector('#mov').selectedOptions[0].textContent,VISTAS.camisa.nome);};
+document.querySelector('#inteiro').onclick=()=>{view(VISTAS.corpo);rotular(document.querySelector('#mov').selectedOptions[0].textContent,VISTAS.corpo.nome);};
+document.querySelector('#costas').onclick=()=>{view(VISTAS.costas);rotular(document.querySelector('#mov').selectedOptions[0].textContent,VISTAS.costas.nome);};
+play('andar');rotular('Caminhar',VISTAS.corpo.nome);
+// sequência de aprovação: corpo inteiro em todos os movimentos, depois a camisa de perto nos que vazam e as costas
+const ROTEIRO=[{m:'andar',v:'corpo'},{m:'correr',v:'corpo'},{m:'empurrar',v:'corpo'},{m:'carregar-andando',v:'corpo'},{m:'olhando',v:'corpo'},{m:'andar',v:'camisa'},{m:'correr',v:'camisa'},{m:'correr',v:'costas'}];
+const params=new URLSearchParams(location.search);
+const passo=i=>{const p=ROTEIRO[i%ROTEIRO.length];document.querySelector('#mov').value=p.m;play(p.m);view(VISTAS[p.v]);rotular(document.querySelector('#mov').selectedOptions[0].textContent,VISTAS[p.v].nome);};
+const auto=params.get('auto');
+if(auto){const SEG=Number(auto)||5;let i=0;const ciclo=()=>{passo(i);i++;};ciclo();setInterval(ciclo,SEG*1000);}
+const captura=params.has('captura');if(captura)paused=true;   // na captura quem manda no tempo é o gravador
+const clock=new T.Clock();function frame(){requestAnimationFrame(frame);const dt=clock.getDelta();if(!paused)mixer.update(dt);controls.update();renderer.render(scene,camera);}frame();
+let passoAtual=-1;
+window.aprovacao={pronto:true,play,clipes,segmentos:ROTEIRO.length,
+  capturar:(i,dt)=>{if(i!==passoAtual){passo(i);passoAtual=i;}mixer.update(dt);raiz.updateMatrixWorld(true);renderer.render(scene,camera);}};
+</script></html>

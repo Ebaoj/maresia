@@ -52,3 +52,6 @@ public/vg/
 
 # relatório da medição da roupa: sai a cada rodada da bancada (arte/visor/medir-cobertura-motores.mjs)
 arte/visor/cobertura-jolt.json
+
+# log do servidor de desenvolvimento que o gravador de video usa
+arte/visor/aprovacao/vite.log
