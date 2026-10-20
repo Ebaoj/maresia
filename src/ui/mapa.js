@@ -10,12 +10,15 @@ const ESCALA = 0.62 // px por metro
 const MARGEM = 46
 const NOMES_LUGARES = {
   pracaFerreira: 'Praça do Ferreira', passeioPublico: 'Passeio Público', forte: 'Forte', se: 'Sé',
-  santaCasa: 'Santa Casa', pracaLeoes: 'Praça dos Leões', mercadoFerro: 'Mercado de Ferro',
-  theatro: 'Theatro José de Alencar', estacao: 'Estação Central', cemiterio: 'Cemitério S. João Batista',
-  pocoDraga: 'Poço da Draga', ponteMetalica: 'Ponte Metálica', ponteIngleses: 'Ponte dos Ingleses',
+  santaCasa: 'Santa Casa', pracaLeoes: 'Praça dos Leões', mercado: 'Mercado Público',
+  theatro: 'Theatro José de Alencar', estacao: 'Estação Central', pracaEstacao: 'Praça Castro Carreira',
+  cemiterio: 'Cemitério S. João Batista',
+  pocoDraga: 'Poço da Draga', ponteVelha: 'Ponte Velha', ponteIngleses: 'Ponte dos Ingleses',
   vilaMorena: 'Vila Morena', seminario: 'Seminário da Prainha', farol: 'Farol do Mucuripe',
-  oficinas: 'Oficinas da Rede', campoUrubu: 'Campo do Urubu', campoOtavioBonfim: 'Campo de Otávio Bonfim',
-  barraCeara: 'Barra do Ceará',
+  oficinasUrubu: 'Oficinas do Urubu', vilaFerroviaria: 'Vila Ferroviária', campoUrubu: 'Campo do Urubu',
+  campoOtavioBonfim: 'Campo de Otávio Bonfim', estacaoOtavio: 'Estação Otávio Bonfim',
+  pracaMestres: 'Praça dos Mestres', parqueLiberdade: 'Parque da Liberdade', 'colégioMilitar': 'Colégio Militar',
+  favela1932: 'Favela de 1932', barraCeara: 'Barra do Ceará',
 }
 const TINTA = '#3b2a22'
 const PAPEL = '#efe6d2'
@@ -148,7 +151,7 @@ export function criarMapa({ quadras, grade, casasPalha }) {
     // vilas de jangadeiros
     c.font = '11px Georgia, serif'
     c.fillStyle = 'rgba(122, 80, 40, 0.9)'
-    for (const [k, nome] of [['pirambu', 'vila de jangadeiros'], ['praiaDoPeixe', 'Praia do Peixe'], ['mucuripe', 'vila de jangadeiros']]) {
+    for (const [k, nome] of [['pirambu', 'vila de jangadeiros'], ['praiaIracema', 'Praia de Iracema'], ['mucuripe', 'vila de jangadeiros']]) {
       const [a, b] = trechosJogo[k]
       const x = (a + b) / 2
       const z = costa.reduce((m, p) => (Math.abs(p[0] - x) < Math.abs(m[0] - x) ? p : m))[1]

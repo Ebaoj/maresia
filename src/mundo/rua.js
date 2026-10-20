@@ -188,7 +188,7 @@ function calcadao(cena) {
   const lixeiras = []
   const carrinhos = []
   const cocos = []
-  const trechos = [trechosJogo.praiaDoPeixe, trechosJogo.praiaFormosa]
+  const trechos = [trechosJogo.praiaIracema, trechosJogo.praiaFormosa]
   for (let x = LIMITES.x0; x < LIMITES.x1; x += 13) {
     if (!trechos.some(([a, b]) => x > a && x < b)) continue
     const zc = linhaCosta(x) + larguraPraia(x)

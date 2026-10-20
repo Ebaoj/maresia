@@ -64,26 +64,35 @@ export const LAGOAS = [
 ]
 
 // lugares da história (posição real; o que eram em 1932 está em docs/mapa-1932.md)
+// posições revisadas em 20/10/2026 pela reconstrução histórica (docs/mapa-1932.md, seção v2);
+// as chaves seguem src/mundo/mapa1932-dados.json, que é a fonte dos dados
 export const LUGARES = {
-  pracaFerreira: [-38.5268, -3.7276],
-  passeioPublico: [-38.5303, -3.7216],
+  pracaFerreira: [-38.5276, -3.7275],
+  passeioPublico: [-38.5263, -3.7226],
   forte: [-38.5245, -3.7228],
-  se: [-38.5262, -3.7236],
-  santaCasa: [-38.5322, -3.7219],
-  pracaLeoes: [-38.5265, -3.7252],
-  mercadoFerro: [-38.53, -3.7258],
-  theatro: [-38.5315, -3.7305],
-  estacao: [-38.5355, -3.7245],
-  cemiterio: [-38.541, -3.721],
-  pocoDraga: [-38.5278, -3.7196],
-  ponteMetalica: [-38.5258, -3.7185],
-  ponteIngleses: [-38.5195, -3.7176],
+  se: [-38.525, -3.724],
+  santaCasa: [-38.5276, -3.7222],
+  pracaLeoes: [-38.5263, -3.7269],
+  mercado: [-38.5243, -3.7233],
+  theatro: [-38.5317, -3.7278],
+  estacao: [-38.5302, -3.7219],
+  pracaEstacao: [-38.53, -3.7222],
+  cemiterio: [-38.5386, -3.7201],
+  pocoDraga: [-38.521, -3.7195],
+  ponteVelha: [-38.52, -3.7166],
+  ponteIngleses: [-38.5168, -3.7181],
   vilaMorena: [-38.5185, -3.7192],
   seminario: [-38.5205, -3.724],
   farol: [-38.4775, -3.716],
-  oficinas: [-38.566, -3.715],
-  campoUrubu: [-38.5625, -3.7135],
+  oficinasUrubu: [-38.5646, -3.7156],
+  vilaFerroviaria: [-38.5678, -3.7141],
+  campoUrubu: [-38.57, -3.7176],
   campoOtavioBonfim: [-38.5485, -3.7345],
+  estacaoOtavio: [-38.5437, -3.7314],
+  pracaMestres: [-38.5257, -3.7215],
+  parqueLiberdade: [-38.5258, -3.7315],
+  'colégioMilitar': [-38.5177, -3.7301],
+  favela1932: [-38.5261, -3.7296],
   barraCeara: [-38.598, -3.695],
 }
 
@@ -250,9 +259,9 @@ const TRECHOS = {
   barra: [-38.594, -38.58],
   pirambu: [-38.575, -38.548],
   praiaFormosa: [-38.536, -38.5285],
-  praiaDoPeixe: [-38.5245, -38.511], // Praia de Iracema: os jangadeiros e a greve de 1881
+  praiaIracema: [-38.5245, -38.511], // a praia do Peixe virou Praia de Iracema em 1925: em 1932 já era Iracema
   meireles: [-38.506, -38.49],
   mucuripe: [-38.4845, -38.4745],
 }
 export const trechosJogo = Object.fromEntries(Object.entries(TRECHOS).map(([k, [a, b]]) => [k, [ll(a, -3.72)[0], ll(b, -3.72)[0]]]))
-export const VILAS = ['pirambu', 'praiaDoPeixe', 'mucuripe'] // vilas de jangadeiros (casas de palha, jangadas)
+export const VILAS = ['pirambu', 'praiaIracema', 'mucuripe'] // vilas de jangadeiros (casas de palha, jangadas)

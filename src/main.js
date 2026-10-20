@@ -124,8 +124,8 @@ async function iniciar() {
   const fisica = await criarFisica(cena, cfg, { coqueiros, toque, areia })
   marcar('fisica')
 
-  // começa na Praia do Peixe (Praia de Iracema), entre as jangadas, olhando para o oeste: o porto
-  const x0 = (trechosJogo.praiaDoPeixe[0] + trechosJogo.praiaDoPeixe[1]) / 2
+  // começa na Praia de Iracema, entre as jangadas, olhando para o oeste: o porto
+  const x0 = (trechosJogo.praiaIracema[0] + trechosJogo.praiaIracema[1]) / 2
   const z0 = linhaCosta(x0) + larguraPraia(x0) + 3.5
   const inicio = new THREE.Vector3(x0, alturaChao(x0, z0), z0)
   const jogador = new Jogador(cena, cfg, inicio, -Math.PI / 2)

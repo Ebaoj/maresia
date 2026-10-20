@@ -115,7 +115,7 @@ export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
 
   // bolas espalhadas nas praias; cocos caídos no pé de alguns coqueiros
   for (let i = 0; i < MAX_BOLAS; i++) {
-    const x = rnd.entre(...trechosJogo.praiaDoPeixe)
+    const x = rnd.entre(...trechosJogo.praiaIracema)
     const z = linhaCosta(x) + larguraPraia(x) * rnd.entre(0.3, 0.7)
     criarProp('bola', x, alturaTerreno(x, z) + 0.5, z)
   }

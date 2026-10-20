@@ -71,7 +71,7 @@ const RUA = 9
 const [PFX, PFZ] = lugaresJogo.pracaFerreira
 export const GRADE = { rot: ROT, ex: EX, ez: EZ, w: QUADRA_W, d: QUADRA_D, rua: RUA, origem: [PFX, PFZ] }
 // quadras reservadas para os lugares históricos (ficam vazias aqui)
-const RESERVADOS = ['pracaFerreira', 'passeioPublico', 'forte', 'se', 'santaCasa', 'pracaLeoes', 'mercadoFerro', 'theatro', 'estacao', 'cemiterio', 'seminario', 'campoOtavioBonfim']
+const RESERVADOS = ['pracaFerreira', 'passeioPublico', 'forte', 'se', 'santaCasa', 'pracaLeoes', 'mercado', 'theatro', 'estacao', 'pracaEstacao', 'cemiterio', 'seminario', 'campoOtavioBonfim', 'pracaMestres', 'parqueLiberdade', 'favela1932']
 
 function paraMundo(cx, cz, lx, lz) {
   return [cx + lx * EX[0] + lz * EZ[0], cz + lx * EX[1] + lz * EZ[1]]
