@@ -1,0 +1,30 @@
+{
+  "id": "P06",
+  "nome": "arrumar-livros",
+  "inicio_s": 139.8,
+  "fim_s": 143.3,
+  "duracao_s": 3.5,
+  "quadros": 105,
+  "arquivo": "arte/entradas/referencias/catalogo-2026-10-18/P06/original.webm",
+  "tempos_amostras": [
+    139.81300000000002,
+    140.014,
+    140.214,
+    140.447,
+    140.64800000000002,
+    140.848,
+    141.08100000000002,
+    141.282,
+    141.51500000000001,
+    141.74900000000002,
+    141.982,
+    142.18300000000002,
+    142.383,
+    142.616,
+    142.816,
+    143.01700000000002,
+    143.217
+  ],
+  "fps_nominal": "30000/1001",
+  "nota": "Tempos da seleção relativos ao arquivo original; quadros e MP4 começam no primeiro quadro após o seek. Sem interpolação de movimento."
+}

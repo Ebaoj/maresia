@@ -1,0 +1,34 @@
+{
+  "stats": {
+    "motor": "Jolt (src/jogador/roupa.js)",
+    "frames": 36,
+    "particles": 1134,
+    "garments": 2,
+    "renderParts": 4,
+    "bodyParts": 5,
+    "capsules": 15
+  },
+  "motions": [
+    {
+      "motion": "andar",
+      "steps": 12,
+      "maxOffsetMm": 83.83775327173176,
+      "maxPinnedMm": 0.510842687331523,
+      "meanStepMs": 7.150267333333336
+    },
+    {
+      "motion": "correr",
+      "steps": 12,
+      "maxOffsetMm": 62.10545248602627,
+      "maxPinnedMm": 0.5108473131561092,
+      "meanStepMs": 6.813808999999992
+    },
+    {
+      "motion": "olhando",
+      "steps": 12,
+      "maxOffsetMm": 74.27407817750216,
+      "maxPinnedMm": 0.4056557015604011,
+      "meanStepMs": 2.993024083333372
+    }
+  ]
+}

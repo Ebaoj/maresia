@@ -17,6 +17,10 @@ arte/entradas/**
 !arte/entradas/**/*.json
 !arte/entradas/**/*.md
 
+# os log-*.txt são a transcrição da sessão que gerou a imagem: 147 MB, quase tudo
+# imagem em base64. O que vale guardar é o pedido (pedido-*.txt), que é pequeno.
+arte/entradas/**/log-*.txt
+
 # arte/finais: 1,9 GB de trabalho intermediário (renders, vídeos, iterações do
 # gato e da rotoscopia). Fora do git. Os arquivos que o jogo carrega entram em
 # LFS na fase da integração (ver .gitattributes).

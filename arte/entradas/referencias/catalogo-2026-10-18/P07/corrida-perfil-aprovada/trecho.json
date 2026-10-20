@@ -1,0 +1,31 @@
+{
+  "id": "P07",
+  "nome": "corrida-perfil-aprovada",
+  "inicio_s": 7.85,
+  "fim_s": 9.9,
+  "duracao_s": 2.0500000000000007,
+  "quadros": 61,
+  "arquivo": "arte/entradas/referencias/catalogo-2026-10-18/P07/original.webm",
+  "tempos_amostras": [
+    7.875,
+    7.975,
+    8.075,
+    8.174999999999999,
+    8.308,
+    8.408,
+    8.509,
+    8.642,
+    8.775,
+    8.876,
+    8.975999999999999,
+    9.109,
+    9.243,
+    9.343,
+    9.475999999999999,
+    9.61,
+    9.709999999999999,
+    9.843
+  ],
+  "fps_nominal": "30000/1001",
+  "nota": "Tempos da seleção relativos ao arquivo original; quadros e MP4 começam no primeiro quadro após o seek. Sem interpolação de movimento."
+}

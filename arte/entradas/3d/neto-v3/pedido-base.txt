@@ -1,0 +1,6 @@
+Use your image generation tool to EDIT the attached image (do not write code, do not draw it yourself). Keep EXACTLY the same boy: same face, hair, skin tone, body proportions, the same pose with arms held away from the body, palms facing forward and fingers spread, bare feet, the same hand-painted brush-stroke stylized 3D look, colors, light grey background, camera and full-body framing.
+Change ONLY his clothes to a plain 1930s base outfit worn UNDER other clothes, fitting close to the body so the body shape is clear:
+- a plain off-white unbleached cotton undershirt, sleeveless, close-fitting, round neck, slightly worn
+- plain off-white unbleached cotton drawers (ceroula), close-fitting, ending at mid-thigh, simple drawstring waist
+No stripes, no pattern, no pockets, no buttons, no belt, no accessories. No cast shadows, nothing cropped.
+Save the resulting image file in the current directory as base.png and tell me its path.

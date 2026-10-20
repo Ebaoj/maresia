@@ -1,0 +1,17 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 1920,
+      "height": 1080,
+      "r_frame_rate": "19001/317",
+      "avg_frame_rate": "19001/317"
+    }
+  ],
+  "format": {
+    "duration": "82.482000"
+  },
+  "sha256": "82807d8f02e8a2149199c88fd896489cf5d2ebcb2bf379113ae4f80e61840952",
+  "arquivo": "arte/entradas/referencias/catalogo-2026-10-18/A10/original.webm"
+}

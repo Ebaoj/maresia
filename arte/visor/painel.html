@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel do Neto</title>
+<style>
+  :root { --papel:#F4EBD8; --tinta:#2B211C; --tijolo:#A9473A; --suave:#7a6a5c; --painel:#ece2cc; }
+  * { box-sizing:border-box } body { margin:0; background:var(--papel); color:var(--tinta); font:15px/1.4 -apple-system,system-ui,sans-serif }
+  header { padding:12px 16px; border-bottom:2px solid var(--tinta); display:flex; gap:16px; align-items:center; flex-wrap:wrap }
+  h1 { font-size:18px; margin:0 } #estado { color:var(--suave) }
+  main { display:grid; grid-template-columns: 340px minmax(0,1fr); gap:16px; padding:16px }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr } }
+  aside { background:var(--painel); border:2px solid var(--tinta); padding:12px; max-height:calc(100vh - 90px); overflow:auto }
+  h2 { font-size:14px; margin:14px 0 6px; text-transform:uppercase; letter-spacing:.04em } h2:first-child { margin-top:0 }
+  .linha { margin:8px 0 } .linha label { display:flex; justify-content:space-between; font-size:13px; color:var(--suave) }
+  .linha label b { color:var(--tinta); font-weight:600 } input[type=range] { width:100%; accent-color:var(--tijolo) }
+  button { font:inherit; font-weight:700; background:var(--tijolo); color:#fff; border:2px solid var(--tinta); padding:10px 16px; cursor:pointer; width:100% }
+  button:disabled { opacity:.5; cursor:wait } .botoes { position:sticky; bottom:-12px; background:var(--painel); padding:10px 0 }
+  .opcao { display:flex; gap:8px; align-items:center; margin:8px 0 } .secundario { background:#fff; color:var(--tinta); margin-top:6px; font-weight:500 }
+  #resultado { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:12px }
+  @media (max-width: 1100px) { #resultado { grid-template-columns: 1fr } }
+  #palco { height:520px; background:#e9dfca; border:2px solid var(--tinta) }
+  figure { margin:0; border:2px solid var(--tinta); background:#fff } figure img { width:100%; display:block } figcaption { padding:4px 8px; font-size:13px; color:var(--suave) }
+  .imgs { display:flex; flex-direction:column; gap:12px }
+</style></head>
+<body>
+<header><h1>Painel do neto</h1><span id="estado">mexa nos controles e aperte Gerar (leva uns 30 segundos)</span></header>
+<main>
+  <aside id="controles"></aside>
+  <section id="resultado">
+    <div id="palco"></div>
+    <div class="imgs">
+      <figure><img id="img-rosto" alt=""><figcaption>Rosto: frente, três quartos e perfil</figcaption></figure>
+      <figure><img id="img-corpo" alt=""><figcaption>Corpo inteiro</figcaption></figure>
+    </div>
+  </section>
+</main>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+
+// [chave, rótulo, mínimo, máximo, inicial, texto da esquerda, texto da direita]
+const GRUPOS = [
+  ['Corpo', [
+    ['idade', 'Idade (anos)', 12, 20, 15, '12', '20'],
+    ['peso', 'Peso', 0, 100, 35, 'magro', 'cheio'],
+    ['musculo', 'Músculo', 0, 100, 60, 'fraco', 'forte'],
+  ]],
+  ['Ancestralidade', [
+    ['indigena', 'Indígena / asiática', 0, 100, 45, 'pouco', 'muito'],
+    ['africana', 'Africana', 0, 100, 32, 'pouco', 'muito'],
+    ['europeia', 'Europeia', 0, 100, 23, 'pouco', 'muito'],
+  ]],
+  ['Rosto', [
+    ['rosto_gordura', 'Rosto', -100, 100, -40, 'magro', 'cheio'],
+    ['rosto_largura', 'Largura do rosto', -100, 100, 20, 'estreito', 'largo'],
+    ['quadrado', 'Formato quadrado', 0, 100, 40, 'oval', 'quadrado'],
+    ['macas', 'Maçãs do rosto', -100, 100, 80, 'apagadas', 'altas'],
+    ['bochechas', 'Bochechas', -100, 100, -40, 'secas', 'cheias'],
+    ['testa', 'Testa', -100, 100, -20, 'baixa', 'alta'],
+    ['sobrancelhas', 'Sobrancelhas', -100, 100, 30, 'altas', 'baixas'],
+  ]],
+  ['Olhos, nariz e boca', [
+    ['olhos_puxados', 'Olhos', -100, 100, 50, 'redondos', 'puxados'],
+    ['olhos_tamanho', 'Tamanho dos olhos', -100, 100, -20, 'menores', 'maiores'],
+    ['nariz_largura', 'Nariz', -100, 100, 60, 'estreito', 'largo'],
+    ['nariz_comprimento', 'Comprimento do nariz', -100, 100, -20, 'curto', 'comprido'],
+    ['labios', 'Lábios', -100, 100, 55, 'finos', 'cheios'],
+    ['boca_largura', 'Boca', -100, 100, 20, 'estreita', 'larga'],
+    ['queixo_largura', 'Queixo', -100, 100, 40, 'fino', 'largo'],
+    ['queixo_altura', 'Altura do queixo', -100, 100, -20, 'curto', 'comprido'],
+  ]],
+]
+const PADRAO = {}
+const aside = document.getElementById('controles')
+for (const [titulo, itens] of GRUPOS) {
+  const h = document.createElement('h2'); h.textContent = titulo; aside.appendChild(h)
+  for (const [k, rot, mn, mx, ini, esq, dir] of itens) {
+    PADRAO[k] = ini
+    const d = document.createElement('div'); d.className = 'linha'
+    d.innerHTML = `<label><span>${esq}</span><b>${rot}: <output id="o-${k}">${ini}</output></b><span>${dir}</span></label>
+      <input type="range" id="${k}" min="${mn}" max="${mx}" value="${ini}">`
+    aside.appendChild(d)
+    d.querySelector('input').addEventListener('input', e => document.getElementById('o-' + k).textContent = e.target.value)
+  }
+}
+const extra = document.createElement('div')
+extra.innerHTML = `<h2>Rosto</h2>
+  <label class="opcao"><input type="radio" name="modo" value="1" checked> rosto desenhado da folha</label>
+  <label class="opcao"><input type="radio" name="modo" value="0"> olhos e sobrancelhas do pacote</label>
+  <div class="botoes"><button id="gerar">Gerar</button><button id="voltar" class="secundario">Voltar aos valores iniciais</button></div>`
+aside.appendChild(extra)
+
+const palco = document.getElementById('palco')
+const render = new THREE.WebGLRenderer({ antialias: true }); palco.appendChild(render.domElement)
+const cena = new THREE.Scene(); cena.background = new THREE.Color('#e9dfca')
+const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 50); cam.position.set(0, 0.2, 4.2)
+const ctl = new OrbitControls(cam, render.domElement)
+cena.add(new THREE.HemisphereLight(0xffffff, 0x8a7a66, 1.6)); const sol = new THREE.DirectionalLight(0xffffff, 1.4); sol.position.set(1, 2, 2); cena.add(sol)
+let modelo = null
+const tam = () => { const w = palco.clientWidth, h = palco.clientHeight; render.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix() }
+addEventListener('resize', tam); tam(); ;(function laco() { requestAnimationFrame(laco); ctl.update(); render.render(cena, cam) })()
+
+function mostrar(variante, carimbo) {
+  const base = `../saida/3d/painel/${variante}`
+  document.getElementById('img-rosto').src = `../saida/3d/painel/rosto-${variante}.jpg?t=${carimbo}`
+  document.getElementById('img-corpo').src = `${base}-corpo-frente.png?t=${carimbo}`
+  new GLTFLoader().load(`../saida/3d/painel/neto-mpfb-${variante}.glb?t=${carimbo}`, g => {
+    if (modelo) cena.remove(modelo); modelo = g.scene
+    // a pele com o rosto projetado não sai no glTF: aqui a pele e o cabelo ganham cor chapada
+    modelo.traverse(o => {
+      if (!o.isMesh) return
+      const cabelo = /short|hair|cabelo/i.test(o.name + ' ' + (o.material && o.material.name))
+      o.material = new THREE.MeshStandardMaterial({ color: cabelo ? '#16110f' : '#a8683f', roughness: 1 })
+    })
+    // malha com esqueleto: a caixa do three.js sai errada; o neto tem 1,68 m com os pés no chão
+    cena.add(modelo); cam.position.set(0, 1.0, 4.6); ctl.target.set(0, 0.95, 0); ctl.update()
+  })
+}
+const botao = document.getElementById('gerar'), estado = document.getElementById('estado')
+botao.addEventListener('click', async () => {
+  const valores = {}; for (const k of Object.keys(PADRAO)) valores[k] = Number(document.getElementById(k).value)
+  valores.rosto_desenhado = document.querySelector('input[name=modo]:checked').value === '1'
+  botao.disabled = true; let s = 0; estado.textContent = 'gerando...'
+  const t = setInterval(() => estado.textContent = `gerando... ${++s} s`, 1000)
+  try {
+    const r = await (await fetch('/gerar', { method: 'POST', body: JSON.stringify(valores) })).json()
+    estado.textContent = r.ok ? `pronto em ${r.segundos} s` : 'deu erro (avise o Claude)'
+    if (r.ok) mostrar(r.variante, r.carimbo); else console.log(r.erro)
+  } catch (e) { estado.textContent = 'o servidor do painel não respondeu' }
+  clearInterval(t); botao.disabled = false
+})
+document.getElementById('voltar').addEventListener('click', () => {
+  for (const [k, v] of Object.entries(PADRAO)) { document.getElementById(k).value = v; document.getElementById('o-' + k).textContent = v }
+})
+mostrar('projetado', Date.now())  // mostra o último resultado gerado, se existir
+</script>
+</body></html>

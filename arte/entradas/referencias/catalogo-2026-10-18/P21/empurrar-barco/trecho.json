@@ -1,0 +1,26 @@
+{
+  "id": "P21",
+  "nome": "empurrar-barco",
+  "inicio_s": 24.85,
+  "fim_s": 26.45,
+  "duracao_s": 1.5999999999999979,
+  "quadros": 39,
+  "arquivo": "arte/entradas/referencias/catalogo-2026-10-18/P21/original.webm",
+  "tempos_amostras": [
+    24.887,
+    25.007,
+    25.127000000000002,
+    25.247,
+    25.367,
+    25.487000000000002,
+    25.607000000000003,
+    25.727,
+    25.847,
+    25.967000000000002,
+    26.087000000000003,
+    26.207,
+    26.327
+  ],
+  "fps_nominal": "25/1",
+  "nota": "Tempos da seleção relativos ao arquivo original; quadros e MP4 começam no primeiro quadro após o seek. Sem interpolação de movimento."
+}

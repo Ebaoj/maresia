@@ -1,0 +1,47 @@
+[
+  {
+    "name": "andar",
+    "frames": 38,
+    "maxPenetrationMm": 0,
+    "maxMs": 196.14845899999978,
+    "meanMs": 49.455639157894765,
+    "stats": {
+      "frames": 38,
+      "bodyVertices": 83945,
+      "bodyFaces": 167402,
+      "particles": 1591,
+      "physicsMs": 7.995375000000422,
+      "renderMs": 24.520125000000007
+    }
+  },
+  {
+    "name": "correr",
+    "frames": 23,
+    "maxPenetrationMm": 0,
+    "maxMs": 39.284415999999965,
+    "meanMs": 33.67225000000002,
+    "stats": {
+      "frames": 61,
+      "bodyVertices": 83945,
+      "bodyFaces": 167402,
+      "particles": 1591,
+      "physicsMs": 9.060958000000028,
+      "renderMs": 24.10808300000008
+    }
+  },
+  {
+    "name": "olhando",
+    "frames": 191,
+    "maxPenetrationMm": 0,
+    "maxMs": 184.46604200000002,
+    "meanMs": 35.290426947643944,
+    "stats": {
+      "frames": 252,
+      "bodyVertices": 83945,
+      "bodyFaces": 167402,
+      "particles": 1591,
+      "physicsMs": 8.079791999998633,
+      "renderMs": 25.986000000000786
+    }
+  }
+]

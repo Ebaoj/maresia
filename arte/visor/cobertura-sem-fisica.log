@@ -1,0 +1,3 @@
+andar {"frames":38,"tested":81536,"leaks":0}
+correr {"frames":23,"tested":48512,"leaks":0}
+olhando {"frames":191,"tested":417266,"leaks":0}

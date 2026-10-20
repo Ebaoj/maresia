@@ -1,0 +1,4 @@
+Edit the attached turnaround sheet. Keep EVERYTHING the same: the same cat, the same four views in the same positions (front, left side, back, right side), the same scale and ground line, the same short sleek fur, the same tail raised straight up with the hooked tip, the same coat pattern and colors, the same notched left ear, the same light gray background and the same painting style. Change only two things, to prepare the model for 3D rigging and animation:
+1. REMOVE ALL WHISKERS and eyebrow whiskers completely, in every view. No thin hairs sticking out anywhere.
+2. In the FRONT and BACK views, stand the legs slightly wider apart, so there is a clear gap of background between the left and right front legs and between the left and right hind legs, all four legs straight and vertical. In the side views keep the legs as they are, with a clear gap between front and hind legs.
+No text, no labels, no grid lines.

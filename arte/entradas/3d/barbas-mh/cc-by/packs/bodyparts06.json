@@ -1,0 +1,54 @@
+{
+    "culturalibre_dal_moustache": {
+        "author": "culturalibre",
+        "category": "Facialhair",
+        "changed": "2021-04-03",
+        "created": "2021-04-03",
+        "description": "Dal style moustache.",
+        "license": "CC-BY",
+        "original_author": "",
+        "original_source": "",
+        "source": "http://www.makehumancommunity.org/node/2872",
+        "thumbnail": "culturalibre_dal_moustache.png",
+        "type": "clothes"
+    },
+    "elvs_scruffy_beard1": {
+        "author": "Elvaerwyn",
+        "category": "Facialhair",
+        "changed": "2021-01-15",
+        "created": "2020-07-08",
+        "description": "A facial hair for makehuman male models long scruffy style with mustache. Quad model lower poly. One texture included light honey brown.",
+        "license": "CC-BY",
+        "original_author": "",
+        "original_source": "",
+        "source": "http://www.makehumancommunity.org/node/2611",
+        "thumbnail": "elvs_scruffy_beard1.png",
+        "type": "clothes"
+    },
+    "grinsegold_full_beard": {
+        "author": "grinsegold",
+        "category": "Facialhair",
+        "changed": "2015-12-28",
+        "created": "2015-12-25",
+        "description": "Black full beard. At the moment you should place that as cloth not hair because i placed it as hair and now i want to combine the moustache and the full beard but MH only lets me choose one or the other. Might be a bug or by purpose. I'll make a thread on that.",
+        "license": "CC-BY",
+        "original_author": "",
+        "original_source": "",
+        "source": "http://www.makehumancommunity.org/node/188",
+        "thumbnail": "grinsegold_full_beard.png",
+        "type": "clothes"
+    },
+    "grinsegold_moustache": {
+        "author": "grinsegold",
+        "category": "Facialhair",
+        "changed": "2015-12-28",
+        "created": "2015-12-25",
+        "description": "Simple thin black moustache",
+        "license": "CC-BY",
+        "original_author": "",
+        "original_source": "",
+        "source": "http://www.makehumancommunity.org/node/187",
+        "thumbnail": "grinsegold_moustache.png",
+        "type": "clothes"
+    }
+}

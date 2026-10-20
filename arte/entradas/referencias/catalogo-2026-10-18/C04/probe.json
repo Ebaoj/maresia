@@ -1,0 +1,18 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 720,
+      "height": 1366,
+      "r_frame_rate": "25/1",
+      "avg_frame_rate": "25/1",
+      "nb_frames": "788"
+    }
+  ],
+  "format": {
+    "duration": "31.520000"
+  },
+  "sha256": "bb424e6f31948dd564be027381f9528e0353bda5073f401457480a8e3fc922fd",
+  "arquivo": "arte/entradas/referencias/gato-pulo/pexels-6853903-poltrona-sobe-desce.mp4"
+}

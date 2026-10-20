@@ -1,0 +1,18 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 720,
+      "height": 1366,
+      "r_frame_rate": "25/1",
+      "avg_frame_rate": "25/1",
+      "nb_frames": "177"
+    }
+  ],
+  "format": {
+    "duration": "7.080000"
+  },
+  "sha256": "7156885cf165ac5b5f6d5ea2ec35a0f9128667f99e471a1986aa743b29358ce1",
+  "arquivo": "arte/entradas/referencias/gato-pulo/pexels-6853400-piano-desce.mp4"
+}

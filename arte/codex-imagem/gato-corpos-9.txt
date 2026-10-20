@@ -1,0 +1,13 @@
+A 3x3 grid sheet with NINE body-shape variations of the SAME cat. The attached image shows the cat: copy EXACTLY its coat pattern and its painting style in all nine: mostly white body and legs, black cap over the top of the head and black ears, black around the top of the eyes, a black saddle patch on the back, a fully black tail, pink nose, yellow-green eyes. Only the body shape changes between cells. Original design, NOT the cartoon character Sylvester, no clothes, no human expressions.
+STYLE: hand-painted stylized 3D look inspired by Arcane (Fortiche), exactly like the attached image: flat painted colors with visible brush strokes, fur as chunky painted locks, almost no baked light or shadow.
+LAYOUT: each cat standing on all four legs in a three-quarter side view facing left, whole body and tail visible, centered in its own cell, all at the same scale so size differences show. Plain light gray background, flat even lighting, no cast shadow, no scenery, no props. A large clear black number from 1 to 9 in the top-left corner of each cell, reading left to right, top to bottom. No other text.
+BODY VARIATIONS (all street cats of a poor beach neighborhood in Fortaleza, 1932, short fur):
+1. same body as the attached cat: lean, long legs, angular head (reference)
+2. small young cat, half grown, big ears and big paws for its size, thin tail
+3. compact and muscular, short legs, broad chest, round strong head
+4. very skinny hungry stray, ribs and hip bones showing slightly, sharp face, big ears
+5. big heavy old tomcat, wide jowls, thick neck, slightly sagging belly, short thick tail
+6. long low body like a slinky hunter, short legs, long tail, small narrow head
+7. tall and elegant, very long neck and legs, small oval head, whip-thin tail
+8. chubby well-fed cat of a market stall, round belly and round face, short legs
+9. wiry fighter: lean but muscular, scruffy fur, torn ear tip, kinked tail

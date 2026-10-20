@@ -1,0 +1,6 @@
+andar {"frames":38,"tested":84240,"leaks":0}
+correr {"frames":23,"tested":50150,"leaks":0}
+{"motion":"olhando","physics":true,"time":1.3666666666666667,"tested":2322,"leaks":1,"examples":[{"point":[0.012968704095110301,0.9395943519659877,0.10222513884429585],"angle":0,"depth":1.382181810182459}]}
+{"motion":"olhando","physics":true,"time":1.5666666666666667,"tested":2328,"leaks":1,"examples":[{"point":[0.012968704095110301,0.9422060489384962,0.10455197950855233],"angle":0,"depth":1.2239094304378195}]}
+{"motion":"olhando","physics":true,"time":1.7,"tested":2324,"leaks":1,"examples":[{"point":[0.012968704095110301,0.9434476732889665,0.10382661335394094],"angle":0,"depth":2.0967922919825632}]}
+olhando {"frames":191,"tested":432294,"leaks":3}

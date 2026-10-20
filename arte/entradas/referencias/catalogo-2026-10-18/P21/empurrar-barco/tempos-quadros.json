@@ -1,0 +1,197 @@
+[
+  {
+    "arquivo": "q00001.jpg",
+    "tempo_original_s": 24.887,
+    "tempo_trecho_s": 0.036999999999999034
+  },
+  {
+    "arquivo": "q00002.jpg",
+    "tempo_original_s": 24.927000000000003,
+    "tempo_trecho_s": 0.07700000000000173
+  },
+  {
+    "arquivo": "q00003.jpg",
+    "tempo_original_s": 24.967000000000002,
+    "tempo_trecho_s": 0.11700000000000088
+  },
+  {
+    "arquivo": "q00004.jpg",
+    "tempo_original_s": 25.007,
+    "tempo_trecho_s": 0.15700000000000003
+  },
+  {
+    "arquivo": "q00005.jpg",
+    "tempo_original_s": 25.047,
+    "tempo_trecho_s": 0.19699999999999918
+  },
+  {
+    "arquivo": "q00006.jpg",
+    "tempo_original_s": 25.087,
+    "tempo_trecho_s": 0.23699999999999832
+  },
+  {
+    "arquivo": "q00007.jpg",
+    "tempo_original_s": 25.127000000000002,
+    "tempo_trecho_s": 0.277000000000001
+  },
+  {
+    "arquivo": "q00008.jpg",
+    "tempo_original_s": 25.167,
+    "tempo_trecho_s": 0.31700000000000017
+  },
+  {
+    "arquivo": "q00009.jpg",
+    "tempo_original_s": 25.207,
+    "tempo_trecho_s": 0.3569999999999993
+  },
+  {
+    "arquivo": "q00010.jpg",
+    "tempo_original_s": 25.247,
+    "tempo_trecho_s": 0.39699999999999847
+  },
+  {
+    "arquivo": "q00011.jpg",
+    "tempo_original_s": 25.287000000000003,
+    "tempo_trecho_s": 0.43700000000000117
+  },
+  {
+    "arquivo": "q00012.jpg",
+    "tempo_original_s": 25.327,
+    "tempo_trecho_s": 0.4770000000000003
+  },
+  {
+    "arquivo": "q00013.jpg",
+    "tempo_original_s": 25.367,
+    "tempo_trecho_s": 0.5169999999999995
+  },
+  {
+    "arquivo": "q00014.jpg",
+    "tempo_original_s": 25.407,
+    "tempo_trecho_s": 0.5569999999999986
+  },
+  {
+    "arquivo": "q00015.jpg",
+    "tempo_original_s": 25.447000000000003,
+    "tempo_trecho_s": 0.5970000000000013
+  },
+  {
+    "arquivo": "q00016.jpg",
+    "tempo_original_s": 25.487000000000002,
+    "tempo_trecho_s": 0.6370000000000005
+  },
+  {
+    "arquivo": "q00017.jpg",
+    "tempo_original_s": 25.527,
+    "tempo_trecho_s": 0.6769999999999996
+  },
+  {
+    "arquivo": "q00018.jpg",
+    "tempo_original_s": 25.567,
+    "tempo_trecho_s": 0.7169999999999987
+  },
+  {
+    "arquivo": "q00019.jpg",
+    "tempo_original_s": 25.607000000000003,
+    "tempo_trecho_s": 0.7570000000000014
+  },
+  {
+    "arquivo": "q00020.jpg",
+    "tempo_original_s": 25.647000000000002,
+    "tempo_trecho_s": 0.7970000000000006
+  },
+  {
+    "arquivo": "q00021.jpg",
+    "tempo_original_s": 25.687,
+    "tempo_trecho_s": 0.8369999999999997
+  },
+  {
+    "arquivo": "q00022.jpg",
+    "tempo_original_s": 25.727,
+    "tempo_trecho_s": 0.8769999999999989
+  },
+  {
+    "arquivo": "q00023.jpg",
+    "tempo_original_s": 25.767000000000003,
+    "tempo_trecho_s": 0.9170000000000016
+  },
+  {
+    "arquivo": "q00024.jpg",
+    "tempo_original_s": 25.807000000000002,
+    "tempo_trecho_s": 0.9570000000000007
+  },
+  {
+    "arquivo": "q00025.jpg",
+    "tempo_original_s": 25.847,
+    "tempo_trecho_s": 0.9969999999999999
+  },
+  {
+    "arquivo": "q00026.jpg",
+    "tempo_original_s": 25.887,
+    "tempo_trecho_s": 1.036999999999999
+  },
+  {
+    "arquivo": "q00027.jpg",
+    "tempo_original_s": 25.927,
+    "tempo_trecho_s": 1.0769999999999982
+  },
+  {
+    "arquivo": "q00028.jpg",
+    "tempo_original_s": 25.967000000000002,
+    "tempo_trecho_s": 1.1170000000000009
+  },
+  {
+    "arquivo": "q00029.jpg",
+    "tempo_original_s": 26.007,
+    "tempo_trecho_s": 1.157
+  },
+  {
+    "arquivo": "q00030.jpg",
+    "tempo_original_s": 26.047,
+    "tempo_trecho_s": 1.1969999999999992
+  },
+  {
+    "arquivo": "q00031.jpg",
+    "tempo_original_s": 26.087000000000003,
+    "tempo_trecho_s": 1.2370000000000019
+  },
+  {
+    "arquivo": "q00032.jpg",
+    "tempo_original_s": 26.127000000000002,
+    "tempo_trecho_s": 1.277000000000001
+  },
+  {
+    "arquivo": "q00033.jpg",
+    "tempo_original_s": 26.167,
+    "tempo_trecho_s": 1.3170000000000002
+  },
+  {
+    "arquivo": "q00034.jpg",
+    "tempo_original_s": 26.207,
+    "tempo_trecho_s": 1.3569999999999993
+  },
+  {
+    "arquivo": "q00035.jpg",
+    "tempo_original_s": 26.247,
+    "tempo_trecho_s": 1.3969999999999985
+  },
+  {
+    "arquivo": "q00036.jpg",
+    "tempo_original_s": 26.287000000000003,
+    "tempo_trecho_s": 1.4370000000000012
+  },
+  {
+    "arquivo": "q00037.jpg",
+    "tempo_original_s": 26.327,
+    "tempo_trecho_s": 1.4770000000000003
+  },
+  {
+    "arquivo": "q00038.jpg",
+    "tempo_original_s": 26.367,
+    "tempo_trecho_s": 1.5169999999999995
+  },
+  {
+    "arquivo": "q00039.jpg",
+    "tempo_original_s": 26.407,
+    "tempo_trecho_s": 1.5569999999999986
+  }
+]

@@ -1,0 +1,38 @@
+[
+ {
+  "nome": "vestido-rosto/s301",
+  "semente": 301,
+  "n": 1,
+  "referencia": "entradas/openai-neto-vestido-1.png",
+  "mascara": "entradas/mascara-cabecas-vestido.png",
+  "forca": 0.82,
+  "prompt": "Hand-inked graphic novel character model sheet, clean confident ink outlines, flat cel shading in a muted sun-faded palette, plain cream background. The same boy shown four times: front view, side profile facing right, back view, side profile facing left, wearing a frayed palm-straw hat, a faded reddish-brown homespun pullover shirt and rolled brown trousers, barefoot. He is an original 15-year-old caboclo boy from the coast of Ceará, of strong Indigenous heritage mixed with African and Portuguese: a broad face with high, prominent cheekbones, dark almond-shaped eyes that are narrower rather than big and round, thick straight dark eyebrows, a broad nose, full lips, a firm jaw; thick, straight, coarse black hair cut short and uneven, no waves and no gray or light highlights; warm bronze-brown skin deeply tanned by sun and sea, no rosy cheeks; a grounded, serious-but-warm look, a real teenager, not a child. In the back view only his straight black hair and the nape of his neck are visible under the hat."
+ },
+ {
+  "nome": "vestido-rosto/s302",
+  "semente": 302,
+  "n": 1,
+  "referencia": "entradas/openai-neto-vestido-1.png",
+  "mascara": "entradas/mascara-cabecas-vestido.png",
+  "forca": 0.82,
+  "prompt": "Hand-inked graphic novel character model sheet, clean confident ink outlines, flat cel shading in a muted sun-faded palette, plain cream background. The same boy shown four times: front view, side profile facing right, back view, side profile facing left, wearing a frayed palm-straw hat, a faded reddish-brown homespun pullover shirt and rolled brown trousers, barefoot. He is an original 15-year-old caboclo boy from the coast of Ceará, of strong Indigenous heritage mixed with African and Portuguese: a broad face with high, prominent cheekbones, dark almond-shaped eyes that are narrower rather than big and round, thick straight dark eyebrows, a broad nose, full lips, a firm jaw; thick, straight, coarse black hair cut short and uneven, no waves and no gray or light highlights; warm bronze-brown skin deeply tanned by sun and sea, no rosy cheeks; a grounded, serious-but-warm look, a real teenager, not a child. In the back view only his straight black hair and the nape of his neck are visible under the hat."
+ },
+ {
+  "nome": "vestido-rosto/s303",
+  "semente": 303,
+  "n": 1,
+  "referencia": "entradas/openai-neto-vestido-1.png",
+  "mascara": "entradas/mascara-cabecas-vestido.png",
+  "forca": 0.82,
+  "prompt": "Hand-inked graphic novel character model sheet, clean confident ink outlines, flat cel shading in a muted sun-faded palette, plain cream background. The same boy shown four times: front view, side profile facing right, back view, side profile facing left, wearing a frayed palm-straw hat, a faded reddish-brown homespun pullover shirt and rolled brown trousers, barefoot. He is an original 15-year-old caboclo boy from the coast of Ceará, of strong Indigenous heritage mixed with African and Portuguese: a broad face with high, prominent cheekbones, dark almond-shaped eyes that are narrower rather than big and round, thick straight dark eyebrows, a broad nose, full lips, a firm jaw; thick, straight, coarse black hair cut short and uneven, no waves and no gray or light highlights; warm bronze-brown skin deeply tanned by sun and sea, no rosy cheeks; a grounded, serious-but-warm look, a real teenager, not a child. In the back view only his straight black hair and the nape of his neck are visible under the hat."
+ },
+ {
+  "nome": "vestido-rosto/s304",
+  "semente": 304,
+  "n": 1,
+  "referencia": "entradas/openai-neto-vestido-1.png",
+  "mascara": "entradas/mascara-cabecas-vestido.png",
+  "forca": 0.82,
+  "prompt": "Hand-inked graphic novel character model sheet, clean confident ink outlines, flat cel shading in a muted sun-faded palette, plain cream background. The same boy shown four times: front view, side profile facing right, back view, side profile facing left, wearing a frayed palm-straw hat, a faded reddish-brown homespun pullover shirt and rolled brown trousers, barefoot. He is an original 15-year-old caboclo boy from the coast of Ceará, of strong Indigenous heritage mixed with African and Portuguese: a broad face with high, prominent cheekbones, dark almond-shaped eyes that are narrower rather than big and round, thick straight dark eyebrows, a broad nose, full lips, a firm jaw; thick, straight, coarse black hair cut short and uneven, no waves and no gray or light highlights; warm bronze-brown skin deeply tanned by sun and sea, no rosy cheeks; a grounded, serious-but-warm look, a real teenager, not a child. In the back view only his straight black hair and the nape of his neck are visible under the hat."
+ }
+]

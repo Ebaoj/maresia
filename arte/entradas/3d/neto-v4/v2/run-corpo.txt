@@ -1,0 +1,3 @@
+corpo-costas.png
+corpo-frente.png
+corpo-lado.png

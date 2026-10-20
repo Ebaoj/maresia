@@ -1,0 +1,50 @@
+# Créditos dos vídeos de referência
+
+Cópias de trabalho, recortes e folhas de contato para estudo de movimento da Maresia. Os arquivos originais não integram os assets do jogo.
+
+- **P01 — Pedestres em rua de Munique**: Taurus Media Technik; CC0. https://commons.wikimedia.org/wiki/File:Video_Codec_Test_pedestrian_area_1080p25.y4m.webm
+- **P02 — Crianças jogando Lagori em Bangalore**: Subhashish Panigrahi; CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Kids_playing_Lagori_in_a_Bangalore_street.webm
+- **P03 — Criança correndo atrás de um pneu**: Salifu Wumpini Hussein; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Playing.webm
+- **P04 — Cozinha coletiva numa festa**: Wann Majaw; CC BY 4.0. https://commons.wikimedia.org/wiki/File:People_cooking_outdoors_in_a_wedding_day.webm
+- **P05 — Corte de cebola — USDA**: USDA / Kirsten Strough; Domínio público nos EUA (fonte USDA). https://commons.wikimedia.org/wiki/File:Fruits_and_Vegetables_(20150209-FPAC-KLS-0003).webm
+- **P06 — Vendedores ambulantes no Cairo**: Wex Major 98; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Street_Vendors_of_Cairo.webm
+- **A01 — Filhote andando e farejando dentro de casa**: Subhashish Panigrahi; CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Puppy_playing.webm
+- **A02 — Gato tentando escalar uma tela**: Bone Bone; CC BY 3.0 indicada; revisão pendente no Commons. https://commons.wikimedia.org/wiki/File:Gato_escalando.webm
+- **A03 — Burro aproximando-se da câmera**: Consultar página do arquivo; CC BY-SA 4.0 indicada. https://commons.wikimedia.org/wiki/File:Âne_amble.webm
+- **A04 — Cavalos soltos no pasto**: Field of Dreams; CC BY 3.0. https://commons.wikimedia.org/wiki/File:Horses_running_in_a_pasture.webm
+- **A06 — Cavalo rolando no chão e se levantando**: Amada44; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Video_of_a_horse_rolling.webm
+- **A00 — Gato saltando sobre vegetação em câmera lenta**: MixiMix22; CC BY 2.0 (crédito já existente). https://commons.wikimedia.org/wiki/File:Katzensprung_in_Zeitlupe.webm
+- **P07 — Corrida junto ao rio Arakawa**: Nesnad; CC BY 4.0. https://commons.wikimedia.org/wiki/File:Jogging_-_near_arakawa_river_-_tokyo_japan_-_2022_may_3.webm
+- **P08 — Crianças pulando num lago**: KEmel49; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Childrens_jumping_to_lake_together.webm
+- **P09 — Trabalhador misturando argamassa**: Akum20; CC0. https://commons.wikimedia.org/wiki/File:Men_at_work_in_building_site.webm
+- **P10 — Entrega de suprimentos em corrente humana em Hong Kong**: Voice of America; Domínio público nos EUA (fonte VOA). https://commons.wikimedia.org/wiki/File:Hong_Kong_Protestors_Deliver_Supplies_on_Human_Assembly_Line.webm
+- **P11 — Piscina externa — tomada 1**: Consultar página do arquivo; Pendente de registro. https://commons.wikimedia.org/wiki/File:Outdoor_swimming_pool_1_2019-09-13.webm
+- **P12 — Piscina externa — tomada 2**: Consultar página do arquivo; Pendente de registro. https://commons.wikimedia.org/wiki/File:Outdoor_swimming_pool_2_2019-09-13.webm
+- **C01 — Gato descendo do sofá — acervo anterior**: Consultar crédito anterior; Pexels (registro anterior do projeto). https://www.pexels.com/video/4807151/
+- **C02 — Gato numa estante — acervo anterior**: cottonbro studio; Pexels (registro anterior do projeto). https://www.pexels.com/video/6853178/
+- **C03 — Gato descendo do piano — acervo anterior**: cottonbro studio; Pexels (registro anterior do projeto). https://www.pexels.com/video/6853400/
+- **C04 — Gato na poltrona — acervo anterior**: cottonbro studio; Pexels (registro anterior do projeto). https://www.pexels.com/video/6853903/
+- **A09 — Flagfish em aquário**: Consultar página do arquivo; CC0 indicada; autoria a registrar. https://commons.wikimedia.org/wiki/File:Flagfish.webm
+- **A10 — Ave pousada em Crissy Field**: Rhododendrites; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Brewer's_blackbird_by_Crissy_Field_(16898).webm
+- **A11 — Galgo correndo em câmera lenta**: Supreme Chungus; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Slow_motion_of_running_greyhound.webm
+- **P13 — Praia em Hyères — plano panorâmico**: Consultar página do arquivo; Pendente de registro. https://commons.wikimedia.org/wiki/File:2011-07-11-hyeres-22.ogv
+- **P14 — Criança pulando corda no Japão**: Nesnad; CC BY 4.0. https://commons.wikimedia.org/wiki/File:Kidplayingjumprope-tokyoarea-fall2018.ogv
+- **P15 — Banhistas em Coney Island**: Jim.henderson; CC0. https://commons.wikimedia.org/wiki/File:CI_2011_swim_04_jeh.theora.ogv
+- **A12 — Gato preto caminhando e interagindo com a câmera**: Dzkouslavia; CC0. https://commons.wikimedia.org/wiki/File:Black_Cat_walking.webm
+- **A13 — Cardume em aquário — Fish1001**: Jon Houseman; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Fish1001.webm
+- **P16 — Travessia de rua na Cidade do México**: ProtoplasmaKid; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Cruce_peatonal_de_Eje_Central_L%C3%A1zaro_C%C3%A1rdenas_y_Avenida_Madero%2C_Ciudad_de_M%C3%A9xico.webm
+- **P17 — Pedestre num corredor em Hong Kong**: RG72; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Pasejo_en_Hong_Kong_Island_%282014%29.webm
+- **P18 — Crianças sentadas e em pé junto a um banco**: Salifu Wumpini Hussein; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:CHILDREN.webm
+- **P19 — Salto em distância — competição Universíade 2015**: FISUTV; CC BY 3.0. https://commons.wikimedia.org/wiki/File:Women%27s_Long_Jump_Final_-_28th_Summer_Universiade_2015.webm
+- **P20 — Fabricantes de tijolos trabalhando**: Oxlaey; CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:BRICKS_%E2%80%A2_Traditional_Craftsmen_%E2%80%A2_Qom_%E2%80%A2_IRAN.webm
+- **P21 — Pescadores colocando barcos no mar**: Oxlaey; CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Boat_Ramp_%E2%80%A2_Fishermen_Launching_Freestyle_%E2%80%A2_Bandar_Abbas_%E2%80%A2_IRAN.webm
+- **P22 — Natação em treino real — Debbie, vista subaquática**: koolkatkari; CC BY 3.0. https://commons.wikimedia.org/wiki/File:Mary%27s_Swim_Boot_Camp_-_Debbie%27s_underwater_freestyle.webm
+- **P23 — Pessoa flutuando num lago — Floating while swimming**: KEmel49; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Floating_while_swimming.webm
+- **P24 — Pedestres atravessando Shibuya**: Basile Morin; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Shibuya_Crossing%2C_Tokyo%2C_Japan_%28video%29.webm
+- **P25 — Pedestres na Buchanan Street em Glasgow**: Learning, Teaching and Web Services, University of Edinburgh; CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Pedestrians_in_Buchanan_Street%2C_Glasgow.webm
+- **P26 — Pedestres e trânsito em São Francisco**: Editor — consultar fonte; CC BY 3.0. https://commons.wikimedia.org/wiki/File:Street_traffic.webm
+- **P27 — Pedestres junto a ponto de ônibus em Ljubljana**: Sounds of Changes; CC BY 3.0. https://commons.wikimedia.org/wiki/File:Traffic_on_Slovenska_street.webm
+- **P28 — Homens jogando futebol**: Learning, Teaching and Web Services, University of Edinburgh; CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Men_kicking_footballs.webm
+- **P29 — Trabalho real na produção de óleo de palma**: Christopher Wonder Osariemen; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Boy_working_on_palm_oil_in_Niger_Delta_creeks%2C_Bayelsa_state_2.webm
+- **P30 — Mulher trabalhando com óleo de palma**: Christopher Wonder Osariemen; CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:Mama_palm_oil_in_Agbura_community%2C_Bayelsa_state_ii.webm
+- **P31 — Trabalhador desmontando andaime**: Pleclown; CC BY-SA 3.0. https://commons.wikimedia.org/wiki/File:Worker_dismantling_scaffoldings.ogv
