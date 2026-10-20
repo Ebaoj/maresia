@@ -13,7 +13,7 @@ import { adicionarCirculo } from './colisao.js'
 import { criarAleatorio } from '../utils.js'
 import { ESQUADRIAS } from '../paleta.js'
 
-function colorir(geo, hex) {
+export function colorir(geo, hex) {
   const g = geo.index ? geo.toNonIndexed() : geo
   g.deleteAttribute('uv')
   const c = new THREE.Color(hex)

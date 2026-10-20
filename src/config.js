@@ -189,6 +189,11 @@ export const PADRAO = {
     cacheSombraRaio: 15,   // metros que o jogador anda antes de a janela de sombra (60 m) se recentrar; a sombra sempre cobre pelo menos 60 - raio
     nevoaPerto: 140,
     nevoaLonge: 900,
+    urubu: {
+      alturaGalpao: 5.2,    // altura da parede do galpão de folha de zinco (src/mundo/urubu1932.js)
+      alturaCerca: 1.8,     // altura do arame que cerca as tarefas de terra
+      gente: 24,            // gente no campo: fila da cozinha, fila do portão e trabalho na terra
+    },
   },
   fatia: {
     travar: true,          // prende o jogador na fatia vertical da Praia do Peixe (mundo/fatia.js)

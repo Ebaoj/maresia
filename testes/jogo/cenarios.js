@@ -804,6 +804,24 @@ export const cenarios = {
     return { ok, medidas, motivo: ok ? '' : 'quadro acima de 150 ms ao chegar num lugar novo (shader montado na hora)' }
   },
 
+  // O campo do Urubu não pode ser coberto pela cidade: a planta oficial classifica a área como
+  // terreo vazio, e o casario não pode construir em cima do campo (docs/mapa-1932.md).
+  async campoDoUrubuVazio(m) {
+    const mod = m.ocupacao1932
+    if (!mod || !mod.ocupacao1932) return { ok: false, motivo: 'a ocupacao de 1932 nao carregou' }
+    const mapa = await import('/src/mundo/mapa1932.js')
+    const pontos = []
+    for (const t of mapa.CAMPO_URUBU.tarefas) pontos.push(t.ponto)
+    for (const g of mapa.CAMPO_URUBU.galpoes) pontos.push(g.ponto)
+    for (const c of mapa.CAMPO_URUBU.construcoes) pontos.push(c.ponto)
+    const comLote = pontos.filter(([x, z]) => mod.ocupacao1932(x, z) !== mod.OCUPA_VAZIO).length
+    return {
+      ok: comLote === 0,
+      medidas: { pontos: pontos.length, comLote },
+      motivo: comLote ? 'a cidade construiu em cima do campo do Urubu' : '',
+    }
+  },
+
   // O mínimo de toda mudança: o jogo carregou sem shader quebrado (os erros de console o executor junta)
   async semErros() {
     const quebrados = (window.__shadersQuebrados || []).length

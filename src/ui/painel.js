@@ -225,6 +225,11 @@ export function criarPainel(cfg) {
   mundo.add(cfg.desempenho, 'resolucaoDinamica').name('resolução dinâmica')
   mundo.add(cfg.desempenho, 'resolucaoMin', 0.4, 1.25, 0.05).name('resolução mínima')
   mundo.add(cfg.desempenho, 'mostrarFps').name('mostrar FPS')
+
+  const urubu = gui.addFolder('Campo do Urubu')
+  urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name('altura do galpão (m)')
+  urubu.add(cfg.mundo.urubu, 'alturaCerca', 1, 3, 0.1).name('altura do arame (m)')
+  urubu.add(cfg.mundo.urubu, 'gente', 0, 60, 1).name('gente no campo')
   mundo.add(cfg.desempenho, 'renderizador', ['webgl', 'webgpu']).name('renderizador (recarregar)')
   mundo.add(cfg.desempenho, 'tamBloco', [96, 192, 384]).name('bloco de cópias, m (recarregar)')
   mundo.add(cfg.desempenho, 'motorPlaca').name('árvores na placa, WebGPU (recarregar)')

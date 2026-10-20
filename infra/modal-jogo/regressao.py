@@ -5,7 +5,7 @@ O ambiente prepara o Chrome e entrega um Cdp conectado desde o carregamento.
 from cdp import mudar_config
 
 ORDEM = ["semErros", "pesParados", "poseCongelada", "meiaVolta", "meiaVoltaRapida", "meiaVoltaInterrompida", "sentarLevantar",
-         "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo", "programasReaproveitados", "semRecompilarParado", "modoWebgpu"]
+         "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo", "programasReaproveitados", "semRecompilarParado", "campoDoUrubuVazio", "modoWebgpu"]
 # KAN-68: cenários que também rodam com o jogo aberto no WebGPU (dentro de modoWebgpu)
 CENARIOS_WEBGPU = ["semErros", "copiasUnicas", "copiasQueCrescem", "sombrasCopias", "pegadasNaAreia", "propriedadeEmJogo", "programasReaproveitados", "semRecompilarParado", "uniformsGlobaisUmaVez", "sombraSemRecalcularChave", "alvosSemLerOQueEscreve"]
 # cenários que recarregam a página com outra configuração: rodam aqui, em Python, e por último

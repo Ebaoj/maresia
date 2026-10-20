@@ -32,6 +32,7 @@ import { criarPraia } from './mundo/praia.js'
 import { criarCoqueiros } from './mundo/vegetacao.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
+import { criarUrubu1932 } from './mundo/urubu1932.js'
 import { criarVilas } from './mundo/vilas.js'
 import { criarObjetosFatia, FOGAREIROS } from './mundo/fatia-objetos.js'
 import { criarParticulas } from './mundo/particulas.js'
@@ -105,6 +106,7 @@ async function iniciar() {
   void criarFaixas
   const { predios, casas, grade, quadras } = criarCidade(cena)
   criarEstacao(cena) // a Estação Central de 1880
+  const urubu = criarUrubu1932(cena) // o Campo do Urubu: galpões, tarefas, cozinha e o portão
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')
@@ -422,7 +424,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932,
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932, urubu,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
