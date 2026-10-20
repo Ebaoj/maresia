@@ -12,7 +12,7 @@ import { converter, repouso, ossosPorNome } from '../../src/jogador/retarget.js'
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : d }
 const MOVIMENTO = arg('--movimento', 'andar')
 const QUADROS = Number(arg('--quadros', 12))
-const MODELO = process.env.MODELO_NETO || new URL('../finais/neto-v5-jolt.glb', import.meta.url)
+const MODELO = process.env.MODELO_NETO || new URL('../finais/neto-vestido.glb', import.meta.url)
 
 // o glb com as texturas removidas carrega bem mais rápido
 const bytes = await fs.readFile(MODELO)

@@ -7,7 +7,7 @@ import { criarTecidoJolt } from './tecido-jolt.js';
 const {criarTecidoAmmo}=await import(process.env.ADAPTADOR_AMMO||'./tecido-ammo.js');
 import { carregarAmmoNode } from './ammo-node.mjs';
 import { converter,repouso,ossosPorNome } from '../../src/jogador/retarget.js';
-const bytes=await fs.readFile(process.env.MODELO_NETO || new URL('../finais/neto-v5-jolt.glb',import.meta.url));
+const bytes=await fs.readFile(process.env.MODELO_NETO || new URL('../finais/neto-vestido.glb',import.meta.url));
 const jl=bytes.readUInt32LE(12),j=JSON.parse(bytes.subarray(20,20+jl).toString());delete j.images;delete j.textures;delete j.samplers;j.materials=j.materials?.map(m=>({name:m.name}));delete j.extensionsUsed;delete j.extensionsRequired;
 
 const raw=Buffer.from(JSON.stringify(j));const pad=(4-raw.length%4)%4;const json=Buffer.concat([raw,Buffer.alloc(pad,32)]);const bin=bytes.subarray(20+jl);const rebuilt=Buffer.alloc(20+json.length+bin.length);bytes.copy(rebuilt,0,0,12);rebuilt.writeUInt32LE(rebuilt.length,8);rebuilt.writeUInt32LE(json.length,12);rebuilt.writeUInt32LE(0x4e4f534a,16);json.copy(rebuilt,20);bin.copy(rebuilt,20+json.length);

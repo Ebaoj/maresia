@@ -15,31 +15,41 @@ const CELULA = 0.045
 const _m = new THREE.Matrix4()
 const _v = new THREE.Vector3()
 
-// O molde da roupa foi gerado sobre um corpo um pouco diferente do que está no jogo: parte da malha
-// nasce dentro da pele (no tronco do neto v5 são 943 pontos, até 8 cm para dentro). O limite de
-// distância do pano no Jolt é a folga (4,5 cm), então o solver não alcança tirar o tecido de dentro do
-// corpo: ele puxa de volta e a camisa atravessa a pele.
-// Aqui mede-se quanto cada pedaço da roupa nasce dentro da pele, para a folga daquele pedaço
-// conseguir chegar lá fora. A profundidade é medida na pose de repouso, que é a pose em que o pano
-// é criado: é nela que o limite vale.
+// O pano do Jolt tem limite de distância: a folga (4,5 cm) a partir do lugar onde ele nasce.
+// Se o pedaço nasce dentro da pele, o solver não alcança tirar o tecido de dentro do corpo: ele
+// puxa de volta e a roupa atravessa a pele. Aqui mede-se quanto cada pedaço nasce dentro da pele,
+// para a folga daquele pedaço conseguir chegar lá fora. A profundidade é medida na pose de
+// repouso, que é a pose em que o pano é criado: é nela que o limite vale.
+//
+// O dentro/fora não sai da normal da face: o winding do corpo é misto (parte das faces aponta
+// para dentro), e o sinal pela normal dava profundidade de 8 cm onde o pano nascia a 0,1 mm da
+// pele. Aqui o dentro/fora vem de paridade (contagem de interseções de um raio), que independe
+// do winding; três raios votam para não depender de um raio raspar numa aresta.
 export function criarMedidorDeProfundidade (pele) {
   if (!pele?.geometry?.index) return null
-  const geo = pele.geometry, pos = geo.attributes.position, indices = geo.index.array
+  const geo = pele.geometry
   const bvh = new MeshBVH(geo, { targetLeafSize: 8 })
   const alvo = { point: new THREE.Vector3(), distance: 0, faceIndex: 0 }
-  const fora = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3()
+  const raios = [
+    new THREE.Vector3(0.31, 0.13, 0.94).normalize(),
+    new THREE.Vector3(-0.42, 0.22, 0.88).normalize(),
+    new THREE.Vector3(0.19, -0.35, -0.92).normalize(),
+  ]
+  const dentroDaPele = (ponto) => {
+    let votos = 0
+    for (const d of raios) {
+      const hits = bvh.raycast(new THREE.Ray(ponto.clone().addScaledVector(d, 1e-4), d), THREE.DoubleSide)
+      if (hits.length % 2 === 1) votos++
+    }
+    return votos >= 2
+  }
   return (fonte) => {
     const atributos = fonte.attributes.position
     const profundidades = new Float32Array(atributos.count)
     for (let i = 0; i < profundidades.length; i++) {
       _v.fromBufferAttribute(atributos, i)
       bvh.closestPointToPoint(_v, alvo)
-      const t = alvo.faceIndex * 3
-      a.fromBufferAttribute(pos, indices[t]); b.fromBufferAttribute(pos, indices[t + 1]); c.fromBufferAttribute(pos, indices[t + 2])
-      n.crossVectors(b.sub(a), c.sub(a)).normalize()
-      // vetor do vértice para a pele mais próxima: se aponta para fora, o vértice está dentro
-      fora.copy(_v).sub(alvo.point)
-      profundidades[i] = fora.dot(n) < 0 ? alvo.distance : 0
+      profundidades[i] = dentroDaPele(_v) ? alvo.distance : 0
     }
     return profundidades
   }
