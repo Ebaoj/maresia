@@ -226,6 +226,12 @@ export function criarPainel(cfg) {
   mundo.add(cfg.desempenho, 'resolucaoMin', 0.4, 1.25, 0.05).name('resolução mínima')
   mundo.add(cfg.desempenho, 'mostrarFps').name('mostrar FPS')
 
+  const cal = gui.addFolder('Calçamento (paralelepípedo)')
+  cal.add(cfg.calamento, 'bloco', 0.1, 0.8, 0.01).name('bloco: comprimento (m)')
+  cal.add(cfg.calamento, 'largura', 0.05, 0.4, 0.01).name('bloco: altura da fiada (m)')
+  cal.add(cfg.calamento, 'junta', 0, 0.12, 0.005).name('junta (m)')
+  cal.add(cfg.calamento, 'desencontro', 0, 0.5, 0.05).name('fiadas desencontradas')
+
   const urubu = gui.addFolder('Campo do Urubu')
   urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name('altura do galpão (m)')
   urubu.add(cfg.mundo.urubu, 'alturaCerca', 1, 3, 0.1).name('altura do arame (m)')

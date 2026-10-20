@@ -23,6 +23,7 @@ import { criarEstacao } from './mundo/estacao.js'
 import * as ocup1932 from './mundo/ocupacao1932.js'
 import { criarFachadas } from './mundo/fachadas.js'
 import { criarRua } from './mundo/rua.js'
+import { criarPraca } from './mundo/praca.js'
 import { criarArvores } from './mundo/arvores.js'
 import { criarPessoas } from './mundo/pessoas.js'
 import { criarAtores } from './mundo/atores.js'
@@ -96,7 +97,7 @@ async function iniciar() {
   definirTamBloco(cfg.desempenho.tamBloco, cfg.desempenho.copiasMinBloco, cfg.desempenho.tamBlocoMax)
   await ocup1932.carregarOcupacao1932() // a planta de 1932: onde havia lote, onde era rua (o terreno pergunta isso)
   marcar('ocupacao')
-  const terreno = criarTerreno(cena)
+  const terreno = criarTerreno(cena, cfg)
   marcar('terreno')
   const { mapaAltura } = terreno
   const ceu = criarCeu(cena)
@@ -118,6 +119,7 @@ async function iniciar() {
   void nObjetosFatia
   const lugares = criarRua(cena, predios, grade)
   marcar('rua')
+  criarPraca(cena) // a Praça do Ferreira: coreto coberto, jardins e bancos (docs/mapa-1932.md)
   criarArvores(cena, predios, grade)
   marcar('arvores')
   const { coqueiros } = criarCoqueiros(cena, cfg)

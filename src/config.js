@@ -181,6 +181,12 @@ export const PADRAO = {
     corEspuma: '#f6fbff',
     ondas: 1.0,
   },
+  calamento: {
+    bloco: 0.3,        // comprimento do paralelepípedo (unidades de jogo; 1 unidade = 1 m no jogo)
+    largura: 0.15,     // altura da fiada
+    junta: 0.04,       // a fresta de areia entre dois blocos
+    desencontro: 0.5,  // quanto a fiada seguinte desliza (0 = fiadas alinhadas, 0.5 = desencontradas)
+  },
   mundo: {
     passoSombraMin: 4,     // a luz da sombra anda em passos de N minutos de jogo (~1° a cada 4): sem isso a borda das sombras treme; 0 = contínuo
     sombras: true,

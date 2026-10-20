@@ -7,6 +7,7 @@ import { lagoasJogo, lugaresJogo } from './fortaleza1932.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
 import { congelar } from './congelar.js'
 import { ref } from '../render/gpu/comum.js'
+import { GLSL_CALAMENTO, sincronizarCalamento, tslCalamento, uCalamento } from './calamento.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
 export const NX = Math.round((x1 - x0) / passo) + 1
@@ -138,9 +139,10 @@ export function corChao(x, z, h, incl, dens, alvo) {
 // (passo 2 m) perto da câmera e a simples (passo 8 m) longe, com uma saia vertical que esconde a
 // fresta entre resoluções. Normais, cor e piso vêm da grade inteira: nada de costura entre pedaços.
 const CEL_PEDACO = 48
-export function criarTerreno(cena) {
+export function criarTerreno(cena, cfg) {
   const t0 = performance.now()
   calcularAlturas()
+  sincronizarCalamento(cfg)
   const t1 = performance.now()
 
   const cores = new Float32Array(NX * NZ * 3)
@@ -259,6 +261,7 @@ export function criarTerreno(cena) {
     malha: grupo,
     mapaAltura: criarMapaAltura(),
     atualizar(camera) {
+      sincronizarCalamento(cfg) // o painel mexe no calçamento ao vivo
       const px = camera.position.x
       const pz = camera.position.z
       for (const p of pedacos) {
@@ -278,7 +281,7 @@ export function criarTerreno(cena) {
 function materialTerreno() {
   const mat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() })
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uAreiaTerreno)
+    Object.assign(sh.uniforms, uAreiaTerreno, uCalamento)
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float aPiso; varying float vPiso; attribute float aAreia; varying float vAreia;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPiso = aPiso; vAreia = aAreia;')
@@ -292,29 +295,7 @@ function materialTerreno() {
         vec2 dA = abs(vPMundo.xz - uAreiaCentro);
         if (vAreia > 0.7 && max(dA.x, dA.y) < uAreiaMeia) discard;
         if (vPiso > 0.01) {
-          // pedra tosca de 1932: células irregulares (voronoi), cada pedra com seu tom,
-          // juntas de areia, centro abaulado e beira escura. Nada de grade de tijolinho.
-          vec2 q = vPMundo.xz * 3.8; // pedras de ~26 cm
-          vec2 iq = floor(q), fq = fract(q);
-          float d1 = 8.0, d2 = 8.0; vec2 idp = vec2(0.0);
-          for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-            vec2 g = vec2(float(i), float(j));
-            vec2 o = vec2(hPav(iq + g), hPav(iq + g + 17.3)) * 0.8 + 0.1;
-            vec2 r = g + o - fq;
-            float d = dot(r, r);
-            if (d < d1) { d2 = d1; d1 = d; idp = iq + g; } else if (d < d2) { d2 = d; }
-          }
-          float borda = sqrt(d2) - sqrt(d1);
-          float pedra = smoothstep(0.04, 0.14, borda);
-          float tom = hPav(idp + 3.1);
-          // pedra do Mucuripe: acinzentada, com algumas mais quentes
-          vec3 baseP = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))) * vec3(1.02, 0.98, 0.93), 0.45);
-          vec3 c = baseP * mix(0.74, 1.14, tom) * mix(vec3(1.0), vec3(1.06, 0.97, 0.88), step(0.72, hPav(idp + 9.7)));
-          c *= 1.0 + 0.1 * smoothstep(0.14, 0.4, borda) - 0.06; // centro abaulado
-          vec3 junta = mix(c * 0.5, vec3(0.72, 0.62, 0.48), 0.45);
-          c = mix(junta, c, pedra);
-          float longe = 1.0 - smoothstep(25.0, 70.0, distance(cameraPosition, vPMundo));
-          diffuseColor.rgb = mix(diffuseColor.rgb, mix(diffuseColor.rgb * 0.92, c, longe), vPiso);
+          ${GLSL_CALAMENTO}
         }`)
   }
   mat.userData.tsl = terrenoTsl()
@@ -327,9 +308,7 @@ function terrenoTsl() {
   return {
     nome: 'terreno',
     cor({ W }, rgb0) {
-      const { Fn, vec2, vec3, float, abs, max, floor, fract, sin, dot, sqrt, smoothstep, mix, step, distance, If, Loop, int,
-        attribute, positionWorld, cameraPosition, Discard } = W
-      const hPav = (p) => fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453))
+      const { Fn, vec2, vec3, abs, max, attribute, positionWorld, Discard } = W
       return Fn(() => {
         const vPiso = attribute('aPiso', 'float')
         const vAreia = attribute('aAreia', 'float')
@@ -337,32 +316,7 @@ function terrenoTsl() {
         // dentro do quadrado da areia fina, quem desenha a praia é ela
         const dA = abs(positionWorld.xz.sub(ref(uAreiaTerreno.uAreiaCentro)))
         Discard(vAreia.greaterThan(0.7).and(max(dA.x, dA.y).lessThan(ref(uAreiaTerreno.uAreiaMeia))))
-        If(vPiso.greaterThan(0.01), () => {
-          // pedra tosca de 1932: células irregulares (voronoi), cada pedra com seu tom
-          const q = positionWorld.xz.mul(3.8)
-          const iq = floor(q), fq = fract(q)
-          const d1 = float(8.0).toVar(), d2 = float(8.0).toVar(), idp = vec2(0.0).toVar()
-          Loop({ start: int(-1), end: int(1), condition: '<=', name: 'j' }, ({ j }) => {
-            Loop({ start: int(-1), end: int(1), condition: '<=', name: 'i' }, ({ i }) => {
-              const g = vec2(i.toFloat(), j.toFloat())
-              const o = vec2(hPav(iq.add(g)), hPav(iq.add(g).add(17.3))).mul(0.8).add(0.1)
-              const r = g.add(o).sub(fq)
-              const d = dot(r, r)
-              If(d.lessThan(d1), () => { d2.assign(d1); d1.assign(d); idp.assign(iq.add(g)) })
-                .ElseIf(d.lessThan(d2), () => { d2.assign(d) })
-            })
-          })
-          const borda = sqrt(d2).sub(sqrt(d1))
-          const pedra = smoothstep(0.04, 0.14, borda)
-          const tom = hPav(idp.add(3.1))
-          const baseP = mix(rgb, vec3(dot(rgb, vec3(0.3, 0.59, 0.11))).mul(vec3(1.02, 0.98, 0.93)), 0.45)
-          const c = baseP.mul(mix(0.74, 1.14, tom)).mul(mix(vec3(1.0), vec3(1.06, 0.97, 0.88), step(0.72, hPav(idp.add(9.7))))).toVar()
-          c.mulAssign(float(1.0).add(smoothstep(0.14, 0.4, borda).mul(0.1)).sub(0.06)) // centro abaulado
-          const junta = mix(c.mul(0.5), vec3(0.72, 0.62, 0.48), 0.45)
-          c.assign(mix(junta, c, pedra))
-          const longe = float(1.0).sub(smoothstep(25.0, 70.0, distance(cameraPosition, positionWorld)))
-          rgb.assign(mix(rgb, mix(rgb.mul(0.92), c, longe), vPiso))
-        })
+        rgb.assign(tslCalamento(W, rgb, vPiso))
         return rgb
       })()
     },

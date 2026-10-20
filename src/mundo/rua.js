@@ -9,6 +9,7 @@ import {
   NIVEL_CIDADE, pesos,
 } from './mapa.js'
 import { trechosJogo } from './fortaleza1932.js'
+import { CENTRO as CENTRO_PRACA, CONTORNO, dentroDaPraca } from './praca1932.js'
 import { RUAS, comprimentoRua, pontoNaRua } from './casario1932.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { LIMITES, pesoCidade1932 } from './mapa.js'
@@ -124,7 +125,9 @@ function postesEFios(cena, predios, grade) {
       const [x, z, nx, nz] = pontoNaRua(rua, d)
       const px = x + nx * 0.9
       const pz = z + nz * 0.9
-      const ok = distCosta(px, pz) > larguraPraia(px) + FIM_AVENIDA + 4 && ocupacao.livre(px, pz, 0.5, 0.5)
+      // a praça é livre: nenhum poste no meio dela, e o fio da rua para na borda
+      const naPraca = dentroDaPraca(px, pz)
+      const ok = !naPraca && distCosta(px, pz) > larguraPraia(px) + FIM_AVENIDA + 4 && ocupacao.livre(px, pz, 0.5, 0.5)
       if (!ok) { if (atual.length > 1) linhas.push(atual); atual.length = 0; continue }
       atual.push(new THREE.Vector3(px, alturaTerreno(px, pz), pz))
     }
@@ -142,6 +145,40 @@ function postesEFios(cena, predios, grade) {
       const b = linha[i + 1]
       for (let k = 0; k < 2; k++) fios.push(catenaria(topo(a, k * 2), topo(b, k * 2), rnd.entre(0.4, 0.8)))
     }
+  }
+  // A Light iluminava a praça pelo contorno: poste na calçada da borda, com o fio
+  // dando a volta. O meio fica livre (ver docs/mapa-1932.md, item 3a).
+  const anel = []
+  for (let i = 0; i < CONTORNO.length; i++) {
+    const [ax, az] = CONTORNO[i]
+    const [bx, bz] = CONTORNO[(i + 1) % CONTORNO.length]
+    const d = Math.hypot(bx - ax, bz - az)
+    const n = Math.max(1, Math.round(d / 12))
+    for (let k = 0; k < n; k++) {
+      const t = k / n
+      const x = ax + (bx - ax) * t
+      const z = az + (bz - az) * t
+      const dx = CENTRO_PRACA[0] - x
+      const dz = CENTRO_PRACA[1] - z
+      const r = Math.hypot(dx, dz) || 1
+      // onde a praça é estreita não cabe poste na calçada
+      if (r < 9) continue
+      const px = x + (dx / r) * 0.6 // na calçada, rente à borda
+      const pz = z + (dz / r) * 0.6
+      anel.push(new THREE.Vector3(px, alturaTerreno(px, pz), pz))
+    }
+  }
+  const topoAnel = (p, k) => {
+    const dx = p.x - CENTRO_PRACA[0]
+    const dz = p.z - CENTRO_PRACA[1]
+    const r = Math.hypot(dx, dz) || 1
+    return new THREE.Vector3(p.x + (dx / r) * (k - 1) * 0.75, p.y + 8.35, p.z + (dz / r) * (k - 1) * 0.75)
+  }
+  for (const p of anel) postes.push(p)
+  for (let i = 0; i < anel.length; i++) {
+    const a = anel[i]
+    const b = anel[(i + 1) % anel.length]
+    for (let k = 0; k < 2; k++) fios.push(catenaria(topoAnel(a, k * 2), topoAnel(b, k * 2), rnd.entre(0.4, 0.8)))
   }
   for (const p of favela) {
     postes.push(p)

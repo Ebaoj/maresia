@@ -166,7 +166,7 @@ async function foto(lugar) {
     }
     for (let i = 0; i < ${lugar.passos ?? 90}; i++) m.passo(1/60, false)
     m.passo(1/60, true)
-    return JSON.stringify({ x: Math.round(x ?? 0), z: Math.round(z ?? 0) })
+    return JSON.stringify({ alvo: [Math.round(x ?? 0), Math.round(z ?? 0)], jogador: m.jogador.pos.toArray().map((v) => Math.round(v)), cam: m.cam.camera.position.toArray().map((v) => Math.round(v)) })
   })()`
   const r = await avaliar(expr)
   const shot = await cmd('Page.captureScreenshot', { format: 'png' })
