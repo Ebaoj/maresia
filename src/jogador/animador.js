@@ -8,21 +8,58 @@
 import * as THREE from 'three'
 
 const v = () => new THREE.Vector3()
+
+// Rascunhos de módulo: o laço de quadro não aloca (cada coleta de lixo vira pico de quadro, e no M1 sob carga
+// o pico passa de 100 ms). A pose roda 12×/s e tudo aqui é síncrono, então um rascunho só vale dentro de uma
+// chamada: nunca se guarda um deles para a próxima. Cada grupo tem dono, para uma função não pisar no valor
+// vivo da que ela chama (ikDuas chama apontar; maosEm, olhar e outras chamam apontar/girarNoMundo/ikDuas).
+// - girarNoMundo e apontar
+const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _qr = new THREE.Quaternion() // _qr: a rotação a aplicar
+const _u1 = v(), _u2 = v() // direções unitárias de apontar
+// - ikDuas (chama apontar, que usa o grupo acima)
 const _a = v(), _b = v(), _c = v(), _t = v(), _p = v()
-const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion()
+const _dir = v() // A→alvo normalizada
+const _nb = v() // novo lugar da junta do meio
+const _d1 = v(), _d2 = v() // as duas direções (de, para) entregues a apontar
+const _b2 = v(), _c2 = v() // junta do meio e ponta depois de girar a coxa
+const _qPe = new THREE.Quaternion() // rotação de mundo do pé antes do IK
+// - métodos do Animador (nenhum deles usa os grupos acima por fora das chamadas a apontar/ikDuas/girarNoMundo)
+const _w1 = v(), _w2 = v(), _w3 = v(), _w4 = v(), _w5 = v()
+const _qw = new THREE.Quaternion()
+const _desl = v() // deslocamento pequeno somado a um ponto
+const _mar = v() // ponto do horizonte devolvido por vidaParado (válido até a próxima chamada)
+const CIMA = new THREE.Vector3(0, 1, 0) // só leitura
+const LADOS = ['Left', 'Right']
+const LADOS_SINAL = [['Left', 1], ['Right', -1]]
+const MOVIMENTOS_FASE = ['andar', 'correr', 'carregar-andando']
+// pernas completas (coxa, canela, pé) do corpo que está sendo corrigido; P: posição do pé / alvo do IK
+const _pernas = [0, 1].map(() => ({ coxa: null, canela: null, pe: null, P: v(), dif: 0 }))
+// preenche _pernas com as pernas que têm os três ossos e devolve quantas são (0 a 2)
+function reunirPernas(ossos) {
+  let n = 0
+  for (let i = 0; i < 2; i++) {
+    const L = LADOS[i]
+    const coxa = ossos.get(L + 'UpLeg'), canela = ossos.get(L + 'Leg'), pe = ossos.get(L + 'Foot')
+    if (!coxa || !canela || !pe) continue
+    const p = _pernas[n++]
+    p.coxa = coxa; p.canela = canela; p.pe = pe
+  }
+  return n
+}
+const angulo = (a) => Math.atan2(Math.sin(a), Math.cos(a))
 
 // gira um osso em torno de um eixo do mundo, mantendo o resto da hierarquia
 function girarNoMundo(osso, eixo, ang) {
   osso.parent.getWorldQuaternion(_q2)
   osso.getWorldQuaternion(_q)
-  _q.premultiply(new THREE.Quaternion().setFromAxisAngle(eixo, ang))
+  _q.premultiply(_qr.setFromAxisAngle(eixo, ang))
   osso.quaternion.copy(_q2.invert().multiply(_q))
   osso.updateMatrixWorld(true)
 }
 // gira o osso no mundo de forma que a direção "de" vire "para"
 function apontar(osso, de, para) {
   if (de.lengthSq() < 1e-8 || para.lengthSq() < 1e-8) return
-  const r = new THREE.Quaternion().setFromUnitVectors(de.clone().normalize(), para.clone().normalize())
+  const r = _qr.setFromUnitVectors(_u1.copy(de).normalize(), _u2.copy(para).normalize())
   osso.parent.getWorldQuaternion(_q2)
   osso.getWorldQuaternion(_q)
   _q.premultiply(r)
@@ -34,9 +71,10 @@ function apontar(osso, de, para) {
 function ikPerna(coxa, canela, pe, alvo) { ikDuas(coxa, canela, pe, alvo) }
 
 // IK de duas juntas genérico (perna: coxa/canela/pé; braço: braço/antebraço/mão). A ponta vai para
-// "alvo"; a junta do meio dobra para o lado em que já dobrava; a ponta mantém a rotação do movimento
+// "alvo"; a junta do meio dobra para o lado em que já dobrava; a ponta mantém a rotação do movimento.
+// "alvo" não pode ser um dos rascunhos deste grupo (_a, _b, _c, _t, _p, _dir, _nb, _d1, _d2, _b2, _c2)
 function ikDuas(coxa, canela, pe, alvo) {
-  const qPe = pe.getWorldQuaternion(new THREE.Quaternion())
+  const qPe = pe.getWorldQuaternion(_qPe)
   const A = coxa.getWorldPosition(_a)
   const B = canela.getWorldPosition(_b)
   const C = pe.getWorldPosition(_c)
@@ -44,7 +82,7 @@ function ikDuas(coxa, canela, pe, alvo) {
   const l2 = B.distanceTo(C)
   const AT = _t.subVectors(alvo, A)
   const d = THREE.MathUtils.clamp(AT.length(), Math.abs(l1 - l2) + 1e-3, l1 + l2 - 1e-3)
-  const dir = AT.clone().normalize()
+  const dir = _dir.copy(AT).normalize()
   // plano da dobra: a direção do joelho atual, tirada a componente ao longo de A→alvo
   const polo = _p.subVectors(B, A)
   polo.addScaledVector(dir, -polo.dot(dir))
@@ -52,11 +90,11 @@ function ikDuas(coxa, canela, pe, alvo) {
   polo.normalize()
   const cosA = (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)
   const ang = Math.acos(THREE.MathUtils.clamp(cosA, -1, 1))
-  const novoB = A.clone().addScaledVector(dir, Math.cos(ang) * l1).addScaledVector(polo, Math.sin(ang) * l1)
-  apontar(coxa, B.clone().sub(A), novoB.clone().sub(A))
-  const B2 = canela.getWorldPosition(v())
-  const C2 = pe.getWorldPosition(v())
-  apontar(canela, C2.clone().sub(B2), A.clone().addScaledVector(dir, d).sub(B2))
+  const novoB = _nb.copy(A).addScaledVector(dir, Math.cos(ang) * l1).addScaledVector(polo, Math.sin(ang) * l1)
+  apontar(coxa, _d1.copy(B).sub(A), _d2.copy(novoB).sub(A))
+  const B2 = canela.getWorldPosition(_b2)
+  const C2 = pe.getWorldPosition(_c2)
+  apontar(canela, _d1.copy(C2).sub(B2), _d2.copy(A).addScaledVector(dir, d).sub(B2))
   // o pé mantém a rotação que o movimento gravado deu
   canela.getWorldQuaternion(_q2)
   pe.quaternion.copy(_q2.invert().multiply(qPe))
@@ -157,7 +195,6 @@ export class Animador {
     // giro em andamento (meia-volta, virar no lugar): vai até perto do fim sem trocar
     // o pedido virou no meio do giro (frente, trás, frente...): solta a trava e procura de novo, senão
     // ele emendava uma meia-volta na outra e ficava oscilando de lado sem encarar nenhuma direção
-    const angulo = (a) => Math.atan2(Math.sin(a), Math.cos(a))
     const mudouPedido = mm.trava && s.yawPedido != null && mm.trava.yawPedido != null && Math.abs(angulo(s.yawPedido - mm.trava.yawPedido)) > 1.2
     // sem clipe tocando, o giro acabou: com atual nulo o quadro lido era 0, "antes do fim", e a trava nunca
     // soltava (S curto, soltar, S de novo: andava a 30% com a pose congelada no fim da volta e afundava)
@@ -229,7 +266,8 @@ export class Animador {
       const esc = mm.trava && mm.trava.chave === mm.chave ? mm.trava.escala : 1
       this.giroAcumulado = (this.giroAcumulado || 0) + (ent.R[fComp].yaw - ent.R[ant.f].yaw) * esc
     }
-    mm.raizAnt = { chave: mm.chave, f }
+    // o registro é reaproveitado (um por animador): nada de objeto novo a cada pose
+    if (ant) { ant.chave = mm.chave; ant.f = f } else mm.raizAnt = { chave: mm.chave, f }
   }
 
   // Pose pura do mixer, sem as correções de postura. O mixer do three só reescreve o osso cujo valor mudou:
@@ -340,15 +378,6 @@ export class Animador {
 
     // pesos alvo de cada movimento
     const alvo = {}
-    const loc = (vel, andarNome) => {
-      const vA = this.passadas.andar || 1.4
-      const vC = this.passadas.correr || 3.5
-      const tAndar = THREE.MathUtils.clamp(vel / (vA * 0.6), 0, 1)
-      const tCorrer = this.tem('correr') ? THREE.MathUtils.clamp((vel - vA) / (vC - vA), 0, 1) : 0
-      alvo[s.carregando && this.tem('carregar-parado') ? 'carregar-parado' : 'parado'] = 1 - tAndar
-      alvo[andarNome] = tAndar * (1 - tCorrer)
-      alvo.correr = tAndar * tCorrer
-    }
     if (this.umaVez) alvo[this.umaVez] = 1
     else if (s.sentado) alvo.sentado = 1
     else if (s.nadando) alvo[s.vel > 0.6 && this.tem('nadar') ? 'nadar' : 'boiar'] = 1
@@ -356,30 +385,32 @@ export class Animador {
     // parado de vez (sem pedir movimento): o "Breathing Idle", de braços soltos. O "idle" do pacote, que
     // o motion matching escolhia, deixa os braços em posição de sentido (o Joabe estranhou, 16/10)
     else if (this.mm && this.opcoes.mm && !s.carregando && s.traj && !(s.vel < 0.25 && (s.velPedida || 0) < 0.1 && this.tem('parado'))) this.casar(DT, s, alvo)
-    else loc(s.vel, s.carregando && this.tem('carregar-andando') ? 'carregar-andando' : 'andar')
+    else this.pesosDeLocomocao(alvo, s, s.vel, s.carregando && this.tem('carregar-andando') ? 'carregar-andando' : 'andar')
     // saiu do motion matching (parou, sentou, pulou...): o giro que estava travado acaba junto
     if (this.mm && !alvo[this.mm.chave]) { this.mm.tocando = false; this.mm.trava = null }
 
     // troca suave entre movimentos (pesos andam para o alvo) e o que não existe cai no "parado"
     let soma = 0
     const k = 1 - Math.exp(-DT * 12)
-    for (const [nome, a] of Object.entries(this.acoes)) {
+    // for-in na mesma ordem de Object.entries/values, sem o array de pares a cada pose
+    for (const nome in this.acoes) {
+      const a = this.acoes[nome]
       const w = alvo[nome] || 0
       a.userData.peso += (w - a.userData.peso) * k
       soma += a.userData.peso
     }
-    const faltou = Object.entries(alvo).reduce((t, [n, w]) => t + (this.acoes[n] ? 0 : w), 0)
+    let faltou = 0
+    for (const n in alvo) faltou += this.acoes[n] ? 0 : alvo[n]
     if (faltou > 0 && this.acoes.parado) this.acoes.parado.userData.peso += faltou * k
-    for (const a of Object.values(this.acoes)) a.setEffectiveWeight(soma > 0 ? a.userData.peso : 0)
+    for (const nome in this.acoes) { const a = this.acoes[nome]; a.setEffectiveWeight(soma > 0 ? a.userData.peso : 0) }
 
     // passada casada com a velocidade: uma fase só para andar e correr
     const andando = this.acoes['carregar-andando']?.userData.peso > this.acoes.andar?.userData.peso ? 'carregar-andando' : 'andar'
     const wC = this.acoes.correr?.userData.peso || 0
     const wA = this.acoes[andando]?.userData.peso || 0
-    const ciclo = (nome) => (this.acoes[nome] ? this.acoes[nome].getClip().duration * (this.passadas[nome === 'correr' ? 'correr' : 'andar'] || 1.4) : 1)
-    const comprimento = wA + wC > 0 ? (ciclo(andando) * wA + ciclo('correr') * wC) / (wA + wC) : ciclo(andando)
+    const comprimento = wA + wC > 0 ? (this.cicloDe(andando) * wA + this.cicloDe('correr') * wC) / (wA + wC) : this.cicloDe(andando)
     this.fase = (this.fase + (s.vel * DT) / Math.max(0.2, comprimento)) % 1
-    for (const nome of ['andar', 'correr', 'carregar-andando']) {
+    for (const nome of MOVIMENTOS_FASE) {
       const a = this.acoes[nome]
       if (a) { a.paused = true; a.time = this.fase * a.getClip().duration }
     }
@@ -414,8 +445,25 @@ export class Animador {
     this.molas?.atualizar(DT, s)
     this.detectarPisadas(s)
     this.rosto?.atualizar(DT, s)
-    this.antes = { noAr: s.noAr, sentado: s.sentado, yaw: s.yaw, vel: s.vel }
+    const antes = this.antes // o mesmo objeto de sempre, atualizado no lugar
+    antes.noAr = s.noAr; antes.sentado = s.sentado; antes.yaw = s.yaw; antes.vel = s.vel
     return true
+  }
+
+  // pesos alvo da locomoção parada/andando/correndo, pela velocidade (escreve em "alvo")
+  pesosDeLocomocao(alvo, s, vel, andarNome) {
+    const vA = this.passadas.andar || 1.4
+    const vC = this.passadas.correr || 3.5
+    const tAndar = THREE.MathUtils.clamp(vel / (vA * 0.6), 0, 1)
+    const tCorrer = this.tem('correr') ? THREE.MathUtils.clamp((vel - vA) / (vC - vA), 0, 1) : 0
+    alvo[s.carregando && this.tem('carregar-parado') ? 'carregar-parado' : 'parado'] = 1 - tAndar
+    alvo[andarNome] = tAndar * (1 - tCorrer)
+    alvo.correr = tAndar * tCorrer
+  }
+
+  // comprimento do ciclo de passada (m) de um movimento; 1 se ele não existe
+  cicloDe(nome) {
+    return this.acoes[nome] ? this.acoes[nome].getClip().duration * (this.passadas[nome === 'correr' ? 'correr' : 'andar'] || 1.4) : 1
   }
 
   // o pé tocou o chão neste quadro? (o calcanhar desceu a 2,5 cm depois de ter subido acima de 7 cm)
@@ -423,18 +471,18 @@ export class Animador {
   detectarPisadas(s) {
     this.pes ??= { Left: { alto: true }, Right: { alto: true } }
     if (s.noAr || s.nadando || s.sentado || !s.chao) return
-    for (const L of ['Left', 'Right']) {
+    for (const L of LADOS) {
       const pe = this.ossos.get(L + 'Foot')
       const dedo = this.ossos.get(L + 'ToeBase')
       if (!pe || !dedo) continue
-      const a = pe.getWorldPosition(v())
-      const b = dedo.getWorldPosition(v())
-      const meio = a.clone().lerp(b, 0.6)
+      const a = pe.getWorldPosition(_w1)
+      const b = dedo.getWorldPosition(_w2)
+      const meio = _w3.copy(a).lerp(b, 0.6)
       // calcanhar: o tornozelo fica ~6 cm acima do chão com o pé apoiado (medido no andar do Mixamo)
       const h = a.y - 0.06 - s.chao(meio.x, meio.z)
       const st = this.pes[L]
       if (st.alto && h < 0.025 && s.vel > 0.3) {
-        this.eventos.push({ tipo: 'pisada', pos: meio, yaw: s.yaw, lado: L === 'Left' ? -1 : 1 })
+        this.eventos.push({ tipo: 'pisada', pos: meio.clone(), yaw: s.yaw, lado: L === 'Left' ? -1 : 1 })
         st.alto = false
       } else if (!st.alto && h > 0.07) st.alto = true
     }
@@ -449,21 +497,21 @@ export class Animador {
     const k = 1 - Math.exp(-DT * 6)
     // ponto atrás das costas (mais de ~110° da frente do corpo): não torce o pescoço, olha em frente
     if (ponto) {
-      const q = this.ossos.get('Hips').getWorldPosition(v())
-      const fr = v().set(0, 0, 1).applyQuaternion(this.ossos.get('Hips').getWorldQuaternion(new THREE.Quaternion()))
-      const para = ponto.clone().sub(q)
+      const q = this.ossos.get('Hips').getWorldPosition(_w1)
+      const fr = _w2.set(0, 0, 1).applyQuaternion(this.ossos.get('Hips').getWorldQuaternion(_qw))
+      const para = _w3.copy(ponto).sub(q)
       fr.y = 0; para.y = 0
       if (fr.angleTo(para) > 1.9) ponto = null
     }
     this.olharPeso = (this.olharPeso || 0) + ((ponto ? 1 : 0) - (this.olharPeso || 0)) * k
     if (ponto) this.olharAlvo = (this.olharAlvo || ponto.clone()).lerp(ponto, k)
     if (!this.olharAlvo || this.olharPeso < 0.02) return
-    const pc = cabeca.getWorldPosition(v()).add(v().set(0, 0.1, 0))
-    const desejo = this.olharAlvo.clone().sub(pc).normalize()
-    const frente = this.eixos.cabecaFrente.clone().applyQuaternion(cabeca.getWorldQuaternion(new THREE.Quaternion()))
+    const pc = cabeca.getWorldPosition(_w1).add(_desl.set(0, 0.1, 0))
+    const desejo = _w2.copy(this.olharAlvo).sub(pc).normalize()
+    const frente = _w3.copy(this.eixos.cabecaFrente).applyQuaternion(cabeca.getWorldQuaternion(_qw))
     let ang = frente.angleTo(desejo)
     if (ang < 1e-3) return
-    const eixo = v().crossVectors(frente, desejo).normalize()
+    const eixo = _w4.crossVectors(frente, desejo).normalize()
     ang = Math.min(ang, 1.2) * this.olharPeso // ~70° de pescoço no máximo
     girarNoMundo(pescoco, eixo, ang * 0.4)
     girarNoMundo(cabeca, eixo, ang * 0.6)
@@ -489,8 +537,9 @@ export class Animador {
     if (this.gesto.t > this.gesto.dur) { this.gesto = null; return null }
     if (this.gesto.tipo === 'mar') {
       // o mar fica ao norte (z negativo): olha o horizonte, um pouco à esquerda ou à direita
-      const q = this.ossos.get('Hips').getWorldPosition(v())
-      return q.add(v().set(Math.sin(this.gesto.t * 0.6) * 6, 0.6, -25))
+      // devolve o rascunho _mar: vale até a próxima chamada (olhar() lê no mesmo quadro e copia para olharAlvo)
+      const q = this.ossos.get('Hips').getWorldPosition(_mar)
+      return q.add(_desl.set(Math.sin(this.gesto.t * 0.6) * 6, 0.6, -25))
     }
     return null
   }
@@ -508,30 +557,33 @@ export class Animador {
     const cabeca = this.ossos.get('Head')
     const a = this.ossos.get('RightArm'), b = this.ossos.get('RightForeArm'), c = this.ossos.get('RightHand')
     if (!cabeca || !a || !b || !c) return
-    const aba = this.eixos.abaChapeu.clone().applyMatrix4(cabeca.matrixWorld)
-    const mao = c.getWorldPosition(v())
+    const aba = _w1.copy(this.eixos.abaChapeu).applyMatrix4(cabeca.matrixWorld)
+    const mao = c.getWorldPosition(_w2)
     ikDuas(a, b, c, mao.lerp(aba, w))
   }
 
   // segurando algo: as duas mãos vão aos lados do objeto (mundo)
   maosEm({ x, y, z, raio = 0.2 }) {
-    const centro = v().set(x, y, z)
+    const centro = _w1.set(x, y, z)
     const quadril = this.ossos.get('Hips')
-    const direita = this.eixos.quadrilEsquerda.clone().applyQuaternion(quadril.getWorldQuaternion(new THREE.Quaternion()))
+    const direita = _w2.copy(this.eixos.quadrilEsquerda).applyQuaternion(quadril.getWorldQuaternion(_qw))
     direita.y = 0
     direita.normalize()
     // frente e centro do quadril: quem segura põe o objeto aqui (a pose de carregar vem com o quadril
     // girado; pela direção do controle o coco ficava de lado, com uma mão na frente e outra atrás)
-    this.frenteCorpo = new THREE.Vector3().crossVectors(direita, new THREE.Vector3(0, 1, 0))
-    this.centroCorpo = quadril.getWorldPosition(new THREE.Vector3())
-    for (const [L, s] of [['Left', 1], ['Right', -1]]) {
+    // (dois vetores por animador, atualizados no lugar; quem lê, interacoes.js, só olha x e z)
+    this.frenteCorpo ??= new THREE.Vector3()
+    this.centroCorpo ??= new THREE.Vector3()
+    this.frenteCorpo.crossVectors(direita, CIMA)
+    quadril.getWorldPosition(this.centroCorpo)
+    for (const [L, s] of LADOS_SINAL) {
       const a = this.ossos.get(L + 'Arm'), b = this.ossos.get(L + 'ForeArm'), c = this.ossos.get(L + 'Hand')
       if (!a || !b || !c) continue
-      ikDuas(a, b, c, centro.clone().addScaledVector(direita, s * (raio + 0.02)))
+      ikDuas(a, b, c, _w3.copy(centro).addScaledVector(direita, s * (raio + 0.02)))
       // palma virada para o objeto (antes ficava para baixo e só a ponta dos dedos encostava)
       if (this.palma[L]) {
-        const palma = this.palma[L].clone().applyQuaternion(c.getWorldQuaternion(new THREE.Quaternion()))
-        const paraCentro = centro.clone().sub(c.getWorldPosition(v())).normalize()
+        const palma = _w3.copy(this.palma[L]).applyQuaternion(c.getWorldQuaternion(_qw))
+        const paraCentro = _w4.copy(centro).sub(c.getWorldPosition(_w5)).normalize()
         apontar(c, palma, paraCentro)
       }
     }
@@ -541,21 +593,21 @@ export class Animador {
   // A diferença entre o repouso e o alvo é fixa; o que o movimento faz por cima (respirar, encolher) fica.
   endireitarClavicula(alvoGraus) {
     const alvo = THREE.MathUtils.degToRad(alvoGraus)
-    for (const L of ['Left', 'Right']) {
+    for (const L of LADOS) {
       const c = this.ossos.get(L + 'Shoulder'), b = this.ossos.get(L + 'Arm')
       if (!c || !b || this.clavRep[L] == null) continue
       const sobe = this.clavRep[L] - alvo
       // só levanta ombro que nasceu caído demais (o neto MakeHuman, 28 a 33°); nunca abaixa: o neto do
       // Tripo nasce com 8° e a camada abaixava o ombro dele 10° (17/10/2026)
       if (sobe < 0.005) continue
-      const d = b.getWorldPosition(v()).sub(c.getWorldPosition(v()))
-      const h = v().set(d.x, 0, d.z)
+      const d = b.getWorldPosition(_w1).sub(c.getWorldPosition(_w2))
+      const h = _w3.set(d.x, 0, d.z)
       const L0 = d.length()
       if (h.lengthSq() < 1e-8) continue
       h.normalize()
       const atual = Math.atan2(-d.y, Math.hypot(d.x, d.z))
       const novo = atual - sobe
-      const d2 = h.multiplyScalar(Math.cos(novo)).add(v().set(0, -Math.sin(novo), 0)).multiplyScalar(L0)
+      const d2 = h.multiplyScalar(Math.cos(novo)).add(_w4.set(0, -Math.sin(novo), 0)).multiplyScalar(L0)
       apontar(c, d, d2)
     }
   }
@@ -564,18 +616,18 @@ export class Animador {
   // o que lê como "duro" num corpo de camisa larga. Aproxima do corpo a parte da abertura que passa
   // de 6°, sem mexer no balanço para a frente e para trás.
   bracosJuntos(s, quanto) {
-    const lado = v().set(Math.cos(s.yaw), 0, -Math.sin(s.yaw)) // esquerda do corpo no mundo
-    for (const [L, sinal] of [['Left', 1], ['Right', -1]]) {
+    const lado = _w1.set(Math.cos(s.yaw), 0, -Math.sin(s.yaw)) // esquerda do corpo no mundo
+    for (const [L, sinal] of LADOS_SINAL) {
       const braco = this.ossos.get(L + 'Arm')
       const ante = this.ossos.get(L + 'ForeArm')
       if (!braco || !ante) continue
-      const u = ante.getWorldPosition(v()).sub(braco.getWorldPosition(v())).normalize()
-      const ladoDoBraco = lado.clone().multiplyScalar(sinal)
+      const u = ante.getWorldPosition(_w2).sub(braco.getWorldPosition(_w3)).normalize()
+      const ladoDoBraco = _w4.copy(lado).multiplyScalar(sinal)
       const abre = Math.asin(THREE.MathUtils.clamp(u.dot(ladoDoBraco), -1, 1)) // + = para fora
       const excesso = abre - 0.105 // 6°
       if (excesso <= 0) continue
-      const alvo = u.clone().addScaledVector(ladoDoBraco, -Math.sin(excesso * quanto)).normalize()
-      const eixo = v().crossVectors(u, alvo)
+      const alvo = _w5.copy(u).addScaledVector(ladoDoBraco, -Math.sin(excesso * quanto)).normalize()
+      const eixo = _w3.crossVectors(u, alvo)
       if (eixo.lengthSq() < 1e-10) continue
       girarNoMundo(braco, eixo.normalize(), u.angleTo(alvo))
     }
@@ -592,8 +644,8 @@ export class Animador {
     const k = 1 - Math.exp(-DT * 8)
     this.inclinacao.lado += (alvoLado - this.inclinacao.lado) * k
     this.inclinacao.frente += (alvoFrente - this.inclinacao.frente) * k
-    const frente = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw))
-    const direita = new THREE.Vector3(Math.cos(s.yaw), 0, -Math.sin(s.yaw))
+    const frente = _w1.set(Math.sin(s.yaw), 0, Math.cos(s.yaw))
+    const direita = _w2.set(Math.cos(s.yaw), 0, -Math.sin(s.yaw))
     const quadril = this.ossos.get('Hips')
     // o corpo todo tomba a partir do quadril; a coluna devolve metade para a cabeça ficar mais reta
     girarNoMundo(quadril, frente, -this.inclinacao.lado)
@@ -609,17 +661,18 @@ export class Animador {
   // o corpo não ficar deslocado do lugar do jogador num parado longo.
   ancorarPes(DT, s) {
     const f = 1 - THREE.MathUtils.clamp((s.vel - 0.15) / 0.5, 0, 1)
-    const pe = ['LeftFoot', 'RightFoot'].map((n) => this.ossos.get(n))
+    const peE = this.ossos.get('LeftFoot'), peD = this.ossos.get('RightFoot')
     const quadril = this.ossos.get('Hips')
-    if (!quadril || pe.some((o) => !o)) return
+    if (!quadril || !peE || !peD) return
     const raiz = this.corpo.raiz
-    const centro = raiz.worldToLocal(pe[0].getWorldPosition(v()).add(pe[1].getWorldPosition(v())).multiplyScalar(0.5))
-    if (!this.ancoraPes || f < 0.01) { this.ancoraPes = centro.clone(); return }
+    const centro = raiz.worldToLocal(peE.getWorldPosition(_w1).add(peD.getWorldPosition(_w2)).multiplyScalar(0.5))
+    // a âncora é um vetor só por animador (this.ancoraPes aponta para ele, ou é null quando não há âncora)
+    if (!this.ancoraPes || f < 0.01) { this.ancoraPes = (this._ancora ??= new THREE.Vector3()).copy(centro); return }
     this.ancoraPes.lerp(centro, 1 - Math.exp(-DT * 0.05))
-    const delta = v().set(this.ancoraPes.x - centro.x, 0, this.ancoraPes.z - centro.z).multiplyScalar(f)
+    const delta = _w2.set(this.ancoraPes.x - centro.x, 0, this.ancoraPes.z - centro.z).multiplyScalar(f)
     if (delta.lengthSq() < 1e-8) return
     // de local da raiz para mundo (só direção) e daí para o pai do quadril
-    const w = quadril.getWorldPosition(v()).add(delta.applyQuaternion(raiz.getWorldQuaternion(new THREE.Quaternion())))
+    const w = quadril.getWorldPosition(_w3).add(delta.applyQuaternion(raiz.getWorldQuaternion(_qw)))
     quadril.parent.worldToLocal(w)
     quadril.position.copy(w)
     quadril.updateMatrixWorld(true)
@@ -632,48 +685,46 @@ export class Animador {
     const f = 1 - THREE.MathUtils.clamp((s.vel - 0.3) / 0.7, 0, 1)
     if (f < 0.01) return
     const quadril = this.ossos.get('Hips')
-    const pernas = ['Left', 'Right'].map((L) => ({ coxa: this.ossos.get(L + 'UpLeg'), canela: this.ossos.get(L + 'Leg'), pe: this.ossos.get(L + 'Foot') }))
-    if (!quadril || pernas.some((p) => !p.coxa || !p.canela || !p.pe)) return
+    if (!quadril || reunirPernas(this.ossos) < 2) return // _pernas[i].P guarda o pé de cada perna
     const cosAlvo = Math.cos(THREE.MathUtils.degToRad(alvoGraus))
     let sobe = Infinity
-    for (const p of pernas) {
-      const A = p.coxa.getWorldPosition(v()), B = p.canela.getWorldPosition(v()), C = p.pe.getWorldPosition(v())
-      p.C = C
+    for (let i = 0; i < 2; i++) {
+      const p = _pernas[i]
+      const A = p.coxa.getWorldPosition(_w1), B = p.canela.getWorldPosition(_w2), C = p.pe.getWorldPosition(p.P)
       const a = A.distanceTo(B), b = B.distanceTo(C)
       const dAlvo = Math.sqrt(a * a + b * b + 2 * a * b * cosAlvo)
-      const d = C.clone().sub(A)
+      const d = _w3.copy(C).sub(A)
       const horiz2 = d.x * d.x + d.z * d.z
       if (dAlvo * dAlvo <= horiz2) { sobe = 0; continue }
       sobe = Math.min(sobe, Math.sqrt(dAlvo * dAlvo - horiz2) - Math.abs(d.y))
     }
     if (!(sobe > 0.001)) return
-    const w = quadril.getWorldPosition(v())
+    const w = quadril.getWorldPosition(_w1)
     w.y += Math.min(sobe, 0.06) * f
     quadril.parent.worldToLocal(w)
     quadril.position.copy(w)
     quadril.updateMatrixWorld(true)
-    for (const p of pernas) ikPerna(p.coxa, p.canela, p.pe, p.C)
+    for (let i = 0; i < 2; i++) { const p = _pernas[i]; ikPerna(p.coxa, p.canela, p.pe, p.P) }
   }
 
   pesNoChao(s) {
-    const raizY = this.corpo.raiz.getWorldPosition(v()).y
-    const pernas = ['Left', 'Right'].map((L) => ({
-      coxa: this.ossos.get(L + 'UpLeg'), canela: this.ossos.get(L + 'Leg'), pe: this.ossos.get(L + 'Foot'),
-    })).filter((p) => p.coxa && p.canela && p.pe)
-    const alvos = pernas.map((p) => {
-      const P = p.pe.getWorldPosition(v())
-      const dif = s.chao(P.x, P.z) - raizY // quanto o chão debaixo deste pé difere do chão do corpo
-      return { p, P, dif }
-    })
-    const desce = Math.min(0, ...alvos.map((a) => a.dif))
+    const raizY = this.corpo.raiz.getWorldPosition(_w1).y
+    const n = reunirPernas(this.ossos) // só as pernas completas; _pernas[i].P guarda o pé e .dif a diferença
+    let desce = 0
+    for (let i = 0; i < n; i++) {
+      const p = _pernas[i]
+      const P = p.pe.getWorldPosition(p.P)
+      p.dif = s.chao(P.x, P.z) - raizY // quanto o chão debaixo deste pé difere do chão do corpo
+      desce = Math.min(desce, p.dif)
+    }
     if (desce < 0) {
       const q = this.ossos.get('Hips')
-      const w = q.getWorldPosition(v())
+      const w = q.getWorldPosition(_w1)
       w.y += desce
       q.parent.worldToLocal(w)
       q.position.copy(w)
       q.updateMatrixWorld(true)
     }
-    for (const { p, P, dif } of alvos) ikPerna(p.coxa, p.canela, p.pe, P.add(new THREE.Vector3(0, dif, 0)))
+    for (let i = 0; i < n; i++) { const p = _pernas[i]; ikPerna(p.coxa, p.canela, p.pe, p.P.add(_desl.set(0, p.dif, 0))) }
   }
 }
