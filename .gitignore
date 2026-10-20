@@ -8,8 +8,13 @@ arte/.venv/
 arte/saida/
 __pycache__/
 
+# arte/finais: 1,9 GB de trabalho intermediário (renders, vídeos, iterações do
+# gato e da rotoscopia). Fora do git. Os arquivos que o jogo carrega entram em
+# LFS na fase da integração (ver .gitattributes).
+arte/finais
+
 # movimentos do Mixamo: licença permite usar no jogo, não redistribuir os arquivos crus
-public/animacoes/mixamo/
+public/animacoes
 
 # geometria preparada da vg (node scripts/preparar-geometria.mjs gera de novo)
 public/vg/
