@@ -174,6 +174,9 @@ export const PADRAO = {
     tamBlocoMax: 768,      // até este tamanho; 0 em copiasMinBloco desliga a junção
     motorPlaca: false,     // KAN-72: no WebGPU, árvores e plantas no desenho guiado pela placa (three-virtual-geometry): menos objetos por quadro. Desligado até passar na régua
     atoresVat: true,       // KAN-74 fase 2b: atores de fundo como cópias com a pose em textura de ossos; só vale no WebGPU; recarregar
+    resolucaoDinamica: false, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Desligada até passar na medição
+    resolucaoMin: 0.6,     // R1: menor escala que a resolução dinâmica aceita
+    orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
   },
   audio: {
     volume: 0.6,

@@ -48,6 +48,7 @@ import { criarInteracoes } from './jogador/interacoes.js'
 import { carregarAvo } from './jogador/avo.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
 import { AranhaversoGpu } from './pos/aranhaverso-gpu.js'
+import { ResolucaoDinamica } from './render/resolucao-dinamica.js'
 import { criarHud } from './ui/hud.js'
 import { criarPainel } from './ui/painel.js'
 import { criarSom } from './audio.js'
@@ -208,9 +209,21 @@ async function iniciar() {
   const som = criarSom(cfg)
   const painel = criarPainel(cfg)
 
+  // R1: resolução dinâmica guiada pelo tempo de quadro (cfg.desempenho.resolucaoDinamica, desligada por padrão).
+  // O teto é a resolução do painel; a escala viva fica em dinamica.escala
+  const dinamica = new ResolucaoDinamica({
+    alvo: cfg.desempenho.resolucao,
+    minimo: cfg.desempenho.resolucaoMin,
+    orcamentoMs: cfg.desempenho.orcamentoQuadroMs,
+  })
+  let resolucaoDoPainel = cfg.desempenho.resolucao // para notar quando o usuário mexe nela
+  let dinamicaLigada = false
+  let tamanhoTravado = false // a foto justa fixa o tamanho (tamanhoFixo): a resolução dinâmica não roda nesse tempo
+  const escalaAtual = () => (cfg.desempenho.resolucaoDinamica ? dinamica.escala : cfg.desempenho.resolucao)
+
   let resolucao = 0
   function redimensionar() {
-    resolucao = Math.min(cfg.desempenho.resolucao, devicePixelRatio || 1)
+    resolucao = Math.min(escalaAtual(), devicePixelRatio || 1)
     renderer.setPixelRatio(resolucao)
     renderer.setSize(innerWidth, innerHeight, false)
     camera.aspect = innerWidth / innerHeight
@@ -364,7 +377,19 @@ async function iniciar() {
     const real = relogio.getDelta()
     estatistica.msQuadro += (real * 1000 - estatistica.msQuadro) * 0.05
     if (controle.pausado) return
-    if (Math.min(cfg.desempenho.resolucao, devicePixelRatio || 1) !== resolucao) redimensionar()
+    // R1: o usuário mexeu na resolução do painel (ou ligou a chave agora): recomeça do teto. Senão, a escala segue o tempo
+    // de quadro; ao mudar, o teste logo abaixo refaz o tamanho do desenho
+    if (cfg.desempenho.resolucao !== resolucaoDoPainel || cfg.desempenho.resolucaoDinamica !== dinamicaLigada) {
+      resolucaoDoPainel = cfg.desempenho.resolucao
+      dinamicaLigada = cfg.desempenho.resolucaoDinamica
+      dinamica.redefinir(resolucaoDoPainel)
+    }
+    if (dinamicaLigada && !tamanhoTravado) {
+      dinamica.minimo = cfg.desempenho.resolucaoMin
+      dinamica.orcamentoMs = cfg.desempenho.orcamentoQuadroMs
+      dinamica.quadro(real * 1000)
+    }
+    if (Math.min(escalaAtual(), devicePixelRatio || 1) !== resolucao) redimensionar()
     passo(Math.min(real, 1 / 20))
     // tempo até o primeiro quadro desenhado de verdade (com os shaders montados), para comparar renderizadores
     if (window.__primeiroQuadroMs === undefined) window.__primeiroQuadroMs = Math.round(performance.now())
@@ -384,6 +409,7 @@ async function iniciar() {
   window.__tempos = tempos
   // tamanho fixo do desenho (foto justa): mesma resolução nos dois renderizadores, sem depender da janela
   const tamanhoFixo = (w, h) => {
+    tamanhoTravado = !!w
     if (!w) { redimensionar(); return }
     renderer.setPixelRatio(1)
     renderer.setSize(w, h, false)
@@ -391,7 +417,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos),
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos),
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
