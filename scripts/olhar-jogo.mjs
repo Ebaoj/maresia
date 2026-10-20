@@ -8,6 +8,14 @@
 //   [{ "nome": "centro", "lon": -38.5276, "lat": -3.7275, "yaw": -1.5708,
 //      "pitch": 0.25, "dist": 6, "hora": 9.5, "x": 29, "z": 316 }]
 // Sem plano, o script so conta e tira uma foto do lugar do console.
+//
+// O renderizador e o WebGPU (decisao do Joabe, Fase 4 do docs/plano-20-10-2026.md): o
+// script grava a preferencia no localStorage antes da pagina carregar e avisa se o jogo
+// abriu em WebGL. Para forcar o WebGL mesmo assim: RENDERIZADOR=webgl.
+//
+// Variaveis de ambiente:
+//   RENDERIZADOR   'webgpu' (padrao) ou 'webgl'
+//   PORTA_EXTRA    soma na porta do CDP (para rodar dois olhares ao mesmo tempo)
 
 import { spawn } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
@@ -17,13 +25,17 @@ import { join } from 'node:path'
 const url = process.argv[2] || 'http://localhost:5195/'
 const espera = Number(process.argv[3] || 90)
 const plano = process.argv[4] ? JSON.parse(readFileSync(process.argv[4], 'utf8')) : null
+const RENDERIZADOR = process.env.RENDERIZADOR || 'webgpu'
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const PORTA = 9223 + (Number(process.env.PORTA_EXTRA) || 0)
 
 const perfil = mkdtempSync(join(tmpdir(), 'maresia-chrome-'))
 const chrome = spawn(CHROME, [
-  '--headless=new', '--no-sandbox', '--use-angle=swiftshader', '--use-gl=angle',
-  '--enable-unsafe-swiftshader', '--enable-features=Vulkan,UseSkiaRenderer',
+  '--headless=new', '--no-sandbox',
+  // o WebGPU precisa do Dawn: --enable-unsafe-webgpu libera o adaptador e o
+  // --use-angle=metal usa a GPU de verdade da maquina (no Mac, o Dawn fala Metal)
+  '--enable-unsafe-webgpu', '--use-angle=metal',
+  '--enable-features=Vulkan,UseSkiaRenderer',
   `--remote-debugging-port=${PORTA}`, `--user-data-dir=${perfil}`,
   '--window-size=1280,720', 'about:blank',
 ], { stdio: 'ignore' })
@@ -75,6 +87,18 @@ const avaliar = async (expression, comPromessa = true) => {
 await cmd('Runtime.enable')
 await cmd('Log.enable')
 await cmd('Page.enable')
+// o renderizador e escolhido pelo config salvo no navegador: escreve antes de a
+// pagina carregar, para o jogo ja nascer no renderizador pedido
+await cmd('Page.addScriptToEvaluateOnNewDocument', {
+  source: `(() => {
+    try {
+      const chave = 'maresia.config.v8'
+      const atual = JSON.parse(localStorage.getItem(chave) || '{}')
+      atual.desempenho = { ...(atual.desempenho || {}), renderizador: ${JSON.stringify(RENDERIZADOR)} }
+      localStorage.setItem(chave, JSON.stringify(atual))
+    } catch (e) { console.error('nao deu para gravar o renderizador:', e) }
+  })()`,
+})
 await cmd('Page.navigate', { url })
 
 let pronto = false
@@ -92,9 +116,19 @@ const estado = await avaliar(`JSON.stringify({
   tempos: window.__tempos || null,
   Predios: window.maresia?.predios?.length ?? null,
   recusa: window.maresia?.recusa ?? null,
+  webgpu: window.maresia?.webgpu ?? null,
+  renderizador: window.maresia?.cfg?.desempenho?.renderizador ?? null,
+  shadersQuebrados: (window.__shadersQuebrados || []).length,
 })`, false)
 console.log('--- estado ---')
 console.log(estado.valor || estado.erro)
+// o renderizador pedido e o WebGPU: se o jogo abriu em WebGL, a foto nao serve
+const st = estado.valor ? JSON.parse(estado.valor) : {}
+const webgpu = st.webgpu === true
+console.log(webgpu
+  ? '--- renderizador: WebGPU ---'
+  : `--- ATENCAO: o jogo abriu em ${st.renderizador || 'desconhecido'} (WebGPU: ${st.webgpu}) ---`)
+if (st.shadersQuebrados) console.log(`--- shaders quebrados: ${st.shadersQuebrados} ---`)
 console.log('--- console do jogo ---')
 console.log(logs.slice(0, 40).join('\n') || '(nenhuma mensagem)')
 console.log(pronto ? '--- o jogo montou ---' : '--- o jogo NAO montou no tempo previsto ---')
@@ -152,4 +186,4 @@ ws.close()
 chrome.kill()
 await dormir(300)
 try { rmSync(perfil, { recursive: true, force: true }) } catch { /* perfil temporario */ }
-process.exit(pronto ? 0 : 1)
+process.exit(pronto && webgpu ? 0 : 1)
