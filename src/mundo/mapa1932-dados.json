@@ -1,0 +1,1043 @@
+{
+ "fonte": {
+  "dados": "Prefeitura de Fortaleza - camada 'Evolucao Urbana 1932' (vw_EvolucaoUrbana1932)",
+  "origem": "https://mapas.fortaleza.ce.gov.br/api/download/geojson/697",
+  "nota": "10.519 lotes com uso por lote em 1932 (HISTORIC_1) e Situacao (HISTORICO). Base: plantas de Fortaleza de 1932, 1945 e 2010 (Prefeitura, 2023).",
+  "malha": "src/mundo/mapa1932-malha.png (raster do uso por lote e das ruas) e src/mundo/mapa1932-lotes.json (os lotes com a frente de rua); ambos escritos por docs/mapa-1932-lotes.py",
+  "coordenadas": "longitude/latitude WGS84; converter com ll() de src/mundo/fortaleza1932.js"
+ },
+ "janela": {
+  "lon_min": -38.572,
+  "lon_max": -38.484,
+  "lat_min": -3.77,
+  "lat_max": -3.713,
+  "celula_m": 3.0,
+  "pixels": [
+   3258,
+   2100
+  ],
+  "origem_pixel": [
+   -4887.732148419619,
+   -1326.8880000000013
+  ],
+  "nota": "o pixel (0,0) e o canto noroeste; x cresce para leste, z para o sul"
+ },
+ "paleta": {
+  "Residencial": "#d8c9a8",
+  "Comercial": "#e0ab4f",
+  "Prestacao servicos": "#c7b189",
+  "Institucional": "#a6bacb",
+  "Saude": "#b9d1ba",
+  "Transporte": "#8b8b86",
+  "Hotelaria": "#d2a4bb",
+  "Religioso": "#9c4340",
+  "Instrucao": "#a5c39a",
+  "Do lazer": "#c7b3d5",
+  "Desportivo": "#b6c7d5",
+  "Industrial": "#c0742a",
+  "Fechado": "#bdbdb2",
+  "Comunicacao": "#8e7ea7",
+  "Sem": "#d8c9a8"
+ },
+ "costa": [
+  [
+   -38.64,
+   -3.682
+  ],
+  [
+   -38.612,
+   -3.688
+  ],
+  [
+   -38.603,
+   -3.6915
+  ],
+  [
+   -38.5995,
+   -3.6945
+  ],
+  [
+   -38.597,
+   -3.693
+  ],
+  [
+   -38.591,
+   -3.6955
+  ],
+  [
+   -38.584,
+   -3.6985
+  ],
+  [
+   -38.576,
+   -3.7015
+  ],
+  [
+   -38.568,
+   -3.7045
+  ],
+  [
+   -38.561,
+   -3.7072
+  ],
+  [
+   -38.554,
+   -3.7102
+  ],
+  [
+   -38.547,
+   -3.7128
+  ],
+  [
+   -38.541,
+   -3.715
+  ],
+  [
+   -38.536,
+   -3.7165
+  ],
+  [
+   -38.531,
+   -3.7182
+  ],
+  [
+   -38.5275,
+   -3.7186
+  ],
+  [
+   -38.5262,
+   -3.7172
+  ],
+  [
+   -38.5248,
+   -3.718
+  ],
+  [
+   -38.521,
+   -3.7178
+  ],
+  [
+   -38.517,
+   -3.7176
+  ],
+  [
+   -38.512,
+   -3.7188
+  ],
+  [
+   -38.506,
+   -3.72
+  ],
+  [
+   -38.499,
+   -3.7212
+  ],
+  [
+   -38.492,
+   -3.7216
+  ],
+  [
+   -38.486,
+   -3.7208
+  ],
+  [
+   -38.481,
+   -3.7186
+  ],
+  [
+   -38.4775,
+   -3.7158
+  ],
+  [
+   -38.4745,
+   -3.7136
+  ],
+  [
+   -38.471,
+   -3.714
+  ],
+  [
+   -38.466,
+   -3.7168
+  ],
+  [
+   -38.459,
+   -3.721
+  ],
+  [
+   -38.452,
+   -3.726
+  ],
+  [
+   -38.444,
+   -3.732
+  ],
+  [
+   -38.436,
+   -3.739
+  ]
+ ],
+ "rios": {
+  "ceara": [
+   [
+    -38.5975,
+    -3.6935
+   ],
+   [
+    -38.6005,
+    -3.7
+   ],
+   [
+    -38.596,
+    -3.707
+   ],
+   [
+    -38.603,
+    -3.714
+   ],
+   [
+    -38.5965,
+    -3.722
+   ],
+   [
+    -38.6045,
+    -3.731
+   ],
+   [
+    -38.598,
+    -3.74
+   ],
+   [
+    -38.606,
+    -3.75
+   ],
+   [
+    -38.6,
+    -3.762
+   ],
+   [
+    -38.605,
+    -3.772
+   ]
+  ],
+  "pajeu": [
+   [
+    -38.512,
+    -3.746
+   ],
+   [
+    -38.5165,
+    -3.74
+   ],
+   [
+    -38.5185,
+    -3.734
+   ],
+   [
+    -38.5215,
+    -3.729
+   ],
+   [
+    -38.5235,
+    -3.7245
+   ],
+   [
+    -38.5255,
+    -3.7212
+   ],
+   [
+    -38.527,
+    -3.7192
+   ]
+  ]
+ },
+ "lagos": [
+  {
+   "nome": "Açude João Lopes",
+   "lon": -38.5565,
+   "lat": -3.7275,
+   "rx": 24,
+   "rz": 9
+  }
+ ],
+ "bondes": [
+  {
+   "nome": "Estação",
+   "distancia_m": 2450,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.52996,
+     -3.72222
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  },
+  {
+   "nome": "Via-Férrea",
+   "distancia_m": 930,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.5288,
+     -3.7245
+    ],
+    [
+     -38.5294,
+     -3.7229
+    ],
+    [
+     -38.5302,
+     -3.72195
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  },
+  {
+   "nome": "Praia",
+   "distancia_m": 1530,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.525,
+     -3.724
+    ],
+    [
+     -38.5225,
+     -3.72
+    ],
+    [
+     -38.51996,
+     -3.71657
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  },
+  {
+   "nome": "Mororó",
+   "distancia_m": 1100,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.5315,
+     -3.724
+    ],
+    [
+     -38.536,
+     -3.7215
+    ],
+    [
+     -38.53864,
+     -3.72013
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  },
+  {
+   "nome": "Matadouro",
+   "distancia_m": 4200,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.533,
+     -3.7295
+    ],
+    [
+     -38.538,
+     -3.7308
+    ],
+    [
+     -38.5437,
+     -3.73138
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  },
+  {
+   "nome": "Alagadiço",
+   "distancia_m": 5440,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.533,
+     -3.73
+    ],
+    [
+     -38.542,
+     -3.735
+    ],
+    [
+     -38.5565,
+     -3.737
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  },
+  {
+   "nome": "Benfica",
+   "distancia_m": 2630,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.53,
+     -3.735
+    ],
+    [
+     -38.534,
+     -3.742
+    ],
+    [
+     -38.537,
+     -3.746
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  },
+  {
+   "nome": "Outeiro",
+   "distancia_m": 2500,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.523,
+     -3.729
+    ],
+    [
+     -38.519,
+     -3.73
+    ],
+    [
+     -38.51771,
+     -3.73008
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  },
+  {
+   "nome": "Fernandes Vieira",
+   "distancia_m": 1800,
+   "tracado": [
+    [
+     -38.52758,
+     -3.72746
+    ],
+    [
+     -38.521,
+     -3.7275
+    ],
+    [
+     -38.516,
+     -3.7273
+    ],
+    [
+     -38.512,
+     -3.727
+    ]
+   ],
+   "esquematico": true,
+   "nota": "o traco e uma reta entre ancoras reais, nao a rota historica. A distancia e a medida de 1918 (Almanach)."
+  }
+ ],
+ "trilhos": [
+  {
+   "nome": "Ferrovia do Baturité: Central → Arronches",
+   "confianca": "D",
+   "tracado": [
+    [
+     -38.5302,
+     -3.72195
+    ],
+    [
+     -38.5345,
+     -3.719
+    ],
+    [
+     -38.54,
+     -3.7175
+    ],
+    [
+     -38.547,
+     -3.716
+    ],
+    [
+     -38.554,
+     -3.714
+    ],
+    [
+     -38.562,
+     -3.711
+    ],
+    [
+     -38.57,
+     -3.708
+    ]
+   ]
+  },
+  {
+   "nome": "Ramal do Urubu: Central → Oficinas (Trem dos Operários)",
+   "confianca": "H",
+   "tracado": [
+    [
+     -38.5302,
+     -3.72195
+    ],
+    [
+     -38.536,
+     -3.719
+    ],
+    [
+     -38.546,
+     -3.716
+    ],
+    [
+     -38.556,
+     -3.7156
+    ],
+    [
+     -38.5646,
+     -3.7156
+    ]
+   ]
+  },
+  {
+   "nome": "Ligação da EFB ao trapiche do Poço das Dragas",
+   "confianca": "H",
+   "tracado": [
+    [
+     -38.5302,
+     -3.72195
+    ],
+    [
+     -38.527,
+     -3.7238
+    ],
+    [
+     -38.525,
+     -3.726
+    ]
+   ]
+  }
+ ],
+ "lugares": {
+  "pracaFerreira": {
+   "nome": "Praça do Ferreira",
+   "lon": -38.52758,
+   "lat": -3.72746,
+   "papel": "centro dos bondes",
+   "confianca": "D"
+  },
+  "passeioPublico": {
+   "nome": "Passeio Público",
+   "lon": -38.5263,
+   "lat": -3.72264,
+   "papel": "",
+   "confianca": "D"
+  },
+  "fonte": {
+   "nome": "Forte",
+   "lon": -38.52468,
+   "lat": -3.72274,
+   "papel": "",
+   "confianca": "D"
+  },
+  "se": {
+   "nome": "Sé",
+   "lon": -38.52503,
+   "lat": -3.72402,
+   "papel": "",
+   "confianca": "D"
+  },
+  "santaCasa": {
+   "nome": "Santa Casa",
+   "lon": -38.52756,
+   "lat": -3.72222,
+   "papel": "",
+   "confianca": "D"
+  },
+  "pracaLeoes": {
+   "nome": "Praça dos Leões",
+   "lon": -38.52626,
+   "lat": -3.72693,
+   "papel": "",
+   "confianca": "D"
+  },
+  "theatro": {
+   "nome": "Theatro",
+   "lon": -38.53171,
+   "lat": -3.72779,
+   "papel": "1911",
+   "confianca": "D"
+  },
+  "estacao": {
+   "nome": "Estação Central",
+   "lon": -38.5302,
+   "lat": -3.72195,
+   "papel": "prédio de 1880",
+   "confianca": "D"
+  },
+  "pracaEstacao": {
+   "nome": "Praça Castro Carreira",
+   "lon": -38.52996,
+   "lat": -3.72222,
+   "papel": "",
+   "confianca": "D"
+  },
+  "cemiterio": {
+   "nome": "Cemitério S. João Batista",
+   "lon": -38.53864,
+   "lat": -3.72013,
+   "papel": "fim da linha do Mororó",
+   "confianca": "D"
+  },
+  "mercado": {
+   "nome": "Mercado Público",
+   "lon": -38.52433,
+   "lat": -3.72329,
+   "papel": "",
+   "confianca": "D"
+  },
+  "parqueLiberdade": {
+   "nome": "Parque da Liberdade",
+   "lon": -38.52584,
+   "lat": -3.73146,
+   "papel": "",
+   "confianca": "D"
+  },
+  "pracaMestres": {
+   "nome": "Praça dos Mártires",
+   "lon": -38.5257,
+   "lat": -3.7215,
+   "papel": "",
+   "confianca": "H"
+  },
+  "ponteVelha": {
+   "nome": "Ponte Velha (Metálica)",
+   "lon": -38.51996,
+   "lat": -3.71657,
+   "papel": "o porto velho",
+   "confianca": "D"
+  },
+  "ponteIngleses": {
+   "nome": "Ponte dos Ingleses",
+   "lon": -38.51681,
+   "lat": -3.71805,
+   "papel": "",
+   "confianca": "D"
+  },
+  "pocoDraga": {
+   "nome": "Poço da Draga",
+   "lon": -38.52097,
+   "lat": -3.71945,
+   "papel": "",
+   "confianca": "H"
+  },
+  "colégioMilitar": {
+   "nome": "Colégio Militar",
+   "lon": -38.51771,
+   "lat": -3.73008,
+   "papel": "fim da linha do Outeiro",
+   "confianca": "D"
+  },
+  "oficinasUrubu": {
+   "nome": "Oficinas do Urubu (RVC)",
+   "lon": -38.5646,
+   "lat": -3.7156,
+   "papel": "inauguradas em 4/out/1930",
+   "confianca": "H"
+  },
+  "vilaFerroviaria": {
+   "nome": "Vila Demósthenes Rockert",
+   "lon": -38.5678,
+   "lat": -3.7141,
+   "papel": "vila operária",
+   "confianca": "H"
+  },
+  "campoUrubu": {
+   "nome": "Campo do Urubu",
+   "lon": -38.57,
+   "lat": -3.7176,
+   "papel": "",
+   "confianca": "H"
+  },
+  "estacaoOtavio": {
+   "nome": "Estação Otávio Bonfim",
+   "lon": -38.5437,
+   "lat": -3.73138,
+   "papel": "campo do Matadouro",
+   "confianca": "D"
+  },
+  "lagoaPorangabussu": {
+   "nome": "Lagoa de Porangabussu",
+   "lon": -38.55076,
+   "lat": -3.74416,
+   "papel": "",
+   "confianca": "D"
+  },
+  "barraCeara": {
+   "nome": "Barra do Ceará",
+   "lon": -38.59,
+   "lat": -3.696,
+   "papel": "foz do Rio Ceará",
+   "confianca": "H"
+  },
+  "favela1932": {
+   "nome": "Favela",
+   "lon": -38.52612,
+   "lat": -3.72959,
+   "papel": "",
+   "confianca": "D"
+  }
+ },
+ "bairros": [
+  {
+   "nome": "Barra do Ceará",
+   "lon": -38.588,
+   "lat": -3.703,
+   "confianca": "D"
+  },
+  {
+   "nome": "Urubu",
+   "lon": -38.5752,
+   "lat": -3.7088,
+   "confianca": "H"
+  },
+  {
+   "nome": "Pirambu",
+   "lon": -38.564,
+   "lat": -3.712,
+   "confianca": "D"
+  },
+  {
+   "nome": "Jacarecanga",
+   "lon": -38.548,
+   "lat": -3.7215,
+   "confianca": "D"
+  },
+  {
+   "nome": "Moura Brasil",
+   "lon": -38.538,
+   "lat": -3.719,
+   "confianca": "D"
+  },
+  {
+   "nome": "Centro",
+   "lon": -38.53,
+   "lat": -3.733,
+   "confianca": "D"
+  },
+  {
+   "nome": "Praia Formosa",
+   "lon": -38.5345,
+   "lat": -3.7225,
+   "confianca": "D"
+  },
+  {
+   "nome": "Poço da Draga",
+   "lon": -38.5235,
+   "lat": -3.7145,
+   "confianca": "D"
+  },
+  {
+   "nome": "Praia de Iracema",
+   "lon": -38.515,
+   "lat": -3.7185,
+   "confianca": "D"
+  },
+  {
+   "nome": "Prainha",
+   "lon": -38.5165,
+   "lat": -3.7285,
+   "confianca": "D"
+  },
+  {
+   "nome": "Aldeota",
+   "lon": -38.505,
+   "lat": -3.735,
+   "confianca": "D"
+  },
+  {
+   "nome": "Meireles",
+   "lon": -38.495,
+   "lat": -3.725,
+   "confianca": "D"
+  },
+  {
+   "nome": "Mucuripe",
+   "lon": -38.478,
+   "lat": -3.718,
+   "confianca": "D"
+  },
+  {
+   "nome": "Alagadiço",
+   "lon": -38.556,
+   "lat": -3.737,
+   "confianca": "D"
+  },
+  {
+   "nome": "Otávio Bonfim",
+   "lon": -38.5485,
+   "lat": -3.7345,
+   "confianca": "D"
+  },
+  {
+   "nome": "Benfica",
+   "lon": -38.537,
+   "lat": -3.742,
+   "confianca": "D"
+  },
+  {
+   "nome": "Tauape",
+   "lon": -38.522,
+   "lat": -3.752,
+   "confianca": "D"
+  }
+ ],
+ "campoUrubu": {
+  "confianca": "H",
+  "poligono": [
+   [
+    -38.5745,
+    -3.7205
+   ],
+   [
+    -38.5705,
+    -3.7218
+   ],
+   [
+    -38.566,
+    -3.72
+   ],
+   [
+    -38.5642,
+    -3.7166
+   ],
+   [
+    -38.5672,
+    -3.7142
+   ],
+   [
+    -38.5722,
+    -3.7152
+   ],
+   [
+    -38.5752,
+    -3.7178
+   ]
+  ],
+  "tarefas": 20,
+  "galpoes": 4,
+  "construcoes": [
+   "cozinha",
+   "posto medico",
+   "capela"
+  ],
+  "lugares": {
+   "tarefas": [
+    {
+     "lon": -38.566204037184,
+     "lat": -3.7180142857142857,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.56559884041486,
+     "lat": -3.7186772911854264,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.56709662481421,
+     "lat": -3.7189889874603472,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.56821259811014,
+     "lat": -3.7191439917197067,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.56867940931584,
+     "lat": -3.719869933070581,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.56997142857143,
+     "lat": -3.7200843441662306,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.5709545530486,
+     "lat": -3.7194262866028818,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.5718816649153,
+     "lat": -3.7192412405100663,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.57360122895146,
+     "lat": -3.7192449689424496,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.57387032454832,
+     "lat": -3.7186054663312387,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.572933939818675,
+     "lat": -3.7180142857142857,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.57343579429396,
+     "lat": -3.717488991918981,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.573696479437345,
+     "lat": -3.716751307824382,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.57213238639429,
+     "lat": -3.716626291201073,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.57088420407835,
+     "lat": -3.7167033227011737,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.56997142857143,
+     "lat": -3.7161159070638456,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.568579765249424,
+     "lat": -3.716015525747541,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.56804519932726,
+     "lat": -3.716777058594986,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.567416869110225,
+     "lat": -3.7171481627446736,
+     "largura_m": 140,
+     "profundidade_m": 84
+    },
+    {
+     "lon": -38.56577268522647,
+     "lat": -3.7173776399315264,
+     "largura_m": 140,
+     "profundidade_m": 84
+    }
+   ],
+   "galpoes": [
+    {
+     "lon": -38.575012621347916,
+     "lat": -3.7149394218222316,
+     "largura_m": 240,
+     "profundidade_m": 110
+    },
+    {
+     "lon": -38.57231198236051,
+     "lat": -3.7149394218222316,
+     "largura_m": 240,
+     "profundidade_m": 110
+    },
+    {
+     "lon": -38.56961134337311,
+     "lat": -3.7149394218222316,
+     "largura_m": 240,
+     "profundidade_m": 110
+    },
+    {
+     "lon": -38.566910704385705,
+     "lat": -3.7149394218222316,
+     "largura_m": 240,
+     "profundidade_m": 110
+    }
+   ],
+   "construcoes": [
+    {
+     "nome": "cozinha",
+     "lon": -38.57105168416639,
+     "lat": -3.7193708433137216,
+     "raio_m": 34
+    },
+    {
+     "nome": "posto medico",
+     "lon": -38.56889117297647,
+     "lat": -3.7193708433137216,
+     "raio_m": 34
+    },
+    {
+     "nome": "capela",
+     "lon": -38.56997142857143,
+     "lat": -3.720365652219974,
+     "raio_m": 34
+    }
+   ]
+  },
+  "nota": "reconstituicao. O campo ficava na vizinhanca da Rede de Viacao Cearense, no sentido do mar (Diario do Nordeste, apuracao de 2019). Galpoes de folha de zinco, redes em estacas, cozinha; 20 tarefas de terra cercadas com arame."
+ },
+ "favela1932": {
+  "lon": -38.52612,
+  "lat": -3.72959,
+  "nota": "unico lote da planta de 1932 com Situacao 'Favela'"
+ }
+}
