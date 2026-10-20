@@ -1,0 +1,3 @@
+// Mesmo build WASM de Ammo distribuído no Three.js; usado apenas nos ensaios locais.
+import fs from 'node:fs/promises';import vm from 'node:vm';import {createRequire}from'node:module';import{fileURLToPath}from'node:url';import path from'node:path';
+export async function carregarAmmoNode(){const file=fileURLToPath(new URL('../../node_modules/three/examples/jsm/libs/ammo.wasm.js',import.meta.url)),context={console,process,require:createRequire(import.meta.url),__filename:file,__dirname:path.dirname(file),setTimeout,clearTimeout,Buffer};vm.createContext(context);vm.runInContext(await fs.readFile(file,'utf8'),context);return await context.Ammo({wasmBinary:await fs.readFile(file.replace(/\.js$/,'.wasm'))});}

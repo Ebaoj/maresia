@@ -1,0 +1,13 @@
+A 3x3 grid sheet with NINE different variations of the same kind of animal: a black-and-white tuxedo street cat (a "frajola") from Fortaleza, Brazil, in 1932. Original design, NOT the cartoon character Sylvester, no cartoon eyes, no clothes, no human expressions.
+STYLE: hand-painted stylized 3D look inspired by Arcane (Fortiche), same painting style as the attached reference: flat painted colors with visible brush strokes, fur as chunky painted locks, no photo-real fur, almost no baked light or shadow, slightly exaggerated proportions (long legs, big ears, angular head). The attached image of an old man is a STYLE REFERENCE ONLY: do NOT draw the old man.
+LAYOUT: each cat standing on all four legs in a three-quarter side view facing left, whole body visible with tail, centered in its own cell, all cats at the same scale. Plain light gray background, flat even lighting, no cast shadow, no scenery, no props. A large clear black number from 1 to 9 in the top-left corner of each cell, reading left to right, top to bottom. No other text.
+VARIATIONS (lean, short-haired, alert street cats of a poor beach neighborhood, not fluffy pet cats):
+1. classic tuxedo: black body, white chest bib, white paws, white muzzle
+2. black mask with a white blaze up the nose, white socks reaching the knees
+3. mostly black, small white chest spot and white chin, one white back foot
+4. "mustache" cat: white face with a black spot under the nose like a mustache, black cap and back
+5. half-face split, black on one side and white on the other side of the face, white belly
+6. scruffy old tomcat: torn notched left ear, thick neck, broad cheeks, white bib, scar on the nose
+7. slim young cat with very long legs and a long thin tail with a white tip
+8. mostly white with a black saddle, black tail and black ears
+9. black cat with white gloves only on the front paws and a white star on the chest

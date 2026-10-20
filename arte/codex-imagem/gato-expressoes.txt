@@ -1,0 +1,9 @@
+An expression sheet for animating the cat in the attached image. Copy EXACTLY this cat: same head shape, same coat pattern (white face and muzzle, black cap on top of the head, black ears), same small triangular ears with the clean notch in the cat's LEFT ear, yellow-green eyes, pink nose, short sleek fur, NO whiskers, same hand-painted stylized look inspired by Arcane (flat painted colors, visible soft brush strokes, almost no baked shadow). Original design, not a cartoon character; keep it a real cat, no human-like eyebrows or human mouths.
+LAYOUT: landscape image, a 3x2 grid of six head-and-shoulders portraits of the SAME cat, all seen straight from the FRONT, same scale, same head position and size in each cell, so the differences are only the expression. Plain light gray background, flat even lighting, no cast shadow, no text, no labels, no numbers, no grid lines.
+Expressions, shown the way real cats show them (mostly ears, eyes and pupils; mouth only when meowing):
+top-left: CALM: ears upright and relaxed, eyes half-open and soft, slit pupils, mouth closed
+top-center: CURIOUS: ears pointing sharply forward, eyes wide open and round, medium round pupils, head very slightly tilted, mouth closed
+top-right: SCARED: ears flattened sideways and back, eyes very wide, huge round black pupils, fur on the cheeks slightly puffed, mouth closed
+bottom-left: ANGRY: ears pinned flat back against the head, eyes narrowed, thin slit pupils, mouth open in a hiss showing small fangs and pink tongue, nose wrinkled
+bottom-center: SLEEPY: ears relaxed and slightly sideways, eyes almost closed (thin curved lines), mouth closed
+bottom-right: MEOWING: ears upright, eyes open, mouth open in a meow showing the pink inside of the mouth, small tongue and tiny teeth

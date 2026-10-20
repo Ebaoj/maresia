@@ -1,0 +1,18 @@
+{
+  "id": "A04",
+  "nome": "corrida-perfil",
+  "inicio_s": 41.9,
+  "fim_s": 42.55,
+  "duracao_s": 0.6499999999999986,
+  "quadros": 20,
+  "arquivo": "arte/entradas/referencias/catalogo-2026-10-18/A04/original.webm",
+  "tempos_amostras": [
+    41.912,
+    42.045,
+    42.178,
+    42.312,
+    42.445
+  ],
+  "fps_nominal": "30000/1001",
+  "nota": "Tempos da seleção relativos ao arquivo original; quadros e MP4 começam no primeiro quadro após o seek. Sem interpolação de movimento."
+}

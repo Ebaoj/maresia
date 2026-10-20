@@ -1,0 +1,18 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 720,
+      "height": 1366,
+      "r_frame_rate": "25/1",
+      "avg_frame_rate": "25/1",
+      "nb_frames": "1075"
+    }
+  ],
+  "format": {
+    "duration": "43.000000"
+  },
+  "sha256": "b3d547d8f26fdde4ac9319d0f0ca8ac8522a7d95c478f7514561e37f0d3660dc",
+  "arquivo": "arte/entradas/referencias/gato-pulo/pexels-6853178-estante-sobe.mp4"
+}

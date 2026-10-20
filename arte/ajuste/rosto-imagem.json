@@ -1,0 +1,104 @@
+{
+ "rosto": {
+  "head-scale-horiz-incr": 0.6,
+  "head-fat-incr": 0.08,
+  "head-square": 0.07,
+  "head-invertedtriangular": 0.15,
+  "l-cheek-volume-decr": 0.07,
+  "r-cheek-volume-decr": 0.07,
+  "l-eye-scale-incr": 0.53,
+  "r-eye-scale-incr": 0.53,
+  "l-eye-height1-incr": 0.3,
+  "r-eye-height1-incr": 0.3,
+  "l-eye-trans-out": 0.68,
+  "r-eye-trans-out": 0.68,
+  "l-eye-trans-down": 0.3,
+  "r-eye-trans-down": 0.3,
+  "nose-scale-vert-decr": 0.08,
+  "mouth-scale-horiz-decr": 0.15,
+  "mouth-trans-up": 0.07,
+  "mouth-upperlip-volume-decr": 0.8,
+  "mouth-upperlip-height-incr": 0.31,
+  "mouth-lowerlip-height-decr": 0.53,
+  "chin-height-decr": 0.3,
+  "chin-prominent-decr": 0.07,
+  "chin-prognathism-decr": 0.67,
+  "forehead-trans-forward": 0.8
+ },
+ "variaveis": {
+  "head-scale-horiz": 0.6,
+  "head-fat": 0.08,
+  "head-square": 0.07,
+  "head-round": 0.0,
+  "head-invertedtriangular": 0.15,
+  "cheek-bones": 0.0,
+  "cheek-volume": -0.07,
+  "eye-scale": 0.53,
+  "eye-height1": 0.3,
+  "eye-height2": 0.0,
+  "eye-height3": 0.0,
+  "eye-trans-inout": 0.68,
+  "eye-trans-updown": -0.3,
+  "eye-corner1": 0.0,
+  "eye-corner2": 0.0,
+  "nose-scale-horiz": 0.0,
+  "nose-flaring": 0.0,
+  "nose-point-width": 0.0,
+  "nose-scale-vert": -0.08,
+  "nose-scale-depth": 0.0,
+  "nose-trans-updown": 0.0,
+  "mouth-scale-horiz": -0.15,
+  "mouth-scale-vert": 0.0,
+  "mouth-trans-updown": 0.07,
+  "upperlip-volume": -0.8,
+  "lowerlip-volume": 0.0,
+  "upperlip-height": 0.31,
+  "lowerlip-height": -0.53,
+  "chin-width": 0.0,
+  "chin-height": -0.3,
+  "chin-prominent": -0.07,
+  "chin-prognathism": -0.67,
+  "forehead-fb": 0.8
+ },
+ "erro": 0.14404099387027425,
+ "caixas": {
+  "olho_d": [
+   -0.49099099099099097,
+   -0.036036036036036036,
+   -0.24774774774774774,
+   0.05405405405405406
+  ],
+  "olho_e": [
+   0.23873873873873874,
+   -0.036036036036036036,
+   0.481981981981982,
+   0.05405405405405406
+  ],
+  "boca": [
+   -0.24774774774774774,
+   0.5315315315315315,
+   0.22972972972972974,
+   0.7297297297297297
+  ]
+ },
+ "alvo": {
+  "olho_d": [
+   -0.536036036036036,
+   -0.07657657657657657,
+   -0.1981981981981982,
+   0.05855855855855856
+  ],
+  "olho_e": [
+   0.19369369369369369,
+   -0.07657657657657657,
+   0.536036036036036,
+   0.05855855855855856
+  ],
+  "boca": [
+   -0.25675675675675674,
+   0.509009009009009,
+   0.22072072072072071,
+   0.7117117117117117
+  ]
+ }
+}

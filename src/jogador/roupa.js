@@ -6,6 +6,8 @@
 // Mesma interface do pano de molas (pano.js): atualizar(dt, { vento, ventoDir, forca }).
 
 import * as THREE from 'three'
+import { criarColisores } from './roupa-colisores.js'
+import { PADRAO } from '../config.js'
 import { carregarJolt, CAMADA } from './jolt.js'
 
 const CELULA = 0.045
@@ -13,9 +15,10 @@ const _m = new THREE.Matrix4()
 const _v = new THREE.Vector3()
 
 // ---- pano invisível: agrupa os vértices em células e refaz as faces entre os grupos ----
-function montarProxy(geo, celula) {
+function montarProxy(geo, celula, geoRender = geo) {
   const pos = geo.attributes.position, si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight
   const N = pos.count
+  const superficieFornecida = geoRender !== geo
   const grupoDe = new Int32Array(N)
   const celulas = new Map() // "i,j,k" -> grupo
   const soma = [], conta = [], chaveDe = []
@@ -30,7 +33,7 @@ function montarProxy(geo, celula) {
   for (let i = 0; i < N; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i)
     const ci = Math.floor(x / celula), cj = Math.floor(y / celula), ck = Math.floor(z / celula)
-    const k = `${ci},${cj},${ck},${dono[i]}`
+    const k = superficieFornecida ? String(i) : `${ci},${cj},${ck},${dono[i]}`
     let g = celulas.get(k)
     if (g === undefined) {
       g = soma.length; celulas.set(k, g); soma.push(new THREE.Vector3()); conta.push(0); chaveDe.push([ci, cj, ck])
@@ -65,26 +68,30 @@ function montarProxy(geo, celula) {
   }
   // cada vértice desenhado segue os 4 pontos mais perto (grupos vizinhos na grade) que tenham a mesma pele
   // que ele (pesos de osso parecidos), peso pelo inverso da distância
-  const indices = new Float32Array(N * 4), pesos = new Float32Array(N * 4)
+  const rp = geoRender.attributes.position, rsi = geoRender.attributes.skinIndex, rsw = geoRender.attributes.skinWeight
+  const indices = new Float32Array(rp.count * 4), pesos = new Float32Array(rp.count * 4)
   const cand = []
   const parecida = (i, g) => {
     let s = 0
     for (let c = 0; c < 4; c++) {
-      const o = si.getComponent(i, c), w = sw.getComponent(i, c)
+      const o = rsi.getComponent(i, c), w = rsw.getComponent(i, c)
       for (const [og, wg] of pele[g]) if (og === o) s += Math.min(w, wg)
     }
     return s
   }
-  for (let i = 0; i < N; i++) {
-    _v.fromBufferAttribute(pos, i)
-    const [ci, cj, ck] = chaveDe[grupoDe[i]]
+  for (let i = 0; i < rp.count; i++) {
+    _v.fromBufferAttribute(rp, i)
+    const proprio = geoRender === geo ? grupoDe[i] : -1
+    const [ci, cj, ck] = proprio >= 0 ? chaveDe[proprio] : [Math.floor(_v.x / celula), Math.floor(_v.y / celula), Math.floor(_v.z / celula)]
     cand.length = 0
-    cand.push([grupoDe[i], _v.distanceTo(pontos[grupoDe[i]])])
+    if (proprio >= 0) cand.push([proprio, _v.distanceTo(pontos[proprio])])
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
       for (const g of porCelula.get(`${ci + a},${cj + b},${ck + c}`) || []) {
-        if (g !== grupoDe[i] && parecida(i, g) > 0.35) cand.push([g, _v.distanceTo(pontos[g])])
+        if (g !== proprio && parecida(i, g) > 0.35) cand.push([g, _v.distanceTo(pontos[g])])
       }
     }
+    // Uma parede interna pode ter outro osso dominante: ainda segue a superfície física mais perto.
+    if (!cand.length) for (let g = 0; g < pontos.length; g++) cand.push([g, _v.distanceTo(pontos[g])])
     cand.sort((p, q) => p[1] - q[1])
     let total = 0
     for (let k = 0; k < 4; k++) {
@@ -136,14 +143,15 @@ function injetar(material, tex, largura) {
 const suave = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 
 // o quanto cada ponto pode se afastar do lugar dele (m), pela região da peça no repouso (pose em T)
-function regrasCamisa(pontos) {
+function regrasCamisa(pontos, { fisica }) {
   const yMin = Math.min(...pontos.map((p) => p.y)), yMax = Math.max(...pontos.map((p) => p.y))
   const xMax = Math.max(...pontos.map((p) => Math.abs(p.x)))
   return (p) => {
-    if (p.y > yMax - 0.1 && Math.abs(p.x) < 0.25) return 0 // gola e ombros presos
-    let d = 0.006
-    if (Math.abs(p.x) < 0.3) d = Math.max(d, 0.055 * (1 - suave(yMin, yMin + 0.18, p.y))) // barra solta (cai sobre a coxa sentado)
-    d = Math.max(d, 0.035 * suave(xMax - 0.1, xMax, Math.abs(p.x))) // punho da manga
+    // Só a borda superior sustenta a peça; ombros e tronco podem dobrar sobre o colisor.
+    if (p.y > yMax - fisica.roupaGola && Math.abs(p.x) < 0.13) return 0
+    let d = fisica.roupaFolga
+    if (Math.abs(p.x) < 0.3) d = Math.max(d, fisica.roupaBarra * (1 - suave(yMin, yMin + 0.18, p.y)))
+    d = Math.max(d, fisica.roupaManga * suave(xMax - 0.1, xMax, Math.abs(p.x)))
     return d
   }
 }
@@ -151,19 +159,19 @@ function regrasCalca(pontos, { barraPorCima = Infinity } = {}) {
   const yMin = Math.min(...pontos.map((p) => p.y)), yMax = Math.max(...pontos.map((p) => p.y))
   return (p) => {
     if (p.y > Math.min(yMax - 0.08, barraPorCima - 0.02)) return 0 // cós preso; debaixo da camisa também
-    return Math.max(0.004, 0.035 * (1 - suave(yMin, yMin + 0.16, p.y))) // boca da calça
+    return 0.035 * (1 - suave(yMin, yMin + 0.16, p.y)) // só a boca fica solta; quadril e pernas seguem o ajuste ao corpo
   }
 }
 
 // uma peça: malha desenhada com esqueleto + regra de folga -> corpo mole no Jolt
 // barraPorCima: altura (repouso) da barra da peça que vai por cima; o que esta peça tem acima dela fica
 // preso e 1,5 cm para dentro, para a de cima ganhar sempre (o Jolt não bate pano com pano)
-function criarPeca(jolt, malha, regra, { barraPorCima = Infinity, camada = CAMADA.PANO_SOLTO } = {}) {
+function criarPeca(jolt, malha, regra, { barraPorCima = Infinity, camada = CAMADA.PANO_SOLTO, fisica = PADRAO.personagem } = {}) {
   const { J } = jolt
   const geo = malha.geometry
-  const proxy = montarProxy(geo, CELULA)
+  const proxy = montarProxy(malha.userData.roupaProxy || geo, CELULA, geo)
   const P = proxy.pontos.length
-  const folga = regra(proxy.pontos, { barraPorCima })
+  const folga = regra(proxy.pontos, { barraPorCima, fisica })
   const bones = malha.skeleton.bones
   const nJ = bones.length
 
@@ -184,7 +192,7 @@ function criarPeca(jolt, malha, regra, { barraPorCima = Infinity, camada = CAMAD
   const atr = new J.SoftBodySharedSettingsVertexAttributes()
   atr.mCompliance = 0.00001
   atr.mShearCompliance = 0.0001
-  atr.mBendCompliance = 0.002
+  atr.mBendCompliance = fisica.roupaFlexao
   conf.CreateConstraints(atr, 1, J.SoftBodySharedSettings_EBendType_Distance)
   J.destroy(atr)
   // juntas: inverso da ligação (osso no repouso) vezes a matriz da ligação da malha
@@ -205,16 +213,16 @@ function criarPeca(jolt, malha, regra, { barraPorCima = Infinity, camada = CAMAD
       w.mWeight = peso
     })
     s.mMaxDistance = maxDist[i]
-    s.mBackStopDistance = 0.006
+    s.mBackStopDistance = camada === CAMADA.PANO_SOLTO ? fisica.roupaFolga : 0.006
     s.mBackStopRadius = 0.4
   }
   conf.CalculateSkinnedConstraintNormals()
   conf.Optimize()
   const cs = new J.SoftBodyCreationSettings(conf, new J.RVec3(0, 0, 0), new J.Quat(0, 0, 0, 1), camada)
   cs.mUpdatePosition = false
-  cs.mNumIterations = 4
-  cs.mLinearDamping = 1.2
-  cs.mVertexRadius = 0.004
+  cs.mNumIterations = fisica.roupaIteracoes
+  cs.mLinearDamping = fisica.roupaAmortecimento
+  cs.mVertexRadius = fisica.roupaEspessura
   cs.mGravityFactor = 1
   const corpo = jolt.corpos.CreateSoftBody(cs)
   J.destroy(cs)
@@ -244,78 +252,12 @@ function criarPeca(jolt, malha, regra, { barraPorCima = Infinity, camada = CAMAD
   return { malha, proxy, P, mov, corpo, base, passo, offPos, offVel, ordem, tex, dados, presos, nJ, maxDist, sim: new Float32Array(P * 3), pele: new Float32Array(P * 3) }
 }
 
-// ---- cápsulas do corpo: coxa e canela, onde a camisa bate ----
-// (o anteparo de cada ponto só segura o pano fora da pele do próprio lugar; a barra da camisa não sabe
-// da coxa que sobe na corrida nem no sentar). Raio medido no corpo, um pouco menor que o membro, para
-// não brigar com a manga e a calça que já o envolvem.
-// Só as pernas: a cápsula do braço caído encostava na lateral da camisa e empurrava o pano para dentro
-// do tronco (a pele aparecia); a manga já é presa ao braço.
-const MEMBROS = [['LeftUpLeg', 'LeftLeg'], ['LeftLeg', 'LeftFoot'], ['RightUpLeg', 'RightLeg'], ['RightLeg', 'RightFoot']]
-const TRECHO = [0.35, 0.9]
-function criarCapsulas(jolt, corpo) {
-  const { J } = jolt
-  const ossos = corpo.skeleton.bones
-  const acha = (n) => ossos.findIndex((b) => b.name.replace(/^mixamorig:?/, '') === n)
-  corpo.updateMatrixWorld(true)
-  const pos = corpo.geometry.attributes.position, si = corpo.geometry.attributes.skinIndex, sw = corpo.geometry.attributes.skinWeight
-  const dono = new Int32Array(pos.count)
-  for (let i = 0; i < pos.count; i++) {
-    let mw = -1
-    for (let c = 0; c < 4; c++) if (sw.getComponent(i, c) > mw) { mw = sw.getComponent(i, c); dono[i] = si.getComponent(i, c) }
-  }
-  const seg = new THREE.Line3(), perto = new THREE.Vector3(), p = new THREE.Vector3()
-  const capsulas = []
-  for (const [a, b] of MEMBROS) {
-    const ia = acha(a), ib = acha(b)
-    if (ia < 0 || ib < 0) continue
-    // tudo na pose da ligação (a malha no arquivo e os ossos como estavam quando foram ligados a ela)
-    const naLigacao = (j) => new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(corpo.bindMatrix).invert().multiply(new THREE.Matrix4().copy(corpo.skeleton.boneInverses[j]).invert()))
-    const A = naLigacao(ia), B = naLigacao(ib)
-    seg.set(A, B)
-    const d = []
-    for (let i = 0; i < pos.count; i++) {
-      if (dono[i] !== ia) continue
-      p.fromBufferAttribute(pos, i)
-      // só o meio do membro: a ponta do braço pega peito e sovaco, que também pesam no osso
-      const t = seg.closestPointToPointParameter(p, false)
-      if (t < 0.2 || t > 0.8) continue
-      d.push(p.distanceTo(seg.at(t, perto)))
-    }
-    d.sort((x, y) => x - y)
-    const raio = Math.min(0.08, (d.length ? d[Math.floor(d.length * 0.25)] : 0.04) * 0.75)
-    // só o meio do membro (de 35% a 90% do osso): a ponta de cima ficava dentro do ombro e do quadril,
-    // onde o pano é preso, e empurrava a camisa inteira para fora do lugar
-    const meia = Math.max(0.01, A.distanceTo(B) * (TRECHO[1] - TRECHO[0]) / 2 - raio)
-    const forma = new J.CapsuleShape(meia, raio)
-    const bcs = new J.BodyCreationSettings(forma, new J.RVec3(A.x, A.y, A.z), new J.Quat(0, 0, 0, 1), J.EMotionType_Kinematic, CAMADA.CORPO)
-    const corpoJ = jolt.corpos.CreateBody(bcs)
-    J.destroy(bcs)
-    jolt.corpos.AddBody(corpoJ.GetID(), J.EActivation_Activate)
-    capsulas.push({ a: ossos[ia], b: ossos[ib], corpo: corpoJ, raio })
-  }
-  const rv = new J.RVec3(0, 0, 0), jq = new J.Quat(0, 0, 0, 1)
-  const A = new THREE.Vector3(), B = new THREE.Vector3(), q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0)
-  return {
-    capsulas,
-    mover(dt, pulou) {
-      for (const c of capsulas) {
-        c.a.getWorldPosition(A); c.b.getWorldPosition(B)
-        q.setFromUnitVectors(Y, B.clone().sub(A).normalize())
-        A.lerp(B, (TRECHO[0] + TRECHO[1]) / 2)
-        rv.Set(A.x, A.y, A.z)
-        jq.Set(q.x, q.y, q.z, q.w)
-        if (pulou) jolt.corpos.SetPositionAndRotation(c.corpo.GetID(), rv, jq, J.EActivation_Activate)
-        else jolt.corpos.MoveKinematic(c.corpo.GetID(), rv, jq, dt)
-      }
-    },
-  }
-}
-
-export async function criarRoupa(malhas) {
+export async function criarRoupa(malhas, ajustes = PADRAO.personagem, mundo = null) {
+  const fisica = { ...PADRAO.personagem, ...ajustes }
   const camisa = malhas.find((m) => /camisa/i.test(m.material?.name || m.name))
   const calca = malhas.find((m) => /calca/i.test(m.material?.name || m.name))
   if (!camisa) return null
-  const jolt = await carregarJolt()
+  const jolt = mundo || await carregarJolt()
   const { J } = jolt
   const pecas = []
   // a camisa vai por cima da calça: a calça sabe onde fica a barra (repouso, espaço da malha)
@@ -323,9 +265,9 @@ export async function criarRoupa(malhas) {
   let barra = Infinity
   for (let i = 0; i < pc.count; i++) barra = Math.min(barra, pc.getY(i))
   const pele = malhas.find((m) => /^human|^base$|^corpo/i.test(m.name) && m.isSkinnedMesh)
-  const capsulas = pele ? criarCapsulas(jolt, pele) : null
-  pecas.push(criarPeca(jolt, camisa, regrasCamisa))
-  if (calca) pecas.push(criarPeca(jolt, calca, regrasCalca, { barraPorCima: barra, camada: CAMADA.PANO_JUSTO }))
+  const colisores = pele ? criarColisores(jolt, pele) : null
+  pecas.push(criarPeca(jolt, camisa, regrasCamisa, { fisica }))
+  if (calca) pecas.push(criarPeca(jolt, calca, regrasCalca, { barraPorCima: barra, camada: CAMADA.PANO_JUSTO, fisica }))
   const raizId = new J.RMat44().sIdentity()
   const juntas = new J.ArrayMat44()
   const maxJ = Math.max(...pecas.map((p) => p.nJ))
@@ -342,7 +284,8 @@ export async function criarRoupa(malhas) {
   return {
     tipo: 'jolt',
     jolt, // para depurar pelo console (o mesmo mundo; importar jolt.js de novo no console cria outro)
-    capsulas: capsulas?.capsulas,
+    colisores,
+    capsulas: colisores?.partes,
     pontos: pecas.reduce((s, p) => s + p.P, 0),
     pecas,
     atualizar(dt, { vento = 1, ventoDir = new THREE.Vector3(1, 0, 0.3).normalize(), forca = 1 } = {}) {
@@ -366,6 +309,9 @@ export async function criarRoupa(malhas) {
         const bones = p.malha.skeleton.bones
         for (let j = 0; j < p.nJ; j++) H.set(bones[j].matrixWorld.elements, ptrJ + j * passoJ)
         p.mov.SkinVertices(raizId, juntas.data(), p.nJ, primeiro || pulou, jolt.temp)
+        // SkinVertices atualiza alvos, mas não acorda o corpo. Em animações lentas o pano pode
+        // dormir e deixar até os pontos presos para trás enquanto o esqueleto continua andando.
+        jolt.corpos.ActivateBody(p.corpo.GetID())
         // vento: empurra a velocidade dos pontos soltos
         const b = p.base >> 2
         const ax = ventoDir.x * rajada * 2.2 * dt, az = ventoDir.z * rajada * 2.2 * dt
@@ -374,7 +320,7 @@ export async function criarRoupa(malhas) {
           H[o] += ax; H[o + 2] += az
         }
       }
-      capsulas?.mover(dt, primeiro || pulou)
+      colisores?.mover(dt, primeiro || pulou)
       primeiro = false
       jolt.passo(dt)
       // deslocamento = pano simulado - onde o esqueleto põe o ponto (no espaço da malha, para o shader)
@@ -409,3 +355,6 @@ export async function criarRoupa(malhas) {
     },
   }
 }
+
+// Compartilhados pelo comparador de motores; a mesma superfície e o mesmo desenho.
+export { montarProxy, injetar, regrasCamisa, regrasCalca }

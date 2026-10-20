@@ -1,0 +1,29 @@
+HTTP/2 200 
+content-type: video/webm
+x-object-meta-sha1base36: qx3v9wijiwzusymbz6icr4wvr1it1mg
+etag: daf6efe34deefcd341e660ce288981a5
+last-modified: Thu, 09 Feb 2017 10:42:54 GMT
+accept-ranges: bytes
+content-length: 24524554
+date: Sun, 18 Oct 2026 19:38:12 GMT
+x-ratelimit-limit: 600000, 600000;w=60
+x-ratelimit-remaining: 599999
+x-ratelimit-reset: 48
+server: envoy
+age: 0
+x-cache: cp7014 miss, cp7014 pass
+x-cache-status: pass
+server-timing: cache;desc="pass", host;desc="cp7014"
+strict-transport-security: max-age=106384710; includeSubDomains; preload
+report-to: { "group": "wm_nel", "max_age": 604800, "endpoints": [{ "url": "https://intake-logging.wikimedia.org/v1/events?stream=w3c.reportingapi.network_error&schema_uri=/w3c/reportingapi/network_error/1.0.0" }] }
+nel: { "report_to": "wm_nel", "max_age": 604800, "failure_fraction": 0.05, "success_fraction": 0.0}
+x-client-ip: 187.65.18.169
+x-content-type-options: nosniff
+reporting-endpoints: csp_endpoint="https://commons.wikimedia.org/w/api.php?reportonly=1&source=image&action=cspreport&format=json"
+content-security-policy-report-only: default-src 'none'; script-src 'none'; style-src 'unsafe-inline' data:; font-src data:; img-src data: https://upload.wikimedia.org/favicon.ico https://thumb.wikimedia.org/favicon.ico; connect-src https://upload.wikimedia.org/favicon.ico https://thumb.wikimedia.org/favicon.ico; media-src data: 'self'; object-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; report-uri https://commons.wikimedia.org/w/api.php?reportonly=1&source=image&action=cspreport&format=json; report-to csp_endpoint
+access-control-allow-origin: *
+access-control-expose-headers: Age, Date, Content-Length, Content-Range, X-Content-Duration, X-Cache
+timing-allow-origin: *
+set-cookie: WMF-Uniq=jmUzcvGmmFG3ZbVdRlC_KQP9AAAAAFvdYzop70JNimPL-otpNQt81s1RvGbxFCOz;Domain=upload.wikimedia.org;Path=/;HttpOnly;secure;SameSite=None;Expires=Mon, 18 Oct 2027 00:00:00 GMT
+x-request-id: 033ae969-edbb-4d32-9292-7337667c2218
+

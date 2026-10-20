@@ -1,0 +1,34 @@
+[
+ {
+  "nome": "cabeca-v1/f72-s131",
+  "semente": 131,
+  "n": 1,
+  "referencia": "entradas/3d/cabeca-ref.png",
+  "forca": 0.72,
+  "prompt": "Hand-inked graphic novel character head model sheet, thick variable ink lines, flat cel shading with light halftone dots, plain cream paper background. The same head and shoulders drawn three times side by side at the same size: front view, side profile view facing left, back view. Provisional design of an original lanky 15-year-old boy from Fortaleza, 1932, dark brown skin, NO HAT, short tightly coiled black afro hair fully visible, clear readable profile with a defined nose, lips and chin, small ears, long neck, mature teenage face, calm expression. Open faded pinkish brown cotton shirt collar. Clean simple shapes, consistent proportions in all three views."
+ },
+ {
+  "nome": "cabeca-v1/f72-s132",
+  "semente": 132,
+  "n": 1,
+  "referencia": "entradas/3d/cabeca-ref.png",
+  "forca": 0.72,
+  "prompt": "Hand-inked graphic novel character head model sheet, thick variable ink lines, flat cel shading with light halftone dots, plain cream paper background. The same head and shoulders drawn three times side by side at the same size: front view, side profile view facing left, back view. Provisional design of an original lanky 15-year-old boy from Fortaleza, 1932, dark brown skin, NO HAT, short tightly coiled black afro hair fully visible, clear readable profile with a defined nose, lips and chin, small ears, long neck, mature teenage face, calm expression. Open faded pinkish brown cotton shirt collar. Clean simple shapes, consistent proportions in all three views."
+ },
+ {
+  "nome": "cabeca-v1/f82-s131",
+  "semente": 131,
+  "n": 1,
+  "referencia": "entradas/3d/cabeca-ref.png",
+  "forca": 0.82,
+  "prompt": "Hand-inked graphic novel character head model sheet, thick variable ink lines, flat cel shading with light halftone dots, plain cream paper background. The same head and shoulders drawn three times side by side at the same size: front view, side profile view facing left, back view. Provisional design of an original lanky 15-year-old boy from Fortaleza, 1932, dark brown skin, NO HAT, short tightly coiled black afro hair fully visible, clear readable profile with a defined nose, lips and chin, small ears, long neck, mature teenage face, calm expression. Open faded pinkish brown cotton shirt collar. Clean simple shapes, consistent proportions in all three views."
+ },
+ {
+  "nome": "cabeca-v1/f82-s132",
+  "semente": 132,
+  "n": 1,
+  "referencia": "entradas/3d/cabeca-ref.png",
+  "forca": 0.82,
+  "prompt": "Hand-inked graphic novel character head model sheet, thick variable ink lines, flat cel shading with light halftone dots, plain cream paper background. The same head and shoulders drawn three times side by side at the same size: front view, side profile view facing left, back view. Provisional design of an original lanky 15-year-old boy from Fortaleza, 1932, dark brown skin, NO HAT, short tightly coiled black afro hair fully visible, clear readable profile with a defined nose, lips and chin, small ears, long neck, mature teenage face, calm expression. Open faded pinkish brown cotton shirt collar. Clean simple shapes, consistent proportions in all three views."
+ }
+]

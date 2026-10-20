@@ -1,0 +1,3 @@
+cabeca-costas.png
+cabeca-frente.png
+cabeca-lado.png

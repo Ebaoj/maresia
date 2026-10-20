@@ -1,0 +1,6 @@
+Use your image generation tool to EDIT the attached image (do not write code, do not draw it yourself). This is a character for a family cozy video game set in Fortaleza, Brazil, in 1932. Keep EXACTLY the same boy: same face, hair, skin tone, body proportions, the same pose with arms held away from the body, palms facing forward and fingers spread, bare feet, the same hand-painted brush-stroke stylized 3D look, colors, light grey background, camera and full-body framing.
+Change ONLY his everyday clothes to a simpler, more fitted outfit typical of boys at the beach in the 1930s:
+- a plain short-sleeve knitted cotton shirt, solid faded off-white color, no stripes, sleeves to mid upper arm, round neck, fitting snugly
+- plain knee-length cotton shorts (calção) in faded tan, fitting snugly, simple waist
+No patterns, no pockets, no buttons, no belt, no accessories. No cast shadows, nothing cropped.
+Save the resulting image file in the current directory as base2.png and tell me its path.

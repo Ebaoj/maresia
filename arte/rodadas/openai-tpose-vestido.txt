@@ -1,0 +1,8 @@
+Image 1 is the approved character sheet of this boy. Draw the SAME boy (same face, same straight coarse black hair, same sun-darkened bronze skin, same lean lanky teenage body and proportions, same off-white baggy drawstring trousers rolled to mid-shin, barefoot) in the same hand-inked graphic novel style with ink outlines and flat cel shading, on the same plain cream background.
+
+This is a 3D modeling reference, so:
+- he is WITHOUT a hat but WEARING his worn knitted jersey shirt with wide horizontal stripes of faded brick red and off-white, sleeves to the elbow, hanging loose over the trousers, exactly as in the top row of image 1 (his whole head of hair is visible: straight, coarse black hair cut short and uneven);
+- strict T-POSE: arms stretched straight out to the sides, perfectly horizontal at shoulder height, elbows straight, palms facing down, fingers together; legs straight, feet planted shoulder-width apart, toes forward; head level, looking straight ahead; neutral face;
+- four orthographic views of the same pose at exactly the same scale, arranged in a 2x2 grid: top-left front view, top-right back view, bottom-left side profile facing left, bottom-right side profile facing right. Each figure fully inside its cell, with the outstretched hands not cut off.
+
+Forbidden: hat, belt, accessories, any text or labels, floor, ground lines, cast shadows, perspective.

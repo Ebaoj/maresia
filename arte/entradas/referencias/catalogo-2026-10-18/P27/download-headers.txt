@@ -1,0 +1,29 @@
+HTTP/2 200 
+content-type: video/webm
+x-object-meta-sha1base36: kt41uwfg2e8able5ip24hgfur6gnvv3
+last-modified: Thu, 05 Sep 2019 08:39:59 GMT
+accept-ranges: bytes
+content-length: 37289529
+date: Sun, 18 Oct 2026 22:34:21 GMT
+x-ratelimit-limit: 600000, 600000;w=60
+x-ratelimit-remaining: 599998
+x-ratelimit-reset: 39
+server: envoy
+etag: 44b3c5d2182662d6fde34f47922945d7
+age: 0
+x-cache: cp7014 hit, cp7014 pass
+x-cache-status: hit-local
+server-timing: cache;desc="hit-local", host;desc="cp7014"
+strict-transport-security: max-age=106384710; includeSubDomains; preload
+report-to: { "group": "wm_nel", "max_age": 604800, "endpoints": [{ "url": "https://intake-logging.wikimedia.org/v1/events?stream=w3c.reportingapi.network_error&schema_uri=/w3c/reportingapi/network_error/1.0.0" }] }
+nel: { "report_to": "wm_nel", "max_age": 604800, "failure_fraction": 0.05, "success_fraction": 0.0}
+x-client-ip: 187.65.18.169
+x-content-type-options: nosniff
+reporting-endpoints: csp_endpoint="https://commons.wikimedia.org/w/api.php?reportonly=1&source=image&action=cspreport&format=json"
+content-security-policy-report-only: default-src 'none'; script-src 'none'; style-src 'unsafe-inline' data:; font-src data:; img-src data: https://upload.wikimedia.org/favicon.ico https://thumb.wikimedia.org/favicon.ico; connect-src https://upload.wikimedia.org/favicon.ico https://thumb.wikimedia.org/favicon.ico; media-src data: 'self'; object-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; report-uri https://commons.wikimedia.org/w/api.php?reportonly=1&source=image&action=cspreport&format=json; report-to csp_endpoint
+access-control-allow-origin: *
+access-control-expose-headers: Age, Date, Content-Length, Content-Range, X-Content-Duration, X-Cache
+timing-allow-origin: *
+set-cookie: WMF-Uniq=oRG6_mVspkooaQAc9hcdjwP9AAAAAFvd_PWlKBNblPZP-9gpQBheF570Hw0KpqTH;Domain=upload.wikimedia.org;Path=/;HttpOnly;secure;SameSite=None;Expires=Mon, 18 Oct 2027 00:00:00 GMT
+x-request-id: 135e6143-f60a-49c2-abef-9305638208cd
+

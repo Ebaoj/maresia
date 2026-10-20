@@ -1,0 +1,29 @@
+HTTP/2 200 
+content-type: application/ogg
+x-object-meta-sha1base36: icwxb9ij4b2410v0v35vw2mzc42cavp
+etag: 7dab67fdbd74c7662cd497d1d80771a4
+last-modified: Wed, 01 Feb 2017 08:26:08 GMT
+accept-ranges: bytes
+content-length: 66034750
+date: Sun, 18 Oct 2026 22:42:08 GMT
+x-ratelimit-limit: 600000, 600000;w=60
+x-ratelimit-remaining: 589540
+x-ratelimit-reset: 52
+server: envoy
+age: 0
+x-cache: cp7014 miss, cp7014 pass
+x-cache-status: pass
+server-timing: cache;desc="pass", host;desc="cp7014"
+strict-transport-security: max-age=106384710; includeSubDomains; preload
+report-to: { "group": "wm_nel", "max_age": 604800, "endpoints": [{ "url": "https://intake-logging.wikimedia.org/v1/events?stream=w3c.reportingapi.network_error&schema_uri=/w3c/reportingapi/network_error/1.0.0" }] }
+nel: { "report_to": "wm_nel", "max_age": 604800, "failure_fraction": 0.05, "success_fraction": 0.0}
+x-client-ip: 187.65.18.169
+x-content-type-options: nosniff
+reporting-endpoints: csp_endpoint="https://commons.wikimedia.org/w/api.php?reportonly=1&source=image&action=cspreport&format=json"
+content-security-policy-report-only: default-src 'none'; script-src 'none'; style-src 'unsafe-inline' data:; font-src data:; img-src data: https://upload.wikimedia.org/favicon.ico https://thumb.wikimedia.org/favicon.ico; connect-src https://upload.wikimedia.org/favicon.ico https://thumb.wikimedia.org/favicon.ico; media-src data: 'self'; object-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; report-uri https://commons.wikimedia.org/w/api.php?reportonly=1&source=image&action=cspreport&format=json; report-to csp_endpoint
+access-control-allow-origin: *
+access-control-expose-headers: Age, Date, Content-Length, Content-Range, X-Content-Duration, X-Cache
+timing-allow-origin: *
+set-cookie: WMF-Uniq=pENo5k1IcXfBDH4LJU9D2QP9AAAAAFvderzjRdX5q4nVhhzYSFH3Fupxq-VoPOhZ;Domain=upload.wikimedia.org;Path=/;HttpOnly;secure;SameSite=None;Expires=Mon, 18 Oct 2027 00:00:00 GMT
+x-request-id: 9c3a168d-22be-4c00-b265-9d5b36f5a611
+

@@ -1,0 +1,24 @@
+{
+  "id": "P08",
+  "nome": "salto-agua-inspecao",
+  "inicio_s": 0.65,
+  "fim_s": 1.75,
+  "duracao_s": 1.1,
+  "quadros": 33,
+  "arquivo": "arte/entradas/referencias/catalogo-2026-10-18/P08/original.webm",
+  "tempos_amostras": [
+    0.667,
+    0.767,
+    0.867,
+    0.9670000000000001,
+    1.067,
+    1.167,
+    1.267,
+    1.367,
+    1.467,
+    1.5670000000000002,
+    1.6669999999999998
+  ],
+  "fps_nominal": "30/1",
+  "nota": "Tempos da seleção relativos ao arquivo original; quadros e MP4 começam no primeiro quadro após o seek. Sem interpolação de movimento."
+}

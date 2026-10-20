@@ -1,0 +1,33 @@
+{
+  "id": "P02",
+  "nome": "agachar-esquivar",
+  "inicio_s": 133.85,
+  "fim_s": 138.15,
+  "duracao_s": 4.300000000000011,
+  "quadros": 128,
+  "arquivo": "arte/entradas/referencias/catalogo-2026-10-18/P02/original.webm",
+  "tempos_amostras": [
+    133.867,
+    134.067,
+    134.301,
+    134.501,
+    134.73499999999999,
+    134.968,
+    135.202,
+    135.435,
+    135.636,
+    135.869,
+    136.103,
+    136.33599999999998,
+    136.57,
+    136.803,
+    137.004,
+    137.204,
+    137.404,
+    137.638,
+    137.87099999999998,
+    138.071
+  ],
+  "fps_nominal": "30000/1001",
+  "nota": "Tempos da seleção relativos ao arquivo original; quadros e MP4 começam no primeiro quadro após o seek. Sem interpolação de movimento."
+}

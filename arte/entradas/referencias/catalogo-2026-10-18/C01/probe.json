@@ -1,0 +1,18 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 1280,
+      "height": 720,
+      "r_frame_rate": "30000/1001",
+      "avg_frame_rate": "30000/1001",
+      "nb_frames": "104"
+    }
+  ],
+  "format": {
+    "duration": "3.498333"
+  },
+  "sha256": "7c13d9bc6677798fc52e7affa4abb95e4cdeb56974541f2bbf2c52bf976f60b7",
+  "arquivo": "arte/entradas/referencias/gato-pulo/pexels-4807151-sofa-desce.mp4"
+}

@@ -44,7 +44,7 @@ function geometriaLampiao() {
   return mergeGeometries(partes)
 }
 
-function geometriaCadeira(hex) {
+export function geometriaCadeira(hex) {
   const madeira = new THREE.Color(hex)
   const escuro = madeira.clone().multiplyScalar(0.75).getHex()
   const partes = [colorir(new THREE.BoxGeometry(0.44, 0.04, 0.42).translate(0, 0.45, 0), hex)]

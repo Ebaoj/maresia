@@ -1,0 +1,13 @@
+A 3x3 grid sheet with NINE ear variations of the SAME cat. The attached image shows the cat: copy EXACTLY its body (wiry, lean but muscular, scruffy fur, kinked tail tip), its coat pattern (mostly white, black cap on top of the head, black saddle on the back, fully black tail, pink nose, yellow-green eyes), its pose and its painting style in all nine. ONLY THE EARS change between cells. Original design, NOT the cartoon character Sylvester, no clothes, no human expressions.
+STYLE: hand-painted stylized 3D look inspired by Arcane (Fortiche), exactly like the attached image: flat painted colors with visible brush strokes, fur as chunky painted locks, almost no baked light or shadow.
+LAYOUT: each cat standing on all four legs in a three-quarter side view facing left, whole body and tail visible, centered in its own cell, all at the same scale. Plain light gray background, flat even lighting, no cast shadow, no scenery. A large clear black number from 1 to 9 in the top-left corner of each cell, reading left to right, top to bottom. No other text.
+EAR VARIATIONS:
+1. small, short, rounded ears set wide apart
+2. medium ears with soft rounded tips, slightly tilted outward
+3. small triangular ears, both black, one with a clean notch cut in the edge (street fight mark)
+4. medium ears, the left one with the tip bitten off flat, the right one whole
+5. ears folded slightly forward at the tips
+6. low-set ears turned sideways, giving a wary, flattened look
+7. small ears, white with a black rim along the edges
+8. medium pointed ears, one black and one white
+9. short thick ears with ragged, chewed edges like an old fighter

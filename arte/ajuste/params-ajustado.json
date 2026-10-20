@@ -1,0 +1,47 @@
+{
+ "macros": {
+  "gender": 1.0,
+  "age": 0.2768,
+  "muscle": 0.575,
+  "weight": 0.29000000000000004,
+  "proportions": 0.65,
+  "height": 0.5,
+  "cupsize": 0.5,
+  "firmness": 0.5,
+  "race": {
+   "asian": 0.25,
+   "african": 0.3,
+   "caucasian": 0.45
+  }
+ },
+ "rosto": {
+  "head-scale-horiz-incr": 0.65,
+  "head-fat-incr": 0.05,
+  "head-oval": 0.1,
+  "head-square": 0.1,
+  "head-triangular": 0.2,
+  "head-invertedtriangular": 0.1,
+  "l-eye-trans-out": 0.7,
+  "r-eye-trans-out": 0.7,
+  "nose-scale-horiz-decr": 0.3,
+  "nose-scale-vert-decr": 0.5,
+  "nose-trans-up": 0.2,
+  "nose-point-down": 0.4,
+  "mouth-scale-horiz-decr": 0.35,
+  "mouth-trans-up": 0.25,
+  "chin-height-incr": 0.2,
+  "chin-prominent-decr": 0.15,
+  "chin-prognathism-decr": 0.35,
+  "forehead-trans-forward": 0.7,
+  "l-eye-scale-incr": 0.5,
+  "r-eye-scale-incr": 0.5,
+  "l-eye-height2-incr": 0.35,
+  "r-eye-height2-incr": 0.35,
+  "mouth-upperlip-volume-incr": 0.25000000000000006,
+  "mouth-lowerlip-volume-incr": 0.6,
+  "nose-point-width-incr": 0.5,
+  "nose-flaring-incr": 0.4,
+  "l-cheek-volume-incr": 0.15,
+  "r-cheek-volume-incr": 0.15
+ }
+}

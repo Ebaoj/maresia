@@ -1,0 +1,17 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "width": 480,
+      "height": 360,
+      "r_frame_rate": "30000/1001",
+      "avg_frame_rate": "1000/1"
+    }
+  ],
+  "format": {
+    "duration": "23.902000"
+  },
+  "sha256": "2ce63bc18ffd2db123537edce3751e12abfa7b2b06807c7a302d0391a9e2f5ea",
+  "arquivo": "arte/entradas/referencias/gato-pulo/katzensprung-zeitlupe.webm"
+}

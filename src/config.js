@@ -100,13 +100,41 @@ export const PADRAO = {
     ombros: 0.9,           // largura dos ombros do neto (1 = como veio do modelo, largo de adulto); recarregar
     folgaCamisa: 0.012,    // folga máxima da camisa sobre a pele no ombro e na manga, em metros (0 = como veio); recarregar
     dobras: 1.0,           // dobras do pano desenhadas no cotovelo, joelho e cintura (dobras.js); 0 desliga
+    dedosReferenciaAndar: 'mm-curva-andando', // falanges de caminhada gravada; recarregar
+    dedosFecharCiclo: .12, // fração final para emendar a repetição das falanges; recarregar
+    ammoClusters: 128, // compatibilidade com o comparador anterior arquivado
+    ammoSubpassos: 2, // subpassos nativos por atualização da camisa; recarregar
+    ammoPassosAssentar: 48, // pré-simulação amortecida antes de exibir a camisa; recarregar
+    ammoIteracoes: 4, // costuras e contatos nativos por subpasso; recarregar
+    ammoPeleMargem: .008, // margem da superfície animada do tórax (m); recarregar
+    ammoPeleAltura: 0, // início do contato detalhado, fração da altura do tórax; recarregar
+    ammoPeleLargura: 1, // fração da meia largura do tórax com contato detalhado; recarregar
+    ammoBracoMargem: .01, // margem local para o contato rápido na manga (m); recarregar
+    ammoBracoInicio: .18, // distância do centro em T onde começa a região do braço (m); recarregar
+    ammoBracoFim: .40, // termina perto do cotovelo (m); recarregar
+    ammoBracoReducao: .6, // redução só da superfície de contato dos braços; recarregar
+    ammoCalcaAltura: .77, // início do contato detalhado na calça em repouso (m); recarregar
+    ammoCalcaReducao: .8, // redução só do colisor da calça; recarregar
+    ammoPeleReducao: .6, // redução de vértices só do colisor, corpo visível intacto; recarregar
+    ammoEncaixeFolga: .012, // folga inicial para vestir a camisa fora da pele (m); recarregar
+    ammoEncaixeMaximo: .05, // limite do ajuste inicial da peça (m); recarregar
+    ammoBarraExtra: .01, // extensão do molde na barra (m); recarregar
+    ammoBarraTransicao: .025, // faixa que suaviza essa extensão (m); recarregar
+    roupaEspessura: 0.006, // margem de contato do tecido com a pele (m); recarregar
+    roupaFolga: 0.045,     // liberdade no tronco da camisa (m); recarregar
+    roupaBarra: 0.08,      // liberdade da barra (m); recarregar
+    roupaManga: 0.06,      // liberdade das mangas (m); recarregar
+    roupaGola: 0.015,      // faixa superior sustentada (m); recarregar
+    roupaFlexao: 0.02,     // compliance de flexão: maior dobra mais; recarregar
+    roupaAmortecimento: 0.5, // dissipa movimento do tecido; recarregar
+    roupaIteracoes: 8,     // iterações dos contatos e costuras; recarregar
     panoSolto: 1.0,        // barra da camisa, mangas e boca da calça soltas (pano.js); 0 desliga
     avo: true,             // o avô parado perto do começo do jogo (avo.js), para julgar o modelo. Vale ao recarregar
     avoTripo: true,        // segundo avô ao lado, o do Tripo (textura pintada), para comparar; recarregar
     avoTripoMovimento: 'velho-parado', // o do Tripo nasce de coluna reta: a curva vem do movimento de velho
     rostoAvo: true,        // avô de rosto liso com olhos e sobrancelhas desenhados (sem boca: o bigode cobre)
     avoMovimento: 'parado', // 'parado' ou 'velho-parado' (curva de novo por cima da coluna curvada do modelo)
-    roupaJolt: true,       // roupa inteira como pano no Jolt (roupa.js); desligado, só as bordas com molas (pano.js). Vale ao recarregar
+    roupaJolt: false,      // roupa inteira como pano no Jolt (roupa.js). Desligado por padrão (decisão do Joabe, 20/10/2026): a roupa segue o esqueleto, como na imagem aprovada. Com o pano ligado a camisa ainda atravessa a pele em 2,58% dos raios ao andar; mede-se pelo painel. Vale ao recarregar
     clavicula: 18,         // inclinação da clavícula para baixo, em graus (o neto nasce com 28 a 33°: ombro caído)
     rostoNeto: true,       // neto de rosto liso com olhos e boca desenhados em 2D (rosto.js), a escolha de 16/10/2026; desligado = rosto modelado; recarregar
     estiloRostoNeto: 'minimo-brilho', // desenho do rosto (rosto.js, ESTILOS); o Joabe gostou do mínimo brilho (16/10/2026)
@@ -177,6 +205,14 @@ export const PADRAO = {
     resolucaoDinamica: false, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Desligada até passar na medição
     resolucaoMin: 0.6,     // R1: menor escala que a resolução dinâmica aceita
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
+  },
+  laboratorioFisica: {
+    lado: 14, passoTerreno: .5, semente: 1932,
+    bolas: 6, cocos: 10, alturaQueda: 2,
+    gravidade: 25, subpassos: 2,
+    raioRoteiro: 2.5, duracaoMedicao: 12,
+    cameraDistancia: 6, cameraAltura: 3,
+    resolucao: 1.25,
   },
   audio: {
     volume: 0.6,

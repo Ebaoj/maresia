@@ -61,7 +61,7 @@ function chapeuDePalha() {
 // ombros: encolhe a clavícula (1 = como veio do modelo). O modelo tem 36 cm entre os ombros, proporção
 // de adulto; um menino de 14 anos fica perto de 33 cm (o Joabe achou largo, 16/10/2026)
 // arquivo: outro modelo do neto (o do Tripo, 17/10/2026: uma malha com roupa e rosto pintados na textura)
-export async function carregarNeto({ chapeu = false, semRosto = false, ombros = 0.9, folgaCamisa = 0.012, arquivo = null } = {}) {
+export async function carregarNeto({ chapeu = false, semRosto = false, ombros = 0.9, folgaCamisa = 0.012, arquivo = null, maosAnimadas = false } = {}) {
   let g
   let liso = false
   if (arquivo) {
@@ -102,8 +102,10 @@ export async function carregarNeto({ chapeu = false, semRosto = false, ombros = 
     pivo.add(peca)
     ossos.set('Chapeu', pivo)
   }
-  if (arquivo) relaxarMaosMedindo(ossos)
-  else relaxarMaos(ossos)
+  if (!maosAnimadas) {
+    if (arquivo) relaxarMaosMedindo(ossos)
+    else relaxarMaos(ossos)
+  }
   apertarCamisa(malhas, folgaCamisa)
   // clavícula mais curta: o braço vem para dentro; o braço volta à escala 1 para não encolher junto
   for (const L of ['Left', 'Right']) {

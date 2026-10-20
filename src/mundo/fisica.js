@@ -12,6 +12,7 @@
 
 import * as THREE from 'three'
 import RAPIER from '@dimforge/rapier3d-compat'
+import { geometriaBola, geometriaCoco, OBJETOS_FISICOS } from './objetos-fisicos.js'
 import { LIMITES, distCosta, larguraPraia, linhaCosta } from './mapa.js'
 import { trechosJogo } from './fortaleza1932.js'
 import { alturas, NX, NZ, alturaTerreno } from './terreno.js'
@@ -23,41 +24,6 @@ const RAIO_FIXOS = 70
 const RAIO_ATIVO = 80
 const PASSO = 1 / 60
 const NIVEL_AGUA = 0
-
-function geometriaBola() {
-  // bola de couro de 1932 (a bola de praia de plástico colorido é anacronismo): gomos em dois tons
-  const g = new THREE.SphereGeometry(0.22, 16, 12).toNonIndexed()
-  const pos = g.attributes.position
-  const cores = ['#8a5a3c', '#7a4e33', '#8a5a3c', '#7a4e33', '#8a5a3c', '#7a4e33']
-  const c = new THREE.Color()
-  const arr = new Float32Array(pos.count * 3)
-  for (let i = 0; i < pos.count; i += 3) {
-    const cx = (pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)) / 3
-    const cz = (pos.getZ(i) + pos.getZ(i + 1) + pos.getZ(i + 2)) / 3
-    const cy = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3
-    const gomo = Math.floor(((Math.atan2(cz, cx) + Math.PI) / (Math.PI * 2)) * 6) % 6
-    c.set(Math.abs(cy) > 0.19 ? '#6b4430' : cores[gomo])
-    for (let k = 0; k < 3; k++) { arr[(i + k) * 3] = c.r; arr[(i + k) * 3 + 1] = c.g; arr[(i + k) * 3 + 2] = c.b }
-  }
-  g.setAttribute('color', new THREE.BufferAttribute(arr, 3))
-  g.deleteAttribute('uv')
-  return g
-}
-
-function geometriaCoco() {
-  const g = new THREE.SphereGeometry(0.11, 10, 8).scale(1, 1.15, 1).toNonIndexed() // coco verde: ~22 cm de largura
-  const pos = g.attributes.position
-  const arr = new Float32Array(pos.count * 3)
-  const verde = new THREE.Color('#6f9a2a')
-  const marrom = new THREE.Color('#7a5230')
-  for (let i = 0; i < pos.count; i++) {
-    const c = pos.getY(i) > 0.08 ? marrom : verde
-    arr[i * 3] = c.r; arr[i * 3 + 1] = c.g; arr[i * 3 + 2] = c.b
-  }
-  g.setAttribute('color', new THREE.BufferAttribute(arr, 3))
-  g.deleteAttribute('uv')
-  return g
-}
 
 export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
   await RAPIER.init()
@@ -136,14 +102,13 @@ export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
       world.removeRigidBody(velho.corpo)
       props.splice(props.indexOf(velho), 1)
     }
-    const desc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z).setAngularDamping(tipo === 'coco' ? 1.5 : 0.3).setCanSleep(true)
+    const dados = OBJETOS_FISICOS[tipo]
+    const desc = RAPIER.RigidBodyDesc.dynamic().setTranslation(x, y, z).setAngularDamping(dados.amortecimentoAngular).setCanSleep(true)
     const corpo = world.createRigidBody(desc)
-    const col = tipo === 'bola'
-      ? RAPIER.ColliderDesc.ball(0.22).setDensity(0.25).setRestitution(0.5).setFriction(0.6)
-      : RAPIER.ColliderDesc.ball(0.11).setDensity(1.1).setRestitution(0.15).setFriction(0.9)
+    const col = RAPIER.ColliderDesc.ball(dados.raio).setDensity(dados.densidade).setRestitution(dados.restituicao).setFriction(dados.atrito)
     world.createCollider(col, corpo)
     if (vel) corpo.setLinvel(vel, true)
-    const p = { tipo, corpo, raio: tipo === 'bola' ? 0.22 : 0.11, naAgua: false, carregado: false }
+    const p = { tipo, corpo, raio: dados.raio, naAgua: false, carregado: false }
     props.push(p)
     return p
   }
