@@ -72,6 +72,7 @@ export function criarCeu(cena, cfg = null) {
     uArcCeuPincel: globais.uArcCeuPincel,
     uCeuRampa: { value: 0.45 },
     uAzul: { value: 0 }, // meio-dia de agosto: tira a faixa quente do horizonte (cfg.estilo.arcCeuAzul)
+    uCumulos: { value: new THREE.Vector2(0.62, 1) }, // cúmulos redondos rente ao horizonte: quantos (0 a 1) e tamanho
   }
   const ceu = new THREE.Mesh(
     new THREE.SphereGeometry(1800, 48, 24),
@@ -159,6 +160,7 @@ export function criarCeu(cena, cfg = null) {
     uniformes.uHor.value.copy(p.hor)
     uniformes.uCeuRampa.value = THREE.MathUtils.lerp(cfg.estilo.arcCeuRampa ?? 0.45, cfg.estilo.arcCeuAzulRampa ?? 0.32, azul)
     uniformes.uAzul.value = azul
+    uniformes.uCumulos.value.set(cfg.estilo.arcCeuCumulos ?? 0.62, cfg.estilo.arcCeuCumulosTamanho ?? 1.2)
     // a parada do meio: no visual Arcane, de dia, um azul claro esverdeado; senão o meio do caminho (o de antes)
     uniformes.uMeio.value.copy(p.hor).lerp(p.topo, 0.5)
     if (cfg.estilo.visual === 'arcane') {

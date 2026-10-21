@@ -43,6 +43,8 @@ export function secaoVisual(gui, cfg) {
   azul.addColor(e, 'arcCeuAzulHorizonte').name('horizonte')
   azul.add(e, 'arcCeuAzulRampa', 0.1, 1, 0.01).name('altura do azul fundo')
   azul.addColor(e, 'arcCeuAzulAr').name('cor do ar na distância')
+  azul.add(e, 'arcCeuCumulos', 0, 1, 0.01).name('cúmulos do horizonte: quantos')
+  azul.add(e, 'arcCeuCumulosTamanho', 0.3, 2.5, 0.05).name('cúmulos do horizonte: tamanho')
   azul.add(e, 'nuvens', 0, 160, 1).name(rec('cúmulos (quantos)'))
   azul.add(e, 'nuvensVento', 0, 15, 0.1).name('vento leste nos cúmulos (m/s)')
   const dourada = arc.addFolder('Hora dourada')

@@ -18,7 +18,7 @@ void main() {
 
 export const fragCeu = /* glsl */ `
 uniform vec3 uTopo; uniform vec3 uHor; uniform vec3 uMeio; uniform vec3 uSolDir; uniform vec3 uSolCor;
-uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu; uniform float uArcPintado; uniform float uArcCeuPincel; uniform float uCeuRampa; uniform float uAzul;
+uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu; uniform float uArcPintado; uniform float uArcCeuPincel; uniform float uCeuRampa; uniform float uAzul; uniform vec2 uCumulos;
 varying vec3 vDir;
 ${SAIDA_LUZ}
 float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
@@ -27,6 +27,37 @@ float vn(vec2 p) {
   vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
   return mix(mix(h2(i), h2(i + vec2(1, 0)), u.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), u.x), u.y);
 }
+// CÚMULOS DO ALÍSIO (meio-dia de agosto, revisão do orquestrador 21/10/2026): o banco e as massas viravam uma
+// mancha branca chata e borrada sobre o mar. Nos quadros de conceito o cúmulo é pequeno, redondo, separado, de borda
+// nítida, topo claro e base reta azul-acinzentada. Aqui: uma faixa de células em volta do horizonte (az); cada célula
+// pode ter uma nuvem de quatro bolhas sobre uma base reta. Devolve (cobertura, luz da bolha, altura relativa, base).
+vec4 cumulo(float az, float el) {
+  float N = 46.0;
+  float tau = 6.2831853;
+  float cel = mod(az, tau) / tau * N;
+  float ic = floor(cel);
+  float melhor = 1e3; float luzM = 0.0; float altM = 0.0; float baseM = 0.0;
+  for (int k = -1; k <= 1; k++) {
+    float c = ic + float(k);
+    float ch = mod(c, N);
+    float tem = step(h2(vec2(ch, 3.1)), uCumulos.x);
+    float larg = (0.35 + 0.5 * h2(vec2(ch, 7.7))) / N * tau * uCumulos.y;
+    float cx = (c + 0.5 + (h2(vec2(ch, 11.3)) - 0.5) * 0.4) / N * tau;
+    float base = 0.025 + 0.07 * h2(vec2(ch, 5.9));
+    float azL = mod(az, tau);
+    for (int i = 0; i < 4; i++) {
+      float fi = float(i) / 3.0 - 0.5;
+      float bx = cx + fi * larg * 0.8 + (h2(vec2(ch, 13.0 + float(i))) - 0.5) * larg * 0.15;
+      float br = larg * (0.2 + 0.16 * h2(vec2(ch, 17.0 + float(i)))) * (1.0 - abs(fi) * 0.7);
+      vec2 dd = vec2(azL - bx, el - (base + br * 0.4));
+      float dist = max(length(dd) - br, base - el);
+      dist = mix(1e3, dist, tem);
+      if (dist < melhor) { melhor = dist; luzM = dd.y / max(br, 1e-4); altM = clamp((el - base) / max(br * 1.4, 1e-4), 0.0, 1.0); baseM = base; }
+    }
+  }
+  return vec4(1.0 - smoothstep(-0.0012, 0.0012, melhor), luzM, altM, baseM);
+}
+
 void main() {
   vec3 d = normalize(vDir);
   float y = max(d.y, 0.0);
@@ -94,7 +125,8 @@ void main() {
     vec3 corNuvemLuz = mix(mix(uHor, uSolCor, 0.55) * 1.12, mix(vec3(1.0, 0.96, 0.88), uSolCor, 0.3) * 1.05, uArcPintado);
     vec3 corNuvemSombra = mix(mix(uTopo, uHor, 0.55) * 0.92, mix(uMeio, uTopo, 0.35) * 0.95, uArcPintado);
     vec3 corNuvem = mix(corNuvemSombra, corNuvemLuz, clamp(ladoSol * 0.6 + topoN * 0.5, 0.0, 1.0));
-    cor = mix(cor, mix(corNuvem, uTopo * 0.6, uNoite * 0.7), nuvem * 0.85);
+    // (meio-dia de agosto: as massas saem, entram os cúmulos redondos logo abaixo)
+    cor = mix(cor, mix(corNuvem, uTopo * 0.6, uNoite * 0.7), nuvem * 0.85 * (1.0 - uAzul));
     // BANCO DE CÚMULOS no horizonte (item 5): massas que sobem de uma base reta, em grupos; topo claro e quente
     // do lado do sol, barriga azul acinzentada, borda recortada pelo pincel
     float grupo = smoothstep(0.5, 0.7, vn(vec2(az * 0.9, 3.0)));
@@ -106,7 +138,18 @@ void main() {
     float caroco = vn(vec2(az * 9.0, y * 45.0) + 81.0);
     float luzB = clamp(alturaRel * 0.8 + (caroco - 0.5) * 0.7 + (ladoSol - 0.5) * 0.6, 0.0, 1.0);
     vec3 corBanco = mix(mix(uMeio, uTopo, 0.3) * 0.92, mix(vec3(1.0, 0.95, 0.85), uSolCor, 0.35) * 1.08, smoothstep(0.35, 0.65, luzB));
-    cor = mix(cor, mix(corBanco, uTopo * 0.75, uNoite * 0.9), banco * uArcCeuPincel * uArcCeu);
+    cor = mix(cor, mix(corBanco, uTopo * 0.75, uNoite * 0.9), banco * uArcCeuPincel * uArcCeu * (1.0 - uAzul));
+    // CÚMULOS DO ALÍSIO: topo claro do lado do sol, base reta azul-acinzentada, os do fundo (base baixa) mais lavados
+    if (uAzul > 0.001) {
+      vec4 cu = cumulo(az, y);
+      float luzC = smoothstep(0.05, 0.85, cu.y * 0.55 + cu.z * 0.5 + (ladoSol - 0.5) * 0.35);
+      vec3 sombraC = mix(vec3(0.6, 0.66, 0.77), uMeio, 0.35);
+      vec3 claroC = mix(vec3(1.0, 0.985, 0.95), uSolCor, 0.12);
+      vec3 corC = mix(sombraC, claroC, luzC);
+      corC = mix(corC, sombraC * 0.92, (1.0 - smoothstep(0.0, 0.12, cu.z)) * 0.5); // a barriga reta, mais escura
+      corC = mix(corC, uHor, (1.0 - smoothstep(0.03, 0.09, cu.w)) * 0.3);
+      cor = mix(cor, corC, cu.x * uAzul * uArcCeu);
+    }
     // O SOL PINTADO: o disco é pequeno e duro, o halo é a tinta quente em volta dele.
     float haloPintado = smoothstep(0.85, 0.999, sA) * 0.42 * (1.0 - uNoite) * uArcCeu * uArcPintado;
     cor = mix(cor, uSolCor * 1.2, haloPintado);
@@ -150,6 +193,36 @@ export function ceuTsl({ W, ref }, u) {
     const uu = f.mul(f).mul(float(3.0).sub(f.mul(2.0)))
     return mix(mix(h2(i), h2(i.add(vec2(1, 0))), uu.x), mix(h2(i.add(vec2(0, 1))), h2(i.add(vec2(1, 1))), uu.x), uu.y)
   }).setLayout({ name: 'ceuVn', type: 'float', inputs: [{ name: 'p', type: 'vec2' }] })
+  // CÚMULOS DO ALÍSIO: as mesmas contas de cumulo() do GLSL (laços desenrolados aqui)
+  const cumulo = (az, el) => {
+    const N = 46.0, tau = 6.2831853
+    const modP = (x, y) => x.sub(floor(x.div(y)).mul(y)) // o mod do GLSL (o % do WGSL dá negativo para x negativo)
+    const azL = modP(az, tau)
+    const ic = floor(azL.div(tau).mul(N))
+    const melhor = float(1e3).toVar(), luzM = float(0.0).toVar(), altM = float(0.0).toVar(), baseM = float(0.0).toVar()
+    for (let k = -1; k <= 1; k++) {
+      const c = ic.add(k)
+      const ch = modP(c, N)
+      const tem = step(h2(vec2(ch, 3.1)), U.uCumulos.x)
+      const larg = h2(vec2(ch, 7.7)).mul(0.5).add(0.35).div(N).mul(tau).mul(U.uCumulos.y)
+      const cx = c.add(0.5).add(h2(vec2(ch, 11.3)).sub(0.5).mul(0.4)).div(N).mul(tau)
+      const base = h2(vec2(ch, 5.9)).mul(0.07).add(0.025)
+      for (let i = 0; i < 4; i++) {
+        const fi = i / 3.0 - 0.5
+        const bx = cx.add(larg.mul(fi * 0.8)).add(h2(vec2(ch, 13.0 + i)).sub(0.5).mul(larg).mul(0.15))
+        const br = larg.mul(h2(vec2(ch, 17.0 + i)).mul(0.16).add(0.2)).mul(1.0 - Math.abs(fi) * 0.7)
+        const dd = vec2(azL.sub(bx), el.sub(base.add(br.mul(0.4))))
+        const dist = mix(float(1e3), max(W.length(dd).sub(br), base.sub(el)), tem)
+        W.If(dist.lessThan(melhor), () => {
+          melhor.assign(dist)
+          luzM.assign(dd.y.div(max(br, 1e-4)))
+          altM.assign(clamp(el.sub(base).div(max(br.mul(1.4), 1e-4)), 0.0, 1.0))
+          baseM.assign(base)
+        })
+      }
+    }
+    return vec4(float(1.0).sub(smoothstep(-0.0012, 0.0012, melhor)), luzM, altM, baseM)
+  }
   const vDir = varying(normalize(positionLocal))
   const m = new W.MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false })
   // gl_Position = p.xyww: o céu fica no fundo da profundidade
@@ -212,7 +285,8 @@ export function ceuTsl({ W, ref }, u) {
       const corNuvemLuz = mix(mix(U.uHor, U.uSolCor, 0.55).mul(1.12), mix(vec3(1.0, 0.96, 0.88), U.uSolCor, 0.3).mul(1.05), U.uArcPintado)
       const corNuvemSombra = mix(mix(U.uTopo, U.uHor, 0.55).mul(0.92), mix(U.uMeio, U.uTopo, 0.35).mul(0.95), U.uArcPintado)
       const corNuvem = mix(corNuvemSombra, corNuvemLuz, clamp(ladoSol.mul(0.6).add(topoN.mul(0.5)), 0.0, 1.0))
-      cor.assign(mix(cor, mix(corNuvem, U.uTopo.mul(0.6), U.uNoite.mul(0.7)), nuvemFinal.mul(0.85)))
+      // (meio-dia de agosto: as massas saem, entram os cúmulos redondos logo abaixo)
+      cor.assign(mix(cor, mix(corNuvem, U.uTopo.mul(0.6), U.uNoite.mul(0.7)), nuvemFinal.mul(0.85).mul(float(1.0).sub(U.uAzul))))
       // BANCO DE CÚMULOS no horizonte (item 5)
       const grupo = smoothstep(0.5, 0.7, vn(vec2(az.mul(0.9), 3.0)))
       // silhueta em calombos: onda larga, calombos médios e pequenos
@@ -223,7 +297,18 @@ export function ceuTsl({ W, ref }, u) {
       const caroco = vn(vec2(az.mul(9.0), y.mul(45.0)).add(81.0))
       const luzB = clamp(alturaRel.mul(0.8).add(caroco.sub(0.5).mul(0.7)).add(ladoSol.sub(0.5).mul(0.6)), 0.0, 1.0)
       const corBanco = mix(mix(U.uMeio, U.uTopo, 0.3).mul(0.92), mix(vec3(1.0, 0.95, 0.85), U.uSolCor, 0.35).mul(1.08), smoothstep(0.35, 0.65, luzB))
-      cor.assign(mix(cor, mix(corBanco, U.uTopo.mul(0.75), U.uNoite.mul(0.9)), banco.mul(U.uArcCeuPincel).mul(U.uArcCeu)))
+      cor.assign(mix(cor, mix(corBanco, U.uTopo.mul(0.75), U.uNoite.mul(0.9)), banco.mul(U.uArcCeuPincel).mul(U.uArcCeu).mul(float(1.0).sub(U.uAzul))))
+      // CÚMULOS DO ALÍSIO: topo claro do lado do sol, base reta azul-acinzentada, os do fundo mais lavados
+      W.If(U.uAzul.greaterThan(0.001), () => {
+        const cu = cumulo(az, y)
+        const luzC = smoothstep(0.05, 0.85, cu.y.mul(0.55).add(cu.z.mul(0.5)).add(ladoSol.sub(0.5).mul(0.35)))
+        const sombraC = mix(vec3(0.6, 0.66, 0.77), U.uMeio, 0.35)
+        const claroC = mix(vec3(1.0, 0.985, 0.95), U.uSolCor, 0.12)
+        const corC = mix(sombraC, claroC, luzC).toVar()
+        corC.assign(mix(corC, sombraC.mul(0.92), float(1.0).sub(smoothstep(0.0, 0.12, cu.z)).mul(0.5)))
+        corC.assign(mix(corC, U.uHor, float(1.0).sub(smoothstep(0.03, 0.09, cu.w)).mul(0.3)))
+        cor.assign(mix(cor, corC, cu.x.mul(U.uAzul).mul(U.uArcCeu)))
+      })
       // O SOL PINTADO: o disco é pequeno e duro, o halo é a tinta quente em volta dele
       const haloPintado = smoothstep(0.85, 0.999, sA).mul(0.42).mul(float(1.0).sub(U.uNoite)).mul(U.uArcCeu).mul(U.uArcPintado)
       cor.assign(mix(cor, U.uSolCor.mul(1.2), haloPintado))
