@@ -61,14 +61,14 @@ function varandaCorrida(obra, k, y, sai) {
   obra.add(k.moldura, prismaFaixa(sai, y - 0.2, 0.22))
   // a faixa de sombra sob a laje (o tom mais escuro marca a varanda corrida de longe)
   obra.add(k.sulco, prismaFaixa(sai * 0.55, y - 0.62, 0.42))
-  balaustrada(obra, { base: k.balaustre, balaustre: k.balaustre }, -L / 2, hz - 0.15, hx - r, hz - 0.15, y)
+  balaustrada(obra, { base: k.balaustre, balaustre: k.balaustreFino }, -L / 2, hz - 0.15, hx - r, hz - 0.15, y)
   for (let i = 0; i < 6; i++) {
     const a0 = (i / 6) * (Math.PI / 2)
     const a1 = ((i + 1) / 6) * (Math.PI / 2)
     const p = (a) => [L / 2 - R + Math.sin(a) * (r - 0.15), P / 2 - R + Math.cos(a) * (r - 0.15)]
-    balaustrada(obra, { base: k.balaustre, balaustre: k.balaustre }, ...p(a0), ...p(a1), y)
+    balaustrada(obra, { base: k.balaustre, balaustre: k.balaustreFino }, ...p(a0), ...p(a1), y)
   }
-  balaustrada(obra, { base: k.balaustre, balaustre: k.balaustre }, hx - 0.15, P / 2 - R, hx - 0.15, -P / 2, y)
+  balaustrada(obra, { base: k.balaustre, balaustre: k.balaustreFino }, hx - 0.15, P / 2 - R, hx - 0.15, -P / 2, y)
 }
 // a laje da varanda: o contorno da frente engordado (só sul e leste: o fundo fica rente)
 function prismaFaixa(sai, y0, h) {
@@ -89,7 +89,7 @@ export function criarExcelsior(cena, cfg, mats, mobilia) {
   const y = chaoMinimo([pg.x, pg.z], L / 2, P / 2) - 0.25
   const obra = new Obra('hotel-excelsior', [pg.x, pg.z], y)
   const rnd = criarAleatorio(1931)
-  const k = { vao: 'vao', vaoAceso: 'vaoAceso', moldura: 'moldura', esquadria: 'esquadria', ferro: 'ferro', parede: 'excelsior', sulco: 'calVelha', balaustre: 'balaustreClaro', bandeira: 'bandeira', bandeiraOuro: 'bandeiraOuro' }
+  const k = { vao: 'vao', vaoAceso: 'vaoAceso', moldura: 'moldura', esquadria: 'esquadria', ferro: 'ferro', parede: 'excelsior', sulco: 'calVelha', balaustre: 'balaustreClaro', balaustreFino: 'balaustreClaroFino', ferroFino: 'ferroFino', bandeira: 'bandeira', bandeiraOuro: 'bandeiraOuro' }
   // as alturas dos andares (térreo 4,8; 1º ao 7º 3,5; coroamento): a altura do cfg estica todos igual
   const esc = cfg.marcos.excelsiorAltura / 30.3
   const T = 4.8 * esc

@@ -85,3 +85,29 @@ describe('a cidade pula o chão dos marcos', () => {
     expect(invasoras).toEqual([])
   }, 30000)
 })
+
+// Pega: o detalhe que some de longe (index.js, distDetalhe) levava peças inteiras, porque a chave do detalhe era
+// a mesma da peça grande: a cobertura do Mercado ('chapa', marcada pelos frisos), as colunas e treliças ('mercado',
+// marcadas pelas venezianas) e a base das balaustradas sumiam além de 170 m. Correção no commit "Detalhe de longe".
+describe('marcos de 1932: o detalhe de longe não leva a peça grande', () => {
+  it('a balaustrada só marca os balaústres como detalhe', async () => {
+    const { balaustrada } = await import('../../src/mundo/marcos1932/obra.js')
+    const obra = { detalhe: new Set(), caixa() {}, torno() {} }
+    balaustrada(obra, { base: 'balaustre', balaustre: 'balaustreFino' }, 0, 0, 6, 0, 0)
+    expect([...obra.detalhe]).toEqual(['balaustreFino'])
+    const outra = { detalhe: new Set(), caixa() {}, torno() {} }
+    balaustrada(outra, { base: 'cal', balaustre: 'cal' }, 0, 0, 6, 0, 0)
+    expect([...outra.detalhe]).toEqual([])
+  })
+  it('nenhuma obra marca como detalhe uma chave de peça grande', async () => {
+    const { readFileSync, readdirSync } = await import('node:fs')
+    const pasta = new URL('../../src/mundo/marcos1932/', import.meta.url)
+    const grandes = new Set(['cal', 'pedra', 'moldura', 'mercado', 'chapa', 'ferro', 'balaustre', 'balaustreClaro', 'excelsior', 'majestic', 'moderno', 'coluna', 'rosario', 'palacio'])
+    const marcadas = []
+    for (const f of readdirSync(pasta)) {
+      const s = readFileSync(new URL(f, pasta), 'utf8')
+      for (const m of s.matchAll(/detalhe\.add\('([a-zA-Z]+)'\)/g)) if (grandes.has(m[1])) marcadas.push(`${f}: ${m[1]}`)
+    }
+    expect(marcadas).toEqual([])
+  })
+})

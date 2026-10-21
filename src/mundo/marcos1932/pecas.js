@@ -50,14 +50,15 @@ export function sacada(obra, k, ang, px, y, pz, w, { fundo = 0.6, alt = 0.95 } =
   naFace(obra, k.moldura, caixa(w + 0.4, 0.12, fundo, 0, -0.06, fundo / 2), ang, px, y, pz)
   for (const s of [-1, 1]) naFace(obra, k.moldura, caixa(0.14, 0.32, fundo * 0.8, s * (w / 2), -0.28, fundo * 0.4), ang, px, y, pz)
   const L = w + 0.3
+  const fino = k.ferroFino || k.ferro // as barras somem de longe; a laje e o corrimão ficam
   naFace(obra, k.ferro, caixa(L, 0.045, 0.045, 0, alt, fundo - 0.04), ang, px, y, pz)
   naFace(obra, k.ferro, caixa(L, 0.035, 0.035, 0, 0.12, fundo - 0.04), ang, px, y, pz)
   for (const s of [-1, 1]) naFace(obra, k.ferro, caixa(0.045, 0.045, fundo, s * L / 2, alt, fundo / 2), ang, px, y, pz)
   const n = Math.max(3, Math.round(L / 0.13))
-  for (let i = 0; i <= n; i++) naFace(obra, k.ferro, caixa(0.03, alt, 0.03, -L / 2 + (i / n) * L, alt / 2, fundo - 0.04), ang, px, y, pz)
+  for (let i = 0; i <= n; i++) naFace(obra, fino, caixa(0.03, alt, 0.03, -L / 2 + (i / n) * L, alt / 2, fundo - 0.04), ang, px, y, pz)
   // as volutas do meio (a "renda" do ferro trabalhado)
-  for (const s of [-1, 1]) naFace(obra, k.ferro, new THREE.TorusGeometry(0.13, 0.016, 4, 10).translate(s * 0.16, alt * 0.55, fundo - 0.04), ang, px, y, pz)
-  obra.detalhe.add(k.ferro)
+  for (const s of [-1, 1]) naFace(obra, fino, new THREE.TorusGeometry(0.13, 0.016, 4, 10).translate(s * 0.16, alt * 0.55, fundo - 0.04), ang, px, y, pz)
+  if (fino !== k.ferro) obra.detalhe.add(fino)
 }
 
 // pilastra com bossagem em faixas: um prisma saliente com sulcos horizontais (a "rusticação" do Excelsior)

@@ -60,7 +60,7 @@ function balaustradaInclinada(obra, k, x0, y0, z0, x1, y1, z1, { passo = 0.3, al
     const t = (i + 0.5) / n
     obra.torno(k.balaustre, x0 + dx * t, y0 + dy * t + 0.16, z0 + dz * t, PERFIL.balaustre, 6, (alt - 0.28) / 0.66)
   }
-  obra.detalhe.add(k.balaustre)
+  if (k.balaustre !== k.base) obra.detalhe.add(k.balaustre)
 }
 
 // o jardim visto de cima: gramado, caminhos sinuosos de saibro com meio-fio, as praças do General e do coreto
@@ -147,7 +147,7 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
   cena.add(jardim)
 
   // a balaustrada de 1914 com pilares; nos pilares, combustores e jarros alternados
-  const kb = { base: 'balaustre', balaustre: 'balaustre' }
+  const kb = { base: 'balaustre', balaustre: 'balaustreFino' }
   const vaosLeste = [[ESC.z - ESC.faixa[1] - 0.2, ESC.z + ESC.faixa[1] + 0.2]]
   const vaosOeste = [[OESTE.z - OESTE.meia, OESTE.z + OESTE.meia]]
   const vaosSul = [[-9.5, -2.5]] // a frente da igreja (o adro, no nível da praça)

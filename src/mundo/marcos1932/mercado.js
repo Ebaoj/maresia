@@ -64,9 +64,9 @@ function venezianas(obra, a0, a1, fixo, y0, y1, eixo) {
     const g = new THREE.BoxGeometry(eixo === 'x' ? comp : 0.03, 0.16, eixo === 'x' ? 0.03 : comp)
     if (eixo === 'x') g.rotateX(0.6)
     else g.rotateZ(-0.6)
-    obra.add('mercado', g.translate(eixo === 'x' ? meio : fixo, y, eixo === 'x' ? fixo : meio))
+    obra.add('mercadoFino', g.translate(eixo === 'x' ? meio : fixo, y, eixo === 'x' ? fixo : meio))
   }
-  obra.detalhe.add('mercado')
+  obra.detalhe.add('mercadoFino')
 }
 
 export function criarMercado(cena, cfg, mats, mobilia) {
@@ -127,10 +127,10 @@ export function criarMercado(cena, cfg, mats, mobilia) {
     obra.add('chapa', new THREE.BoxGeometry(L + 1.6, 0.1, perna).rotateX(s * ang).translate(0, BEIRAL + h / 2 + 0.25, (s * W) / 4))
     // as ondas da chapa: frisos ao longo da descida, a cada 0,5 m
     for (let x = -L / 2 - 0.6; x <= L / 2 + 0.6; x += 0.5) {
-      obra.add('chapa', new THREE.BoxGeometry(0.06, 0.06, perna).rotateX(s * ang).translate(x, BEIRAL + h / 2 + 0.31, (s * W) / 4))
+      obra.add('chapaFino', new THREE.BoxGeometry(0.06, 0.06, perna).rotateX(s * ang).translate(x, BEIRAL + h / 2 + 0.31, (s * W) / 4))
     }
   }
-  obra.detalhe.add('chapa')
+  obra.detalhe.add('chapaFino')
   // o lanternim: um corpo de venezianas sobre a cumeeira, com telhadinho próprio e crista de ferro
   const lw = 3.2
   for (const s of [-1, 1]) venezianas(obra, -L / 2 + 2, L / 2 - 2, (s * lw) / 2, cume - 0.2, cume + 1.2, 'x')

@@ -119,7 +119,7 @@ function palacio(cena, mats, praca, H, fundo) {
     }
   }
   // a balaustrada do terraço sobre o muro de blocos (frente leste e norte)
-  const kb = { base: 'balaustre', balaustre: 'balaustre' }
+  const kb = { base: 'balaustre', balaustre: 'balaustreFino' }
   balaustrada(obra, kb, W / 2 + 0.5, -L / 2 - 0.5, W / 2 + 0.5, L / 2 + 0.5, 0)
   obra.colisaoCaixa(0, 0, W / 2 + 0.6, L / 2 + 0.6)
   ocupacao.marcar(pg.x, pg.z, pg.hu + 1, pg.hv + 1, obra.giro)
@@ -145,9 +145,9 @@ function coreto(cena, mats, praca, H, [lx, lz]) {
   obra.add('ferro', new THREE.TorusGeometry(r - 0.3, 0.05, 4, 8).rotateX(Math.PI / 2).rotateY(Math.PI / 8).translate(0, 4.35, 0))
   for (let k = 0; k < 32; k++) {
     const a = (k / 32) * Math.PI * 2
-    obra.add('ferro', new THREE.TorusGeometry(0.16, 0.02, 4, 8).rotateY(-a + Math.PI / 2).translate(Math.cos(a) * (r - 0.3), 4.15, Math.sin(a) * (r - 0.3)))
+    obra.add('ferroFino', new THREE.TorusGeometry(0.16, 0.02, 4, 8).rotateY(-a + Math.PI / 2).translate(Math.cos(a) * (r - 0.3), 4.15, Math.sin(a) * (r - 0.3)))
   }
-  obra.detalhe.add('ferro')
+  obra.detalhe.add('ferroFino')
   obra.torno('chapa', 0, 4.4, 0, [[0, 0], [r + 0.5, 0], [r + 0.35, 0.15], [2.4, 0.6], [1.2, 1.5], [0.4, 2.4], [0, 2.6]], 16)
   obra.torno('ferro', 0, 6.95, 0, [[0, 0], [0.1, 0], [0.18, 0.2], [0.05, 0.6], [0, 0.65]], 8)
   for (let i = 0; i < 3; i++) obra.deck(0, -r - 0.9 + i * 0.3, 1.1, 0.3, 0.34 + i * 0.33)

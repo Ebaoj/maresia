@@ -184,7 +184,8 @@ export function balaustrada(obra, k, x0, z0, x1, z1, y, { passo = 0.28, alt = 0.
     const t = (i + 0.5) / n
     obra.torno(k.balaustre, x0 + dx * t, y + 0.16, z0 + dz * t, PERFIL.balaustre, 6, esc)
   }
-  obra.detalhe.add(k.balaustre)
+  // só os balaústres somem de longe; a base e o corrimão ficam (de longe, a balaustrada é a faixa clara)
+  if (k.balaustre !== k.base) obra.detalhe.add(k.balaustre)
 }
 
 // cornija em degraus ao longo de um retângulo (fachada inteira), saindo `sai` da parede

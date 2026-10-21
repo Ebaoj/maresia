@@ -77,6 +77,9 @@ export function criarMateriais(cfg) {
   mats.vidro = luzFixa(new THREE.MeshBasicMaterial({ color: '#e8e0c8' }), 1, globais.uNoite)
   mats.vidro.userData.semSombra = true
 
+  // as peças miúdas que somem de longe (index.js, distDetalhe) vão numa malha à parte, com o mesmo material:
+  // se a chave do detalhe fosse a mesma da peça grande, o telhado ou a coluna inteira sumiriam junto
+  for (const k of ['balaustre', 'balaustreClaro', 'ferro', 'mercado', 'chapa']) mats[k + 'Fino'] = mats[k]
   const escuro = new THREE.Color('#4a3a30')
   const quente = new THREE.Color('#ffb860').multiplyScalar(2.2)
   const apagado = new THREE.Color('#e8e0c8')

@@ -62,7 +62,7 @@ function criarMajestic(cena, mats) {
     for (let n = 1; n < 4; n++) janela(obra, k, NORTE, x, andares[n] + 0.4, -hz, 1.2, n === 3 ? 2.5 : 2.2, { arco: n === 3, aceso: rnd.chance(0.25) })
   }
   // a platibanda com balaustrada e os pináculos sobre os pilares
-  const kb = { base: 'cal', balaustre: 'balaustre' }
+  const kb = { base: 'cal', balaustre: 'balaustreFino' }
   balaustrada(obra, kb, hx + 0.2, -hz, hx + 0.2, hz, topo + 0.15)
   balaustrada(obra, kb, -hx, -hz - 0.2, hx, -hz - 0.2, topo + 0.15)
   for (let i = 0; i <= nV; i++) {
