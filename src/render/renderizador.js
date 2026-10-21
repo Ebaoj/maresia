@@ -10,6 +10,8 @@ import * as THREE from 'three'
 import { materialArcane, copiarPropriedades, matrizInstancia } from './arcane-tsl.js'
 import { usarModulo, ref } from './gpu/comum.js'
 import { instalarFaixasUnicas } from './gpu/faixas-uniform.js'
+import { instalarFiltroWebgl } from './filtro-sombra.js'
+import { instalarMisturaWebgl } from './sombra-perto.js'
 
 let W = null // o módulo three/webgpu, no modo webgpu
 let renderizador = null
@@ -55,6 +57,10 @@ export async function criarRenderizador(cfg, canvas) {
     renderizador = renderer
     return { renderer, webgpu: true }
   }
+  // sombra (21/10/2026): borda presa ao mapa em vez do ruído de tela do three, e a mistura dos mapas de longe e
+  // de perto (render/filtro-sombra.js, render/sombra-perto.js); antes do primeiro material compilar
+  if (!instalarFiltroWebgl()) console.warn('filtro da sombra: o trecho do three mudou, segue o PCF do three')
+  if (!instalarMisturaWebgl()) console.warn('sombra de perto: o trecho do three mudou, só o mapa de longe vale')
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap // suave desde o three 0.182
@@ -406,7 +412,8 @@ function sombraComoWebgl(m, nm) {
       let a = float(1)
       // a textura do momento (o rosto troca o map durante o jogo)
       if (m.map) a = a.mul(texture(m.map, uv()).onRenderUpdate(() => m.map).a)
-      if (m.alphaMap) a = a.mul(texture(m.alphaMap, uv()).onRenderUpdate(() => m.alphaMap).g)
+      // a copa do coqueiro tem uma máscara só da sombra (mundo/vegetacao.js, cfg.mundo.sombraCopaCheia)
+      if (m.alphaMap) a = a.mul(texture(m.userData.alphaMapSombra || m.alphaMap, uv()).onRenderUpdate(() => m.userData.alphaMapSombra || m.alphaMap).g)
       Discard(a.lessThan(m.alphaTest))
       return vec4(0, 0, 0, 1)
     })()

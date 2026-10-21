@@ -131,15 +131,18 @@ export function geometriaCopa(topo) {
 }
 
 // A máscara da folha: nervura no meio e folíolos em diagonal.
-function mascaraFolha() {
+// A folha que se vê tem 46 folíolos finos (grossura 5) de cada lado. A máscara só da sombra
+// (cfg.mundo.sombraCopaCheia) tem 14, grossos: com o mapa de sombra de perto (2,3 cm por texel) os folíolos finos
+// viravam no chão um pente regular que tremia ao andar; assim a sombra é uma pena com poucos dentes largos
+function mascaraFolha(grossura = 5, n = 46) {
   return texturaCanvas(128, 512, (ctx, W, H) => {
     ctx.fillStyle = '#000'
     ctx.fillRect(0, 0, W, H)
     ctx.strokeStyle = '#fff'
     ctx.lineCap = 'round'
-    for (let i = 0; i < 46; i++) {
-      const y = (i / 46) * H
-      ctx.lineWidth = 5
+    for (let i = 0; i < n; i++) {
+      const y = (i / n) * H
+      ctx.lineWidth = grossura
       for (const lado of [-1, 1]) {
         ctx.beginPath()
         ctx.moveTo(W / 2, y)
@@ -220,6 +223,14 @@ function balancarCopa(mat, cfg) {
   return mat
 }
 
+// WebGL: o three monta o material de profundidade da sombra copiando o alphaMap do material; aqui, logo antes do
+// desenho na sombra, ele troca pela máscara cheia (o mesmo material de profundidade, só o uniform muda)
+function sombraDaCopa(renderer, objeto, camera, cameraSombra, geometria, materialProf) {
+  const m = objeto.material
+  const mascara = m && m.userData.alphaMapSombra
+  if (materialProf && !materialProf.isNodeMaterial) materialProf.alphaMap = mascara || m.alphaMap
+}
+
 // formas e materiais do coqueiro (o jogo e a cidade de estresse do KAN-73 usam os mesmos)
 export function pecasDoCoqueiro(cfg) {
   const { geo: geoTronco, topo } = geometriaTronco()
@@ -234,6 +245,12 @@ export function pecasDoCoqueiro(cfg) {
     side: THREE.DoubleSide,
   }), cfg)
   pintar(matCopa, 'copa-pintada')
+  // a sombra da copa sai de uma máscara cheia (lâminas em vez de pente): lida pelo passe de sombra do WebGL
+  // (sombraDaCopa, em onBeforeShadow) e pelo do WebGPU (render/renderizador.js, sombraComoWebgl)
+  const mascaraSombra = mascaraFolha(16, 14)
+  Object.defineProperty(matCopa.userData, 'alphaMapSombra', {
+    get: () => (cfg?.mundo?.sombraCopaCheia === false ? null : mascaraSombra), enumerable: false, configurable: true,
+  })
   texturizar(matCopa, { topo: 'folha', lado: 'folha', tam: 1.2, contraste: 0.9, massa: 0.3 }) // folhagem pintada (visual Arcane)
   return { geoTronco, geoCopa, matTronco, matCopa }
 }
@@ -259,7 +276,8 @@ export function criarCoqueiros(cena, cfg) {
   })
   instanciarEmBlocos(cena, geoTronco, matTronco, matrizes, null, { nome: 'coqueiros', placa: true })
   // as folhas não entram no passe de normais (a máscara não vale lá); o contorno vem da profundidade
-  instanciarEmBlocos(cena, geoCopa, matCopa, matrizes, null, { nome: 'copas', semNormal: true, placa: true })
+  const copas = instanciarEmBlocos(cena, geoCopa, matCopa, matrizes, null, { nome: 'copas', semNormal: true, placa: true })
+  for (const im of [].concat(copas || [])) if (im && im.isObject3D) im.onBeforeShadow = sombraDaCopa
   // para a física: onde fica cada coqueiro e de onde o coco cai
   return {
     quantidade: lista.length,

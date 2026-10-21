@@ -7,6 +7,8 @@ import { globais } from '../globais.js'
 import { gradienteToon, pintar } from '../materiais.js'
 import { vertCeu, fragCeu, ceuTsl } from './ceu-pintado.js'
 import { criarAleatorio } from '../utils.js'
+import { alinharAoTexel, viesNormalizado } from '../render/sombra-luz.js'
+import { raioDoFiltro } from '../render/filtro-sombra.js'
 
 // A paleta do céu segue a direção de arte: azul no alto, quente no horizonte (o maresia de
 // Fortaleza). O 1881 (memória) é a tinta de jornal, e quem resolve isso é o pós-processamento.
@@ -98,8 +100,8 @@ export function criarCeu(cena) {
   // tamanho em centimetros.
   const sc = sol.shadow.camera
   sc.left = -173; sc.right = 173; sc.top = 173; sc.bottom = -173; sc.near = 1; sc.far = 1441
-  sol.shadow.bias = -0.0006
-  sol.shadow.normalBias = 0.06
+  // bias e normalBias são postos a cada quadro em atualizar(), a partir de cfg.mundo.sombraVies (metros) e
+  // sombraViesNormal (texels): o -0,0006 fixo de antes eram 0,86 m de profundidade com este far
   cena.add(sol)
   cena.add(sol.target)
 
@@ -115,6 +117,7 @@ export function criarCeu(cena) {
   const corMeio = new THREE.Color()
   const corCiano = new THREE.Color()
   const corDouradaSombra = new THREE.Color()
+  const dirContinua = new THREE.Vector3(0, 1, 0) // direção da luz sem passos (mapa de sombra de perto)
   let cache = null // CacheSombra (F4): com ele ligado, a pose da luz fica congelada enquanto o mapa dos parados vale
 
   function atualizar(hora, centro, dt, cfg) {
@@ -134,6 +137,9 @@ export function criarCeu(cena) {
     const dirSolS = passoH > 0 ? direcaoSol(Math.round(hora / passoH) * passoH) : dirSol
     // de noite a luz principal vira a lua
     const dirLuz = deDia ? dirSolS.clone() : new THREE.Vector3(-dirSolS.x, -dirSolS.y, -0.3).normalize()
+    // a mesma luz sem os passos, para o mapa de sombra de perto (refeito todo quadro: segue o sol contínuo)
+    if (deDia) dirContinua.copy(dirSol)
+    else dirContinua.set(-dirSol.x, -dirSol.y, -0.3).normalize()
     // HORA DOURADA (luz-arcane, item 3; alvo: docs/referencias/forte-1932-joabe): com o sol baixo de dia, a
     // luz principal esquenta para laranja, a sombra fica longa e azul funda e o contraste sobe. O fator nasce
     // da altura do sol, então 8h ganha um pouco, 11h nada, 16h30 quase tudo e a noite nada.
@@ -142,8 +148,11 @@ export function criarCeu(cena) {
     globais.uDourada.value = dourada
     // truque de cenário: a luz nunca fica rasante demais, senão o chão inteiro cai na sombra. Na hora dourada o
     // limite desce (sombra longa, como no forte da referência), até cfg.estilo.arcDouradaAltura
-    dirLuz.y = Math.max(dirLuz.y, THREE.MathUtils.lerp(0.42, cfg.estilo.arcDouradaAltura ?? 0.42, dourada))
+    const yMin = THREE.MathUtils.lerp(0.42, cfg.estilo.arcDouradaAltura ?? 0.42, dourada)
+    dirLuz.y = Math.max(dirLuz.y, yMin)
     dirLuz.normalize()
+    dirContinua.y = Math.max(dirContinua.y, yMin)
+    dirContinua.normalize()
     const pertoHorizonte = THREE.MathUtils.smoothstep(Math.abs(dirSol.y), 0.0, 0.08)
 
     uniformes.uTopo.value.copy(p.topo)
@@ -164,20 +173,16 @@ export function criarCeu(cena) {
     // do mapa de sombra, medidos no plano da luz. Assim a borda das sombras não "ferve"
     // quando o jogador anda.
     const texel = (sc.right - sc.left) / sol.shadow.mapSize.x
-    const frente = dirLuz.clone().negate()
-    const direita = new THREE.Vector3().crossVectors(frente, Math.abs(frente.y) > 0.99 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0)).normalize()
-    const cima = new THREE.Vector3().crossVectors(direita, frente).normalize()
-    const r = centro.dot(direita)
-    const u = centro.dot(cima)
-    const alinhado = centro.clone()
-      .addScaledVector(direita, Math.round(r / texel) * texel - r)
-      .addScaledVector(cima, Math.round(u / texel) * texel - u)
+    const alinhado = alinharAoTexel(centro, dirLuz, texel, new THREE.Vector3())
     // F4 (KAN-74): com o cache ligado, a pose é a do mapa guardado (congelada) até a política mandar refazer
     const pose = cache ? cache.pose(alinhado, dirLuz) : null
     const centroLuz = pose ? pose.centro : alinhado
     sol.position.copy(centroLuz).addScaledVector(pose ? pose.dir : dirLuz, 250)
     sol.target.position.copy(centroLuz)
     sol.castShadow = cfg.mundo.sombras
+    sol.shadow.bias = viesNormalizado(cfg.mundo.sombraVies ?? 0.03, sc.near, sc.far)
+    sol.shadow.normalBias = (cfg.mundo.sombraViesNormal ?? 1) * texel
+    sol.shadow.radius = raioDoFiltro(cfg)
     const res = cfg.mundo.resolucaoSombra
     if (sol.shadow.mapSize.x !== res) {
       sol.shadow.mapSize.set(res, res)
@@ -222,7 +227,7 @@ export function criarCeu(cena) {
     return p
   }
 
-  return { atualizar, sol, usarCache: (c) => { cache = c } }
+  return { atualizar, sol, dirContinua, usarCache: (c) => { cache = c } }
 }
 
 function criarNuvens(cena) {

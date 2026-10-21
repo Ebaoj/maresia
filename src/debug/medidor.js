@@ -21,7 +21,9 @@ export function instalar(m) {
   // deu números incoerentes, por isso não é usado.
   // WebGPU: não há leitura síncrona; a leitura assíncrona de 1 pixel espera a placa terminar o que foi mandado
   const ler = async (alvo) => {
-    if (m.renderer.readRenderTargetPixelsAsync) await m.renderer.readRenderTargetPixelsAsync(alvo, 0, 0, 1, 1)
+    // o WebGLRenderer do three 0.186 também tem readRenderTargetPixelsAsync, mas pede o buffer: sem ele dava
+    // "Cannot read properties of undefined (reading 'byteLength')" e o medidor não rodava no WebGL (21/10/2026)
+    if (m.webgpu) await m.renderer.readRenderTargetPixelsAsync(alvo, 0, 0, 1, 1)
     else m.renderer.readRenderTargetPixels(alvo, 0, 0, 1, 1, px)
   }
   async function medirAqui(quadros, alvo, vezes = 3) {

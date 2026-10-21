@@ -1,0 +1,19 @@
+     × fica abaixo de 10 cm de profundidade, ao meio-dia e na hora dourada 60ms
+     × quadro a quadro, a direção da luz não pula mais que 0,06° 41ms
+     × quem salvou o painel com o passo antigo (4) passa a ter o novo; outro valor escolhido fica 0ms
+     × troca o PCF do three 0.186 por uma grade fixa no mapa, sem ruído de tela no caminho padrão 16ms
+     × a mistura entra no laço das luzes do three 0.186 (sol = 0, perto = 1) 1ms
+     × em volta do jogador o texel tem no máximo 3 cm e a janela anda presa à grade de texels 3ms
+     × o sol segue em cache e o mapa de perto desenha parados e dinâmicos todo quadro 5ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  testes/unidade/sombra-nitida.test.js > viés da sombra do sol > fica abaixo de 10 cm de profundidade, ao meio-dia e na hora dourada
+AssertionError: expected 0.8639999999999999 to be less than 0.1
+ FAIL  testes/unidade/sombra-nitida.test.js > passo do sol na sombra > quadro a quadro, a direção da luz não pula mais que 0,06°
+AssertionError: expected 0.9438570489560997 to be less than 0.06
+ FAIL  testes/unidade/sombra-nitida.test.js > passo do sol na sombra > quem salvou o painel com o passo antigo (4) passa a ter o novo; outro valor escolhido fica
+ FAIL  testes/unidade/sombra-nitida.test.js > filtro da borda (WebGL) > troca o PCF do three 0.186 por uma grade fixa no mapa, sem ruído de tela no caminho padrão
+ FAIL  testes/unidade/sombra-nitida.test.js > mapa de perto > a mistura entra no laço das luzes do three 0.186 (sol = 0, perto = 1)
+ FAIL  testes/unidade/sombra-nitida.test.js > mapa de perto > em volta do jogador o texel tem no máximo 3 cm e a janela anda presa à grade de texels
+ FAIL  testes/unidade/sombra-nitida.test.js > cache dos parados com o mapa de perto (WebGL) > o sol segue em cache e o mapa de perto desenha parados e dinâmicos todo quadro
+AssertionError: expected [ 'casa', 'neto' ] to deeply equal [ 'neto' ]
+      Tests  7 failed (7)

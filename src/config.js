@@ -236,9 +236,23 @@ export const PADRAO = {
     mato: 0.55,           // o mato ralo do quintal
   },
   mundo: {
-    passoSombraMin: 4,     // a luz da sombra anda em passos de N minutos de jogo (~1° a cada 4): sem isso a borda das sombras treme; 0 = contínuo
+    // 21/10/2026: 0 (era 4). Com 4, o mapa de longe pulava ~1° a cada 4 s (1 min de jogo por segundo) e a sombra
+    // inteira dava um tranco visível. Com 0 o cache dos parados refaz a cada 0,05° (~5 vezes por segundo, cada vez
+    // só os parados), e o mapa de perto segue o sol contínuo. Só vale para o mapa de longe
+    passoSombraMin: 0,
     sombras: true,
-    resolucaoSombra: 4096, // 4096 nítida, 2048 mais leve (a sombra é o maior custo do quadro)
+    resolucaoSombra: 4096, // mapa de longe (346 m): 4096 = 8,5 cm por texel, 2048 mais leve
+    // mapa de perto (render/sombra-perto.js): janela pequena e densa em volta do jogador, refeita todo quadro
+    sombraPerto: true,
+    sombraPertoTamanho: 48,     // metros de lado (48 m em 2048 = 2,3 cm por texel; o de longe dá 8,5)
+    sombraPertoResolucao: 2048,
+    sombraPertoBorda: 0.12,     // fração da janela de perto em que ela se mistura com a de longe
+    sombraPertoAFrente: 8,      // metros à frente do jogador (para onde a câmera olha) onde a janela de perto fica
+    sombraVies: 0.03,           // metros: tira o "acne" (sombra de si mesmo); o de antes eram 0,86 m e a sombra descolava do pé
+    sombraViesNormal: 1.0,      // texels do mapa: empurra o ponto pela normal antes de ler a sombra
+    sombraSuave: 1.0,           // texels: espaçamento da grade 3 x 3 que alisa a borda (render/filtro-sombra.js)
+    sombraCopaCheia: true,      // a sombra da copa do coqueiro sai em lâminas cheias, não no pente de folíolos finos
+    sombraFiltro: 'pintado',    // 'pintado' (grade presa ao mapa) ou 'three' (o disco girado por ruído de tela, o de antes)
     cacheSombra: true,     // KAN-74 (F4): sombra dos objetos parados em cache (só WebGL); refaz com o sol, ao andar mais que cacheSombraRaio ou quando um parado aparece ou some. Ver docs/motor-f4-cache-sombra.md
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
@@ -292,11 +306,27 @@ function mesclar(base, salvo) {
   return base
 }
 
+// Padrão que mudou: o painel salva a config inteira, então quem salvou qualquer ajuste guardou também o padrão
+// antigo destas chaves e nunca veria o novo. Valor salvo igual ao padrão antigo vira o padrão novo.
+export const PADRAO_MUDOU = [
+  ['mundo.passoSombraMin', 4, 0], // 21/10/2026: a sombra dava um tranco a cada 4 s
+]
+
+export function migrarPadroes(salvo) {
+  for (const [caminho, antigo] of PADRAO_MUDOU) {
+    const chaves = caminho.split('.')
+    const ultima = chaves.pop()
+    const dono = chaves.reduce((o, k) => (o && typeof o === 'object' ? o[k] : undefined), salvo)
+    if (dono && dono[ultima] === antigo) delete dono[ultima]
+  }
+  return salvo
+}
+
 export function carregarConfig() {
   const cfg = copiaProfunda(PADRAO)
   try {
     const salvo = JSON.parse(localStorage.getItem(CHAVE) || 'null')
-    if (salvo) mesclar(cfg, salvo)
+    if (salvo) mesclar(cfg, migrarPadroes(salvo))
   } catch { /* navegador sem storage: segue com o padrão */ }
   return cfg
 }

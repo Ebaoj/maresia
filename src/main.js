@@ -16,6 +16,7 @@ import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
 import { CacheSombra } from './render/cache-sombra.js'
 import { CacheSombraGpu } from './render/cache-sombra-gpu.js'
+import { SombraPerto } from './render/sombra-perto.js'
 import { criarMar } from './mundo/mar.js'
 import { criarFaixas } from './mundo/faixas.js'
 import { criarCidade, RECUSA } from './mundo/cidade.js'
@@ -105,6 +106,8 @@ async function iniciar() {
   marcar('terreno')
   const { mapaAltura } = terreno
   const ceu = criarCeu(cena)
+  // sombra de perto (21/10/2026): mapa pequeno e denso em volta do jogador, misturado ao do sol (render/sombra-perto.js)
+  const sombraPerto = new SombraPerto({ cena, sol: ceu.sol, cfg, W: webgpu ? moduloWebgpu() : null })
   const toque = criarToque(renderer, mapaAltura, cfg)
   const mar = criarMar(cena, mapaAltura, cfg, toque.publico)
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
@@ -199,6 +202,7 @@ async function iniciar() {
   // F4 (KAN-74): sombra dos objetos parados em cache, no WebGL e no WebGPU; liga em cfg.mundo.cacheSombra e vale ao vivo
   const cacheSombra = webgpu ? new CacheSombraGpu(renderer, cena, camera, ceu.sol, cfg, moduloWebgpu()) : new CacheSombra(renderer, cena, camera, ceu.sol, cfg)
   ceu.usarCache(cacheSombra)
+  sombraPerto.luz.userData.cacheSombraVizinho = cacheSombra // WebGPU: o mapa de perto desenha os parados também
   if (import.meta.env.DEV && !webgpu) {
     // todo material da cena precisa escrever a saída de luz (gLuz); avisa se algum esqueceu
     const faltando = new Set()
@@ -267,6 +271,7 @@ async function iniciar() {
   const TEXTO = { tchibum: 'TCHIBUM!', 'chuá': 'CHUÁ!', pouso: 'PLOFT!' }
   const relogio = new THREE.Clock()
   const centroSombra = new THREE.Vector3()
+  const centroPerto = new THREE.Vector3()
   let esperaGota = 0
   const frenteCam = new THREE.Vector3()
   let t = 0
@@ -293,6 +298,8 @@ async function iniciar() {
     frenteCam.normalize()
     centroSombra.copy(jogador.pos).addScaledVector(frenteCam, 30)
     const paleta = ceu.atualizar(cfg.tempo.hora, centroSombra, dt, cfg)
+    centroPerto.copy(jogador.pos).addScaledVector(frenteCam, cfg.mundo.sombraPertoAFrente ?? 8)
+    sombraPerto.atualizar(ceu.dirContinua, centroPerto)
     horizonte.atualizar(paleta)
     pessoas.atualizar(dt, t)
     atores?.atualizar(dt, jogador.pos)
@@ -433,7 +440,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932, urubu,
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932, urubu,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

@@ -47,9 +47,22 @@ export class CacheSombraGpu {
     }
     const renderShadow = SN.prototype.renderShadow
     SN.prototype.renderShadow = function (frame) {
-      const c = this.light && this.light.userData && this.light.userData.cacheSombraGpu
-      return c ? c.sombra(this, frame, renderShadow) : renderShadow.call(this, frame)
+      const ud = this.light && this.light.userData
+      const c = ud && ud.cacheSombraGpu
+      if (c) return c.sombra(this, frame, renderShadow)
+      // a luz do mapa de perto (sombra-perto.js) desenha tudo, parados inclusive
+      const v = ud && ud.cacheSombraVizinho
+      if (v) return v.comParados(() => renderShadow.call(this, frame))
+      return renderShadow.call(this, frame)
     }
+  }
+
+  // Enquanto o cache vale, os parados ficam com castShadow desligado (o passe dinâmico do sol não os desenha). Outro
+  // mapa que precise deles inteiros (o de perto) desenha dentro desta função.
+  comParados(f) {
+    const lista = this.aplicado ? estaticosRegistrados() : null
+    if (lista) for (const o of lista) o.castShadow = true
+    try { return f() } finally { if (lista) for (const o of lista) o.castShadow = false }
   }
 
   get ligado() { return !!this.cfg.mundo.cacheSombra }
@@ -84,6 +97,12 @@ export class CacheSombraGpu {
     }
     const t0 = performance.now()
     const shadow = no.shadow
+    // tamanho novo (painel, "qualidade da sombra"): o mapa vivo só mudava de tamanho dentro do passe de sempre,
+    // depois de o alvo em cache já ter sido refeito no tamanho velho; a cópia de 4096 para 2048 ficava inválida
+    // em todo quadro (erro de validação do WebGPU, 21/10/2026). O mapa vivo muda antes, e o alvo acompanha.
+    if (mapa.setSize && (mapa.width !== shadow.mapSize.width || mapa.height !== shadow.mapSize.height)) {
+      mapa.setSize(shadow.mapSize.width, shadow.mapSize.height, mapa.depth)
+    }
     const chave = shadow.mapSize.width * 4096 + shadow.camera.right
     const assinatura = assinaturaEstaticos()
     if (!this.refazer) {
