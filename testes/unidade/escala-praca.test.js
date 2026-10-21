@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   ll, llInverso, LIMITES, FATOR_PRACA, K_PRACA_X, K_PRACA_Z,
-  esticamento, metrosPorUn, geoDe,
+  esticamento, metrosPorUn, geoDe, escalaJogo,
 } from '../../src/mundo/fortaleza1932.js';
 import { CENTRO, CONTORNO } from '../../src/mundo/praca1932.js';
 import { CAMPO_URUBU } from '../../src/mundo/mapa1932.js';
 import dados from '../../src/mundo/praca1932.json';
+import dadosMapa from '../../src/mundo/mapa1932-dados.json';
 
 // A Praca do Ferreira em tamanho real (1:1) e o resto do mapa comprimido: decisao do
 // Joabe (21/10/2026). A descompressao local acontece na transformacao lon/lat -> jogo
@@ -59,7 +60,12 @@ describe('escala: a Praça do Ferreira em tamanho real', () => {
   });
 
   it('a escala local da praça é 1:1 (uma unidade de jogo por metro)', () => {
-    // o miolo da praca: a escala da compressao base, vezes o fator de descompressao
+    // O miolo da praca: a escala da compressao base, vezes o fator de
+    // descompressao. O numero mudou de 2,9 para 2,75 porque a compressao
+    // agora e lida no quadro da grade: a mesma curva (os mesmos nos), lida
+    // 17,5 graus fora do eixo, tem uma inclinacao local um pouco diferente
+    // no centro (0,345 un/m no eixo x virou 0,362 un/m no eixo u da grade),
+    // e o fator e o inverso dela.
     expect(FATOR_PRACA).toBeGreaterThan(2.7);
     expect(FATOR_PRACA).toBeLessThan(2.8);
     for (const [x, z] of [[CENTRO[0], CENTRO[1]]]) {
@@ -105,39 +111,72 @@ describe('escala: a Praça do Ferreira em tamanho real', () => {
   });
 
   it('o Campo do Urubu continua no mesmo lugar de verdade', () => {
-    // o campo e a oeste e ao norte da praca, fora da regiao descomprimida: a
+    // O campo e a oeste e ao norte da praca, fora da regiao descomprimida: a
     // compressao de sempre, no mesmo lugar de verdade. A ancoragem e por
     // lon/lat (o dado vem em lon/lat e passa pela transformacao), e nao por
     // coordenada de jogo: com a compressao no quadro da grade, o x do jogo do
     // campo mudou, mas o campo continua no mesmo ponto da cidade de verdade.
-    const [lonCentro, latCentro] = llInverso(
-      (Math.min(...CAMPO_URUBU.poligono.map((p) => p[0])) + Math.max(...CAMPO_URUBU.poligono.map((p) => p[0]))) / 2,
-      (Math.min(...CAMPO_URUBU.poligono.map((p) => p[1])) + Math.max(...CAMPO_URUBU.poligono.map((p) => p[1]))) / 2,
-    );
-    expect(lonCentro).toBeCloseTo(-38.57, 2);
-    expect(latCentro).toBeCloseTo(-3.7176, 2);
+    // Cada ponto e medido pela volta: o ponto do jogo, mapeado de volta para
+    // lon/lat, tem de dar o lugar de verdade (a transformada e uma volta
+    // exata: o erro medido e de milimetros).
+    const real = dadosMapa.campoUrubu;
+    const media = (i) => real.poligono.reduce((s, p) => s + p[i], 0) / real.poligono.length;
+    const pontos = [
+      ['o centro do campo', media(0), media(1)],
+      ['a primeira tarefa', real.lugares.tarefas[0].lon, real.lugares.tarefas[0].lat],
+      ['o primeiro galpao', real.lugares.galpoes[0].lon, real.lugares.galpoes[0].lat],
+      ['a primeira construcao', real.lugares.construcoes[0].lon, real.lugares.construcoes[0].lat],
+    ];
+    for (const [nome, lon, lat] of pontos) {
+      const [x, z] = ll(lon, lat);
+      const [voltaLon, voltaLat] = llInverso(x, z);
+      expect(voltaLon, nome).toBeCloseTo(lon, 4);
+      expect(voltaLat, nome).toBeCloseTo(lat, 4);
+    }
     // e o esticamento ali e 1: fora da praca, a compressao e a de sempre
     expect(esticamento(-38.57, -3.7176)).toBeCloseTo(1, 6);
   });
 
   it('a descompressão é local: a compressão do resto do mapa continua', () => {
-    // no oeste e no norte (o Urubu, a barra), a escala e a de sempre: o mapa
-    // esta uns 9 vezes mais comprimido que a praca
+    // No oeste e no norte (o Urubu, a barra), a escala e a de sempre: o mapa
+    // esta 5 a 14 vezes mais comprimido que a praca. (metrosPorUn e quantos
+    // metros de verdade vale uma unidade do jogo: 1 na praca, 9,3 no Urubu -
+    // ou seja, o mapa esta 9,3 vezes mais comprimido la.)
     const longe = metrosPorUn(...ll(-38.57, -3.7176));
     expect(longe).toBeLessThan(14);
     expect(longe).toBeGreaterThan(5);
-    // e a rampa e suave: o esticamento cai devagar, sem degrau. A rampa e uma
-    // faixa ao longo de u (a direcao da rua da grade); para o fator de v ja
-    // estar fora, o ponto caminha 600 m de travessia (a rampa de v tem 420 m).
+  });
+
+  it('a rampa é suave: a escala muda sem degrau', () => {
+    // A descompressao da praca e uma faixa ao longo de u (a direcao da rua da
+    // grade, 445 m) e outra ao longo de v (420 m). Andando por cada uma das
+    // duas, a escala local cai sem degrau: em 40 passos pela rampa, a mudanca
+    // e de no maximo 0,05 un/m por passo (o perfil e um seno, e o meio da
+    // rampa e onde a escala muda mais).
+    for (const [eixo, tam] of [['u', 0.004 * 111092], ['v', 0.0038 * 110574]]) {
+      let anterior = null;
+      for (let i = 0; i <= 40; i++) {
+        const t = (tam * i) / 40;
+        const [lon, lat] = eixo === 'u' ? geoDe(t, 0) : geoDe(0, t);
+        const [x, z] = ll(lon, lat);
+        const e = escalaJogo(x, z);
+        const s = eixo === 'u' ? e.u : Math.abs(e.v);
+        if (anterior !== null) {
+          expect(Math.abs(s - anterior), `degrau em ${eixo}, passo ${i}`).toBeLessThan(0.05);
+        }
+        anterior = s;
+      }
+    }
+    // e o esticamento (a media das duas direcoes) nunca sobe ao longo da rampa
     let anterior = esticamento(...geoDe(0, 600));
     expect(anterior).toBeCloseTo(Math.sqrt(K_PRACA_X), 6);
     for (let i = 1; i <= 40; i++) {
       const [lon, lat] = geoDe((0.004 * 111092 * i) / 40, 600);
       const e = esticamento(lon, lat);
       expect(e).toBeLessThanOrEqual(anterior + 1e-9);
-      expect(anterior - e).toBeLessThan(0.2); // sem degrau
       anterior = e;
     }
+    // no fim da rampa de u, e ja fora da rampa de v, a compressao e a de sempre
     expect(anterior).toBeCloseTo(1, 6);
   });
 
