@@ -1,6 +1,39 @@
 // Seção "Jogo": o relógio do dia, o som, a fatia e a câmera.
 // Padrão para controle novo: pasta.add(cfg.grupo, 'chave', min, max, passo).name('nome em português')
 
+import { lugaresJogo } from '../../mundo/fortaleza1932.js'
+
+// "Ir para": atalhos para os lugares mais conhecidos de Fortaleza em 1932 (pedido do Joabe, 21/10/2026),
+// para conferir cada um. A chave é a de LUGARES em src/mundo/fortaleza1932.js; quem é prédio vai para a praça
+// ou o largo da frente (a Estação vai para a Praça da Estação).
+export const DESTINOS = [
+  ['Praça do Ferreira', 'pracaFerreira'],
+  ['Passeio Público', 'passeioPublico'],
+  ['Estação Central', 'pracaEstacao'],
+  ['Sé', 'se'],
+  ['Forte', 'forte'],
+  ['Mercado', 'mercado'],
+  ['Theatro José de Alencar', 'theatro'],
+  ['Praça dos Leões', 'pracaLeoes'],
+  ['Santa Casa', 'santaCasa'],
+  ['Ponte Velha (Metálica)', 'ponteVelha'],
+  ['Ponte dos Ingleses', 'ponteIngleses'],
+  ['Poço da Draga', 'pocoDraga'],
+  ['Farol do Mucuripe', 'farol'],
+  ['Campo do Urubu', 'campoUrubu'],
+  ['Oficinas do Urubu', 'oficinasUrubu'],
+  ['Barra do Ceará', 'barraCeara'],
+]
+
+// leva o jogador ao lugar: solta a fatia (senão ele bate na borda dela) e usa o teleporte do jogo
+export function irParaLugar(cfg, chave, maresia = globalThis.window?.maresia) {
+  const p = lugaresJogo[chave]
+  if (!p || !maresia?.irPara) return false
+  cfg.fatia.travar = false
+  maresia.irPara(p[0], p[1])
+  return true
+}
+
 export function secaoJogo(gui, cfg) {
   const jogo = gui.addFolder('Jogo')
   jogo.add(cfg.tempo, 'hora', 0, 24, 0.01).name('hora do dia').listen()
@@ -18,6 +51,13 @@ export function secaoJogo(gui, cfg) {
   jogo.add(cfg.tempo, 'velocidade', 0, 30, 0.1).name('horas do jogo por minuto')
   jogo.add(cfg.audio, 'volume', 0, 1, 0.01).name('volume do som (N liga)')
   jogo.add(cfg.fatia, 'travar').name('prender o jogador na fatia')
+
+  const ir = jogo.addFolder('Ir para')
+  const botoes = {}
+  for (const [nome, chave] of DESTINOS) {
+    botoes[chave] = () => irParaLugar(cfg, chave)
+    ir.add(botoes, chave).name('📍 ' + nome)
+  }
 
   const cam = jogo.addFolder('Câmera')
   cam.add(cfg.camera, 'distancia', 2.5, 45, 0.1).name('distância').listen()
