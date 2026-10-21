@@ -1,13 +1,17 @@
 // Painel de ajustes (tecla H): cada número do jogo vira um controle deslizante.
 // É o "mini motor de jogo" do vídeo do André Elias: ajustar no olho, não no prompt.
 //
-// No alto: a legenda e as ações (restaurar, copiar). Embaixo, as seções, todas fechadas: Jogo, Visual, Mundo, Personagem, Desempenho e Laboratório, uma por arquivo em src/ui/painel/.
+// No alto: a busca, a legenda e as ações (restaurar, copiar). Embaixo, as seções, todas fechadas na primeira
+// vez: Jogo, Visual, Mundo, Personagem, Desempenho e Laboratório, uma por arquivo em src/ui/painel/.
 // Controle novo entra no arquivo da seção certa, sempre ligado a uma chave do cfg (config.js).
 
 import GUI from 'lil-gui'
 import { salvarConfig, restaurarPadrao } from '../config.js'
 import { LEGENDA } from './painel/comum.js'
 import { montarSecoes } from './painel/secoes.js'
+import { decidirBusca, contarAchados } from './painel/busca.js'
+import { lerPastas, gravarPastas, aplicarPastas, caminhoPasta } from './painel/estado.js'
+import './painel/painel.css'
 
 const NOME_RESTAURAR = '↺ Restaurar padrão'
 const NOME_COPIAR = '📋 Copiar ajustes'
@@ -45,16 +49,55 @@ export function criarPainel(cfg) {
   }
 
   // ---- as seções
-  montarSecoes(gui, cfg)
+  const secoes = montarSecoes(gui, cfg)
 
-  for (const f of gui.foldersRecursive()) f.close()
+  // ---- pastas abertas e fechadas, lembradas por navegador
+  const pastas = lerPastas()
+  aplicarPastas(gui, pastas)
+  let buscando = false // enquanto houver busca, abrir e fechar pasta não fica lembrado
+  gui.onOpenClose((f) => {
+    if (buscando) return // a busca abre e fecha pastas sozinha: isso não é escolha de quem joga
+    pastas[caminhoPasta(f)] = !f._closed
+    gravarPastas(pastas)
+  })
 
-  // ---- legenda da marca de recarregar, antes das ações
+  // ---- busca e legenda, antes das ações
+  const topo = document.createElement('div')
+  topo.className = 'painel-topo'
+  const campo = document.createElement('input')
+  campo.type = 'search'
+  campo.className = 'painel-busca'
+  campo.placeholder = 'buscar ajuste (ex.: sombra, névoa, ⟳)'
+  campo.setAttribute('aria-label', 'buscar ajuste')
   const legenda = document.createElement('div')
   legenda.className = 'painel-legenda'
-  legenda.style.cssText = 'padding: 4px var(--padding); opacity: 0.6; font-size: 11px'
   legenda.textContent = LEGENDA
-  gui.$children.prepend(legenda)
+  topo.append(campo, legenda)
+  gui.$children.prepend(topo)
+
+  function buscar() {
+    const visivelPor = decidirBusca(secoes, campo.value)
+    buscando = true
+    if (!visivelPor) {
+      for (const k of gui.controllersRecursive()) k.show()
+      for (const f of gui.foldersRecursive()) f.show()
+      aplicarPastas(gui, pastas)
+      legenda.textContent = LEGENDA
+      buscando = false
+    } else {
+      gui.open()
+      for (const [item, v] of visivelPor) {
+        item.show(v)
+        if (item.folders && v) item.open()
+      }
+      const n = contarAchados(visivelPor)
+      legenda.textContent = n ? `${n} ${n === 1 ? 'ajuste' : 'ajustes'} · ${LEGENDA}` : 'nada encontrado'
+    }
+  }
+  campo.addEventListener('input', buscar)
+  campo.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') { campo.value = ''; buscar(); campo.blur() }
+  })
 
   // só grava quando você mexe em algo no painel
   gui.onFinishChange(() => salvarConfig(cfg))

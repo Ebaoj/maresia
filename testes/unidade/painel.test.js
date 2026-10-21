@@ -7,7 +7,9 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { PADRAO } from '../../src/config.js'
 import { montarSecoes } from '../../src/ui/painel/secoes.js'
-import { RECARREGA } from '../../src/ui/painel/comum.js'
+import { decidirBusca, contarAchados } from '../../src/ui/painel/busca.js'
+import { caminhoPasta, lerPastas, aplicarPastas } from '../../src/ui/painel/estado.js'
+import { normalizar, RECARREGA } from '../../src/ui/painel/comum.js'
 import { guiFalsa, fichas } from './apoio/gui-falsa.js'
 
 const BASE = JSON.parse(readFileSync(new URL('./apoio/painel-base.json', import.meta.url), 'utf8'))
@@ -59,5 +61,65 @@ describe('painel: nenhum controle perdido', () => {
     for (const n of nomes) if (n.includes(RECARREGA)) expect(n.endsWith(` ${RECARREGA}`), n).toBe(true)
     // os que pediam recarregar no painel antigo continuam marcados
     expect(nomes.filter((n) => n.endsWith(RECARREGA)).length).toBeGreaterThanOrEqual(30 + 13)
+  })
+})
+
+describe('painel: busca', () => {
+  it('ignora maiúscula e acento', () => {
+    expect(normalizar('Névoa Começa')).toBe('nevoa comeca')
+  })
+
+  it('acha pelo nome e abre só o caminho até o achado', () => {
+    const { secoes } = montar()
+    const v = decidirBusca(secoes, 'NEVOA')
+    const achados = [...v].filter(([k, vis]) => vis && !k.folders).map(([k]) => k._name)
+    expect(achados).toEqual(expect.arrayContaining(['névoa começa (m)', 'névoa total (m)', 'névoa em camadas']))
+    const visual = secoes.find((s) => s._title === 'Visual')
+    const mundo = secoes.find((s) => s._title === 'Mundo')
+    expect(v.get(visual)).toBe(true)
+    expect(v.get(mundo)).toBe(false)
+    expect(contarAchados(v)).toBe(achados.length)
+  })
+
+  it('várias palavras valem juntas, contando o nome das pastas', () => {
+    const { secoes } = montar()
+    const v = decidirBusca(secoes, 'arcane sombra')
+    const achados = [...v].filter(([k, vis]) => vis && !k.folders).map(([k]) => `${k.parent._title}: ${k._name}`)
+    expect(achados).toEqual(['Arcane: limite da sombra', 'Arcane: cor da sombra', 'Arcane: força da sombra'])
+  })
+
+  it('a marca ⟳ acha os que pedem recarregar; busca vazia devolve o painel inteiro', () => {
+    const { secoes } = montar()
+    expect(contarAchados(decidirBusca(secoes, '⟳'))).toBeGreaterThanOrEqual(43)
+    expect(decidirBusca(secoes, '   ')).toBeNull()
+    expect(contarAchados(decidirBusca(secoes, 'xyzzy'))).toBe(0)
+  })
+})
+
+describe('painel: pastas lembradas', () => {
+  it('o caminho da pasta é a fila de títulos a partir da raiz', () => {
+    const { raiz } = montar()
+    const traco = raiz.foldersRecursive().find((f) => f._title === 'Traço de nanquim')
+    expect(caminhoPasta(traco)).toBe('Visual/Quadrinho/Traço de nanquim')
+    expect(caminhoPasta(raiz)).toBe('')
+  })
+
+  it('sem registro tudo nasce fechado; o que foi aberto volta aberto', () => {
+    const { raiz } = montar()
+    aplicarPastas(raiz, {})
+    expect(raiz._closed).toBe(false)
+    expect(raiz.foldersRecursive().every((f) => f._closed)).toBe(true)
+    aplicarPastas(raiz, { Visual: true, 'Visual/Arcane': true })
+    const abertas = raiz.foldersRecursive().filter((f) => !f._closed).map(caminhoPasta)
+    expect(abertas).toEqual(['Visual', 'Visual/Arcane'])
+  })
+
+  it('sem localStorage o painel não quebra', () => {
+    const antes = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('bloqueado') } })
+    try { expect(lerPastas()).toEqual({}) } finally {
+      if (antes) Object.defineProperty(globalThis, 'localStorage', antes)
+      else delete globalThis.localStorage
+    }
   })
 })
