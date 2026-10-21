@@ -37,7 +37,7 @@ export const PADRAO = {
     // hora dourada (luz-arcane, item 3): sol baixo de dia = luz laranja, sombra longa e azul funda, mais contraste
     arcDourada: 1.0,             // força (0 = a luz de antes em todas as horas)
     arcDouradaLuz: '#ffb36b',    // para onde a luz do sol puxa (3b: '#ff9d55' alaranjava tudo)
-    arcDouradaSombra: '#36508a', // para onde a sombra e a luz de céu puxam
+    arcDouradaSombra: '#5a4a8e', // para onde a sombra e a luz de céu puxam (conceito-sertão 2: sombra violeta no fim de tarde; era o azul '#36508a')
     arcDouradaAltura: 0.2,       // altura mínima da luz que faz sombra no auge da hora dourada (0,42 = sombra curta de antes)
     arcDouradaContraste: 0.15,   // contraste extra no auge
     // 3b (revisão do orquestrador, alvo forte-1932-joabe): menos véu, céu petróleo, faixa de valor larga, sombra fria
@@ -49,9 +49,9 @@ export const PADRAO = {
     arcCeuPincel: 1.0,           // item 5: riscos de pincel seco, grão e banco de cúmulos no horizonte
     arcCeuMeio: '#d3d9d0',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
     arcGradeNeutro: 0.12,        // quanto o neutro puxa para o cal na gradação (0,45 dava véu bege em tudo)
-    arcArTinta: 0.5,             // força da cor do ar na distância (0,75 lavava o fundo; item 6 sobe de 0,45 com o ar já frio/dourado)
-    arcArClareia: 0.3,           // item 6: quanto o fundo clareia para a cor do ar (perspectiva atmosférica)
-    arcPreto: 0.07,              // níveis: o que vira preto
+    arcArTinta: 0.75,            // força da cor do ar na distância (conceito-sertão: o fundo lavado, pálido, de baixo contraste; o peso cresce no fundo, km * (0,4 + 0,6 km), então o meio não lava)
+    arcArClareia: 0.45,          // item 6: quanto o fundo clareia para a cor do ar (perspectiva atmosférica)
+    arcPreto: 0.04,              // níveis: o que vira preto (conceito-sertão: escuro com cor, nunca preto; era 0,07)
     arcBranco: 0.94,             // níveis: o que vira branco (a cal ao sol)
     arcSombraFria: 0.6,          // a luz do chão puxa para a do céu (sombra azul, não marrom)
     arcOclusao: 0.55,            // sombra de contato no visual Arcane

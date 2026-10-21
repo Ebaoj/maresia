@@ -19,7 +19,7 @@ vec3 envelhecer(vec3 rgb, float hq, float uq, float desg, float k, vec3 taipa, o
   if (k <= 0.001) return rgb;
   // 1. manchas grandes de caiação (duas escalas), puxando para a cal velha, mais fria e cinzenta
   float m = ruidoQ(vec2(uq * 0.32, hq * 0.42) + 3.7) * 0.65 + ruidoQ(vec2(uq * 0.9, hq * 1.1) + 9.1) * 0.35;
-  rgb *= mix(1.0, mix(0.7, 1.08, m), k);
+  rgb *= mix(1.0, mix(0.84, 1.05, m), k);
   rgb = mix(rgb, rgb * vec3(0.9, 0.88, 0.83), (1.0 - m) * 0.55 * k);
   // placas de cal velha com borda pintada (dois tons, borda nítida): é o que o forte da referência mostra
   float placa = ruidoQ(vec2(uq * 0.5, hq * 0.62) + 13.0) * 0.75 + ruidoQ(vec2(uq * 2.4, hq * 2.8) + 17.0) * 0.25;
@@ -27,7 +27,7 @@ vec3 envelhecer(vec3 rgb, float hq, float uq, float desg, float k, vec3 taipa, o
   // 2. escorridos: listras verticais estreitas, que somem e voltam ao longo da altura
   float lista = ruidoQ(vec2(uq * 2.1, hq * 0.12) + 21.0);
   float corre = smoothstep(0.6, 0.86, lista) * (0.4 + 0.6 * ruidoQ(vec2(uq * 0.5, hq * 0.7) + 5.0));
-  rgb *= 1.0 - 0.4 * corre * k;
+  rgb *= 1.0 - 0.2 * corre * k; // contido (conceito-sertão: poucas manchas grandes, não ruído)
   // 3. umidade e salitre: mancha verde-acinzentada subindo da calçada, topo irregular, linha da maré
   float alt = 0.8 + 1.2 * ruidoQ(vec2(uq * 0.55, 0.5)) + 0.25 * ruidoQ(vec2(uq * 3.0, 1.5));
   float umido = 1.0 - smoothstep(alt * 0.7, alt, hq);
@@ -62,13 +62,13 @@ export function envelhecerTsl(W, ruidoQ, rgb0, hq, uq, desg, k, taipa) {
   const um = float(1.0)
   let rgb = vec3(rgb0)
   const m = ruidoQ(vec2(uq.mul(0.32), hq.mul(0.42)).add(3.7)).mul(0.65).add(ruidoQ(vec2(uq.mul(0.9), hq.mul(1.1)).add(9.1)).mul(0.35))
-  rgb = rgb.mul(mix(um, mix(0.7, 1.08, m), k))
+  rgb = rgb.mul(mix(um, mix(0.84, 1.05, m), k))
   rgb = mix(rgb, rgb.mul(vec3(0.9, 0.88, 0.83)), um.sub(m).mul(0.55).mul(k))
   const placa = ruidoQ(vec2(uq.mul(0.5), hq.mul(0.62)).add(13.0)).mul(0.75).add(ruidoQ(vec2(uq.mul(2.4), hq.mul(2.8)).add(17.0)).mul(0.25))
   rgb = mix(rgb, rgb.mul(vec3(0.82, 0.79, 0.72)), smoothstep(0.6, 0.625, placa).mul(0.85).mul(k))
   const lista = ruidoQ(vec2(uq.mul(2.1), hq.mul(0.12)).add(21.0))
   const corre = smoothstep(0.6, 0.86, lista).mul(ruidoQ(vec2(uq.mul(0.5), hq.mul(0.7)).add(5.0)).mul(0.6).add(0.4))
-  rgb = rgb.mul(um.sub(corre.mul(0.4).mul(k)))
+  rgb = rgb.mul(um.sub(corre.mul(0.2).mul(k)))
   const alt = ruidoQ(vec2(uq.mul(0.55), 0.5)).mul(1.2).add(0.8).add(ruidoQ(vec2(uq.mul(3.0), 1.5)).mul(0.25))
   const umido = um.sub(smoothstep(alt.mul(0.7), alt, hq))
   rgb = mix(rgb, rgb.mul(vec3(0.5, 0.55, 0.48)), umido.mul(0.85).mul(k))
