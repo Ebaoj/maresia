@@ -3,8 +3,8 @@
 //   FATO   Girão demoliu o coreto, remodelou os canteiros e pôs faixas de mosaico no piso [DN-Ferreira-reforma]
 //   FATO   bancos de ferro fundido com assento de madeira na reforma de 1933 [Vermelho-Ferreira]
 //   FATO   postes de 1 e de 3 lanternas; fícus de copa redonda e palmeiras nos cantos [fotos de 1925]
-//   HIP    o desenho: um eixo largo no comprido da praça e uma travessa, ambos com faixas de pedra portuguesa
-//          preta em onda sobre a branca, a roda em volta da coluna, oito canteiros baixos e chatos (sem grade:
+//   HIP    o desenho: um eixo largo no comprido da praça e uma travessa, com faixas de pedra portuguesa
+//          (mosaico.js), as rodas em volta da coluna, oito canteiros baixos e chatos (sem grade:
 //          a grade baixa de ferro é da praça de 1920) e as árvores nas pontas. Medidas em metros: a praça está
 //          em 1:1 (escala1932.js)
 //
@@ -15,7 +15,6 @@ import * as THREE from 'three'
 import { CENTRO, dentroDaPraca, CONTORNO } from '../praca1932.js'
 import { alturaTerreno } from '../terreno.js'
 import { ocupacao } from '../ocupacao.js'
-import { texturaCanvas, toon, texturizar } from '../../materiais.js'
 import { instanciarEmBlocos } from '../blocos.js'
 import { criarAleatorio } from '../../utils.js'
 import { oiti } from '../especies.js'
@@ -24,6 +23,7 @@ import { toonVertice } from '../../materiais.js'
 import { adicionarCirculo } from '../colisao.js'
 import { Obra, naGrade, paraGrade, EX, EZ } from './obra.js'
 import { criarColunaHora } from './coluna-hora.js'
+import { criarMosaico } from './mosaico.js'
 
 // os limites da praça no referencial da grade (u, v a partir do centro), tirados do contorno
 const UV = CONTORNO.map(([x, z]) => paraGrade(CENTRO, x, z))
@@ -74,114 +74,6 @@ export function planoDaPraca() {
   return { canteiros, lamp3, lamp1, bancos, arvores }
 }
 
-// o desenho do mosaico, no referencial da grade (1 px = 1/PX m)
-const PX = 14
-function desenharMosaico(cfg, plano) {
-  const W = Math.ceil((U1 - U0) * PX)
-  const H = Math.ceil((V1 - V0) * PX)
-  const claro = cfg.marcos.corMosaicoClaro
-  const escuro = cfg.marcos.corMosaicoEscuro
-  return texturaCanvas(W, H, (ctx) => {
-    const px = (u) => (u - U0) * PX
-    const pz = (v) => (v - V0) * PX
-    ctx.fillStyle = claro
-    ctx.fillRect(0, 0, W, H)
-    const rnd = criarAleatorio(1933)
-    // a pedra miúda: manchas de tom (a pedra portuguesa não é branca lisa)
-    for (let i = 0; i < 9000; i++) {
-      ctx.fillStyle = `rgba(${rnd.chance(0.5) ? '120,105,90' : '255,250,240'},${rnd.entre(0.03, 0.09)})`
-      ctx.fillRect(rnd.entre(0, W), rnd.entre(0, H), rnd.entre(2, 9), rnd.entre(2, 9))
-    }
-    ctx.fillStyle = escuro
-    ctx.strokeStyle = escuro
-    // as faixas de borda do eixo e da travessa (1,6 m): dois fios pretos e, entre eles, uma fiada de losangos
-    // pretos (o desenho geométrico combina com o déco da coluna; a onda "mar largo" de Copacabana é de 1970)
-    const faixa = (eixoU, c, a0, a1) => {
-      // eixoU: a faixa corre em v (borda do eixo comprido) no u = c; senão corre em u no v = c
-      const R = (u0, v0, du, dv) => ctx.fillRect(px(u0), pz(v0), du * PX, dv * PX)
-      const linha = (off) => (eixoU ? R(c + off - 0.15, a0, 0.3, a1 - a0) : R(a0, c + off - 0.15, a1 - a0, 0.3))
-      linha(-0.75)
-      linha(0.75)
-      for (let t = a0 + 0.8; t < a1 - 0.8; t += 1.6) {
-        ctx.beginPath()
-        const pt = (al, tr) => (eixoU ? [px(c + tr), pz(al)] : [px(al), pz(c + tr)])
-        ctx.moveTo(...pt(t - 0.6, 0)); ctx.lineTo(...pt(t, 0.42)); ctx.lineTo(...pt(t + 0.6, 0)); ctx.lineTo(...pt(t, -0.42))
-        ctx.fill()
-      }
-    }
-    for (const s of [-1, 1]) {
-      faixa(true, s * (EIXO - 0.8), V0, -RODA - 1)
-      faixa(true, s * (EIXO - 0.8), RODA + 1, V1)
-      faixa(false, s * 3.7, U0, -RODA - 1)
-      faixa(false, s * 3.7, RODA + 1, U1)
-    }
-    // a roda da coluna: claro por dentro, aro preto e raios de estrela
-    ctx.fillStyle = claro
-    ctx.beginPath()
-    ctx.arc(px(0), pz(0), RODA * PX, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.lineWidth = 0.8 * PX
-    ctx.beginPath()
-    ctx.arc(px(0), pz(0), (RODA - 0.4) * PX, 0, Math.PI * 2)
-    ctx.stroke()
-    ctx.fillStyle = escuro
-    for (let k = 0; k < 8; k++) {
-      const a = (k / 8) * Math.PI * 2
-      ctx.beginPath()
-      ctx.moveTo(px(Math.cos(a) * 3), pz(Math.sin(a) * 3))
-      ctx.lineTo(px(Math.cos(a + 0.12) * (RODA - 1)), pz(Math.sin(a + 0.12) * (RODA - 1)))
-      ctx.lineTo(px(Math.cos(a) * (RODA - 0.8)), pz(Math.sin(a) * (RODA - 0.8)))
-      ctx.lineTo(px(Math.cos(a - 0.12) * (RODA - 1)), pz(Math.sin(a - 0.12) * (RODA - 1)))
-      ctx.fill()
-    }
-    // o friso preto em volta de cada canteiro
-    ctx.lineWidth = 0.5 * PX
-    for (const c of plano.canteiros) ctx.strokeRect(px(c.u - c.hu - 0.7), pz(c.v - c.hv - 0.7), (c.hu + 0.7) * 2 * PX, (c.hv + 0.7) * 2 * PX)
-  })
-}
-
-// o piso: uma malha rente ao terreno, só dentro do contorno, com o mosaico preso à grade
-function pisoMosaico(cena, cfg, plano, mats) {
-  const tex = desenharMosaico(cfg, plano)
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping
-  // material próprio (o mosaico é o mapa): toon pintado com a pedra miúda por cima
-  const mat = texturizar(toon('#ffffff', { semCache: true }), { topo: 'pedra', lado: 'pedra', tam: 0.6, contraste: 0.8 })
-  mat.map = tex
-  void mats
-  mat.polygonOffset = true
-  mat.polygonOffsetFactor = -2
-  mat.polygonOffsetUnits = -2
-  const P = 0.5 // meio metro: a borda do piso segue o contorno sem degrau visível
-  const pos = []
-  const uv = []
-  const ponto = (u, v) => {
-    const [x, z] = naGrade(CENTRO, u, v)
-    pos.push(x - CENTRO[0], alturaTerreno(x, z) + 0.035, z - CENTRO[1])
-    uv.push((u - U0) / (U1 - U0), 1 - (v - V0) / (V1 - V0))
-  }
-  for (let u = U0; u < U1; u += P) {
-    for (let v = V0; v < V1; v += P) {
-      const cx = u + P / 2
-      const cv = v + P / 2
-      const [x, z] = naGrade(CENTRO, cx, cv)
-      if (!dentroDaPraca(x, z)) continue
-      ponto(u, v); ponto(u, v + P); ponto(u + P, v)
-      ponto(u + P, v); ponto(u, v + P); ponto(u + P, v + P)
-    }
-  }
-  const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
-  g.computeVertexNormals()
-  const m = new THREE.Mesh(g, mat)
-  m.position.set(CENTRO[0], 0, CENTRO[1])
-  m.receiveShadow = true
-  m.castShadow = false
-  m.name = 'praca-mosaico'
-  cena.add(m)
-  return m
-}
-
 // um canteiro baixo e chato: meio-fio de pedra, terra, maciços de folhagem e flor
 function canteiro(obra, c, rnd) {
   const { hu, hv } = c
@@ -208,7 +100,8 @@ export function criarPracaReforma(cena, cfg, mats, mobilia) {
   const plano = planoDaPraca()
   const y0 = alturaTerreno(CENTRO[0], CENTRO[1])
   const rnd = criarAleatorio(1933)
-  const piso = pisoMosaico(cena, cfg, plano, mats)
+  void mats
+  const piso = criarMosaico(cena, cfg, plano, { U0, U1, V0, V1, RODA, EIXO })
 
   // a coluna no centro
   const coluna = criarColunaHora(cena, mats, CENTRO, y0, cfg)
@@ -259,7 +152,7 @@ export function criarPracaReforma(cena, cfg, mats, mobilia) {
   }
   return {
     plano,
-    grupos: [coluna.obra.grupo, obra.grupo, piso],
+    grupos: [coluna.obra.grupo, obra.grupo, ...piso],
     atualizar: coluna.atualizar,
   }
 }

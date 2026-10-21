@@ -327,8 +327,8 @@ export const PADRAO = {
     corRimCeu: '#9cc0e0',      // a cor da borda do céu
     corBalaustrada: '#ede5d3', // balaústres de massa caiados
     corPedra: '#d8cfbd',       // cantaria e meio-fio
-    corMosaicoClaro: '#d2c6ae', // pedra portuguesa branca (gasta: a branca pura estourava ao sol)
-    corMosaicoEscuro: '#34302b', // pedra portuguesa preta
+    corMosaicoClaro: '#c9b38c', // pedra portuguesa clara: creme-ocre gasto (a branca estourava ao sol das 16h30)
+    corMosaicoEscuro: '#45413b', // pedra portuguesa escura: cinza-carvão, não preto puro
   },
   fatia: {
     travar: true,          // prende o jogador na fatia vertical da Praia do Peixe (mundo/fatia.js)
