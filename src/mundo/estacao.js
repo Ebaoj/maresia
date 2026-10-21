@@ -20,7 +20,8 @@ import { CAL } from '../paleta.js'
 import { PEGADAS } from './lotes-marcos.js'
 import { alturaTerreno } from './terreno.js'
 import { Obra, materiaisObra } from './obra1932.js'
-import { fronton, molduraFronton, tramoComVao, relogio, urna, lampiaoColuna } from './ornatos1932.js'
+import { fronton, molduraFronton, tramoComVao, relogio, urna, lampiaoColuna, cornija as cornijaClassica, anel } from './ornatos1932.js'
+import * as THREE from 'three'
 
 // medidas (m): comprimento e fundo do bloco, corpo central, piso, alturas
 export const ESTACAO = { L: 130, P: 28, centro: 20, piso: 1.0, cornija: 7.6, platibanda: 9.5, entablamento: 10.6 }
@@ -29,7 +30,11 @@ const TABELA = (cor) => ({
   // o reboco caiado das casas (quarteirao.js): manchas grandes, salitre na base, cal caída nas quinas
   parede: { tipo: 'reboco', cor: cor.parede, recebe: false },
   cimalha: { tipo: 'reboco', cor: '#f6f1e6', recebe: false },
+  // as linhas de sombra pintadas da cornija e do frontão, e os dentículos (detalhe de perto)
+  sombra: { cor: '#8a7f86', recebe: false },
+  dente: { cor: '#f6f1e6', detalhe: true, recebe: false },
   pedra: { cor: '#bfae8e', tex: 'pedra', tam: 2.5, contraste: 0.5 }, // embasamento: a barra mais escura
+  degrau: { cor: '#eadfc6', tex: 'pedra', tam: 1.5, contraste: 0.35 }, // degraus e pedestais, que pegam a luz
   porta: { cor: CAL.verde },
   telha: { tipo: 'telha', cor: CAL.telha },
   zinco: { cor: CAL.mangue },
@@ -74,9 +79,9 @@ function ala(o, xa, xb) {
   const meio = (xa + xb) / 2
   const comp = Math.abs(xb - xa)
   o.caixa('pedra', meio, 0.55, zf + 0.25, comp, 1.1, 0.5) // embasamento
-  // cornija em três faixas, platibanda e o remate
-  o.caixa('cimalha', meio, cornija + 0.15, zf + 0.12, comp + 0.6, 0.3, 0.7)
-  o.caixa('cimalha', meio, cornija + 0.45, zf + 0.25, comp + 0.8, 0.3, 0.95)
+  // cornija clássica (filete, linha de sombra, dentículos, sofito, coroa), platibanda e o remate
+  o.caixa('cimalha', meio, cornija - 0.35, zf + 0.12, comp, 0.3, 0.24) // o friso
+  cornijaClassica(o, { claro: 'cimalha', sombra: 'sombra', dente: 'dente' }, xa, xb, cornija, zf + 0.1, 0.9)
   o.caixa('parede', meio, (cornija + 0.6 + platibanda) / 2, zf + 0.05, comp, platibanda - cornija - 0.6, 0.4)
   o.caixa('cimalha', meio, platibanda + 0.08, zf + 0.08, comp + 0.4, 0.16, 0.6)
   for (let i = 0; i <= n; i += 2) urna(o, 'urna', xa + passo * i, platibanda + 0.16, zf + 0.08, 1.1)
@@ -100,25 +105,47 @@ function corpoCentral(o) {
   }
   o.caixa('parede', 0, 4.4, P / 2 + 0.1, w - 2, 8.8, 2.6) // o miolo do corpo central, atrás dos portais
   // o piso do pórtico e a escadaria (seis degraus)
-  o.bloco('pedra', 0, -1.5, zf + 1.1, w + 1, piso + 1.5, 4.2)
-  o.escada(0, zf + 3.2, 0, 3.2, w - 2, piso, 0, 'pedra')
+  o.bloco('degrau', 0, -1.5, zf + 1.1, w + 1, piso + 1.5, 4.2)
+  o.escada(0, zf + 3.2, 0, 3.2, w - 2, piso, 0, 'degrau')
+  // o focinho de cada degrau, um pouco saliente e mais claro (a quina que pega a luz)
+  for (let k = 0; k < 6; k++) o.caixa('cimalha', 0, piso - (piso * k) / 6 - 0.02, zf + 3.2 + (3.2 * k) / 6 + 0.02, w - 2, 0.05, 0.09)
   o.piso(0, zf + 1.1, w / 2, 2.1, piso)
   // quatro colunas sobre pedestais
   const zc = zf + 2.3
   for (const cx of [-8.4, -3.2, 3.2, 8.4]) {
-    o.bloco('pedra', cx, piso, zc, 1.3, 1.5, 1.3)
-    o.bloco('cimalha', cx, piso + 1.5, zc, 1.45, 0.2, 1.45)
-    o.cilindro('cimalha', cx, piso + 1.7, zc, 0.38, 0.43, 6.1, 14)
-    o.bloco('cimalha', cx, piso + 7.8, zc, 1.15, 0.45, 1.15)
+    o.bloco('degrau', cx, piso, zc, 1.3, 1.5, 1.3)
+    o.bloco('degrau', cx, piso + 1.5, zc, 1.45, 0.2, 1.45)
+    o.bloco('degrau', cx, piso - 0.12, zc, 1.5, 0.14, 1.5)
+    // base ática (dois toros), fuste, e o capitel (equino e ábaco)
+    anel(o, 'cimalha', cx, piso + 1.8, zc, 0.47, 0.1)
+    anel(o, 'cimalha', cx, piso + 1.98, zc, 0.43, 0.07)
+    o.cilindro('cimalha', cx, piso + 1.7, zc, 0.38, 0.43, 6.1, 18)
+    anel(o, 'cimalha', cx, piso + 7.62, zc, 0.43, 0.09)
+    o.cilindro('cimalha', cx, piso + 7.62, zc, 0.62, 0.42, 0.24, 18)
+    o.bloco('cimalha', cx, piso + 7.86, zc, 1.2, 0.3, 1.2)
     o.coluna(cx, zc, 0.7)
   }
   // entablamento e frontão com o relógio
   const ze = zf + 3.1
-  o.caixa('parede', 0, entablamento - 0.95, (P / 2 + ze) / 2, w + 1.2, 1.5, ze - P / 2)
-  o.caixa('cimalha', 0, entablamento - 0.15, (P / 2 + ze + 0.3) / 2, w + 1.8, 0.35, ze - P / 2 + 0.3)
-  fronton(o, 'parede', 0, entablamento, P / 2 - 3, w + 1.2, 3.6, ze - P / 2 + 3 - 0.1)
-  molduraFronton(o, 'cimalha', 0, entablamento + 0.15, ze - 0.2, w + 1.4, 3.65, 0.35, 0.6)
-  relogio(o, 'relogio', 'ferro', 0, entablamento + 1.45, ze - 0.12, 1.05)
+  // arquitrave em duas faixas, friso e a cornija clássica
+  o.caixa('parede', 0, entablamento - 1.11, (P / 2 + ze) / 2, w + 1.2, 0.66, ze - P / 2) // assenta no ábaco
+  o.caixa('cimalha', 0, entablamento - 1.29, ze + 0.04, w + 1.2, 0.3, 0.1)
+  o.caixa('cimalha', 0, entablamento - 1.01, ze + 0.07, w + 1.2, 0.26, 0.16)
+  o.caixa('sombra', 0, entablamento - 0.86, ze + 0.02, w + 1.2, 0.05, 0.05)
+  cornijaClassica(o, { claro: 'cimalha', sombra: 'sombra', dente: 'dente' }, -(w / 2 + 0.6), w / 2 + 0.6, entablamento - 0.78, ze, 1.05)
+  fronton(o, 'parede', 0, entablamento, P / 2 - 3, w + 1.2, 3.6, ze - P / 2 + 3 - 0.35)
+  molduraFronton(o, 'cimalha', 0, entablamento + 0.15, ze + 0.02, w + 1.4, 3.65, 0.4, 0.75, 'sombra')
+  // o relógio no tímpano, com aro e as volutas dos lados (conceito)
+  relogio(o, 'relogio', 'ferro', 0, entablamento + 1.45, ze - 0.35, 1.05)
+  const aro = new THREE.TorusGeometry(1.25, 0.14, 8, 28)
+  aro.translate(0, entablamento + 1.45, ze - 0.3)
+  o.geo('cimalha', aro)
+  for (const lado of [-1, 1]) {
+    const vol = new THREE.TorusGeometry(0.34, 0.09, 6, 14, Math.PI * 1.5)
+    vol.rotateZ(lado > 0 ? 0 : Math.PI)
+    vol.translate(lado * 1.75, entablamento + 1.0, ze - 0.3)
+    o.geo('cimalha', vol)
+  }
   for (const ux of [-(w / 2 + 0.4), 0, w / 2 + 0.4]) urna(o, 'urna', ux, entablamento + (ux === 0 ? 3.75 : 0.1), ze - 0.4, 1.5)
   // o telhado do corpo central, atrás do frontão (dá a silhueta de longe)
   for (const lado of [-1, 1]) o.caixa('telha', lado * (w / 4 + 0.3), entablamento + 1.8, 0, w / 2 + 1.2, 0.3, P, 0, 0, -lado * 0.33)
