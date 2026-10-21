@@ -1,0 +1,15 @@
+--- estado ---
+{"tempos":{"ocupacao":251,"chao":72,"terreno":2131,"cidade":512,"fachadas":90,"rua":383,"arvores":610,"coqueiros":9,"grama":267,"areia":46,"fisica":84},"Predios":4836,"recusa":{"sobreposta":733,"rio":0,"praia":30,"lagoa":4,"pajeu":35,"ladeira":20,"reservada":20},"webgpu":true,"renderizador":"webgpu","shadersQuebrados":0}
+--- renderizador: WebGPU ---
+--- console do jogo ---
+[debug] [vite] connecting...
+[debug] [vite] connected.
+[warning] THREE.Redefinition of node DirectionalLight
+[warning] THREE.Redefinition of node HemisphereLight
+[warning] THREE.Redefinition of node AmbientLight
+[warning] THREE.Redefinition of node PointLight
+[warning] THREE.Redefinition of node SpotLight
+[warning] THREE.Redefinition of node RectAreaLight
+[warning] THREE.Redefinition of node LightProbe
+--- o jogo montou ---
+--- foto olhar --- {"alvo":[195,498],"jogador":[195,7,498],"cam":[187,10,498]} /tmp/maresia-olhar.png

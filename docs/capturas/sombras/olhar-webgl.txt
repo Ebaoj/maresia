@@ -1,0 +1,8 @@
+--- estado ---
+{"tempos":{"ocupacao":294,"chao":102,"terreno":2099,"cidade":333,"fachadas":169,"rua":344,"arvores":573,"coqueiros":6,"grama":248,"areia":35,"fisica":76},"Predios":4836,"recusa":{"sobreposta":733,"rio":0,"praia":30,"lagoa":4,"pajeu":35,"ladeira":20,"reservada":20},"webgpu":false,"renderizador":"webgl","shadersQuebrados":0}
+--- ATENCAO: o jogo abriu em webgl (WebGPU: false) ---
+--- console do jogo ---
+[debug] [vite] connecting...
+[debug] [vite] connected.
+--- o jogo montou ---
+--- foto olhar --- {"alvo":[195,498],"jogador":[195,7,498],"cam":[187,10,498]} /tmp/maresia-olhar.png

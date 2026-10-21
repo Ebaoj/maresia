@@ -67,6 +67,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 | `src/debug/medidor.js` | `maresia.medir(...)`: custo real do quadro por vazão, fora da tela, com variantes alternadas (só no modo dev) |
 | `src/render/motor-placa.js` | Motor de cópias na GPU, opcional no WebGPU (`cfg.desempenho.motorPlaca`), com a three-virtual-geometry |
 | `src/render/cache-sombra.js` + `cache-sombra-gpu.js` + `politica-sombra.js` + `sombra-estatica.js` | F4 (KAN-74): sombra dos objetos parados em cache (WebGL e WebGPU), dinâmicos por cima todo quadro; `cfg.mundo.cacheSombra` (ligado por padrão). Ver `docs/motor-f4-cache-sombra.md` |
+| `src/render/sombra-perto.js` + `filtro-sombra.js` + `sombra-luz.js` | Sombra nítida (21/10/2026): mapa de perto (48 m, 2,3 cm por texel) misturado ao do sol, borda em grade presa ao mapa (sem ruído de tela), viés em metros. Ver a seção "Sombra nítida" de `docs/motor-f4-cache-sombra.md` |
 | `src/mundo/kit1932.js` | Casas separadas em peças reutilizáveis, com matrizes e cores por cópia |
 | `src/debug/cidade.js` + `cidade-gerar.js` | Cidade de estresse de 10 × 4 km, casas do kit, vegetação, postes, bancos e relevo; passeio medido por trecho |
 | `scripts/preparar-geometria.mjs` | Prepara os modelos em `public/vg/` fora do navegador; arquivos gerados, fora do git |
