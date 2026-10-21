@@ -20,6 +20,7 @@ import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { criarAleatorio } from '../utils.js'
 import { ref } from '../render/gpu/comum.js'
+import { GLSL_DESGASTE, envelhecerTsl } from './desgaste.js'
 
 // rua de referência da fatia vertical (z ≈ 152, x -72 a -36): bom lugar para comparar com os filmes
 export const FATIA = { x0: -73, x1: -35, z0: 134, z1: 170 }
@@ -346,17 +347,19 @@ function materialReboco(desgaste) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uDesgQ = { value: desgaste }
     sh.uniforms.uTaipa = { value: new THREE.Color(CAL.taipa) }
+    sh.uniforms.uArcDesgaste = globais.uArcDesgaste
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float aChao; varying float vChaoQ; varying vec3 vMundoQ; varying vec3 vNormalQ;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMundoQ = (modelMatrix * vec4(transformed, 1.0)).xyz; vNormalQ = normal; vChaoQ = aChao;')
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        varying vec3 vMundoQ; varying vec3 vNormalQ; varying float vChaoQ; uniform float uDesgQ; uniform vec3 uTaipa;
+        varying vec3 vMundoQ; varying vec3 vNormalQ; varying float vChaoQ; uniform float uDesgQ; uniform vec3 uTaipa; uniform float uArcDesgaste;
         float hashQ(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
         float ruidoQ(vec2 p) {
           vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
           return mix(mix(hashQ(vec3(i, 1.0)), hashQ(vec3(i + vec2(1, 0), 1.0)), f.x), mix(hashQ(vec3(i + vec2(0, 1), 1.0)), hashQ(vec3(i + vec2(1, 1), 1.0)), f.x), f.y);
-        }`)
+        }
+        ${GLSL_DESGASTE}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         if (abs(vNormalQ.y) < 0.5) {
           float hq = vMundoQ.y - vChaoQ;
@@ -372,7 +375,8 @@ function materialReboco(desgaste) {
           // cal descascada: placas de taipa, mais embaixo
           float n = ruidoQ(vec2(uq * 0.22, hq * 0.3)) * 0.65 + ruidoQ(vec2(uq * 1.6, hq * 1.9)) * 0.35;
           float lim = mix(0.84, 0.7, uDesgQ) + 0.2 * smoothstep(0.3, 3.5, hq);
-          float casca = smoothstep(lim, lim + 0.015, n);
+          // (a casca miúda de antes dá lugar à grande de desgaste.js quando arcDesgaste sobe)
+          float casca = smoothstep(lim, lim + 0.015, n) * (1.0 - uArcDesgaste);
           // dentro: taipa com fiadas de tijolo e manchas; borda: o reboco grosso, claro em cima e com sombra embaixo
           float fiada = smoothstep(0.82, 0.9, fract(hq * 6.5)) * 0.25;
           vec3 miolo = uTaipa * (0.88 + 0.2 * ruidoQ(vec2(uq * 5.0, hq * 5.0))) * (1.0 - fiada);
@@ -384,6 +388,9 @@ function materialReboco(desgaste) {
           diffuseColor.rgb *= 1.0 - 0.35 * sombraAro;
           // escorrido vertical de chuva
           diffuseColor.rgb *= 1.0 - 0.07 * smoothstep(0.6, 0.9, ruidoQ(vec2(uq * 3.0, hq * 0.25)));
+          // reboco envelhecido que se lê de longe (desgaste.js)
+          float cascaE;
+          diffuseColor.rgb = envelhecer(diffuseColor.rgb, hq, uq, uDesgQ, uArcDesgaste, uTaipa, cascaE);
         }`)
   }
   mat.customProgramCacheKey = () => 'reboco-casas'
@@ -441,7 +448,7 @@ function rebocoTsl(desgaste) {
           // cal descascada
           const n = ruidoQ(vec2(uq.mul(0.22), hq.mul(0.3))).mul(0.65).add(ruidoQ(vec2(uq.mul(1.6), hq.mul(1.9))).mul(0.35))
           const lim = float(mix(0.84, 0.7, desgaste)).add(smoothstep(0.3, 3.5, hq).mul(0.2))
-          const casca = smoothstep(lim, lim.add(0.015), n)
+          const casca = smoothstep(lim, lim.add(0.015), n).mul(float(1.0).sub(ref(globais.uArcDesgaste)))
           const fiada = smoothstep(0.82, 0.9, fract(hq.mul(6.5))).mul(0.25)
           const miolo = taipa.mul(ruidoQ(vec2(uq.mul(5.0), hq.mul(5.0))).mul(0.2).add(0.88)).mul(float(1.0).sub(fiada))
           const aro = smoothstep(lim.sub(0.035), lim.sub(0.005), n).mul(float(1.0).sub(casca))
@@ -453,6 +460,8 @@ function rebocoTsl(desgaste) {
           rgb.mulAssign(float(1.0).sub(sombraAro.mul(0.35)))
           // escorrido vertical de chuva
           rgb.mulAssign(float(1.0).sub(smoothstep(0.6, 0.9, ruidoQ(vec2(uq.mul(3.0), hq.mul(0.25)))).mul(0.07)))
+          // reboco envelhecido que se lê de longe (desgaste.js)
+          rgb.assign(envelhecerTsl(W, ruidoQ, rgb, hq, uq, float(desgaste), ref(globais.uArcDesgaste), taipa).rgb)
         })
         return rgb
       })()

@@ -31,5 +31,9 @@ export const globais = {
   uTexForca: { value: 0.8 },
   uArcRim: { value: 0.6 }, // luz de recorte quente nas bordas que pegam sol por trás
   uArcCeu: { value: 1 }, // céu pintado (pinceladas e nuvens de pincel) // quanto a textura pintada do mundo pesa (materiais.js, texturizar)
+  uArcPintado: { value: 1 }, // o passe novo do céu: gradiente de verdade, nuvens em massas e halo pintado
+  uArcDesgaste: { value: 1 }, // reboco envelhecido (mundo/desgaste.js): cfg.estilo.arcDesgaste no visual Arcane, 0 no quadrinho
+  uDourada: { value: 0 }, // hora dourada (ceu.js): 0 com o sol alto ou de noite, 1 com o sol baixo de dia, vezes cfg.estilo.arcDourada
+  uArCor: { value: new THREE.Color('#9cc9e0') }, // a cor do ar: a distância se tinge com o céu da hora
 }
 globais.tLampioes.value.needsUpdate = true

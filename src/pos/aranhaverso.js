@@ -9,6 +9,8 @@
 
 import * as THREE from 'three'
 import { criarAleatorio } from '../utils.js'
+import { CAL } from '../paleta.js'
+import { fragTensor, fragKuwahara, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -108,6 +110,9 @@ uniform float uOclusao; uniform float uBrilho; uniform vec2 uDesloc;
 uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uniform float uMaresia;
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
 uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
+uniform float uArcLuzEstrutura; uniform vec3 uArCor;
+uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
+uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
 ${COMUM}
@@ -184,9 +189,18 @@ void main() {
     // maresia: a partir de ~20 m a cor perde saturação e contraste e clareia para a névoa
     // (perspectiva atmosférica: o fundo vira silhueta clara, a frente guarda a cor)
     float km = 1.0 - exp(-max(length(pv) - 20.0, 0.0) * uMaresia);
-    float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
-    cor = mix(cor, vec3(Lc), km * 0.6);
-    cor = mix(cor, uNevoaCor, km * 0.3);
+    if (uArcane > 0.5 && uArcLuzEstrutura > 0.5) {
+      // A distância se tinge com a cor do céu na hora (azul ao meio-dia, quente no fim da
+      // tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
+      float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
+      // (3b: menos clareamento e menos força; o véu bege da distância lavava a imagem inteira)
+      vec3 comAr = mix(cor, uArCor * (0.35 + 0.8 * Lc), 0.7);
+      cor = mix(cor, comAr, km * uArcArTinta);
+    } else {
+      float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
+      cor = mix(cor, vec3(Lc), km * 0.6);
+      cor = mix(cor, uNevoaCor, km * 0.3);
+    }
   }
 
   // grade de pontos: acompanha o giro da câmera, para não escorregar sobre o mundo
@@ -213,13 +227,34 @@ void main() {
     float Lg = dot(cor, vec3(0.299, 0.587, 0.114));
     float Ln = clamp((Lg * uArcExposicao - 0.5) * uArcContraste + 0.5, 0.0, 1.0);
     Ln = mix(Ln, Ln * Ln * (3.0 - 2.0 * Ln), 0.35);
-    cor *= Ln / max(Lg, 1e-3);
+    if (uArcLuzEstrutura > 0.5) {
+      // estrutura de valor: a curva em S separa sombra de luz (o valor não é só mais escuro)
+      // (só no mundo: no céu a curva estourava o azul claro em branco)
+      float LnE = mix(Ln, Ln * Ln * (3.0 - 2.0 * Ln), 0.3);
+      LnE = clamp((LnE - 0.42) * 1.12 + 0.42, 0.0, 1.0);
+      Ln = mix(LnE, Ln, ceu);
+    }
+    // 3b: abre a faixa de valor (níveis): o preto desce, a cal ao sol chega perto do branco. Só no mundo
+    Ln = mix(clamp((Ln - uArcPreto) / max(uArcBranco - uArcPreto, 0.05), 0.0, 1.0), Ln, ceu);
+    // metade do ganho de valor entra como cinza somado, não só multiplicado: multiplicar tudo pela razão
+    // aumentava o croma junto e a areia clara virava amarelo-ovo (3b)
+    cor = mix(cor * (Ln / max(Lg, 1e-3)), cor + (Ln - Lg), 0.5);
   }
   float L = dot(cor, vec3(0.299, 0.587, 0.114));
 
   // 5. sombra fria e luz quente
-  cor *= mix(vec3(1.0), uCorSombra * 1.6, uTomSombra * (1.0 - smoothstep(0.05, 0.55, L)));
-  cor = mix(cor, cor * uCorLuz * 1.2, uTomLuz * smoothstep(0.55, 1.0, L));
+  if (uArcane > 0.5 && uArcLuzEstrutura > 0.5) {
+    // A sombra esfria SEM mudar a cor do objeto: multiplicar pela cor da sombra puxava o
+    // matiz (a areia virava azul). Aqui a sombra é uma cor fria misturada por cima, e a
+    // luz é somada, nunca multiplicada.
+    // (3b: o céu fica fora; ele tem cor própria, e a "sombra" azul e a luz somada o lavavam)
+    float sombra = uTomSombra * (1.0 - smoothstep(0.05, 0.55, L)) * (1.0 - ceu);
+    cor = mix(cor, uCorSombra * (0.9 + 0.5 * L), sombra * 0.8);
+    cor += uCorLuz * uTomLuz * smoothstep(0.55, 1.0, L) * 0.3 * (1.0 - ceu);
+  } else {
+    cor *= mix(vec3(1.0), uCorSombra * 1.6, uTomSombra * (1.0 - smoothstep(0.05, 0.55, L)));
+    cor = mix(cor, cor * uCorLuz * 1.2, uTomLuz * smoothstep(0.55, 1.0, L));
+  }
   L = dot(cor, vec3(0.299, 0.587, 0.114));
 
   float tremorH = ruido((px + uDesloc) * 0.05 + uTempo * 2.0) * 0.6;
@@ -304,6 +339,12 @@ void main() {
     // as linhas de dentro (pálpebra, vinco, costura) moram na pintura
     vec3 tintaLocal = cor * vec3(0.32, 0.3, 0.38);
     cor = mix(cor, tintaLocal, bordaP * perto * forca * uArcLinha);
+    // ARESTA CLARA (item 4): a quina que se projeta para a câmera (o centro mais perto que a média dos
+    // vizinhos) ganha a borda gasta e clara do reboco, como o parapeito do forte da referência. Só no cenário
+    // e perto (até ~45 m): de longe a quina tem menos de um pixel
+    float convexo = smoothstep(0.002, 0.02, ((dl + dr + du + dd) * 0.25 - d0) / max(d0, 0.001));
+    float aresta = bordaN * convexo * (1.0 - smoothstep(25.0, 45.0, d0)) * step(0.95, alfa) * (1.0 - ceu);
+    cor = mix(cor, cor * 1.22 + vec3(0.05, 0.045, 0.035), clamp(aresta * uArcAresta, 0.0, 1.0));
   } else {
     cor = mix(cor, uCorTinta, borda * uIntTinta);
   }
@@ -335,6 +376,13 @@ void main() {
     cor = mix(cor, imp, uMemoria);
   }
   cor *= 1.0 - uPapel * (ruido(px * 0.35) * 0.6 + ruido(px * 0.04) * 0.4);
+  // tela de pintura (visual Arcane): trama de fios de algodão, irregular, presa à tela como a tela do quadro
+  if (uTelaPintura > 0.001) {
+    float fioX = sin(px.x * 1.9 + ruido(px * vec2(0.03, 0.11)) * 4.0);
+    float fioY = sin(px.y * 1.9 + ruido(px * vec2(0.11, 0.03) + 7.0) * 4.0);
+    float trama = fioX * fioY * 0.6 + (ruido(px * 0.5) - 0.5) * 0.8;
+    cor *= 1.0 + trama * uTelaPintura;
+  }
   cor += (hash(floor(px) + fract(uTempo * 7.13) * 91.7) - 0.5) * uGrao;
 
   // 10. linhas de velocidade quando corre
@@ -386,7 +434,26 @@ void main() {
     }
   }
 
-  // 11. vinheta
+  // 12. GRADAÇÃO FINAL (visual Arcane): curva de contraste e saturação pela paleta "cal e sal".
+  // A fachada (cal, papel, areia) é a cor de fundo do jogo e nunca vira acento: o que é
+  // neutro perde um pouco de cor, e o que é saturado (mar, pano, fruta) fica.
+  if (uArcane > 0.5 && uArcGradeCal > 0.5) {
+    float Lf = dot(cor, vec3(0.299, 0.587, 0.114));
+    // a curva: os meios escurecem, as luzes abrem um pouco. O fator fica preso entre
+    // 0,7 e 1,25: uma curva sem limite transformava as sombras em preto chapado.
+    float curva = clamp((Lf - 0.5) * uArcGradeContraste + 0.5, 0.3, 1.0);
+    cor *= mix(1.0, clamp(curva / max(Lf, 0.15), 0.7, 1.25), uArcGradeCal * (1.0 - ceu));
+    // a saturação: o neutro puxa para o cal da paleta, o acento fica como está
+    float mx = max(cor.r, max(cor.g, cor.b));
+    float mn = min(cor.r, min(cor.g, cor.b));
+    float sat = (mx - mn) / max(mx, 1e-3);
+    float neutro = 1.0 - smoothstep(0.04, 0.26, sat);
+    // só no mundo: o céu claro também é pouco saturado, e puxado para o cal virava creme e branco
+    cor = mix(cor, mix(vec3(Lf), uCalCor, 0.4) * mx, neutro * uArcCalNeutro * uArcGradeCal * (1.0 - ceu));
+    cor = mix(vec3(Lf), cor, uArcGradeSaturacao);
+  }
+
+  // 13. vinheta
   cor *= 1.0 - uVinheta * smoothstep(0.45, 1.05, rv);
   gl_FragColor = vec4(clamp(cor, 0.0, 1.0), 1.0);
 }`
@@ -419,6 +486,8 @@ export class Aranhaverso {
     this.cfg = cfg
     this.globais = globais
     this.velocidade = 0
+    this._corDourada = new THREE.Color()
+    this._v3Dourada = new THREE.Vector3()
     this.sinalGiro = -1 // medido: a grade precisa andar ao contrário do ponto na tela
 
     const prof = new THREE.DepthTexture(1, 1)
@@ -429,6 +498,9 @@ export class Aranhaverso {
     this.rtOclusao = new THREE.WebGLRenderTarget(1, 1, meia)
     this.rtBrilhoA = new THREE.WebGLRenderTarget(1, 1, meia)
     this.rtBrilhoB = new THREE.WebGLRenderTarget(1, 1, meia)
+    // pincelada na tela (pintura.js): tensor em meia resolução e a cor pintada em resolução cheia
+    this.rtTensor = new THREE.WebGLRenderTarget(1, 1, meia)
+    this.rtPintura = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false })
     this.corFundo = new THREE.Color(0, 0, 0)
 
     const v3 = () => ({ value: new THREE.Vector3() })
@@ -460,6 +532,9 @@ export class Aranhaverso {
       uCorSombra: v3(), uTomSombra: { value: 0.3 }, uCorLuz: v3(), uTomLuz: { value: 0.2 },
       uSolTela: { value: new THREE.Vector3() }, uFlare: { value: 0 }, uCorFlare: { value: new THREE.Color(1, 0.8, 0.6) },
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
+      uArcLuzEstrutura: { value: 1 }, uArCor: v3(),
+      uTelaPintura: { value: 0 }, uArcAresta: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
+      uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
     }
 
     const shader = (frag, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, depthTest: false, depthWrite: false })
@@ -467,6 +542,15 @@ export class Aranhaverso {
     this.matClaro = shader(fragClaro, this.uClaro)
     this.matDesfoque = shader(fragDesfoque, this.uDesfoque)
     this.matTela = shader(fragTela, this.uTela)
+    this.uPintura = uniformsPintura(THREE)
+    this.uPintura.tensor.tCor.value = this.rtCor.textures[0]
+    this.uPintura.kuwahara.tCor.value = this.rtCor.textures[0]
+    this.uPintura.kuwahara.tTensor.value = this.rtTensor.texture
+    this.matTensor = shader(fragTensor, this.uPintura.tensor)
+    // um material por grade de amostras (4, 5 ou 7), montado na primeira vez que o painel pede
+    this.matsKuwahara = {}
+    this.kuwahara = (n) => (this.matsKuwahara[n] ||= shader(fragKuwahara(n), this.uPintura.kuwahara))
+    this.pinturaLigada = false
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.matTela)
     this.quad.frustumCulled = false
     this.cenaTela = new THREE.Scene()
@@ -485,6 +569,11 @@ export class Aranhaverso {
     this.rtOclusao.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
     this.rtBrilhoA.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtBrilhoB.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
+    this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
+    this.tamCheio = [w, h]
+    this.meiaPintura = null // o tamanho do alvo pintado sai em atualizar(), pela opção do painel
+    this.uPintura.tensor.uTexel.value.set(1 / w, 1 / h)
+    this.uPintura.kuwahara.uTexel.value.set(1 / w, 1 / h)
     this.uTela.uRes.value.set(w, h)
     this.uTela.uPR.value = pixelRatio
     this.tamBrilho = new THREE.Vector2(1 / Math.ceil(w / 4), 1 / Math.ceil(h / 4))
@@ -514,21 +603,32 @@ export class Aranhaverso {
     const arc = e.visual === 'arcane'
     u.uArcane.value = arc ? 1 : 0
     u.uArcLinha.value = e.arcLinha
-    u.uArcContraste.value = e.arcContraste
+    u.uArcContraste.value = e.arcContraste * (1 + (e.arcDouradaContraste ?? 0) * this.globais.uDourada.value)
     u.uArcExposicao.value = e.arcExposicao
     const gl = this.globais
     gl.uArcane.value = arc ? 1 : 0
     gl.uArcLim.value.set(e.arcSombra, e.arcLuz)
     gl.uArcSuave.value = e.arcSuave
     gl.uArcPincel.value = e.arcPincel
-    gl.uArcCorSombra.value.set(e.arcCorSombra)
-    gl.uArcNiveis.value.set(e.arcNivelSombra, e.arcNivelMeio, e.arcNivelLuz)
+    // hora dourada (ceu.js põe o fator em globais.uDourada): sombra mais azul e mais funda, mais contraste
+    const dour = gl.uDourada.value
+    gl.uArcCorSombra.value.set(e.arcCorSombra).lerp(this._corDourada.set(e.arcDouradaSombra || '#36508a'), dour * 0.6)
+    gl.uArcNiveis.value.set(e.arcNivelSombra * (1 - 0.22 * dour), e.arcNivelMeio, e.arcNivelLuz * (1 + 0.06 * dour))
     gl.uTexForca.value = e.arcTextura
     // sombra: desde o three 0.182 o PCFShadowMap já é suave e o PCFSoftShadowMap não existe mais (o renderizador
     // volta o tipo para PCF dentro do render). A troca por visual que havia aqui achava o tipo diferente a cada
     // quadro e recompilava todos os materiais (KAN-70 T3, cenário semRecompilarParado)
     gl.uArcRim.value = arc ? e.arcRecorte : 0
     gl.uArcCeu.value = e.arcCeu
+    gl.uArcDesgaste.value = arc ? (e.arcDesgaste ?? 0) : 0
+    u.uArcAresta.value = arc ? (e.arcAresta ?? 0) : 0
+    gl.uArcPintado.value = e.arcCeuPintado ?? 1
+    u.uArcLuzEstrutura.value = e.arcLuzEstrutura ?? 1
+    { const c = this.globais.uArCor.value; u.uArCor.value.set(c.r, c.g, c.b) } // Color -> vec3 (copy daria NaN e a cena preta)
+    u.uArcGradeCal.value = e.arcGradeCal ?? 1
+    u.uArcGradeContraste.value = e.arcGradeContraste ?? 1.15
+    u.uArcGradeSaturacao.value = e.arcGradeSaturacao ?? 1.05
+    srgb(CAL.cal, u.uCalCor.value)
     // sol na tela, para o reflexo de lente: só quando está na frente da câmera
     {
       const dirS = this.globais.uSolDir.value
@@ -589,7 +689,7 @@ export class Aranhaverso {
     u.uVinheta.value = e.vinheta
     u.uDesfoque.value = e.desfoqueFundo
     u.uFoco.value = e.focoDistancia
-    u.uOclusao.value = e.oclusao
+    u.uOclusao.value = arc ? (e.arcOclusao ?? e.oclusao) : e.oclusao
     u.uBrilho.value = e.brilho
     u.uModo.value = e.pontosNaLuz ? 1 : 0
     u.uLimLuzPontos.value = e.limiarLuzPontos
@@ -615,6 +715,12 @@ export class Aranhaverso {
     srgb('#c08a3e', u.uMemOcre.value)
     srgb(e.corSombra, u.uCorSombra.value)
     u.uTomSombra.value = arc ? e.tomSombra * 0.4 : e.tomSombra
+    // hora dourada: a sombra da imagem final puxa para o azul fundo (a luz do sol já está laranja)
+    if (arc) {
+      const dour = this.globais.uDourada.value
+      u.uCorSombra.value.lerp(srgb(e.arcDouradaSombra || '#36508a', this._v3Dourada), dour * 0.7)
+      u.uTomSombra.value *= 1 + 1.4 * dour
+    }
     srgb(e.corLuz, u.uCorLuz.value)
     u.uTomLuz.value = arc ? e.tomLuz * 0.5 : e.tomLuz
     // linhas de velocidade a partir de ~70% da corrida (o corpo novo corre a 4,5 m/s; o antigo a 9)
@@ -624,6 +730,20 @@ export class Aranhaverso {
     const alvoVel = e.linhasVelocidade && !arc ? Math.min(1, Math.max(0, (velocidadeJogador - ini) / faixa)) : 0
     this.velocidade += (alvoVel - this.velocidade) * 0.1
     u.uVelocidade.value = this.velocidade
+    // pincelada na tela: a tela lê a cor pintada no lugar da cor crua
+    this.pinturaLigada = atualizarPintura(this.uPintura, e, arc)
+    // meia resolução: um quarto dos pixels (a pincelada fica um pouco mais mole na borda)
+    const meiaP = !!e.arcPinturaMeia
+    if (this.tamCheio && meiaP !== this.meiaPintura) {
+      this.meiaPintura = meiaP
+      const [w, h] = this.tamCheio
+      ;(this.rtPinturaAlvo || this.rtPintura).setSize(meiaP ? Math.ceil(w / 2) : w, meiaP ? Math.ceil(h / 2) : h)
+    }
+    u.uTelaPintura.value = arc ? (e.arcTela ?? 0) : 0
+    u.uArcCalNeutro.value = e.arcGradeNeutro ?? 0.12
+    u.uArcArTinta.value = e.arcArTinta ?? 0.45
+    u.uArcPreto.value = e.arcPreto ?? 0
+    u.uArcBranco.value = e.arcBranco ?? 1
     this.globais.uPincel.value = e.pincel
     this.globais.uPincelEscala.value = e.pincelEscala
   }
@@ -660,6 +780,13 @@ export class Aranhaverso {
       this.uDesfoque.uDir.value.set(0, this.tamBrilho.y * (1 + i))
       this.passo(this.matDesfoque, this.rtBrilhoA)
     }
+
+    // 4b. pincelada na tela (pintura.js)
+    if (this.pinturaLigada) {
+      this.passo(this.matTensor, this.rtTensor)
+      this.passo(this.kuwahara(amostrasPintura(e)), this.rtPintura)
+    }
+    this.uTela.tCor.value = this.pinturaLigada ? this.rtPintura.texture : this.rtCor.textures[0]
 
     // 5. tela
     this.passo(this.matTela, null)
