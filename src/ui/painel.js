@@ -63,6 +63,8 @@ export function criarPainel(cfg) {
   arc.add(e, 'arcBranco', 0.6, 1, 0.005).name('níveis: branco')
   arc.add(e, 'arcSombraFria', 0, 1, 0.01).name('sombra fria (luz do chão)')
   arc.add(e, 'arcOclusao', 0, 1, 0.01).name('sombra de contato')
+  arc.add(e, 'arcDesgaste', 0, 1.5, 0.01).name('reboco envelhecido')
+  arc.add(e, 'arcAresta', 0, 1.5, 0.01).name('quina clara')
   arc.add(e, 'arcPintura', 0, 1, 0.01).name('pincelada na tela (força)')
   arc.add(e, 'arcPinturaRaio', 1, 8, 0.1).name('pincelada: raio (px)')
   arc.add(e, 'arcPinturaAniso', 0.1, 4, 0.05).name('pincelada: esticar na borda')

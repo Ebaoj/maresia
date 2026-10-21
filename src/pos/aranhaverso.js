@@ -111,7 +111,7 @@ uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uni
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
 uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
 uniform float uArcLuzEstrutura; uniform vec3 uArCor;
-uniform float uTelaPintura; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
+uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
@@ -339,6 +339,12 @@ void main() {
     // as linhas de dentro (pálpebra, vinco, costura) moram na pintura
     vec3 tintaLocal = cor * vec3(0.32, 0.3, 0.38);
     cor = mix(cor, tintaLocal, bordaP * perto * forca * uArcLinha);
+    // ARESTA CLARA (item 4): a quina que se projeta para a câmera (o centro mais perto que a média dos
+    // vizinhos) ganha a borda gasta e clara do reboco, como o parapeito do forte da referência. Só no cenário
+    // e perto (até ~45 m): de longe a quina tem menos de um pixel
+    float convexo = smoothstep(0.002, 0.02, ((dl + dr + du + dd) * 0.25 - d0) / max(d0, 0.001));
+    float aresta = bordaN * convexo * (1.0 - smoothstep(25.0, 45.0, d0)) * step(0.95, alfa) * (1.0 - ceu);
+    cor = mix(cor, cor * 1.22 + vec3(0.05, 0.045, 0.035), clamp(aresta * uArcAresta, 0.0, 1.0));
   } else {
     cor = mix(cor, uCorTinta, borda * uIntTinta);
   }
@@ -527,7 +533,7 @@ export class Aranhaverso {
       uSolTela: { value: new THREE.Vector3() }, uFlare: { value: 0 }, uCorFlare: { value: new THREE.Color(1, 0.8, 0.6) },
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
       uArcLuzEstrutura: { value: 1 }, uArCor: v3(),
-      uTelaPintura: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
+      uTelaPintura: { value: 0 }, uArcAresta: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
       uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
     }
 
@@ -614,6 +620,8 @@ export class Aranhaverso {
     // quadro e recompilava todos os materiais (KAN-70 T3, cenário semRecompilarParado)
     gl.uArcRim.value = arc ? e.arcRecorte : 0
     gl.uArcCeu.value = e.arcCeu
+    gl.uArcDesgaste.value = arc ? (e.arcDesgaste ?? 0) : 0
+    u.uArcAresta.value = arc ? (e.arcAresta ?? 0) : 0
     gl.uArcPintado.value = e.arcCeuPintado ?? 1
     u.uArcLuzEstrutura.value = e.arcLuzEstrutura ?? 1
     { const c = this.globais.uArCor.value; u.uArCor.value.set(c.r, c.g, c.b) } // Color -> vec3 (copy daria NaN e a cena preta)

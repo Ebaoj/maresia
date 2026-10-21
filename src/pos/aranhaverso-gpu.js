@@ -451,6 +451,10 @@ function fragTela(W, u, T, uvGL) {
     If(U.uArcane.greaterThan(0.5), () => {
       const tintaLocal = cor.mul(vec3(0.32, 0.3, 0.38))
       cor.assign(mix(cor, tintaLocal, bordaP.mul(perto).mul(forca).mul(U.uArcLinha)))
+      // ARESTA CLARA (item 4): quina que se projeta para a câmera ganha a borda gasta e clara do reboco
+      const convexo = smoothstep(0.002, 0.02, dl.add(dr).add(du).add(dd).mul(0.25).sub(d0).div(max(d0, 0.001)))
+      const aresta = bordaN.mul(convexo).mul(float(1.0).sub(smoothstep(25.0, 45.0, d0))).mul(step(0.95, alfa)).mul(float(1.0).sub(ceu))
+      cor.assign(mix(cor, cor.mul(1.22).add(vec3(0.05, 0.045, 0.035)), clamp(aresta.mul(U.uArcAresta), 0.0, 1.0)))
     }).Else(() => {
       cor.assign(mix(cor, U.uCorTinta, borda.mul(U.uIntTinta)))
     })

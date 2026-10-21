@@ -50,6 +50,9 @@ export const PADRAO = {
     arcBranco: 0.94,             // níveis: o que vira branco (a cal ao sol)
     arcSombraFria: 0.6,          // a luz do chão puxa para a do céu (sombra azul, não marrom)
     arcOclusao: 0.55,            // sombra de contato no visual Arcane
+    // reboco envelhecido (item 4, src/mundo/desgaste.js) e quina clara (na tela)
+    arcDesgaste: 1.0,            // manchas de caiação, escorridos, umidade, sujeira na base, reboco caído mostrando a pedra
+    arcAresta: 0.7,              // quina gasta e clara (perto, até ~45 m)
     // pincelada na tela (src/pos/pintura.js): Kuwahara anisotrópico sobre a cor da cena, a superfície vira mancha de tinta
     arcPintura: 1.0,        // força (0 desliga o passe e o custo)
     arcPinturaRaio: 4.0,    // raio da pincelada, em pixels da imagem (não muda o custo)
