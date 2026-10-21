@@ -111,7 +111,7 @@ uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uni
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
 uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
 uniform float uArcLuzEstrutura; uniform vec3 uArCor;
-uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
+uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcArClareia; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
@@ -194,8 +194,11 @@ void main() {
       // tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
       float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
       // (3b: menos clareamento e menos força; o véu bege da distância lavava a imagem inteira)
-      vec3 comAr = mix(cor, uArCor * (0.35 + 0.8 * Lc), 0.7);
-      cor = mix(cor, comAr, km * uArcArTinta);
+      // (item 6: o fundo clareia para a cor do ar, não só se tinge, e perde um pouco de croma)
+      vec3 alvoAr = uArCor * mix(0.35 + 0.8 * Lc, 1.0, uArcArClareia);
+      vec3 comAr = mix(mix(cor, vec3(Lc), 0.3), alvoAr, 0.7);
+      // pesa mais no fundo que no meio do caminho (km * (0,4 + 0,6 km)): o meio da cena não lava
+      cor = mix(cor, comAr, clamp(km * (0.4 + 0.6 * km) * uArcArTinta * 1.4, 0.0, 1.0));
     } else {
       float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
       cor = mix(cor, vec3(Lc), km * 0.6);
@@ -533,7 +536,7 @@ export class Aranhaverso {
       uSolTela: { value: new THREE.Vector3() }, uFlare: { value: 0 }, uCorFlare: { value: new THREE.Color(1, 0.8, 0.6) },
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
       uArcLuzEstrutura: { value: 1 }, uArCor: v3(),
-      uTelaPintura: { value: 0 }, uArcAresta: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
+      uTelaPintura: { value: 0 }, uArcAresta: { value: 0 }, uArcArClareia: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
       uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
     }
 
@@ -743,6 +746,7 @@ export class Aranhaverso {
     u.uTelaPintura.value = arc ? (e.arcTela ?? 0) : 0
     u.uArcCalNeutro.value = e.arcGradeNeutro ?? 0.12
     u.uArcArTinta.value = e.arcArTinta ?? 0.45
+    u.uArcArClareia.value = e.arcArClareia ?? 0
     u.uArcPreto.value = e.arcPreto ?? 0
     u.uArcBranco.value = e.arcBranco ?? 1
     this.globais.uPincel.value = e.pincel

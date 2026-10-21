@@ -46,7 +46,8 @@ export const PADRAO = {
     arcCeuPincel: 1.0,           // item 5: riscos de pincel seco, grão e banco de cúmulos no horizonte
     arcCeuMeio: '#6fa8bc',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
     arcGradeNeutro: 0.12,        // quanto o neutro puxa para o cal na gradação (0,45 dava véu bege em tudo)
-    arcArTinta: 0.45,            // força da cor do ar na distância (0,75 lavava o fundo)
+    arcArTinta: 0.5,             // força da cor do ar na distância (0,75 lavava o fundo; item 6 sobe de 0,45 com o ar já frio/dourado)
+    arcArClareia: 0.3,           // item 6: quanto o fundo clareia para a cor do ar (perspectiva atmosférica)
     arcPreto: 0.07,              // níveis: o que vira preto
     arcBranco: 0.94,             // níveis: o que vira branco (a cal ao sol)
     arcSombraFria: 0.6,          // a luz do chão puxa para a do céu (sombra azul, não marrom)

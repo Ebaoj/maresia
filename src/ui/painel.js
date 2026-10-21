@@ -60,6 +60,7 @@ export function criarPainel(cfg) {
   arc.add(e, 'arcCeuPincel', 0, 2, 0.01).name('céu: pincel seco e cúmulos')
   arc.add(e, 'arcGradeNeutro', 0, 0.6, 0.01).name('gradação: neutro vira cal')
   arc.add(e, 'arcArTinta', 0, 1, 0.01).name('cor do ar na distância')
+  arc.add(e, 'arcArClareia', 0, 1, 0.01).name('ar: fundo clareia')
   arc.add(e, 'arcPreto', 0, 0.3, 0.005).name('níveis: preto')
   arc.add(e, 'arcBranco', 0.6, 1, 0.005).name('níveis: branco')
   arc.add(e, 'arcSombraFria', 0, 1, 0.01).name('sombra fria (luz do chão)')

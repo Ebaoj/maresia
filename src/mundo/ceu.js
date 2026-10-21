@@ -195,7 +195,13 @@ export function criarCeu(cena) {
     // A cor do ar: de longe o mundo se tinge com o céu. Ao meio-dia e à tarde o azul do
     // alto entra; no fim da tarde e na madrugada o quente do horizonte manda.
     const quente = THREE.MathUtils.clamp((p.hor.r - p.hor.b) * 2.2, 0, 1)
-    globais.uArCor.value.copy(p.hor).lerp(p.topo, 0.45 * (1 - quente))
+    if (cfg.estilo.visual === 'arcane') {
+      // PERSPECTIVA DE AR (item 6): de dia a distância esfria para o azul claro do meio do céu; na hora
+      // dourada esquenta para o horizonte (o ar fica dourado, como no fundo da referência)
+      globais.uArCor.value.copy(uniformes.uMeio.value).lerp(p.hor, THREE.MathUtils.clamp(0.2 + 0.7 * dourada + 0.4 * p.noite, 0, 1))
+    } else {
+      globais.uArCor.value.copy(p.hor).lerp(p.topo, 0.45 * (1 - quente))
+    }
     const nevoa = p.hor.clone().lerp(p.topo, 0.25)
     cena.fog.color.copy(nevoa)
     cena.fog.near = cfg.mundo.nevoaPerto

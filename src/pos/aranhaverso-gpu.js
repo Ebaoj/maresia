@@ -317,8 +317,11 @@ function fragTela(W, u, T, uvGL) {
           // da tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
           const Lc = dot(cor, LUM)
           // (3b: menos clareamento e menos força; o véu bege da distância lavava a imagem inteira)
-          const comAr = mix(cor, U.uArCor.mul(float(0.35).add(Lc.mul(0.8))), 0.7)
-          cor.assign(mix(cor, comAr, km.mul(U.uArcArTinta)))
+          // (item 6: o fundo clareia para a cor do ar, não só se tinge, e perde um pouco de croma)
+          const alvoAr = U.uArCor.mul(mix(float(0.35).add(Lc.mul(0.8)), float(1.0), U.uArcArClareia))
+          const comAr = mix(mix(cor, vec3(Lc), 0.3), alvoAr, 0.7)
+          // pesa mais no fundo que no meio do caminho: o meio da cena não lava
+          cor.assign(mix(cor, comAr, clamp(km.mul(km.mul(0.6).add(0.4)).mul(U.uArcArTinta).mul(1.4), 0.0, 1.0)))
         }).Else(() => {
           const Lc = dot(cor, LUM)
           cor.assign(mix(cor, vec3(Lc), km.mul(0.6)))
