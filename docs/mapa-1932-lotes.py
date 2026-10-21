@@ -286,26 +286,32 @@ def ligar_cadeias(fachadas):
     return cadeias
 
 
-def profundidade_raio(pontos, p0, p1, normal):
-    """A profundidade do lote: o raio da frente para dentro, ate a ultima parede.
+def profundidade_em(pontos, p0, p1, normal, t):
+    """A profundidade do lote no ponto t da frente (0 = comeco, 1 = fim).
 
-    O raio caminha na direcao oposta a normal (para dentro do lote). A profundidade
-    e a menor das tres medidas - nas pontas da frente e no meio - porque a casa e
-    um retangulo: se o fundo do lote e mais raso num canto, e esse canto que manda.
-    Medir so pelo vertice mais fundo dava um lote torto (em L, ou de fundo largo)
-    como se fosse fundo reto, e a casa invadia o vizinho: era o que deixava
-    buracos na testada das ruas.
+    O raio caminha na direcao oposta a normal (para dentro do lote) e para na
+    ultima parede do anel: e o fundo do lote. A medida importa em varios
+    pontos: o fundo do lote nao e paralelo a frente (o lote e trapezoidal),
+    e a casa, que e um retangulo, precisa caber na parte mais rasa.
     """
-    dx = -normal[0]
-    dz = -normal[1]
     larg = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
     ux = (p1[0] - p0[0]) / larg
     uz = (p1[1] - p0[1]) / larg
-    medidas = []
-    for t in (0.12, 0.5, 0.88):
-        mx = p0[0] + ux * larg * t
-        mz = p0[1] + uz * larg * t
-        medidas.append(_raio_ate_a_parede(pontos, mx, mz, dx, dz))
+    mx = p0[0] + ux * larg * t
+    mz = p0[1] + uz * larg * t
+    return _raio_ate_a_parede(pontos, mx, mz, -normal[0], -normal[1])
+
+
+def profundidade_raio(pontos, p0, p1, normal):
+    """A profundidade do lote: o raio da frente para dentro, ate a ultima parede.
+
+    A profundidade e a menor das tres medidas - nas pontas da frente e no meio -
+    porque a casa e um retangulo: se o fundo do lote e mais raso num canto, e
+    esse canto que manda. Medir so pelo vertice mais fundo dava um lote torto (em
+    L, ou de fundo largo) como se fosse fundo reto, e a casa invadia o vizinho:
+    era o que deixava buracos na testada das ruas.
+    """
+    medidas = [profundidade_em(pontos, p0, p1, normal, t) for t in (0.12, 0.5, 0.88)]
     return min(medidas)
 
 
@@ -437,9 +443,18 @@ def main():
             # o fundo da cada pedaco e o fundo do lote, deslocado para o meio do pedaco
             am = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
             fundo = (bx + (am[0] - mx), bz + (am[1] - mz))
+            # a profundidade do lote na frente deste pedaco, em tres pontos: a
+            # casa e um retangulo e precisa caber no lote inteiro, nao so no
+            # meio da frente (o fundo do lote e trapezoidal)
+            ta = (k / partes)
+            tb = ((k + 1) / partes)
+            prof_a = profundidade_em(pontos, p0, p1, normal, ta + (tb - ta) * 0.08)
+            prof_m = profundidade_em(pontos, p0, p1, normal, (ta + tb) / 2)
+            prof_b = profundidade_em(pontos, p0, p1, normal, tb - (tb - ta) * 0.08)
             saida.append([
                 cod,
                 *para_ll(a[0], a[1]), *para_ll(b[0], b[1]), *para_ll(fundo[0], fundo[1]),
+                round(prof_a, 2), round(prof_m, 2), round(prof_b, 2),
             ])
             geom.append({"a": a, "b": b, "normal": normal})
             n_casas += 1

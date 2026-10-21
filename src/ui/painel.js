@@ -241,6 +241,10 @@ export function criarPainel(cfg) {
   chao.add(cfg.chao, 'desgaste', 0, 2, 0.05).name('poeira do meio da rua')
   chao.add(cfg.chao, 'mato', 0, 1, 0.05).name('mato ralo do quintal')
 
+  const casario = gui.addFolder('Casario de 1932')
+  casario.add(cfg.casario, 'larguraAlvo', 4, 26, 0.5).name('largura da casa (m) (recarregar)')
+  casario.add(cfg.casario, 'folgaParede', 0, 0.6, 0.02).name('fresta entre as casas (m) (recarregar)')
+
   const urubu = gui.addFolder('Campo do Urubu')
   urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name('altura do galpão (m)')
   urubu.add(cfg.mundo.urubu, 'alturaCerca', 1, 3, 0.1).name('altura do arame (m)')
