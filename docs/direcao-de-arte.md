@@ -271,6 +271,14 @@ em `docs/capturas/marcos/<marco>/`.
 - **Esculturas dos Leões**: modelo esculpido (GLB, fora do git, em `arte/finais/marcos1932/`) com a forma
   procedural de reserva; ferro quase preto com um verde de bronze e o bronze escuro do General, pelo caminho
   pintado (`pintar()`), sem textura.
+- **Segunda passada (21/10/2026, revisão do visual)**, provas em `docs/capturas/marcos/passada2/` (uma por item):
+  esculturas com normais suaves e material de metal próprio (`metal.js`: realce recortado, borda e luz do céu
+  na sombra); piso de pedra portuguesa na escala real (pedra de 5 a 8 cm, losangos de 36 cm, `mosaico.js`);
+  Coluna da Hora escalonada em pedra quente, com mostradores escuros e ponteiros claros; Excelsior, balaústres
+  e muro dos Leões com a luz quente rebatida do chão na sombra (`rebote.js`, a regra da lacuna 4, que a
+  lavanda sozinha deixava violeta); Mercado com venezianas cheias, lambrequim e arcada; o jardim dos Leões
+  visível da rua e os degraus que pegam a luz. O conceito dos Leões é de manhã (a escadaria ao sol): o "Ir
+  para" passou para as 9h30.
 - **Custo** (`maresia.medir`, WebGPU, 2000 x 1125, cinco repetições alternadas, 21/10/2026 às 20h10, load 3): no
   ponto de vista de cada marco, ligado contra desligado: Praça do Ferreira 26,48 x 25,93 ms; Excelsior 19,68 x 19,64;
   Leões 26,26 x 26,62; Mercado 24,43 x 25,08. As diferenças (de -0,7 a +0,6 ms) estão dentro do ruído da medição
