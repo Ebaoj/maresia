@@ -305,9 +305,11 @@ function plantar(cena, o, lista) {
     const [, a, b, c, d] = it
     const lx = rnd.entre(a, b)
     const lz = rnd.entre(c, d)
-    por(rnd.chance(0.5) ? 'quadra' : 'quadra2', lx, lz, rnd.entre(0.8, 1.15))
+    // o cajueiro tem a copa mais cara (4,3 mil triângulos, o oiti 1,4 mil): um em cada três; um ou dois arbustos
+    por(rnd.chance(0.33) ? 'quadra' : 'quadra2', lx, lz, rnd.entre(0.8, 1.15))
     o.coluna(lx, lz, 0.4)
-    for (let k = 0; k < 3; k++) por('arbusto', rnd.entre(a, b), rnd.entre(c, d), rnd.entre(0.7, 1.1))
+    const nArb = rnd.chance(0.5) ? 2 : 1
+    for (let k = 0; k < nArb; k++) por('arbusto', rnd.entre(a, b), rnd.entre(c, d), rnd.entre(0.7, 1.1))
   }
   const mat = toonVertice()
   for (const [k, l] of Object.entries(mats)) if (l.length) instanciarEmBlocos(cena, geos[k], mat, l, null, { nome: `passeio-${k}`, placa: true })
