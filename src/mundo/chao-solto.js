@@ -109,7 +109,7 @@ export function sortearChaoSolto(cfg) {
       const rua = am.rota >= 0 ? terra * (1 - am.piso) : 0
       // na rua mais pedra (o quadro 1 do conceito-sertão), e as maiores na beira, onde a roda não passa
       const beira = am.rota >= 0 ? Math.min(1, Math.max(0, (am.rota - 0.45) / 0.4)) : 0
-      const nPedra = rua * (1.6 + 1.6 * beira) + quintal * 0.35 + mato * 0.08 + am.piso * 0.1
+      const nPedra = rua * (1.4 + 3.5 * beira) + quintal * 0.35 + mato * 0.08 + am.piso * 0.1
       const nTorrao = racha * 1.2 + quintal * 0.12
       const nTufo = racha * 0.35 + mato * 0.25
       const sortear = (n) => { let k = Math.floor(n * dens); if (rnd.proximo() < n * dens - k) k++; return k }
@@ -118,7 +118,7 @@ export function sortearChaoSolto(cfg) {
         pedra(x + rnd.entre(0, passo), z + rnd.entre(0, passo), r, rnd.escolha(cConcha), 0.35)
       }
       for (let i = sortear(nPedra); i > 0; i--) {
-        const r = rnd.chance(0.15 + 0.25 * beira) ? rnd.entre(0.05, 0.11) : rnd.entre(0.02, 0.05)
+        const r = rnd.chance(0.15 + 0.4 * beira) ? rnd.entre(0.05, 0.13) : rnd.entre(0.02, 0.05)
         pedra(x + rnd.entre(0, passo), z + rnd.entre(0, passo), r, rnd.escolha(cPedra), 0.4)
       }
       for (let i = sortear(nTorrao); i > 0; i--) {

@@ -257,6 +257,10 @@ export const PADRAO = {
     relevoCor: 0.8,       // quanto a fresta escurece e a pedra clareia
     relevoMeioDia: 0.8,   // relevo a mais com o sol a pino (a luz de cima quase não marca inclinação pequena)
     ondaAreia: 0.34,      // comprimento da ondulação da areia (m)
+    poeiraManchas: 1.0,   // rua e quintal: manchas grandes de poeira clara sobre terra socada (rua-terra.js)
+    poeiraParede: 1.0,    // rua: poeira juntada contra a parede
+    pegadasRua: 1.0,      // rua: meio pisado mais escuro, com pegadas
+    sulcoDuplo: 1.0,      // rua: o segundo par de sulcos de roda, mais raso
     solto: true,          // chão solto em 3D perto da câmera: pedrisco, conchas, torrões e touceiras secas (chao-solto.js)
     soltoRaio: 40,        // até quantos metros da câmera ele aparece
     soltoDensidade: 1.0,  // quantas peças (1 = o padrão); vale ao recarregar

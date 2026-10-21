@@ -21,6 +21,7 @@ import { modulo, ref, amostraAlvo, uvTela, criarAlvo, criarPasse } from '../rend
 import { GLSL_RELEVO_UNIFORM, GLSL_RELEVO_FUNCOES, glslRelevo, tslRelevo, ruidoRelevo, uRelevo } from './relevo-chao.js'
 import { GLSL_CALAMENTO_UNIFORM, uCalamento } from './calamento.js'
 import { GLSL_RODEIRO_UNIFORM, uRodeiro } from './rodeiro.js'
+import { uRuaTerra } from './rua-terra.js'
 
 // a linha da maré alta: onde a areia molhada encontra a seca, uma faixa fina mais escura e torta (GLSL e TSL)
 const MARE = 0.24
@@ -247,7 +248,7 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
   const geo = new THREE.PlaneGeometry(AREA_AREIA, AREA_AREIA, SEG, SEG).rotateX(-Math.PI / 2)
   const mat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: gradienteToon() })
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uM, uRelevo, uCalamento, uRodeiro)
+    Object.assign(sh.uniforms, uM, uRelevo, uCalamento, uRodeiro, uRuaTerra)
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nuniform float uPasso;\n' + GLSL_VERTICE)
       .replace('#include <beginnormal_vertex>', `

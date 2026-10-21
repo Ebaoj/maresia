@@ -5,9 +5,10 @@ import { congelar } from './congelar.js'
 import { ref } from '../render/gpu/comum.js'
 import { GLSL_CALAMENTO, GLSL_CALAMENTO_PIXEL, GLSL_CALAMENTO_UNIFORM, sincronizarCalamento, tslCalamento, uCalamento } from './calamento.js'
 import { GLSL_RODEIRO, GLSL_RODEIRO_UNIFORM, sincronizarRodeiro, tslRodeiro, uRodeiro } from './rodeiro.js'
-import { posicaoNaRua1932 } from './chao1932.js'
+import { posicaoNaRuaSuave } from './chao1932.js'
 import { calcamento, corChao, soloChao } from './solo-chao.js'
 import { GLSL_RELEVO_UNIFORM, GLSL_RELEVO_FUNCOES, glslRelevo, sincronizarRelevo, tslRelevo, uRelevo } from './relevo-chao.js'
+import { GLSL_RUA_TERRA, sincronizarRuaTerra, tslCorTerra, uRuaTerra } from './rua-terra.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
 export const NX = Math.round((x1 - x0) / passo) + 1
@@ -93,6 +94,33 @@ export function inclinacao(x, z) {
   return Math.hypot(hx, hz) / (2 * e)
 }
 
+// A borda da rua da planta de 1932 é uma escada de células de 3 m: o sulco da roda e a poeira da parede seguiam a escada
+// em zigue-zague nas ruas na diagonal. Média de 7 x 7 vértices (21 m) só entre vértices de rua, que desfaz a escada.
+function alisarRota(rota) {
+  const fonte = rota.slice()
+  for (let j = 0; j < NZ; j++) {
+    for (let i = 0; i < NX; i++) {
+      const k = j * NX + i
+      if (fonte[k] < 0) continue
+      let soma = 0
+      let n = 0
+      for (let dj = -3; dj <= 3; dj++) {
+        const jj = j + dj
+        if (jj < 0 || jj >= NZ) continue
+        for (let di = -3; di <= 3; di++) {
+          const ii = i + di
+          if (ii < 0 || ii >= NX) continue
+          const v = fonte[jj * NX + ii]
+          // fora da rua conta como borda (1): perto do lote a posição continua indo para 1
+          soma += v < 0 ? 1 : v
+          n++
+        }
+      }
+      rota[k] = soma / n
+    }
+  }
+}
+
 // o material do chão, para quem desenha chão por cima do terreno (a terra das tarefas do Campo do Urubu)
 let _material = null
 export function materialChao() { return _material }
@@ -107,6 +135,7 @@ export function criarTerreno(cena, cfg) {
   sincronizarCalamento(cfg)
   sincronizarRodeiro(cfg)
   sincronizarRelevo(cfg)
+  sincronizarRuaTerra(cfg)
   const t1 = performance.now()
 
   const cores = new Float32Array(NX * NZ * 3)
@@ -136,7 +165,7 @@ export function criarTerreno(cena, cfg) {
       areias[k] = sc > -3 && sc < larguraPraia(x) - 0.3 ? 1 : 0
       corChao(x, z, hh, incl, dens, cor, cfg)
       piso[k] = calcamento(x, z, cfg) * (1 - dens) * (sc > larguraPraia(x) + FIM_AVENIDA + 2 ? 1 : 0)
-      rota[k] = posicaoNaRua1932(x, z)
+      rota[k] = posicaoNaRuaSuave(x, z) // contínua: a da grade saía 0 na rua estreita (chao1932.js)
       soloChao(x, z, hh, dens, solo)
       solos.set(solo, k * 4)
       cores[k * 3] = cor.r
@@ -144,6 +173,7 @@ export function criarTerreno(cena, cfg) {
       cores[k * 3 + 2] = cor.b
     }
   }
+  alisarRota(rota)
 
   const t2 = performance.now()
   const material = materialTerreno()
@@ -241,6 +271,7 @@ export function criarTerreno(cena, cfg) {
       sincronizarCalamento(cfg) // o painel mexe no calçamento e no rodeiro ao vivo
       sincronizarRodeiro(cfg)
       sincronizarRelevo(cfg)
+      sincronizarRuaTerra(cfg)
       const px = camera.position.x
       const pz = camera.position.z
       for (const p of pedacos) {
@@ -260,7 +291,7 @@ export function criarTerreno(cena, cfg) {
 function materialTerreno() {
   const mat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() })
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uAreiaTerreno, uCalamento, uRodeiro, uRelevo)
+    Object.assign(sh.uniforms, uAreiaTerreno, uCalamento, uRodeiro, uRelevo, uRuaTerra)
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float aPiso; varying float vPiso; attribute float aAreia; varying float vAreia; attribute float aRota; varying float vRota; attribute vec4 aSolo; varying vec4 vSolo;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPiso = aPiso; vAreia = aAreia; vRota = aRota; vSolo = aSolo;')
@@ -272,6 +303,7 @@ function materialTerreno() {
         ${GLSL_RODEIRO_UNIFORM}
         ${GLSL_RELEVO_UNIFORM}
         ${GLSL_RELEVO_FUNCOES}
+        ${GLSL_RUA_TERRA}
         float hPav(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         // dentro do quadrado da areia fina, quem desenha a praia é ela
@@ -281,7 +313,9 @@ function materialTerreno() {
         if (vPiso > 0.01) {
           ${GLSL_CALAMENTO}
         }
-        ${GLSL_RODEIRO}`)
+        ${GLSL_RODEIRO}
+        // a rua de terra em grande escala: poeira sobre terra socada, poeira na parede, pegadas (rua-terra.js)
+        diffuseColor.rgb = rlCorTerra(diffuseColor.rgb, vPMundo.xz, vRota, vSolo.y * (1.0 - vPiso));`)
       // relevo pintado (relevo-chao.js): a normal ganha a altura fina de cada tipo de chão
       .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>' + glslRelevo({
         solo: 'vSolo', piso: 'vPiso', rota: 'vRota', molhada: 'vSolo.x * (1.0 - smoothstep(0.1, 0.45, vPMundo.y))',
@@ -318,6 +352,8 @@ function terrenoTsl() {
         Discard(vAreia.greaterThan(0.7).and(max(dA.x, dA.y).lessThan(ref(uAreiaTerreno.uAreiaMeia))))
         rgb.assign(tslCalamento(W, rgb, vPiso))
         rgb.assign(tslRodeiro(W, rgb, vRota, vPiso))
+        // a rua de terra em grande escala (rua-terra.js)
+        rgb.assign(tslCorTerra(W, rgb, positionWorld.xz, vRota, attribute('aSolo', 'vec4').y.mul(W.float(1.0).sub(vPiso)), ref(uRodeiro.uRota)))
         rgb.assign(rgb.mul(relevo(W).corFator))
         return rgb
       })()

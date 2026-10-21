@@ -20,6 +20,7 @@ import { ref } from '../render/gpu/comum.js'
 import { globais } from '../globais.js'
 import { uCalamento } from './calamento.js'
 import { uRodeiro } from './rodeiro.js'
+import { uRuaTerra } from './rua-terra.js'
 
 export const uRelevo = {
   uRelevoA: { value: new THREE.Vector4(1, 1, 1, 1) }, // geral, areia, terra, paralelepípedo
@@ -41,7 +42,8 @@ export function sincronizarRelevo(cfg) {
 
 
 // ------------------------------------------------------------------------------------------------- GLSL
-export const GLSL_RELEVO_UNIFORM = 'uniform vec4 uRelevoA; uniform vec4 uRelevoB;'
+// (uRuaTerra é de rua-terra.js: o segundo par de sulcos entra no relevo da rua)
+export const GLSL_RELEVO_UNIFORM = 'uniform vec4 uRelevoA; uniform vec4 uRelevoB; uniform vec4 uRuaTerra;'
 
 // As funções. Precisam de uBloco (calamento.js) quando há paralelepípedo; quem não tem passa piso 0.
 export const GLSL_RELEVO_FUNCOES = /* glsl */ `
@@ -156,7 +158,10 @@ float rlSulco(float u, float n) {
   float sulco = 1.0 - smoothstep(l * 0.25, l, t);
   float borda = smoothstep(l * 0.8, l * 1.25, t) * (1.0 - smoothstep(l * 1.25, l * 2.3, t));
   float abaulado = 1.0 - smoothstep(0.0, 0.7, u);
-  return uRota.x * (-sulco * 0.07 * (0.6 + 0.8 * n) + borda * 0.028) + abaulado * 0.05;
+  // o segundo par, mais raso (carroça de outra bitola; rua-terra.js pinta a cor dele)
+  float t2 = abs(u - uRota.y - 0.13);
+  float sulco2 = (1.0 - smoothstep(l * 0.3, l * 0.8, t2)) * uRuaTerra.w;
+  return uRota.x * (-sulco * 0.07 * (0.6 + 0.8 * n) - sulco2 * 0.035 * (0.6 + 0.8 * n) + borda * 0.028) + abaulado * 0.05;
 }
 `
 
@@ -322,8 +327,14 @@ function funcoes(W) {
     const abaulado = float(1.0).sub(smoothstep(0.0, 0.7, u))
     return rota.x.mul(sulco.mul(-0.07).mul(n.mul(0.8).add(0.6)).add(borda.mul(0.028))).add(abaulado.mul(0.05))
   }).setLayout(L('rlSulco', 'float', [['u', 'float'], ['n', 'float'], ['rota', 'vec4']]))
+  // o segundo par de sulcos, mais raso (a força, uRuaTerra.w, multiplica fora)
+  const rlSulco2 = Fn(([u, n, rota]) => {
+    const l = max(rota.z, 0.01)
+    const t2 = abs(u.sub(rota.y).sub(0.13))
+    return float(1.0).sub(smoothstep(l.mul(0.3), l.mul(0.8), t2)).mul(rota.x).mul(n.mul(0.8).add(0.6)).mul(-0.035)
+  }).setLayout(L('rlSulco2', 'float', [['u', 'float'], ['n', 'float'], ['rota', 'vec4']]))
 
-  F = { rlAltura, rlSulco, rlN, vec4 }
+  F = { rlAltura, rlSulco, rlSulco2, rlN, vec4 }
   return F
 }
 
@@ -336,9 +347,9 @@ export function ruidoRelevo(W) { return funcoes(W).rlN }
 export function tslRelevo(W, { solo, piso = null, rota = null, molhada = null, nMundo }) {
   const { Fn, vec2, vec3, vec4, float, max, length, dFdx, dFdy, abs, min, normalize, smoothstep, distance, clamp,
     positionWorld, cameraPosition, cameraViewMatrix, If } = W
-  const { rlAltura, rlSulco, rlN } = funcoes(W)
+  const { rlAltura, rlSulco, rlSulco2, rlN } = funcoes(W)
   const A = ref(uRelevo.uRelevoA), B = ref(uRelevo.uRelevoB)
-  const bloco = ref(uCalamento.uBloco), rotaU = ref(uRodeiro.uRota)
+  const bloco = ref(uCalamento.uBloco), rotaU = ref(uRodeiro.uRota), rtU = ref(uRuaTerra.uRuaTerra)
   const saida = Fn(() => {
     const pR = positionWorld.xz.toVar()
     const dpxR = dFdx(pR).toVar(), dpyR = dFdy(pR).toVar()
@@ -364,7 +375,9 @@ export function tslRelevo(W, { solo, piso = null, rota = null, molhada = null, n
         const gU = abs(detR).greaterThan(1e-10).select(gU0, vec2(0.0)).toVar()
         gU.mulAssign(min(1.0, float(1.0).div(max(length(gU), 1e-4))))
         const nS = rlN(pR.mul(0.3))
-        const dS = rlSulco(uR.add(0.004), nS, rotaU).sub(rlSulco(uR.sub(0.004), nS, rotaU)).div(0.008)
+        const dS1 = rlSulco(uR.add(0.004), nS, rotaU).sub(rlSulco(uR.sub(0.004), nS, rotaU))
+        const dS2 = rlSulco2(uR.add(0.004), nS, rotaU).sub(rlSulco2(uR.sub(0.004), nS, rotaU)).mul(rtU.w)
+        const dS = dS1.add(dS2).div(0.008)
         gR.addAssign(gU.mul(dS).mul(soloR.y).mul(A.z))
       })
       res.assign(vec4(gR.mul(forcaR), h0.y, forcaR))

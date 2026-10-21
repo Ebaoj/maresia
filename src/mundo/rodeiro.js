@@ -52,7 +52,7 @@ export const GLSL_RODEIRO = `
       // o sulco da carroça: uma marca de cada lado do meio
       float sulco = uRota.x * (1.0 - smoothstep(uRota.z * 0.5, uRota.z, abs(u - uRota.y)));
       diffuseColor.rgb = mix(diffuseColor.rgb, ${COR_PO}, poeira * 0.5);
-      diffuseColor.rgb = mix(diffuseColor.rgb, ${COR_RO}, sulco * 0.75);
+      diffuseColor.rgb = mix(diffuseColor.rgb, ${COR_RO}, sulco * 0.5); // (0,75 antes: com a posição na rua contínua o sulco passou a aparecer e escurecia demais)
     }
   }`
 
@@ -66,7 +66,7 @@ export function tslRodeiro(W, rgb, vRota, vPiso) {
     If(vRota.greaterThanEqual(float(0)).and(vPiso.lessThan(float(0.01))), () => {
       const u = vRota
       const poeira = b.w.mul(float(1).sub(smoothstep(float(0), float(0.55), u))).mul(0.5)
-      const sulco = b.x.mul(float(1).sub(smoothstep(b.z.mul(0.5), b.z, abs(u.sub(b.y))))).mul(0.75)
+      const sulco = b.x.mul(float(1).sub(smoothstep(b.z.mul(0.5), b.z, abs(u.sub(b.y))))).mul(0.5)
       rgb.assign(mix(rgb, corPo, poeira))
       rgb.assign(mix(rgb, corRo, sulco))
     })
