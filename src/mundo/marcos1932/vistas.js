@@ -13,8 +13,10 @@ const DEF = {
   colunaHora: ['praca', [20, -4], [-30, 6], 16.5],
   // excelsior.png: de dentro da praça, a sudeste do hotel (fachada longa à esquerda, curta à direita)
   excelsior: ['praca', [-12, -2], [-64, -44], 17],
-  // praca-leoes.png: da Rua Sena Madureira, de frente para a escadaria em ferradura
-  leoes: ['leoes', [54, 9], [20, 4], 15],
+  // praca-leoes.png: da Rua Sena Madureira, de frente para a escadaria em ferradura. A luz do conceito vem da
+  // frente (a escadaria inteira ao sol, a sombra caindo para a esquerda): é manhã, com o sol a leste; às 15h a
+  // escadaria fica na sombra do próprio muro
+  leoes: ['leoes', [54, 9], [20, 4], 9.5],
   // mercado-ferro.png: da praça, a oeste do mercado, de frente para a empena e a arcada, a Sé ao fundo
   mercado: ['carolina', [-52, 15], [-28, 0], 16],
 }

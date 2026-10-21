@@ -127,7 +127,9 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
 
   // a plataforma: o muro de cantaria em volta (a caixa inteira) e a cornija no alto
   // caiado, como o conceito e a balaustrada clara da foto de 1930 (os blocos se leem pelos sulcos)
-  obra.caixa('cal', 0, (H + fundo) / 2, 0, HX * 2, H - fundo, HZ * 2)
+  obra.caixa('muroLeoes', 0, (H + fundo) / 2, 0, HX * 2, H - fundo, HZ * 2)
+  // a barra suja do pé do muro (salitre e respingo da rua), mais escura e irregular pela textura
+  obra.caixa('salitre', 0, fundo / 2 + 0.45, 0, HX * 2 + 0.04, 0.9 - fundo, HZ * 2 + 0.04)
   obra.caixa('moldura', 0, H - 0.15, 0, HX * 2 + 0.3, 0.3, HZ * 2 + 0.3)
   // fiadas da cantaria (os blocos aparelhados da foto de 1930): sulcos a cada 0,6 m
   for (let t = fundo + 0.6; t < H - 0.4; t += 0.6) obra.caixa('calVelha', 0, t, 0, HX * 2 + 0.03, 0.05, HZ * 2 + 0.03)
@@ -171,7 +173,14 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
           obra.caixa('moldura', px, H + 1.13, pz, 0.62, 0.08, 0.62)
           const [wx, wz] = obra.mundo(px, pz)
           if (rnd.chance(0.5)) mobilia.lampiao('lamp1', wx, y + H + 1.17, wz, obra.giro)
-          else mobilia.urna(wx, y + H + 1.17, wz, 0.9)
+          else {
+            // jarro com planta (o conceito põe vasos floridos sobre a balaustrada)
+            mobilia.urna(wx, y + H + 1.17, wz, 0.9)
+            if (rnd.chance(0.6)) {
+              obra.add('folha', new THREE.IcosahedronGeometry(0.42, 1).scale(1.1, 0.8, 1.1).translate(px, H + 1.95, pz))
+              if (rnd.chance(0.6)) obra.add('flor', new THREE.IcosahedronGeometry(0.13, 0).translate(px + 0.15, H + 2.2, pz))
+            }
+          }
         }
         // colisão do lado (o personagem não cai de cima nem entra por baixo)
         const meio = (t0 + t1) / 2
@@ -197,16 +206,18 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
     const largo = i <= 3
     const meia = largo ? ESC.base - (i - 1) * 0.5 : ESC.faixa[1]
     if (largo) {
-      obra.caixa('cal', x0 + t / 2, (i * r + fundo) / 2, ESC.z, t + 0.02, i * r - fundo, meia * 2)
+      obra.caixa('degrauEspelho', x0 + t / 2, (i * r + fundo) / 2, ESC.z, t + 0.02, i * r - fundo, meia * 2)
+      obra.caixa('degrau', x0 + t / 2 + 0.02, i * r + 0.02, ESC.z, t + 0.06, 0.05, meia * 2 + 0.04)
       obra.deck(x0 + t / 2, ESC.z, t / 2, meia, i * r)
     } else {
       for (const s of [-1, 1]) {
         const zc = ESC.z + s * (ESC.faixa[0] + ESC.faixa[1]) / 2
         const w = ESC.faixa[1] - ESC.faixa[0]
-        obra.caixa('cal', x0 + t / 2, (i * r + fundo) / 2, zc, t + 0.02, i * r - fundo, w)
+        obra.caixa('degrauEspelho', x0 + t / 2, (i * r + fundo) / 2, zc, t + 0.02, i * r - fundo, w)
+        obra.caixa('degrau', x0 + t / 2 + 0.02, i * r + 0.02, zc, t + 0.06, 0.05, w)
         obra.deck(x0 + t / 2, zc, t / 2, w / 2, i * r)
         // o muro de fora do lanço, em degraus (a balaustrada inclinada assenta nele)
-        obra.caixa('cal', x0 + t / 2, (i * r + fundo) / 2, ESC.z + s * (ESC.faixa[1] + 0.15), t + 0.02, i * r - fundo, 0.3)
+        obra.caixa('muroLeoes', x0 + t / 2, (i * r + fundo) / 2, ESC.z + s * (ESC.faixa[1] + 0.15), t + 0.02, i * r - fundo, 0.3)
       }
     }
   }
@@ -233,7 +244,7 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
   }
   // o pedestal alto do meio, onde fica o leão atacado pela serpente, com o medalhão na frente
   const pedAlt = H + 1.6
-  obra.caixa('cal', HX + 1.5, (pedAlt + fundo) / 2, ESC.z, 3.0, pedAlt - fundo, ESC.faixa[0] * 2)
+  obra.caixa('muroLeoes', HX + 1.5, (pedAlt + fundo) / 2, ESC.z, 3.0, pedAlt - fundo, ESC.faixa[0] * 2)
   obra.caixa('moldura', HX + 1.5, pedAlt - 0.1, ESC.z, 3.3, 0.2, ESC.faixa[0] * 2 + 0.3)
   obra.caixa('moldura', HX + 1.5, pedAlt + 0.15, ESC.z, 2.6, 0.3, ESC.faixa[0] * 2 - 0.1)
   obra.add('moldura', new THREE.TorusGeometry(0.42, 0.08, 6, 18).rotateY(Math.PI / 2).translate(HX + 3.02, H - 0.9, ESC.z))
@@ -241,7 +252,7 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
   // os pedestais dos dois felinos de Jacquemart nas pontas
   for (const k of ['leao', 'tigre']) {
     const [lx, lz] = LUGARES_LEOES[k]
-    obra.caixa('cal', lx + 1.0, (H + 1.3 + fundo) / 2, lz, 2.4, H + 1.3 - fundo, 1.4)
+    obra.caixa('muroLeoes', lx + 1.0, (H + 1.3 + fundo) / 2, lz, 2.4, H + 1.3 - fundo, 1.4)
     obra.caixa('moldura', lx + 1.0, H + 1.25, lz, 2.6, 0.12, 1.6)
     obra.colisaoCaixa(lx + 1.0, lz, 1.2, 0.7)
   }
@@ -252,7 +263,8 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
   const rO = (H - yOeste) / nO
   for (let i = 1; i <= nO; i++) {
     const x0 = -HX - (nO - i + 1) * t
-    obra.caixa('cal', x0 + t / 2, (yOeste + i * rO + fundo) / 2, OESTE.z, t + 0.02, yOeste + i * rO - fundo, OESTE.meia * 2)
+    obra.caixa('degrauEspelho', x0 + t / 2, (yOeste + i * rO + fundo) / 2, OESTE.z, t + 0.02, yOeste + i * rO - fundo, OESTE.meia * 2)
+    obra.caixa('degrau', x0 + t / 2 - 0.02, yOeste + i * rO + 0.02, OESTE.z, t + 0.06, 0.05, OESTE.meia * 2)
     obra.deck(x0 + t / 2, OESTE.z, t / 2, OESTE.meia, yOeste + i * rO)
   }
   for (const s of [-1, 1]) {
@@ -280,7 +292,9 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
   const cop = []
   const q = new THREE.Quaternion()
   const Y = new THREE.Vector3(0, 1, 0)
-  for (const [lx, lz, tipo] of [[-30, -28, 'p'], [-25, -30, 'p'], [-32, -22, 'p'], [30, 30, 'p'], [-28, 26, 'c'], [-18, 28, 'c'], [27, 17, 'c'],
+  for (const [lx, lz, tipo] of [[-30, -28, 'p'], [-25, -30, 'p'], [-32, -22, 'p'], [30, 30, 'p'],
+    // junto da balaustrada de leste, para o jardim aparecer acima dela de quem vem pela Sena Madureira
+    [34, -14, 'p'], [35, 24, 'p'], [33, -28, 'c'], [33, 15, 'c'], [31, -4, 'c'], [34, 31, 'c'], [-28, 26, 'c'], [-18, 28, 'c'], [27, 17, 'c'],
     [-30, 10, 'c'], [6, -28, 'c'], [30, -10, 'c'], [-4, 18, 'c'], [-10, 30, 'c'], [12, 24, 'p'], [-20, -10, 'c']]) {
     const [wx, wz] = obra.mundo(lx, lz)
     const e = tipo === 'p' ? cfg.marcos.palmeiraEscala * rnd.entre(0.95, 1.15) : cfg.marcos.ficusEscala * rnd.entre(0.75, 0.95)

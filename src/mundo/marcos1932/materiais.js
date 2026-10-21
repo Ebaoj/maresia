@@ -13,6 +13,9 @@ import { materialRebote, sincronizarRebote } from './rebote.js'
 // a cor é uma chave de cfg.marcos (ao vivo) ou um hex fixo (da paleta)
 const RECEITAS = {
   cal: [CAL.cal, 'cal', 2.5],
+  salitre: ['#b9ab8c', 'cal', 1.3], // o pé sujo dos muros caiados
+  degrau: ['#f4ecda', 'pedra', 0.8], // o piso do degrau, que pega a luz
+  degrauEspelho: [CAL.calVelha, 'cal', 1.5], // o espelho do degrau, um tom abaixo
   calVelha: [CAL.calVelha, 'cal', 2.5],
   moldura: ['#f3ede0', 'cal', 1.5],
   pedra: ['corPedra', 'pedra', 1.2],
@@ -20,7 +23,6 @@ const RECEITAS = {
   colunaSombra: ['#9d8661', 'pedra', 1.0],
   relogioMostrador: ['#2e2a25', null],
   relogioMarca: ['#efe6d2', null],
-  balaustre: ['corBalaustrada', 'cal', 0.8],
   vao: ['#3a2c24', null],
   madeira: ['#6b4a33', 'madeira', 0.8],
   esquadria: ['#4f6e60', 'madeira', 0.8],
@@ -72,6 +74,12 @@ export function criarMateriais(cfg) {
   mats.excelsior = materialRebote(cfg.marcos.corExcelsior, { chao: 6 })
   vivos.push([mats.excelsior, 'corExcelsior', cfg.marcos.corExcelsior])
   sincronizarRebote(cfg)
+  // os balaústres caiados (Leões, Majestic, Palácio): a mesma luz rebatida, senão a sombra deles saía cinza
+  mats.balaustre = materialRebote(cfg.marcos.corBalaustrada, { chao: 6, tam: 0.8 })
+  vivos.push([mats.balaustre, 'corBalaustrada', cfg.marcos.corBalaustrada])
+  // o muro da Praça dos Leões: cal quente com manchas grandes (a massa da textura) e a luz rebatida na sombra
+  mats.muroLeoes = materialRebote(cfg.marcos.corMuroLeoes, { chao: 6, contraste: 3.0, massa: 0.9 })
+  vivos.push([mats.muroLeoes, 'corMuroLeoes', cfg.marcos.corMuroLeoes])
   // o interior das janelas acesas e o vidro dos lampiões: não recebem luz (brilham no filtro à noite)
   mats.vaoAceso = luzFixa(new THREE.MeshBasicMaterial({ color: '#4a3a30' }), 0.6, globais.uNoite)
   mats.vaoAceso.userData.semSombra = true

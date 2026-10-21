@@ -312,7 +312,7 @@ export const PADRAO = {
     esculturasModelo: true, // as esculturas da Praça dos Leões em modelo esculpido (GLB); sem ele, a forma procedural
     // cores (da paleta: src/paleta.js, MARCOS)
     corExcelsior: '#f2e2c0',   // creme pálido (a cor de 1932 não tem fonte; hoje é creme/branco gelo)
-    rebote: 0.4,               // a luz quente que o chão devolve no lado de sombra do Excelsior (rebote.js)
+    rebote: 0.4,               // a luz quente que o chão devolve no lado de sombra (Excelsior, muro dos Leões; rebote.js)
     corRebote: '#ffc98a',      // a cor dessa luz (a pedra e a cal ao sol da tarde)
     corMajestic: '#a3563f',    // vermelho-tijolo do cartão colorizado de 1925 (indício, não prova)
     corModerno: '#e4d3b0',     // ocre muito claro (sem imagem livre da fachada)
@@ -329,6 +329,7 @@ export const PADRAO = {
     corRimCeu: '#9cc0e0',      // a cor da borda do céu
     corBalaustrada: '#ede5d3', // balaústres de massa caiados
     corPedra: '#d8cfbd',       // cantaria e meio-fio
+    corMuroLeoes: '#f0e3c8',   // a cal quente do muro e da escadaria dos Leões (o branco-cinza saía chapado)
     corColuna: '#d4bc92',      // a pedra quente da Coluna da Hora (a réplica é creme; o branco de caixa saía chapado)
     corMosaicoClaro: '#c9b38c', // pedra portuguesa clara: creme-ocre gasto (a branca estourava ao sol das 16h30)
     corMosaicoEscuro: '#45413b', // pedra portuguesa escura: cinza-carvão, não preto puro

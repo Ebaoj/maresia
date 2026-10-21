@@ -46,7 +46,7 @@ function tsl(chao) {
 }
 
 // chao: a altura do chão da obra (o rebote é mais forte perto dele)
-export function materialRebote(hex, { tex = 'cal', tam = 2.5, contraste = 2.0, chao = 0 } = {}) {
+export function materialRebote(hex, { tex = 'cal', tam = 2.5, contraste = 2.0, massa = 0.5, chao = 0 } = {}) {
   const m = new THREE.MeshToonMaterial({ color: hex, gradientMap: gradienteToon() })
   const uChao = { value: chao }
   m.onBeforeCompile = (sh) => {
@@ -59,5 +59,5 @@ export function materialRebote(hex, { tex = 'cal', tam = 2.5, contraste = 2.0, c
   }
   m.userData.tsl = tsl(chao)
   pintar(m, 'fachada-rebote')
-  return texturizar(m, { topo: tex, lado: tex, tam, contraste })
+  return texturizar(m, { topo: tex, lado: tex, tam, contraste, massa })
 }
