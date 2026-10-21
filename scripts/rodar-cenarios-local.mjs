@@ -1,15 +1,10 @@
-// Roda os cenários de testes/jogo/cenarios.js no jogo local, sem a L4 do Modal.
+// A suíte de regressão do jogo rodando, no Mac, com a GPU real.
 //
-// A suíte oficial (infra/modal-jogo/testar_jogo.py) precisa da GPU do Modal ou da T4, e nenhum dos
-// dois está com credencial agora. Esta é a versão local: o mesmo jogo, o mesmo Chrome sem
-// aceleração (swiftshader), os mesmos cenários.
+// Decisão do Joabe (20/10/2026): a suíte de regressão passa a rodar no Mac, com a GPU de verdade
+// (WebGPU em Metal), em vez de depender da L4 do Modal. Os mesmos cenários de
+// testes/jogo/cenarios.js, os mesmos critérios, o mesmo console verificado.
 //
-// ESTA NÃO É A SUÍTE. É uma checagem prévia a mais: a suíte oficial do Modal continua
-// pendente, e é ela que libera commit que mexe em src/mundo, src/jogador, src/pos ou materiais.
-//
-// O que ela NÃO prova: os quadros são muito mais lentos no swiftshader, então os cenários que
-// medem tempo de quadro reprovam por conta da máquina, não do código. Os de correção (pose,
-// cópias, sombras, pegadas, compilação) valem.
+// A janela é 1280 × 720, como na execução da T4 que valiou o M1 (18/10/2026).
 //
 // uso: node scripts/rodar-cenarios-local.mjs [url] [cenario,cenario,...]
 import { spawn } from 'node:child_process'
@@ -29,8 +24,11 @@ const perfil = mkdtempSync(join(tmpdir(), 'maresia-cenarios-'))
 // detached: o Chrome vira um grupo, e o grupo inteiro morre junto (o helper de GPU e os
 // renderers do swiftshader). Um Chrome órfão rodando a 550% de CPU trava a máquina.
 const chrome = spawn(CHROME, [
-  '--headless=new', '--no-sandbox', '--use-angle=swiftshader', '--use-gl=angle',
-  '--enable-unsafe-swiftshader', '--enable-features=Vulkan,UseSkiaRenderer',
+  '--headless=new', '--no-sandbox',
+  // o WebGPU precisa do Dawn: --enable-unsafe-webgpu libera o adaptador e o
+  // --use-angle=metal usa a GPU de verdade da maquina (no Mac, o Dawn fala Metal)
+  '--enable-unsafe-webgpu', '--use-angle=metal',
+  '--enable-features=Vulkan,UseSkiaRenderer',
   `--remote-debugging-port=${PORTA}`, `--user-data-dir=${perfil}`,
   '--window-size=1280,720', 'about:blank',
 ], { stdio: 'ignore', detached: true })
@@ -84,6 +82,18 @@ try {
   await cmd('Runtime.enable')
   await cmd('Log.enable')
   await cmd('Page.enable')
+  // o renderizador e escolhido pelo config salvo no navegador: escreve antes de a
+  // pagina carregar, para o jogo ja nascer no renderizador pedido
+  await cmd('Page.addScriptToEvaluateOnNewDocument', {
+    source: `(() => {
+      try {
+        const chave = 'maresia.config.v8'
+        const atual = JSON.parse(localStorage.getItem(chave) || '{}')
+        atual.desempenho = { ...(atual.desempenho || {}), renderizador: 'webgpu' }
+        localStorage.setItem(chave, JSON.stringify(atual))
+      } catch (e) { console.error('nao deu para gravar o renderizador:', e) }
+    })()`,
+  })
   await cmd('Page.navigate', { url })
 
   // o jogo precisa montar: no swiftshader leva um par de minutos
@@ -94,12 +104,18 @@ try {
     const v = await avaliar('!!window.maresia?.cena')
     if (v.valor) { pronto = true; break }
   }
+  const estado = (await avaliar('JSON.stringify({ webgpu: window.maresia?.webgpu ?? null, renderizador: window.maresia?.cfg?.desempenho?.renderizador ?? null, quebrados: (window.__shadersQuebrados || []).length })', false)).valor
+  console.log('--- estado ---', estado)
   if (!pronto) {
     console.log('--- o jogo NAO montou ---')
     console.log(avisos.slice(0, 30).join('\n'))
     codigo = 1
+  } else if (estado && JSON.parse(estado).webgpu !== true) {
+    // a suite roda com a GPU real: abrir em WebGL mede outra coisa
+    console.log('--- ATENCAO: o jogo nao abriu em WebGPU, a suite nao vale ---')
+    codigo = 1
   } else {
-    console.log('--- o jogo montou ---')
+    console.log('--- o jogo montou (WebGPU) ---')
     let falhas = 0
     for (const nome of cenarios) {
       const r = await avaliar(`import('/testes/jogo/cenarios.js').then(m => m.cenarios.${nome}(window.maresia))`)

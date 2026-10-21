@@ -111,9 +111,18 @@ monetização ou qualquer coisa que vá ao ar. Projeto grande segue épico com f
 Regra do KAN-62 aplicada aqui: bug corrigido não pode voltar sem um teste avisar.
 
 - `npm test`: testes rápidos da lógica (`testes/unidade`, Vitest, segundos). Rodar antes de todo commit.
-- Jogo rodando num navegador de verdade na L4 do Modal (`testes/jogo/cenarios.js`, ~5 min), de `arte/`:
-  `./modal.sh run ../infra/modal-jogo/testar_jogo.py`. Rodar antes de commit que mexe em `src/jogador`,
-  `src/mundo`, `src/pos` ou materiais. Também reprova erro no console, shader quebrado, material sem gLuz.
+- **20/10/2026, decisão do Joabe: a suíte de regressão passa a rodar no Mac, com a GPU real.**
+  `node scripts/rodar-cenarios-local.mjs`: o mesmo Chrome sem janela do `scripts/olhar-jogo.mjs`, com
+  WebGPU em Metal, janela 1280 × 720, os mesmos cenários de `testes/jogo/cenarios.js` e o mesmo console
+  verificado (erro, shader quebrado, material sem gLuz). Rodar antes de commit que mexe em `src/jogador`,
+  `src/mundo`, `src/pos` ou materiais.
+  - **A máquina precisa estar ociosa**: load abaixo de 3 e nenhum outro Chrome headless. Sob carga, os
+    cenários de ritmo reprovam por conta da máquina, e a medição não vale como linha de base.
+  - **Não se mexe em tolerância nem em cenário.** Se algum reprovar, o número vai para o Joabe e o
+    trabalho para.
+  - O caminho do Modal continua disponível, mas não é mais o da suíte do dia a dia.
+- O caminho do Modal (`.modal.sh run ../infra/modal-jogo/testar_jogo.py`, de `arte/`) continua de pé para
+  quando o cofre estiver aberto, com a mesma lista de cenários.
 - Exceção neste fechamento M1 (18/10/2026): na retomada remota, o usuário prosseguiu com a alternativa AWS
   proposta por indisponibilidade do Touch ID do cofre. A suíte compartilhada foi executada integralmente na T4,
   com os mesmos cenários e critérios do Modal, em 1280 × 720. Evidências em `docs/capturas/kan73/m1-regressao-aws.*`.
