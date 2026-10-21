@@ -8,8 +8,8 @@
 //
 // O que havia nela em 1932 está em docs/mapa-1932.md, com a marca de confiança:
 //   D  documentado  - mosaico no chão e jardins (reforma de 1920, prefeito Godofredo
-//                     Maciel); coreto coberto no centro (palanque de 1923); postes de
-//                     luz da Light no contorno.
+//                     Maciel); coreto coberto no centro (palanque de 1923); lampioes
+//                     a gas no limite (a energia eletrica so chegou em 8/dez/1934).
 //   H  hipótese     - quantos jardins, onde eles ficam, o desenho do coreto.
 // Não entram (anacronismo): a Coluna da Hora (o relógio é de 1933) e os quiosques
 // de café dos quatro cantos (foram retirados na mesma reforma de 1920).
@@ -57,7 +57,7 @@ export function distanciaDaBorda(x, z) {
 }
 
 // o ponto do contorno na direção `ang`, na borda de fora (a calçada): serve para
-// Posting os postes da Light em volta da praça
+// o lampião a gás em volta da praça
 export function bordaEm(ang, folga = 0) {
   const r = raioEm(ang) + folga
   return [CENTRO[0] + Math.cos(ang) * r, CENTRO[1] + Math.sin(ang) * r]

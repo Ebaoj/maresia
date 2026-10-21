@@ -118,9 +118,11 @@ async function iniciar() {
   const casasPalha = criarVilas(cena)
   const nObjetosFatia = criarObjetosFatia(cena, casasPalha) // fatia vertical: densidade na altura do personagem
   void nObjetosFatia
+  // A praça vem antes da rua: assim os canteiros, o coreto e os lampiões já estão
+  // reservados na grade de ocupação, e nenhum poste da rua cai em cima
+  criarPraca(cena) // a Praça do Ferreira: coreto coberto, jardins, bancos e lampiões a gás
   const lugares = criarRua(cena, predios, grade)
   marcar('rua')
-  criarPraca(cena) // a Praça do Ferreira: coreto coberto, jardins e bancos (docs/mapa-1932.md)
   criarBondes(cena) // os trilhos das linhas de bonde da Light sobre a rede viária de 1932
   criarArvores(cena, predios, grade)
   marcar('arvores')

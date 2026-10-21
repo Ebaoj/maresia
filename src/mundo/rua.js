@@ -9,7 +9,7 @@ import {
   NIVEL_CIDADE, pesos,
 } from './mapa.js'
 import { trechosJogo } from './fortaleza1932.js'
-import { CENTRO as CENTRO_PRACA, CONTORNO, dentroDaPraca } from './praca1932.js'
+import { dentroDaPraca } from './praca1932.js'
 import { RUAS, comprimentoRua, pontoNaRua } from './casario1932.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { LIMITES, pesoCidade1932 } from './mapa.js'
@@ -107,7 +107,10 @@ function geometriaFios(fios, raio = 0.028) {
   return g
 }
 
-// 1932: postes de madeira da Light nas ruas do centro (fios de luz e do bonde), um a cada ~30 m.
+// 1932: postes de madeira nas ruas do centro, com o fio suspenso do bonde (a
+// The Ceará Tramway Light & Power roda bondes elétricos desde 1913) e o fio do
+// telégrafo. A iluminação pública das ruas era a gás, lampião em braço de
+// ferro na fachada (src/mundo/cenografia.js).
 // Nada de poste de concreto, transformador ou "gato" (saíram em 16/10/2026).
 function postesEFios(cena, predios, grade) {
   const favela = []
@@ -121,6 +124,9 @@ function postesEFios(cena, predios, grade) {
     if (comp < 14) continue
     const atual = []
     const passo = 10
+    let ultimoD = -passo // a distancia do ultimo poste aceito: um poste novo so entra
+    // depois de um passo inteiro, senao a linha que se quebra deixa dois postes
+    // colados na retomada
     for (let d = 0; d <= comp; d += passo) {
       const [x, z, nx, nz] = pontoNaRua(rua, d)
       const px = x + nx * 0.9
@@ -128,7 +134,12 @@ function postesEFios(cena, predios, grade) {
       // a praça é livre: nenhum poste no meio dela, e o fio da rua para na borda
       const naPraca = dentroDaPraca(px, pz)
       const ok = !naPraca && distCosta(px, pz) > larguraPraia(px) + FIM_AVENIDA + 4 && ocupacao.livre(px, pz, 0.5, 0.5)
-      if (!ok) { if (atual.length > 1) linhas.push(atual); atual.length = 0; continue }
+      if (!ok || d - ultimoD < passo) {
+        if (atual.length > 1) linhas.push(atual)
+        atual.length = 0
+        if (!ok) continue
+      }
+      ultimoD = d
       atual.push(new THREE.Vector3(px, alturaTerreno(px, pz), pz))
     }
     if (atual.length > 1) linhas.push(atual)
@@ -139,49 +150,22 @@ function postesEFios(cena, predios, grade) {
   const fios = []
   const topo = (p, k) => new THREE.Vector3(p.x + (k - 1) * 0.75, p.y + 8.35, p.z)
   for (const linha of linhas) {
-    linha.forEach((p) => postes.push(p))
+    // o poste e reto: o yaw e um multiplo de 45 graus, senao a haste de quatro
+    // faces (que esta girada de 45) parece torta
+    linha.forEach((p) => postes.push({ p, yaw: Math.floor(rnd.entre(0, 4)) * (Math.PI / 4) }))
     for (let i = 0; i < linha.length - 1; i++) {
       const a = linha[i]
       const b = linha[i + 1]
       for (let k = 0; k < 2; k++) fios.push(catenaria(topo(a, k * 2), topo(b, k * 2), rnd.entre(0.4, 0.8)))
     }
   }
-  // A Light iluminava a praça pelo contorno: poste na calçada da borda, com o fio
-  // dando a volta. O meio fica livre (ver docs/mapa-1932.md, item 3a).
-  const anel = []
-  for (let i = 0; i < CONTORNO.length; i++) {
-    const [ax, az] = CONTORNO[i]
-    const [bx, bz] = CONTORNO[(i + 1) % CONTORNO.length]
-    const d = Math.hypot(bx - ax, bz - az)
-    const n = Math.max(1, Math.round(d / 12))
-    for (let k = 0; k < n; k++) {
-      const t = k / n
-      const x = ax + (bx - ax) * t
-      const z = az + (bz - az) * t
-      const dx = CENTRO_PRACA[0] - x
-      const dz = CENTRO_PRACA[1] - z
-      const r = Math.hypot(dx, dz) || 1
-      // onde a praça é estreita não cabe poste na calçada
-      if (r < 9) continue
-      const px = x + (dx / r) * 0.6 // na calçada, rente à borda
-      const pz = z + (dz / r) * 0.6
-      anel.push(new THREE.Vector3(px, alturaTerreno(px, pz), pz))
-    }
-  }
-  const topoAnel = (p, k) => {
-    const dx = p.x - CENTRO_PRACA[0]
-    const dz = p.z - CENTRO_PRACA[1]
-    const r = Math.hypot(dx, dz) || 1
-    return new THREE.Vector3(p.x + (dx / r) * (k - 1) * 0.75, p.y + 8.35, p.z + (dz / r) * (k - 1) * 0.75)
-  }
-  for (const p of anel) postes.push(p)
-  for (let i = 0; i < anel.length; i++) {
-    const a = anel[i]
-    const b = anel[(i + 1) % anel.length]
-    for (let k = 0; k < 2; k++) fios.push(catenaria(topoAnel(a, k * 2), topoAnel(b, k * 2), rnd.entre(0.4, 0.8)))
-  }
+  // A praça não tem poste de luz: em 1932 a iluminação dela ainda era a gás, e o
+  // lampião de ferro fica no limite da praça (src/mundo/praca.js). O anel de
+  // postes da Light com fio dando a volta era anacrônico — a energia elétrica só
+  // chegou à Praça do Ferreira em 8/dez/1934 — e o fio dele cortava a praça em
+  // diagonal por causa do "braço" falso do contorno.
   for (const p of favela) {
-    postes.push(p)
+    postes.push({ p, yaw: 0 })
     const vizinhos = favela.filter((q) => q !== p).sort((u, v) => u.distanceToSquared(p) - v.distanceToSquared(p)).slice(0, 2)
     for (const q of vizinhos) {
       if (q.distanceTo(p) > 40) continue
@@ -194,8 +178,8 @@ function postesEFios(cena, predios, grade) {
     }
   }
 
-  const matrizes = postes.map((p) => matriz(p.x, p.y - 0.3, p.z, rnd.entre(-0.15, 0.15)))
-  postes.forEach((p) => adicionarCirculo(p.x, p.z, 0.25))
+  const matrizes = postes.map(({ p, yaw }) => matriz(p.x, p.y - 0.3, p.z, yaw))
+  postes.forEach(({ p }) => adicionarCirculo(p.x, p.z, 0.25))
   instanciar(cena, geometriaPoste(), toonVertice(), matrizes, null, 'postes', { peso: 0.6 })
 
   const malhaFios = new THREE.Mesh(geometriaFios(fios), toon('#231a33'))

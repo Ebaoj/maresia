@@ -4,27 +4,30 @@
 //   D  1920: Maciel fecha o poço central, manda retirar os quiosques de café dos
 //      quatro cantos, mosaica a praça e faz vários jardins.
 //   D  1923: o palanque do centro é trocado por outro, coberto: o coreto da banda.
-//   D  a Light iluminava a praça; o poste fica na calçada do contorno.
+//   D  a iluminação da praça era a gás: a energia elétrica da Light só chegou lá
+//      em 8/dez/1934, e o lampião de ferro fica no limite da praça.
 //   H  quantos jardins são, onde eles ficam e o desenho do coreto.
 //
 // Não entram (anacronismo): a Coluna da Hora (o relógio da praça é de 1933) e os
 // quiosques de café dos quatro cantos (retirados na reforma de 1920).
 //
 // O que este módulo monta: o coreto coberto no centro, quatro jardins com grade de
-// ferro, arvoreira e bancos, e reserva o terreo na grade de ocupacao para as
-// arvores soltas nao cairem em cima.
+// ferro, arvoreira e bancos, os lampiões a gás do limite, e reserva o terreo na
+// grade de ocupacao para as arvores soltas nao cairem em cima.
 
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { alturaTerreno } from './terreno.js'
 import { ocupacao } from './ocupacao.js'
-import { toon, toonVertice } from '../materiais.js'
+import { toon, toonVertice, luzFixa } from '../materiais.js'
 import { colorir } from './cenografia.js'
 import { geometriaBanco } from './rua.js'
 import { instanciarEmBlocos } from './blocos.js'
 import { criarAleatorio } from '../utils.js'
 import { cajueiro, murici, oiti } from './especies.js'
-import { CENTRO, RAIO_MAX, dentroDaPraca, raioEm } from './praca1932.js'
+import { adicionarCirculo } from './colisao.js'
+import { globais } from '../globais.js'
+import { CENTRO, CONTORNO, RAIO_MAX, dentroDaPraca, raioEm } from './praca1932.js'
 
 const rnd = criarAleatorio(1932)
 
@@ -138,6 +141,91 @@ function geometriaArbusto(rndA) {
   return g.toNonIndexed()
 }
 
+// ---------- lampião a gás ----------
+
+// Em 1932 a iluminação da praça era a gás: a energia elétrica da Light só
+// chegou à Praça do Ferreira em 8/dez/1934 (Aderaldo/UECE, Diário do Nordeste
+// de 28/08/2022, Acervo Fortaleza), e antes disso quem iluminava a praça era a
+// Companhia do Gás. O lampião de ferro vai no limite da praça, um a cada ~30 m
+// (a distância que João Nogueira deu para a iluminação de 1848), e sem fio
+// nenhum: o anel de postes da Light com o fio dando a volta era anacrônico —
+// e o fio dele cortava a praça em diagonal, por causa do "braço" falso do
+// contorno antigo. As contas e as fontes estão em docs/mapa-1932.md.
+const PASSO_LAMPIAO = 10.4 // 30 m de rua: na praça são 0,348 un por metro
+const FOLGA_LAMPIAO = 0.9 // o lampião fica na calçada, um pouco para dentro
+
+// o ponto do contorno a uma distancia d do começo (o contorno é fechado)
+function pontoNoContorno(d) {
+  let acc = 0
+  for (let i = 0; i < CONTORNO.length; i++) {
+    const a = CONTORNO[i]
+    const b = CONTORNO[(i + 1) % CONTORNO.length]
+    const seg = Math.hypot(b[0] - a[0], b[1] - a[1])
+    if (acc + seg >= d) {
+      const t = seg > 0 ? (d - acc) / seg : 0
+      return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+    }
+    acc += seg
+  }
+  return null
+}
+
+// o lampião de pé: pedestal e coluna de ferro fundido, caixa de vidro de quatro
+// faces e chapéu piramidal. Sem cor por vértice (o material é liso): o atributo
+// `color` faz a malha sumir no WebGPU (docs/motor-f4-otimizacao-webgpu.md).
+function geometriaLampiaoPe() {
+  const partes = [
+    new THREE.CylinderGeometry(0.16, 0.2, 0.2, 8).translate(0, 0.1, 0),
+    new THREE.CylinderGeometry(0.05, 0.085, 3.0, 8).translate(0, 1.7, 0),
+    new THREE.CylinderGeometry(0.1, 0.1, 0.12, 8).translate(0, 2.56, 0),
+    new THREE.BoxGeometry(0.36, 0.06, 0.36).translate(0, 3.23, 0),
+    new THREE.ConeGeometry(0.3, 0.32, 4).rotateY(Math.PI / 4).translate(0, 3.9, 0),
+    new THREE.SphereGeometry(0.05, 6, 5).translate(0, 4.1, 0),
+  ]
+  // as quinas da caixa de vidro
+  for (const [x, z] of [[-0.15, -0.15], [0.15, -0.15], [-0.15, 0.15], [0.15, 0.15]]) {
+    partes.push(new THREE.BoxGeometry(0.035, 0.52, 0.035).translate(x, 3.5, z))
+  }
+  return mergeGeometries(partes)
+}
+
+// onde ficam os lampiões: no limite da praça, na calçada, um a cada ~30 m
+function lampioesDaPraca() {
+  let perimetro = 0
+  for (let i = 0; i < CONTORNO.length; i++) {
+    const a = CONTORNO[i]
+    const b = CONTORNO[(i + 1) % CONTORNO.length]
+    perimetro += Math.hypot(b[0] - a[0], b[1] - a[1])
+  }
+  const lista = []
+  const q = new THREE.Quaternion()
+  const Y = new THREE.Vector3(0, 1, 0)
+  const um = new THREE.Vector3(1, 1, 1)
+  let ultimo = null
+  for (let d = PASSO_LAMPIAO / 2; d < perimetro; d += PASSO_LAMPIAO) {
+    const p = pontoNoContorno(d)
+    if (!p) break
+    const dx = CENTRO[0] - p[0]
+    const dz = CENTRO[1] - p[1]
+    const r = Math.hypot(dx, dz) || 1
+    const x = p[0] + (dx / r) * FOLGA_LAMPIAO
+    const z = p[1] + (dz / r) * FOLGA_LAMPIAO
+    // nunca no meio da praça, nunca em cima de canteiro ou do coreto
+    if (!dentroDaPraca(x, z)) continue
+    if (!ocupacao.livre(x, z, 0.45, 0.45)) continue
+    // e nunca colado no lampião anterior
+    if (ultimo && Math.hypot(x - ultimo[0], z - ultimo[1]) < PASSO_LAMPIAO * 0.55) continue
+    ultimo = [x, z]
+    // a lanterna de quatro faces alinhada com o mundo, para não parecer torta
+    const yaw = Math.round(Math.atan2(dz, dx) / (Math.PI / 2)) * (Math.PI / 2)
+    q.setFromAxisAngle(Y, yaw)
+    lista.push(new THREE.Matrix4().compose(new THREE.Vector3(x, alturaTerreno(x, z), z), q, um))
+    ocupacao.marcar(x, z, 0.4, 0.4)
+    adicionarCirculo(x, z, 0.25)
+  }
+  return lista
+}
+
 export function criarPraca(cena) {
   const y0 = alturaTerreno(CENTRO[0], CENTRO[1])
   const m = new THREE.Matrix4()
@@ -215,5 +303,17 @@ export function criarPraca(cena) {
     instanciarEmBlocos(cena, geoArvores[esp], mat, lista, null, { nome: `arvores-praca-${esp}`, placa: true })
   }
 
-  return { jardins: jardins.length, coreto: [CENTRO[0], y0, CENTRO[1]] }
+  // ---- os lampiões a gás do limite da praça (a luz elétrica só chegou em 1934)
+  const lampioes = lampioesDaPraca()
+  if (lampioes.length) {
+    instanciarEmBlocos(cena, geometriaLampiaoPe(), toon('#2b2622'), lampioes, null, { nome: 'lampioes-praca' })
+    // o vidro: apagado de dia, quente à noite (a luz fixa vem do uNoite)
+    const vidro = luzFixa(new THREE.MeshBasicMaterial({ color: '#e8e0c8' }), 1, globais.uNoite)
+    instanciarEmBlocos(cena, new THREE.BoxGeometry(0.3, 0.48, 0.3).translate(0, 3.5, 0), vidro, lampioes, null, {
+      nome: 'lampioes-praca-vidro',
+      sombra: false,
+    })
+  }
+
+  return { jardins: jardins.length, coreto: [CENTRO[0], y0, CENTRO[1]], lampioes: lampioes.length }
 }
