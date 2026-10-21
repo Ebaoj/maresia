@@ -43,6 +43,7 @@ export const PADRAO = {
     // 3b (revisão do orquestrador, alvo forte-1932-joabe): menos véu, céu petróleo, faixa de valor larga, sombra fria
     arcCeuTopo: '#1c4a63',       // azul petróleo do alto do céu de dia
     arcCeuPetroleo: 0.85,        // quanto o alto do céu puxa para ele
+    arcCeuPincel: 1.0,           // item 5: riscos de pincel seco, grão e banco de cúmulos no horizonte
     arcCeuMeio: '#6fa8bc',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
     arcGradeNeutro: 0.12,        // quanto o neutro puxa para o cal na gradação (0,45 dava véu bege em tudo)
     arcArTinta: 0.45,            // força da cor do ar na distância (0,75 lavava o fundo)

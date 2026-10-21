@@ -57,6 +57,7 @@ export function criarPainel(cfg) {
   arc.addColor(e, 'arcCeuTopo').name('céu: alto (petróleo)')
   arc.add(e, 'arcCeuPetroleo', 0, 1, 0.01).name('céu: força do petróleo')
   arc.addColor(e, 'arcCeuMeio').name('céu: meio')
+  arc.add(e, 'arcCeuPincel', 0, 2, 0.01).name('céu: pincel seco e cúmulos')
   arc.add(e, 'arcGradeNeutro', 0, 0.6, 0.01).name('gradação: neutro vira cal')
   arc.add(e, 'arcArTinta', 0, 1, 0.01).name('cor do ar na distância')
   arc.add(e, 'arcPreto', 0, 0.3, 0.005).name('níveis: preto')

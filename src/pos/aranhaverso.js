@@ -620,6 +620,7 @@ export class Aranhaverso {
     // quadro e recompilava todos os materiais (KAN-70 T3, cenário semRecompilarParado)
     gl.uArcRim.value = arc ? e.arcRecorte : 0
     gl.uArcCeu.value = e.arcCeu
+    gl.uArcCeuPincel.value = e.arcCeuPincel ?? 0
     gl.uArcDesgaste.value = arc ? (e.arcDesgaste ?? 0) : 0
     u.uArcAresta.value = arc ? (e.arcAresta ?? 0) : 0
     gl.uArcPintado.value = e.arcCeuPintado ?? 1
