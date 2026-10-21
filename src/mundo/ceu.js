@@ -57,7 +57,7 @@ export function direcaoSol(hora) {
 }
 
 
-export function criarCeu(cena) {
+export function criarCeu(cena, cfg = null) {
   const uniformes = {
     uTopo: { value: new THREE.Color() },
     uHor: { value: new THREE.Color() },
@@ -71,6 +71,7 @@ export function criarCeu(cena) {
     uArcPintado: globais.uArcPintado,
     uArcCeuPincel: globais.uArcCeuPincel,
     uCeuRampa: { value: 0.45 },
+    uAzul: { value: 0 }, // meio-dia de agosto: tira a faixa quente do horizonte (cfg.estilo.arcCeuAzul)
   }
   const ceu = new THREE.Mesh(
     new THREE.SphereGeometry(1800, 48, 24),
@@ -108,26 +109,34 @@ export function criarCeu(cena) {
 
   cena.fog = new THREE.Fog(0xffffff, 140, 900)
 
-  const nuvens = criarNuvens(cena)
+  const nuvens = criarNuvens(cena, cfg?.estilo?.nuvens ?? 70)
 
   const corDourada = new THREE.Color()
   const corPetroleo = new THREE.Color()
   const corMeio = new THREE.Color()
   const corCiano = new THREE.Color()
   const corDouradaSombra = new THREE.Color()
+  const corAzul = new THREE.Color()
   let cache = null // CacheSombra (F4): com ele ligado, a pose da luz fica congelada enquanto o mapa dos parados vale
 
   function atualizar(hora, centro, dt, cfg) {
     const p = paletaDaHora(hora)
+    const dirSol = direcaoSol(hora)
+    const deDia = dirSol.y > 0
+    // MEIO-DIA DE AGOSTO (21/10/2026, pedido do Joabe): com o sol alto o céu de Fortaleza na estação seca é azul
+    // fundo, limpo e saturado, só um pouco mais claro no horizonte. Nasce da altura do sol: 9h já ganha metade,
+    // 10h a 14h tudo, 16h nada (a hora dourada e a noite ficam como estavam)
+    const azul = deDia && cfg.estilo.visual === 'arcane' ? THREE.MathUtils.smoothstep(dirSol.y, 0.45, 0.8) * (cfg.estilo.arcCeuAzul ?? 0) : 0
     // 3b (alvo forte-1932-joabe): de dia o alto do céu vai para o azul petróleo fundo; só o horizonte fica quente
     if (cfg.estilo.visual === 'arcane') {
       const k = (cfg.estilo.arcCeuPetroleo ?? 0) * (1 - p.noite)
       p.topo.lerp(corPetroleo.set(cfg.estilo.arcCeuTopo || '#1c4a63'), k)
       // e o horizonte fica claro e só levemente quente (o pêssego cheio virava um véu sobre a cena)
       p.hor.lerp(corPetroleo.set('#efe6d2'), k * 0.45) // CAL.cal
+      // ao meio-dia o alto é azul fundo e o horizonte azul claro (o branco estourado do sertão não é o da costa)
+      p.topo.lerp(corAzul.set(cfg.estilo.arcCeuAzulTopo || '#1a56b8'), azul)
+      p.hor.lerp(corAzul.set(cfg.estilo.arcCeuAzulHorizonte || '#9cc3ea'), azul)
     }
-    const dirSol = direcaoSol(hora)
-    const deDia = dirSol.y > 0
     // a luz que projeta sombra anda em passos (a cada cfg.mundo.passoSombraMin minutos de jogo, ~1°): com o
     // sol girando um pouco a cada quadro, o mapa de sombra girava junto e a borda das sombras tremia
     const passoH = Math.max(0, cfg.mundo.passoSombraMin ?? 4) / 60
@@ -148,10 +157,14 @@ export function criarCeu(cena) {
 
     uniformes.uTopo.value.copy(p.topo)
     uniformes.uHor.value.copy(p.hor)
-    uniformes.uCeuRampa.value = cfg.estilo.arcCeuRampa ?? 0.45
+    uniformes.uCeuRampa.value = THREE.MathUtils.lerp(cfg.estilo.arcCeuRampa ?? 0.45, cfg.estilo.arcCeuAzulRampa ?? 0.32, azul)
+    uniformes.uAzul.value = azul
     // a parada do meio: no visual Arcane, de dia, um azul claro esverdeado; senão o meio do caminho (o de antes)
     uniformes.uMeio.value.copy(p.hor).lerp(p.topo, 0.5)
-    if (cfg.estilo.visual === 'arcane') uniformes.uMeio.value.lerp(corMeio.copy(p.topo).lerp(corCiano.set(cfg.estilo.arcCeuMeio || '#6fa8bc'), 0.85), (cfg.estilo.arcCeuPetroleo ?? 0) * (1 - p.noite))
+    if (cfg.estilo.visual === 'arcane') {
+      uniformes.uMeio.value.lerp(corMeio.copy(p.topo).lerp(corCiano.set(cfg.estilo.arcCeuMeio || '#6fa8bc'), 0.85), (cfg.estilo.arcCeuPetroleo ?? 0) * (1 - p.noite))
+      uniformes.uMeio.value.lerp(corAzul.set(cfg.estilo.arcCeuAzulMeio || '#3f84d6'), azul)
+    }
     globais.uSolDir.value.copy(dirSol)
     globais.uSolCor.value.copy(p.luz)
     globais.uNoite.value = p.noite
@@ -206,6 +219,8 @@ export function criarCeu(cena) {
       // dourada esquenta para o horizonte (o ar fica dourado, como no fundo da referência)
       // (sertão: de dia o ar é poeira clara e quente, arcArPoeira; o azul só como alívio)
       globais.uArCor.value.copy(uniformes.uMeio.value).lerp(p.hor, THREE.MathUtils.clamp((cfg.estilo.arcArPoeira ?? 0.2) + 0.7 * dourada + 0.4 * p.noite, 0, 1))
+      // (meio-dia de agosto: pouca névoa, o ar da distância é azul claro, não poeira)
+      globais.uArCor.value.lerp(corAzul.set(cfg.estilo.arcCeuAzulAr || '#a9c6e4'), azul)
     } else {
       globais.uArCor.value.copy(p.hor).lerp(p.topo, 0.45 * (1 - quente))
     }
@@ -225,7 +240,7 @@ export function criarCeu(cena) {
   return { atualizar, sol, usarCache: (c) => { cache = c } }
 }
 
-function criarNuvens(cena) {
+function criarNuvens(cena, quantas = 70) {
   const rnd = criarAleatorio(7)
   const material = pintar(new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: gradienteToon(), fog: false }), 'nuvem-pintada')
   material.emissive = new THREE.Color(0x000000)
@@ -234,9 +249,10 @@ function criarNuvens(cena) {
   // cúmulos de alísio (direção de arte): pequenos, base reta, topo fofo, em fileiras ("ruas de
   // nuvens") na direção do vento. Nada de bolhas grandes isoladas.
   const RUAS = 6
-  for (let n = 0; n < 54; n++) {
+  for (let n = 0; n < quantas; n++) {
     const partes = []
-    const tam = rnd.entre(0.6, 1.4)
+    // a maioria pequena (o cúmulo de bom tempo do alísio), algumas maiores
+    const tam = rnd.chance(0.75) ? rnd.entre(0.45, 0.9) : rnd.entre(0.9, 1.4)
     const qtd = 6 + Math.floor(rnd.entre(0, 6))
     for (let i = 0; i < qtd; i++) {
       const r = rnd.entre(6, 13) * tam
@@ -259,7 +275,7 @@ function criarNuvens(cena) {
     const rua = n % RUAS
     const z = -1000 + (rua + rnd.entre(-0.3, 0.3)) * (2000 / RUAS)
     m.position.set(rnd.entre(-1200, 1200), rnd.entre(150, 230), z)
-    m.userData.vel = rnd.entre(3, 5)
+    m.userData.vel = rnd.entre(0.75, 1.25) // vezes cfg.estilo.nuvensVento
     lista.push(m)
     grupo.add(m)
   }
@@ -270,9 +286,15 @@ function criarNuvens(cena) {
       const ke = cfg.estilo.visual === 'arcane' ? 0.45 : 1
       material.emissive.copy(p.hor).multiplyScalar(0.35 * ke).add(p.ceu.clone().multiplyScalar(0.15 * ke))
       material.color.copy(p.luz).lerp(new THREE.Color(1, 1, 1), 0.5)
+      // o alísio sopra de leste (+x): as nuvens vão para oeste. Elas ficam numa janela de 2400 m em volta do jogador
+      // (antes iam para leste e ficavam presas em volta da origem do mapa)
+      const v = cfg.estilo.nuvensVento ?? 4
       for (const m of lista) {
-        m.position.x += m.userData.vel * dt
-        if (m.position.x > 1200) m.position.x = -1200
+        m.position.x -= m.userData.vel * v * dt
+        if (m.position.x < centro.x - 1200) m.position.x += 2400
+        else if (m.position.x > centro.x + 1200) m.position.x -= 2400
+        if (m.position.z < centro.z - 1000) m.position.z += 2000
+        else if (m.position.z > centro.z + 1000) m.position.z -= 2000
       }
     },
   }

@@ -105,7 +105,7 @@ async function iniciar() {
   const terreno = criarTerreno(cena, cfg)
   marcar('terreno')
   const { mapaAltura } = terreno
-  const ceu = criarCeu(cena)
+  const ceu = criarCeu(cena, cfg)
   const toque = criarToque(renderer, mapaAltura, cfg)
   const mar = criarMar(cena, mapaAltura, cfg, toque.publico)
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)

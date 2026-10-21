@@ -48,6 +48,17 @@ export const PADRAO = {
     arcArPoeira: 0.55,           // sertão: de dia a distância vai para a poeira clara e quente do horizonte (0,2 = o azul frio do item 6)
     arcCeuPincel: 1.0,           // item 5: riscos de pincel seco, grão e banco de cúmulos no horizonte
     arcCeuMeio: '#d3d9d0',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
+    // céu de agosto em Fortaleza ao meio-dia (21/10/2026, pedido do Joabe): azul fundo, limpo e saturado da estação seca,
+    // só um pouco mais claro no horizonte, pouca névoa. Entra com o sol alto (das ~9h às ~15h); a hora dourada e a noite
+    // ficam como estavam
+    arcCeuAzul: 1.0,               // força (0 = o céu desbotado do sertão em todas as horas)
+    arcCeuAzulTopo: '#1a56b8',     // o alto
+    arcCeuAzulMeio: '#3f84d6',     // o meio
+    arcCeuAzulHorizonte: '#9cc3ea', // o horizonte: azul claro, não mais o branco estourado
+    arcCeuAzulRampa: 0.32,         // altura (seno) em que o azul fundo chega com o sol alto
+    arcCeuAzulAr: '#a9c6e4',       // a cor do ar na distância ao meio-dia (pouca névoa, azulada)
+    nuvens: 70,                    // cúmulos de alísio no céu (quantos); vale ao recarregar
+    nuvensVento: 4.0,              // velocidade com que vão para oeste, levados pelo alísio de leste (m/s)
     arcGradeNeutro: 0.12,        // quanto o neutro puxa para o cal na gradação (0,45 dava véu bege em tudo)
     arcArTinta: 0.75,            // força da cor do ar na distância (conceito-sertão: o fundo lavado, pálido, de baixo contraste; o peso cresce no fundo, km * (0,4 + 0,6 km), então o meio não lava)
     arcArClareia: 0.45,          // item 6: quanto o fundo clareia para a cor do ar (perspectiva atmosférica)
