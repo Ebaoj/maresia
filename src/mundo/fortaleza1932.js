@@ -89,10 +89,12 @@ export const LUGARES_RESERVADOS = [
   ['parqueLiberdade', 16], ['favela1932', 8],
 ].map(([chave, raio]) => [chave, raio * esticamento(...LUGARES[chave])])
 
-// bairros (para o nome na tela): o mais perto vence
+// bairros (para o nome na tela): o mais perto vence. O 4º número (opcional) encurta o alcance de um
+// lugar pequeno: a distância até ele conta multiplicada (o Poço da Draga é a vila junto da Ponte Velha,
+// não pode tomar o Passeio Público do Centro: testes/unidade/bairros.test.js).
 const BAIRROS = [
   ['Barra do Ceará', -38.595, -3.705], ['Pirambu', -38.565, -3.71], ['Floresta', -38.575, -3.72], ['Jacarecanga', -38.548, -3.722],
-  ['Moura Brasil', -38.538, -3.719], ['Centro', -38.528, -3.728], ['Praia Formosa', -38.532, -3.7175], ['Poço da Draga', -38.5275, -3.7192],
+  ['Moura Brasil', -38.538, -3.719], ['Centro', -38.528, -3.7255], ['Praia Formosa', -38.532, -3.7175], ['Poço da Draga', -38.521, -3.7195, 1.5],
   ['Praia de Iracema', -38.517, -3.7185], ['Prainha', -38.52, -3.724], ['Outeiro', -38.515, -3.73], ['Aldeota', -38.505, -3.735],
   ['Meireles', -38.495, -3.725], ['Mucuripe', -38.478, -3.718], ['Alagadiço', -38.556, -3.737], ['Otávio Bonfim', -38.548, -3.733],
   ['Benfica', -38.537, -3.742], ['Joaquim Távora', -38.515, -3.745], ['Tauape', -38.522, -3.752],
@@ -180,11 +182,17 @@ export const lagoasJogo = LAGOAS.map(([nome, lon, lat, rx, rz]) => {
 })
 export const lugaresJogo = Object.fromEntries(Object.entries(LUGARES).map(([k, [lon, lat]]) => [k, ll(lon, lat)]))
 export const bairrosJogo = BAIRROS.map(([nome, lon, lat]) => [nome, ...ll(lon, lat)])
+const METROS_LAT = 110574
+const METROS_LON = 111320 * Math.cos((3.72 * Math.PI) / 180)
 export function nomeBairro(x, z) {
+  // a comparação é em metros reais (lon/lat), não em unidades do jogo: a escala do mapa varia (a Praça do
+  // Ferreira é 1:1, o resto comprimido) e, no jogo, o Centro esticado perdia os próprios marcos
+  const lon = LON_POR_X(x), lat = LAT_POR_Z(z)
+  const kx = METROS_LON, ky = METROS_LAT
   let melhor = null
   let d = Infinity
-  for (const [nome, bx, bz] of bairrosJogo) {
-    const dd = (x - bx) ** 2 + (z - bz) ** 2
+  for (const [nome, blon, blat, alcance = 1] of BAIRROS) {
+    const dd = (((lon - blon) * kx) ** 2 + ((lat - blat) * ky) ** 2) * alcance * alcance
     if (dd < d) { d = dd; melhor = nome }
   }
   return melhor
