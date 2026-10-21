@@ -439,6 +439,7 @@ async function iniciar() {
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
   if (import.meta.env.DEV) import('./debug/medidor.js').then((g) => g.instalar(window.maresia))
   if (import.meta.env.DEV) import('./debug/foto-justa.js').then((g) => g.instalar(window.maresia))
+  if (import.meta.env.DEV) import('./debug/roupa-pele.js').then((g) => g.instalar(window.maresia))
 }
 
 iniciar()
