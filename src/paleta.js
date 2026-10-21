@@ -56,3 +56,25 @@ export const FACHADAS = [
 export const CASAS_SIMPLES = ['#efe6d2', '#e4d6bb', '#d9cbb0', '#e9dfc8', '#dcc6a4', '#e8c9b4', '#cfc0a3', '#efe6d2']
 // esquadrias (portas, janelas, barrado): cores de tinta a óleo desbotada
 export const ESQUADRIAS = ['#4f7c9a', '#5e8a6e', '#8a5a3c', '#c9963f', '#6c8f9e', '#7a6a8e']
+
+// Os marcos de 1932 (src/mundo/marcos1932/): as únicas fachadas com cor própria são as que o dossiê documenta
+// (marcos-1932.md): o Majestic de tijolo (cartão colorizado de 1925, indício) e o Mercado de Ferro vermelho-escuro
+// (memória de Otacílio de Azevedo). Os dois são desbotados e escuros, não acento: o acento continua no pano e na fruta.
+// O resto sai da cal. Os valores-padrão do painel (cfg.marcos) são estes.
+export const MARCOS = {
+  excelsior: '#f2e2c0',
+  majestic: '#a3563f',
+  moderno: '#e4d3b0',
+  mercado: '#8a2f28',
+  chapa: '#7a4636',
+  ferro: '#2b2724',
+  bronze: '#4a4236',
+  felinos: '#5a6450',
+  general: '#73603f',
+  balaustrada: '#ede5d3',
+  pedra: '#d8cfbd',
+  muroLeoes: '#f0e3c8',
+  coluna: '#d4bc92',
+  mosaicoClaro: '#c9b38c',
+  mosaicoEscuro: '#45413b',
+}

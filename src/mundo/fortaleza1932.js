@@ -74,6 +74,10 @@ export const LUGARES = {
   'colégioMilitar': [-38.5177, -3.7301],
   favela1932: [-38.5261, -3.7296],
   barraCeara: [-38.598, -3.695],
+  // o Mercado de Ferro ficou na Praça Carolina (hoje Waldemar Falcão) até 1937, não junto da Sé
+  // (marcos-1932.md, seção 5; coordenada da praça no OSM). O "mercado" acima é o Mercado Público de depois
+  mercadoFerro: [-38.5264, -3.7259],
+  excelsior: [-38.52792, -3.7269], // Hotel Excelsior (detalhe-4-marcos.md, seção 1)
 }
 
 // Os lugares que a cidade de 1932 nao pode cobrir: a reconstituicao de cada um
@@ -86,7 +90,7 @@ export const LUGARES_RESERVADOS = [
   ['pracaFerreira', 26], ['passeioPublico', 20], ['forte', 10], ['se', 12], ['santaCasa', 12],
   ['pracaLeoes', 10], ['mercado', 16], ['theatro', 12], ['estacao', 20], ['pracaEstacao', 12],
   ['cemiterio', 22], ['seminario', 12], ['campoOtavioBonfim', 16], ['pracaMestres', 10],
-  ['parqueLiberdade', 16], ['favela1932', 8],
+  ['parqueLiberdade', 16], ['favela1932', 8], ['mercadoFerro', 16],
 ].map(([chave, raio]) => [chave, raio * esticamento(...LUGARES[chave])])
 
 // bairros (para o nome na tela): o mais perto vence. O 4º número (opcional) encurta o alcance de um

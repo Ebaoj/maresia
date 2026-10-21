@@ -21,6 +21,7 @@ const NOMES_LUGARES = {
   campoOtavioBonfim: 'Campo de Otávio Bonfim', estacaoOtavio: 'Estação Otávio Bonfim',
   pracaMestres: 'Praça dos Mestres', parqueLiberdade: 'Parque da Liberdade', 'colégioMilitar': 'Colégio Militar',
   favela1932: 'Favela de 1932', barraCeara: 'Barra do Ceará',
+  mercadoFerro: 'Mercado de Ferro', excelsior: 'Hotel Excelsior',
 }
 const TINTA = '#3b2a22'
 const PAPEL = '#efe6d2'

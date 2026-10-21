@@ -13,6 +13,8 @@
 //   H  hipótese     - quantos jardins, onde eles ficam, o desenho do coreto.
 // Não entram (anacronismo): a Coluna da Hora (o relógio é de 1933) e os quiosques
 // de café dos quatro cantos (foram retirados na mesma reforma de 1920).
+// Exceção (21/10/2026, licença em docs/direcao-de-arte.md): com cfg.marcos.pracaReforma, a praça é a de
+// depois da reforma de 1932-33, com a Coluna da Hora (src/mundo/marcos1932/praca-reforma.js).
 
 import dados from './praca1932.json'
 import { ll } from './fortaleza1932.js'

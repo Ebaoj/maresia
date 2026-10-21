@@ -14,6 +14,7 @@ import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { criarCasas } from './quarteirao.js'
+import { casaNoMarco } from './marcos1932/pegadas.js'
 import { criarAleatorio } from '../utils.js'
 import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha, FATOR_PRACA } from './fortaleza1932.js'
 
@@ -87,6 +88,14 @@ function reservado(x, z) {
     if (dx * dx + dz * dz < r.r2) return true
   }
   return false
+}
+
+// A fachada cai num lugar que a cidade não cobre? 'reservada' (o círculo do lugar histórico) ou 'marco' (o chão
+// de um marco de 1932 que tem obra própria: Excelsior, cinemas, Leões, Mercado; marcos1932/pegadas.js)
+export function lugarRecusado(f) {
+  if (reservado(f.x, f.z)) return 'reservada'
+  if (casaNoMarco(f.x, f.z, f.w, f.d, f.rot)) return 'marco'
+  return null
 }
 
 // Cruzamento entre casas: as da planta de 1932 são coladas de parede, e a grade de
@@ -175,7 +184,7 @@ function casaAjustada(item) {
 }
 
 // por que uma fachada da planta não virou casa (serve para acertar o mapa)
-export const RECUSA = { sobreposta: 0, rio: 0, praia: 0, lagoa: 0, pajeu: 0, ladeira: 0, reservada: 0 }
+export const RECUSA = { sobreposta: 0, rio: 0, praia: 0, lagoa: 0, pajeu: 0, ladeira: 0, reservada: 0, marco: 0 }
 
 function casa(lote, x, z, w, d, rot, frente, alturaMin, alturaMax, cores) {
   // casas geminadas: testa só o miolo do lote (a vizinha colada não pode ser recusada pela folga dela)
@@ -197,7 +206,8 @@ function casa(lote, x, z, w, d, rot, frente, alturaMin, alturaMax, cores) {
 function cidade(cas, sim) {
   const quadras = []
   for (const f of FACHADAS) {
-    if (reservado(f.x, f.z)) { RECUSA.reservada++; continue }
+    const recusa = lugarRecusado(f)
+    if (recusa) { RECUSA[recusa]++; continue }
     const galpao = f.uso === USO.Industrial || f.uso === USO.Transporte
     const lote = f.tipo === 'casario' ? cas : sim
     const alturaMin = galpao ? 4.6 : f.tipo === 'simples' ? 3.1 : 6.2

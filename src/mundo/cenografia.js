@@ -90,7 +90,8 @@ function mapaDeLuz(lampioes) {
   globais.uLampTam.value.set(W * RES, H * RES)
 }
 
-export function criarCenografia(cena, casas) {
+// lanternasExtras: as lanternas dos marcos de 1932 (marcos1932/mobiliario.js), que somam no mesmo mapa de luz
+export function criarCenografia(cena, casas, lanternasExtras = []) {
   const rnd = criarAleatorio(1881)
   const lampioes = []
   const vidros = []
@@ -144,7 +145,7 @@ export function criarCenografia(cena, casas) {
     instanciarEmBlocos(cena, geometriaCadeira(madeira), matPeca, cadeiras[i], null, { nome: 'cadeiras' })
   })
 
-  mapaDeLuz(lampioes)
+  mapaDeLuz([...lampioes, ...lanternasExtras])
 
   const apagado = new THREE.Color('#e8e0c8')
   const aceso = new THREE.Color('#ffc66a').multiplyScalar(2.4)

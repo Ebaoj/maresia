@@ -293,6 +293,47 @@ export const PADRAO = {
       gente: 24,            // gente no campo: fila da cozinha, fila do portão e trabalho na terra
     },
   },
+  // Os marcos do centro de 1932 (src/mundo/marcos1932/; fontes no dossiê ~/Projetos/marcos-1932-pesquisa).
+  // Montados uma vez, quando o mundo nasce: o que não é cor só muda ao recarregar. As cores mudam ao vivo.
+  marcos: {
+    ligados: true,          // os marcos procedurais do centro (praça reformada, cinemas, Excelsior, Leões, Mercado)
+    pracaReforma: true,     // a Praça do Ferreira depois da reforma de Girão (Coluna da Hora, 1933, licença aceita pelo Joabe); false = a de 1932 com o coreto
+    excelsior: true,        // o Hotel Excelsior (1931)
+    cinemas: true,          // o Majestic Palace (1917) e o Cine Moderno (1921)
+    leoes: true,            // a Praça dos Leões (General Tibúrcio), com o Rosário e o Palácio da Luz
+    mercado: true,          // o Mercado de Ferro na Praça Carolina (1897-1937)
+    colunaAltura: 13,       // m: "cerca de 13 m" (Raimundo Girão); o conceito saiu alto demais
+    leoesMuro: 3.5,         // m: o muro de arrimo sobre a Sena Madureira (3 a 4 m, ~20 degraus na foto)
+    mercadoAltura: 11,      // m: a metade remontada nos Pinhões tem ~11 m
+    excelsiorAltura: 30,    // m até a platibanda ("aproximadamente 30 metros")
+    ficusEscala: 1.7,       // a copa redonda do fícus (o oiti do jogo, maior)
+    palmeiraEscala: 0.62,   // a palmeira da praça (o coqueiro do jogo, mais baixo)
+    distDetalhe: 170,       // m: além disso some o detalhe miúdo (balaústres, flores, ferragens)
+    esculturasModelo: true, // as esculturas da Praça dos Leões em modelo esculpido (GLB); sem ele, a forma procedural
+    // cores (da paleta: src/paleta.js, MARCOS)
+    corExcelsior: '#f2e2c0',   // creme pálido (a cor de 1932 não tem fonte; hoje é creme/branco gelo)
+    rebote: 0.4,               // a luz quente que o chão devolve no lado de sombra (Excelsior, muro dos Leões; rebote.js)
+    corRebote: '#ffc98a',      // a cor dessa luz (a pedra e a cal ao sol da tarde)
+    corMajestic: '#a3563f',    // vermelho-tijolo do cartão colorizado de 1925 (indício, não prova)
+    corModerno: '#e4d3b0',     // ocre muito claro (sem imagem livre da fachada)
+    corMercado: '#8a2f28',     // vermelho-escuro sangue-de-boi (memória de Otacílio de Azevedo); #6b2b27 lia marrom-preto
+    corChapa: '#7a4636',       // a chapa da cobertura do mercado, pintada de zarcão (HIPÓTESE pelo conceito aprovado)
+    corFerro: '#2b2724',       // ferro fundido pintado de escuro (postes, grades, sacadas)
+    corBronze: '#4a4236',      // jarros bronzeados da balaustrada dos Leões
+    corFelinos: '#5a6450',     // ferro fundido Val d'Osne dos felinos: verde-bronze escuro, meio-tom legível (quase preto virava silhueta)
+    corGeneral: '#73603f',     // bronze patinado escuro do General Tibúrcio
+    metalBrilho: 0.45,         // o realce do metal onde a forma vira para o sol (metal.js)
+    metalDuro: 0.08,           // quanto o realce é recortado (menor = borda mais dura)
+    metalRim: 0.35,            // a borda fria do céu nas faces que olham para cima
+    metalCeu: 0.35,            // a luz do céu no lado da sombra das esculturas (de contraluz viravam silhueta)
+    corRimCeu: '#9cc0e0',      // a cor da borda do céu
+    corBalaustrada: '#ede5d3', // balaústres de massa caiados
+    corPedra: '#d8cfbd',       // cantaria e meio-fio
+    corMuroLeoes: '#f0e3c8',   // a cal quente do muro e da escadaria dos Leões (o branco-cinza saía chapado)
+    corColuna: '#d4bc92',      // a pedra quente da Coluna da Hora (a réplica é creme; o branco de caixa saía chapado)
+    corMosaicoClaro: '#c9b38c', // pedra portuguesa clara: creme-ocre gasto (a branca estourava ao sol das 16h30)
+    corMosaicoEscuro: '#45413b', // pedra portuguesa escura: cinza-carvão, não preto puro
+  },
   fatia: {
     travar: true,          // prende o jogador na fatia vertical da Praia do Peixe (mundo/fatia.js)
   },
