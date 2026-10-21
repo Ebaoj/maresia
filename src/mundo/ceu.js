@@ -65,7 +65,7 @@ void main() {
 
 const fragCeu = /* glsl */ `
 uniform vec3 uTopo; uniform vec3 uHor; uniform vec3 uSolDir; uniform vec3 uSolCor;
-uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu;
+uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu; uniform float uArcPintado;
 varying vec3 vDir;
 ${SAIDA_LUZ}
 float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
