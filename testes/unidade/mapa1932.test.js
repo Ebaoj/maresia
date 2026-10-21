@@ -61,7 +61,9 @@ describe('dados do mapa de 1932', () => {
       expect(Number.isFinite(lugar.ponto[0]), chave).toBe(true);
       expect(Number.isFinite(lugar.ponto[1]), chave).toBe(true);
     }
-    expect(LUGARES.estacao.ponto[0]).toBeCloseTo(ll(-38.5302, -3.7219)[0], 3);
+    // o lugar vem do dado: a estacao fica onde a fonte diz
+    expect(LUGARES.estacao.ponto[0]).toBeCloseTo(ll(dados.lugares.estacao.lon, dados.lugares.estacao.lat)[0], 6);
+    expect(LUGARES.estacao.ponto[1]).toBeCloseTo(ll(dados.lugares.estacao.lon, dados.lugares.estacao.lat)[1], 6);
     // a favela vem do proprio dado: comparar com o mesmo valor, sem arredondar a mao
     expect(FAVELA_1932.ponto[0]).toBeCloseTo(ll(dados.favela1932.lon, dados.favela1932.lat)[0], 6);
     expect(FAVELA_1932.ponto[1]).toBeCloseTo(ll(dados.favela1932.lon, dados.favela1932.lat)[1], 6);
@@ -70,7 +72,9 @@ describe('dados do mapa de 1932', () => {
 
   // Regressão: o raster do uso dos lotes só serve se o ponto do jogo achar o pixel certo.
   it('o inverso da compressão devolve o ponto de origem', () => {
-    for (const ponto of [[0, 0], [-700, -30], [400, 300]]) {
+    // pontos de dentro do mapa (a caixa do mundo e o mapa girado: o canto da
+    // caixa fica fora do mapa de verdade)
+    for (const ponto of [ll(-38.5276, -3.7275), ll(-38.57, -3.7176), ll(-38.495, -3.725)]) {
       const [lon, lat] = llInverso(ponto[0], ponto[1]);
       const [x, z] = ll(lon, lat);
       expect(x).toBeCloseTo(ponto[0], 1);
@@ -79,7 +83,7 @@ describe('dados do mapa de 1932', () => {
   });
 
   it('o pixel do raster fica dentro da janela da malha', () => {
-    const [px, py] = pontoParaPixel(-700, -30);
+    const [px, py] = pontoParaPixel(...ll(-38.53, -3.72));
     expect(px).toBeGreaterThanOrEqual(0);
     expect(px).toBeLessThanOrEqual(JANELA.pixels[0]);
     expect(py).toBeGreaterThanOrEqual(0);

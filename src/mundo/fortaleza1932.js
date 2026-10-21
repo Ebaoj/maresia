@@ -8,16 +8,18 @@
 // lugares, bairros e as peças de praia.
 
 import {
-  DESLOC, ll, LON_POR_X, LAT_POR_Z, LIMITES, pchip,
-  K_PRACA_X, K_PRACA_Z, FATOR_PRACA,
+  DESLOC, ll, llInverso, LIMITES, pchip,
+  K_PRACA_X, K_PRACA_Z, FATOR_PRACA, ANGULO_GRADE,
   esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, escalaBaseJogo, metrosPorUn,
+  metrosDoVao, direcaoJogo, comprimentoJogo, geoDe, gradeDe, llInversoRapido, norteJogo,
   METRO_POR_GRAU_LAT, METRO_POR_GRAU_LON,
 } from './escala1932.js'
 
 export {
-  DESLOC, ll, LON_POR_X, LAT_POR_Z, LIMITES,
-  K_PRACA_X, K_PRACA_Z, FATOR_PRACA,
+  DESLOC, ll, llInverso, LIMITES,
+  K_PRACA_X, K_PRACA_Z, FATOR_PRACA, ANGULO_GRADE,
   esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, escalaBaseJogo, metrosPorUn,
+  metrosDoVao, direcaoJogo, comprimentoJogo, geoDe, gradeDe, llInversoRapido, norteJogo,
 }
 
 // costa de 1932 (hipótese guiada pela borda norte dos lotes; refinar sobre a planta de 1931-1932)
@@ -149,7 +151,10 @@ function rioCearaXBusca(z) {
   return c[i][0] + (c[i + 1][0] - c[i][0]) * t
 }
 
-// tabelas a cada 1 m (o mapa pergunta isso centenas de milhares de vezes ao montar o terreno)
+// tabelas a cada 1 m (o mapa pergunta isso centenas de milhares de vezes ao montar o terreno).
+// A tabela cobre o mundo inteiro: fora dela a busca devolve o valor da borda e a
+// linha da costa (e o eixo do rio) saem do lugar - a tabela antiga parava em
+// x = 1500 e o mapa agora chega a 3214.
 function tabela(f, ini, fim) {
   const t = new Float32Array(Math.ceil(fim - ini) + 2)
   for (let i = 0; i < t.length; i++) t[i] = f(ini + i)
@@ -159,8 +164,8 @@ function tabela(f, ini, fim) {
     return t[i] + (t[i + 1] - t[i]) * (fi - i)
   }
 }
-export const costaZ = tabela(costaZBusca, -1400, 1500)
-export const rioCearaX = tabela(rioCearaXBusca, -700, 1300)
+export const costaZ = tabela(costaZBusca, LIMITES.x0 - 300, LIMITES.x1 + 300)
+export const rioCearaX = tabela(rioCearaXBusca, LIMITES.z0 - 300, LIMITES.z1 + 300)
 
 // distância de um ponto a uma polilinha
 export function distPolilinha(x, z, pts) {
@@ -187,7 +192,7 @@ const METROS_LON = 111320 * Math.cos((3.72 * Math.PI) / 180)
 export function nomeBairro(x, z) {
   // a comparação é em metros reais (lon/lat), não em unidades do jogo: a escala do mapa varia (a Praça do
   // Ferreira é 1:1, o resto comprimido) e, no jogo, o Centro esticado perdia os próprios marcos
-  const lon = LON_POR_X(x), lat = LAT_POR_Z(z)
+  const [lon, lat] = llInverso(x, z)
   const kx = METROS_LON, ky = METROS_LAT
   let melhor = null
   let d = Infinity
@@ -200,7 +205,7 @@ export function nomeBairro(x, z) {
 
 // grade de Herbster: as ruas do centro correm a 72,5 graus do leste (medido nos lotes de 1932).
 // No jogo (z para o sul) a direção da rua "norte-nordeste" é (cos, -sin).
-export const ANGULO_GRADE = (72.5 * Math.PI) / 180
+// O ângulo mora em src/mundo/quadroGrade1932.js: é o referencial da compressão.
 
 // trechos da praia por longitude: onde ficavam as vilas de pescadores e as jangadas
 const TRECHOS = {

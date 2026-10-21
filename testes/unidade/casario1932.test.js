@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { FACHADAS, RUAS, USO, comprimentoRua, pontoNaRua } from '../../src/mundo/casario1932.js';
-import { ll, LON_POR_X, LAT_POR_Z } from '../../src/mundo/fortaleza1932.js';
+import { ll, llInverso } from '../../src/mundo/fortaleza1932.js';
 import { LIMITES } from '../../src/mundo/mapa.js';
 
 // A cidade de 1932 saiu da camada oficial "Evolucao Urbana 1932" da Prefeitura de
@@ -11,8 +11,9 @@ describe('a cidade de 1932', () => {
   it('a inversa da compressão devolve o ponto de origem', () => {
     for (const [lon, lat] of [[-38.5276, -3.7275], [-38.57, -3.7176], [-38.495, -3.725]]) {
       const [x, z] = ll(lon, lat);
-      expect(LON_POR_X(x)).toBeCloseTo(lon, 6);
-      expect(LAT_POR_Z(z)).toBeCloseTo(lat, 6);
+      const [voltaLon, voltaLat] = llInverso(x, z);
+      expect(voltaLon).toBeCloseTo(lon, 6);
+      expect(voltaLat).toBeCloseTo(lat, 6);
     }
   });
 

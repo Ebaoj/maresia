@@ -4,7 +4,7 @@
 
 import { LIMITES, larguraPraia } from '../mundo/mapa.js'
 import { criarAleatorio } from '../utils.js'
-import { costaJogo, rioJogo, pajeuJogo, lagoasJogo, lugaresJogo, bairrosJogo, trechosJogo, ll } from '../mundo/fortaleza1932.js'
+import { costaJogo, rioJogo, pajeuJogo, lagoasJogo, lugaresJogo, bairrosJogo, trechosJogo, ll, llInversoRapido, norteJogo } from '../mundo/fortaleza1932.js'
 import { malha1932 } from '../mundo/ocupacao1932.js'
 import dadosMapa from '../mundo/mapa1932-dados.json'
 
@@ -110,16 +110,51 @@ export function criarMapa({ casasPalha }) {
       c.lineWidth = 1
       c.stroke()
     }
-    // a planta de 1932: o raster do uso dos lotes, desenhado no lugar
+    // a planta de 1932: o raster do uso dos lotes, desenhado no lugar. O mapa do
+    // jogo e comprimido no quadro da grade, e por isso a planta nao cabe num
+    // retangulo: cada pixel do minimapa pergunta o seu lon/lat e le a cor da
+    // malha la. O papel em volta da janela fica vazio.
     const malha = malha1932()
     if (malha) {
       const j = dadosMapa.janela
-      const [mx0, mz0] = ll(j.lon_min, j.lat_max)
-      const [mx1, mz1] = ll(j.lon_max, j.lat_min)
+      const malhaCtx = malha.getContext('2d', { willReadFrequently: true })
+      const src = malhaCtx.getImageData(0, 0, malha.width, malha.height).data
+      // a janela da planta, no jogo: so essa parte do papel recebe a malha
+      const cantos = [[j.lon_min, j.lat_max], [j.lon_max, j.lat_max], [j.lon_max, j.lat_min], [j.lon_min, j.lat_min]]
+      const xs = cantos.map(([lon, lat]) => ll(lon, lat)[0])
+      const zs = cantos.map(([lon, lat]) => ll(lon, lat)[1])
+      const px0 = Math.max(0, Math.floor(px(Math.min(...xs))))
+      const px1 = Math.min(W - 1, Math.ceil(px(Math.max(...xs))))
+      const pz0 = Math.max(0, Math.floor(pz(Math.min(...zs))))
+      const pz1 = Math.min(H - 1, Math.ceil(pz(Math.max(...zs))))
+      const warp = document.createElement('canvas')
+      warp.width = W
+      warp.height = H
+      const wc = warp.getContext('2d')
+      const img = wc.createImageData(W, H)
+      const dst = img.data
+      const escalaLon = j.pixels[0] / (j.lon_max - j.lon_min)
+      const escalaLat = j.pixels[1] / (j.lat_max - j.lat_min)
+      for (let y = pz0; y <= pz1; y++) {
+        const z = LIMITES.z0 + (y - MARGEM) / ESCALA
+        for (let x = px0; x <= px1; x++) {
+          const [lon, lat] = llInversoRapido(LIMITES.x0 + (x - MARGEM) / ESCALA, z)
+          const ix = (lon - j.lon_min) * escalaLon
+          const iy = (j.lat_max - lat) * escalaLat
+          if (ix < 0 || iy < 0 || ix >= malha.width || iy >= malha.height) continue
+          const o = ((iy | 0) * malha.width + (ix | 0)) * 4
+          const d = (y * W + x) * 4
+          dst[d] = src[o]
+          dst[d + 1] = src[o + 1]
+          dst[d + 2] = src[o + 2]
+          dst[d + 3] = 255
+        }
+      }
+      wc.putImageData(img, 0, 0)
       c.save()
       c.globalAlpha = 0.92
       c.imageSmoothingQuality = 'high'
-      c.drawImage(malha, px(mx0), pz(mz0), px(mx1) - px(mx0), pz(mz1) - pz(mz0))
+      c.drawImage(warp, 0, 0)
       c.restore()
     }
     // casas de palha das vilas
@@ -176,17 +211,24 @@ export function criarMapa({ casasPalha }) {
     c.fillText('M fecha', W - 165, H - 40)
     const rx = W - 70
     const ry = 110
+    // a rosa dos ventos aponta para o norte de verdade: o mapa e comprimido no
+    // quadro da grade, e o norte do mundo nao e exatamente o alto da tela
+    const [nx, nz] = norteJogo()
+    c.save()
+    c.translate(rx, ry)
+    c.rotate(Math.atan2(nx, -nz))
     c.beginPath()
-    c.moveTo(rx, ry - 34); c.lineTo(rx + 8, ry); c.lineTo(rx, ry + 34); c.lineTo(rx - 8, ry); c.closePath()
+    c.moveTo(0, -34); c.lineTo(8, 0); c.lineTo(0, 34); c.lineTo(-8, 0); c.closePath()
     c.fillStyle = 'rgba(59, 42, 34, 0.15)'
     c.fill()
     c.stroke()
     c.beginPath()
-    c.moveTo(rx, ry - 34); c.lineTo(rx + 8, ry); c.lineTo(rx - 8, ry); c.closePath()
+    c.moveTo(0, -34); c.lineTo(8, 0); c.lineTo(-8, 0); c.closePath()
     c.fillStyle = TINTA
     c.fill()
     c.font = 'bold 14px Georgia, serif'
-    c.fillText('N', rx, ry - 40)
+    c.fillText('N', 0, -40)
+    c.restore()
     const e0 = MARGEM
     const e1 = MARGEM + 200 * ESCALA
     c.beginPath()

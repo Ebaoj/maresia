@@ -4,18 +4,26 @@
 // sentarLevantar passou a reprovar com "não chegou a sentar"). Correção: a fatia é presa a lon/lat.
 import { describe, it, expect } from 'vitest'
 import { FATIA, FATIA_LON, FATIA_LAT } from '../../src/mundo/fatia.js'
-import { LON_POR_X, LAT_POR_Z } from '../../src/mundo/fortaleza1932.js'
+import { llInverso } from '../../src/mundo/fortaleza1932.js'
+import { linhaCosta, larguraPraia } from '../../src/mundo/mapa.js'
 
 describe('fatia vertical da Praia do Peixe', () => {
   it('fica no mesmo lugar real, qualquer que seja a escala do mapa', () => {
     // o ponto de 1932 que a fatia sempre mostrou (medido no 6b0e58b: x = 340 na costa)
     expect(FATIA_LON).toBeCloseTo(-38.5194, 3)
     expect(FATIA_LAT).toBeCloseTo(-3.7177, 3)
-    expect(LON_POR_X(FATIA.centro[0])).toBeCloseTo(FATIA_LON, 4)
+    // a fatia continua presa ao lon/lat: o ponto da costa que ela mostra, voltado
+    // do jogo para o mundo, dá o mesmo lugar de verdade
+    const [lon, lat] = llInverso(FATIA.centro[0], linhaCosta(FATIA.centro[0]))
+    expect(lon).toBeCloseTo(FATIA_LON, 3)
+    expect(lat).toBeCloseTo(FATIA_LAT, 3)
   })
   it('contém a costa do seu centro (água e areia dos dois lados)', () => {
-    const zCosta = FATIA.z0 + 22
-    expect(LAT_POR_Z(zCosta)).toBeCloseTo(FATIA_LAT, 3)
-    expect(FATIA.x1 - FATIA.x0).toBe(100)
+    // o começo da fatia é mar, o fim é a rua da praia: a costa do jogo é quem
+    // manda nas bordas (a praia é uma faixa em cima da linha da costa)
+    const cx = FATIA.centro[0]
+    expect(FATIA.z0).toBeLessThan(linhaCosta(cx))
+    expect(FATIA.z1).toBeGreaterThan(linhaCosta(cx) + larguraPraia(cx))
+    expect(FATIA.x1 - FATIA.x0).toBeCloseTo(100, 6)
   })
 })

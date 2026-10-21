@@ -21,7 +21,7 @@
 // perto e longe, e o rodeiro aparece do mesmo jeito na rua larga e na
 // comprida.
 
-import { LON_POR_X, LAT_POR_Z } from './fortaleza1932.js'
+import { llInverso } from './fortaleza1932.js'
 import { gradeOcupacao1932, OCUPA_RUA, OCUPA_LOTE } from './ocupacao1932.js'
 
 export const CHAO_RUA = 1
@@ -218,8 +218,7 @@ export function posicaoNaRua1932(x, z) {
 
 // a distância real (em metros) até a Praça do Ferreira
 export function distRealDaPraca(x, z) {
-  const lon = LON_POR_X(x)
-  const lat = LAT_POR_Z(z)
+  const [lon, lat] = llInverso(x, z)
   return Math.hypot((lon - PRACA_LON) * METRO_POR_GRAU_LON, (lat - PRACA_LAT) * METRO_POR_GRAU_LAT)
 }
 

@@ -16,7 +16,7 @@ import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { criarCasas } from './quarteirao.js'
 import { criarAleatorio } from '../utils.js'
 import { criarMuros1932, ALTURA_MURO, ESPESSURA_MURO } from './muro1932.js'
-import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha, FATOR_PRACA, escalaJogo } from './fortaleza1932.js'
+import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha, FATOR_PRACA, metrosDoVao, direcaoJogo, comprimentoJogo, metrosPorUn } from './fortaleza1932.js'
 import { distRealDaPraca } from './chao1932.js'
 
 const rnd = criarAleatorio(42)
@@ -92,10 +92,21 @@ function reservado(x, z) {
 }
 
 // Cruzamento entre casas: as da planta de 1932 são coladas de parede, e a grade de
-// ocupação (2 m) é grossa demais para separating vizinhas de 3 m. Aqui o teste é
+// ocupação (2 m) é grossa demais para separar vizinhas de 3 m. Aqui o teste é
 // exato: retângulos girados, eixo por eixo (SAT), com uma grade esparsa por célula.
+//
+// A folga entre duas casas é a parede que as separa: 5 cm de verdade. Ela é
+// convertida para a unidade do jogo local, porque uma unidade vale 1 m na praça
+// e quase 10 m na periferia comprimida - uma folga fixa de 0,3 un tirava 5 mil
+// casas da rua (elas se recusavam por "sobreposição" e a testada ficava com buraco).
 const CELO = 8
+const MARGEM_PAREDE = 0.05 // metros de verdade
 const vizinhos = new Map()
+
+// a folga de uma casa, em unidades de jogo
+function margemEm(x, z) {
+  return MARGEM_PAREDE / metrosPorUn(x, z)
+}
 
 function cruza(a, b) {
   const ca = Math.cos(a.rot)
@@ -113,7 +124,8 @@ function cruza(a, b) {
     const p = Math.abs(dx * ex + dz * ez)
     const ra = (a.w / 2) * Math.abs(ax[0] * ex + ax[1] * ez) + (a.d / 2) * Math.abs(az[0] * ex + az[1] * ez)
     const rb = (b.w / 2) * Math.abs(bx[0] * ex + bx[1] * ez) + (b.d / 2) * Math.abs(bz[0] * ex + bz[1] * ez)
-    if (p > ra + rb + 0.3) return false // a parede dos fundos tem espessura
+    const folga = Math.min(a.margem ?? 0, b.margem ?? 0)
+    if (p > ra + rb + folga) return false // a parede dos fundos tem espessura
   }
   return true
 }
@@ -165,12 +177,12 @@ function casaAjustada(item) {
   const fz = -Math.sin(item.rot)
   for (const f of FATORES) {
     const d = item.d * f
-    const t = { x: item.x + (nx * (item.d - d)) / 2, z: item.z + (nz * (item.d - d)) / 2, w: item.w, d, rot: item.rot }
+    const t = { x: item.x + (nx * (item.d - d)) / 2, z: item.z + (nz * (item.d - d)) / 2, w: item.w, d, rot: item.rot, margem: item.margem }
     if (casaLivre(t)) return t
   }
   for (const f of FATORES_LARGURA) {
     const w = item.w * f
-    const t = { x: item.x + (fx * (item.w - w)) / 2, z: item.z + (fz * (item.w - w)) / 2, w, d: item.d, rot: item.rot }
+    const t = { x: item.x + (fx * (item.w - w)) / 2, z: item.z + (fz * (item.w - w)) / 2, w, d: item.d, rot: item.rot, margem: item.margem }
     if (casaLivre(t)) return t
   }
   return null
@@ -192,7 +204,7 @@ function recusaDe(item) {
 
 function casa(lote, x, z, w, d, rot, frente, alturaMin, alturaMax, cores, opcoes = {}) {
   // casas geminadas: testa só o miolo do lote (a vizinha colada não pode ser recusada pela folga dela)
-  const item = casaAjustada({ x, z, w, d, rot })
+  const item = casaAjustada({ x, z, w, d, rot, margem: margemEm(x, z) })
   if (!item) { RECUSA.sobreposta++; return null }
   const recusa = recusaDe(item)
   if (recusa) { RECUSA[recusa]++; return null }
@@ -206,6 +218,7 @@ function casa(lote, x, z, w, d, rot, frente, alturaMin, alturaMax, cores, opcoes
 // Casa nova numa folha de testada já escolhida: ela entra no lugar, sem
 // ajuste (a folha foi medida na linha da fachada).
 function casaNaFolga(lote, item, altura, cor) {
+  item.margem = margemEm(item.x, item.z)
   if (!casaLivre(item)) { RECUSA.sobreposta++; return null }
   const recusa = recusaDe(item)
   if (recusa) { RECUSA[recusa]++; return null }
@@ -260,14 +273,17 @@ function preencheVaus(cas, cfg) {
     const uz = dz / comp
     const mx = (ax + bx) / 2
     const mz = (az + bz) / 2
-    // a normal do vão: a perpendicular à linha do vão, virada para a rua
+    // a normal do vão: a perpendicular à linha do vão, virada para a rua. A
+    // perpendicular é a da linha do JOGO (a casa tem de encostar na testada
+    // como ela aparece na tela); o lado da rua vem da normal de verdade, levada
+    // para o quadro do jogo.
+    const [ngx, ngz] = direcaoJogo(vao.normal[0], vao.normal[1], mx, mz)
     let nx = uz
     let nz = -ux
-    if (nx * vao.normal[0] + nz * vao.normal[1] < 0) { nx = -nx; nz = -nz }
+    if (nx * ngx + nz * ngz < 0) { nx = -nx; nz = -nz }
     // quantos metros de verdade o vão tem: a escala do mapa muda de um ponto
     // para outro (a praça está em 1:1, o resto é comprimido)
-    const e = escalaJogo(mx, mz)
-    const metros = Math.hypot(dx / e.x, dz / e.z)
+    const metros = metrosDoVao(dx, dz, mx, mz)
     if (metros < 7) { FRENTE.passagens++; continue } // uma passagem de pedestre, não uma casa
     FRENTE.vaos++
     if (distRealDaPraca(mx, mz) < raio) {
@@ -277,7 +293,9 @@ function preencheVaus(cas, cfg) {
       // sobreposição da cidade conta a parede como sobreposição).
       const quantas = Math.max(1, Math.min(Math.round(metros / 11), Math.floor((comp - 0.45) / 5)))
       const larg = comp / quantas - 0.45
-      const prof = Math.min(40, Math.max(2, vao.prof))
+      // a profundidade do lote vem da planta em metros de verdade: aqui ela
+      // vira unidade de jogo, que e o que o corpo da casa mede
+      const prof = Math.min(40, Math.max(2, vao.prof * comprimentoJogo(vao.normal[0], vao.normal[1], mx, mz)))
       const rot = Math.atan2(nx, nz)
       for (let i = 0; i < quantas; i++) {
         // Onde a casa cabe: a casa da esquina é uma caixa reta e o quarteirão
