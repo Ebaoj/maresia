@@ -57,7 +57,7 @@ export const PADRAO = {
     arcCeuAzulHorizonte: '#9cc3ea', // o horizonte: azul claro, não mais o branco estourado
     arcCeuAzulRampa: 0.32,         // altura (seno) em que o azul fundo chega com o sol alto
     arcCeuAzulAr: '#a9c6e4',       // a cor do ar na distância ao meio-dia (pouca névoa, azulada)
-    arcCeuCumulos: 0.62,           // cúmulos redondos pintados rente ao horizonte ao meio-dia: fração das posições com nuvem
+    arcCeuCumulos: 0.75,           // cúmulos redondos pintados rente ao horizonte ao meio-dia: fração das posições com nuvem
     arcCeuCumulosTamanho: 1.2,     // tamanho deles
     nuvens: 70,                    // cúmulos de alísio no céu (quantos); vale ao recarregar
     nuvensVento: 4.0,              // velocidade com que vão para oeste, levados pelo alísio de leste (m/s)

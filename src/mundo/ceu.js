@@ -160,7 +160,7 @@ export function criarCeu(cena, cfg = null) {
     uniformes.uHor.value.copy(p.hor)
     uniformes.uCeuRampa.value = THREE.MathUtils.lerp(cfg.estilo.arcCeuRampa ?? 0.45, cfg.estilo.arcCeuAzulRampa ?? 0.32, azul)
     uniformes.uAzul.value = azul
-    uniformes.uCumulos.value.set(cfg.estilo.arcCeuCumulos ?? 0.62, cfg.estilo.arcCeuCumulosTamanho ?? 1.2)
+    uniformes.uCumulos.value.set(cfg.estilo.arcCeuCumulos ?? 0.75, cfg.estilo.arcCeuCumulosTamanho ?? 1.2)
     // a parada do meio: no visual Arcane, de dia, um azul claro esverdeado; senão o meio do caminho (o de antes)
     uniformes.uMeio.value.copy(p.hor).lerp(p.topo, 0.5)
     if (cfg.estilo.visual === 'arcane') {
@@ -235,7 +235,7 @@ export function criarCeu(cena, cfg = null) {
     globais.uNevoaLonge.value = cfg.mundo.nevoaLonge
 
     ceu.position.copy(centro)
-    nuvens.atualizar(dt, p, centro, cfg)
+    nuvens.atualizar(dt, p, centro, cfg, azul)
     return p
   }
 
@@ -248,20 +248,22 @@ function criarNuvens(cena, quantas = 70) {
   material.emissive = new THREE.Color(0x000000)
   const grupo = new THREE.Group()
   const lista = []
-  // cúmulos de alísio (direção de arte): pequenos, base reta, topo fofo, em fileiras ("ruas de
-  // nuvens") na direção do vento. Nada de bolhas grandes isoladas.
-  const RUAS = 6
+  // cúmulos de alísio (direção de arte): base reta, topo fofo e irregular. Revisão 2 (21/10/2026): pareciam adesivos
+  // iguais em fileiras; agora em grupos com vãos (centros sorteados), tamanhos muito variados (a maioria pequena,
+  // poucos grandes) e alturas diferentes
+  const grupos = Array.from({ length: Math.max(1, Math.round(quantas / 6)) }, () => [rnd.entre(-1200, 1200), rnd.entre(-1000, 1000)])
   for (let n = 0; n < quantas; n++) {
     const partes = []
-    // a maioria pequena (o cúmulo de bom tempo do alísio), algumas maiores
-    const tam = rnd.chance(0.75) ? rnd.entre(0.45, 0.9) : rnd.entre(0.9, 1.4)
-    const qtd = 6 + Math.floor(rnd.entre(0, 6))
+    const tam = 0.3 + 1.2 * Math.pow(rnd.proximo(), 2.5) // (até 2,3 a bolha grande virava mancha borrada perto do horizonte)
+    const qtd = 5 + Math.floor(rnd.entre(0, 8))
+    const torto = rnd.entre(-0.4, 0.4) // o topo pende para um lado
     for (let i = 0; i < qtd; i++) {
-      const r = rnd.entre(6, 13) * tam
+      const r = rnd.entre(5, 13) * tam
       const g = new THREE.IcosahedronGeometry(r, 1) // de longe, 80 triângulos por bolha bastam
-      // as do meio mais altas: o cúmulo cresce para cima no centro
-      const x = rnd.entre(-22, 22) * tam
-      g.translate(x, rnd.entre(0, 9) * tam * (1 - Math.abs(x) / (30 * tam)), rnd.entre(-9, 9) * tam)
+      // as do meio mais altas, cada uma numa altura: o cúmulo cresce em bolhas desiguais
+      const x = rnd.entre(-24, 24) * tam
+      const meio = 1 - Math.abs(x / (24 * tam) - torto)
+      g.translate(x, rnd.entre(0, 14) * tam * Math.max(0.1, meio), rnd.entre(-10, 10) * tam)
       partes.push(g)
     }
     const geo = mergeGeometries(partes)
@@ -272,20 +274,20 @@ function criarNuvens(cena, quantas = 70) {
       if (y < 0) pos.setY(i, y * 0.12)
     }
     geo.computeVertexNormals()
-    geo.scale(1, 0.75, 1)
+    geo.scale(1, rnd.entre(0.65, 0.9), 1)
     const m = new THREE.Mesh(geo, material)
-    const rua = n % RUAS
-    const z = -1000 + (rua + rnd.entre(-0.3, 0.3)) * (2000 / RUAS)
-    m.position.set(rnd.entre(-1200, 1200), rnd.entre(150, 230), z)
+    const [gx, gz] = grupos[Math.floor(rnd.proximo() * grupos.length)]
+    m.position.set(gx + rnd.entre(-260, 260), rnd.entre(140, 320), gz + rnd.entre(-200, 200))
     m.userData.vel = rnd.entre(0.75, 1.25) // vezes cfg.estilo.nuvensVento
     lista.push(m)
     grupo.add(m)
   }
   cena.add(grupo)
   return {
-    atualizar(dt, p, centro, cfg) {
+    atualizar(dt, p, centro, cfg, azul = 0) {
       // (item 5: no visual Arcane menos brilho próprio, para a nuvem ter barriga azulada e topo claro)
-      const ke = cfg.estilo.visual === 'arcane' ? 0.45 : 1
+      // (revisão 2: com o horizonte claro do meio-dia o brilho próprio achatava a nuvem; menos dele, mais luz e sombra)
+      const ke = cfg.estilo.visual === 'arcane' ? 0.45 * (1 - 0.5 * azul) : 1
       material.emissive.copy(p.hor).multiplyScalar(0.35 * ke).add(p.ceu.clone().multiplyScalar(0.15 * ke))
       material.color.copy(p.luz).lerp(new THREE.Color(1, 1, 1), 0.5)
       // o alísio sopra de leste (+x): as nuvens vão para oeste. Elas ficam numa janela de 2400 m em volta do jogador
