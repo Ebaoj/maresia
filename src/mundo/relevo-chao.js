@@ -104,7 +104,7 @@ vec2 rlPedra(vec2 p, float fw) {
   float a = smoothstep(jc * 0.5, jc * 0.5 + 0.05, borda);
   float topo = 1.0 - (1.0 - a) * (1.0 - a);
   vec2 incl = rlH2(iqc + 1.7) - 0.5;
-  float bP = rlBanda(fw, min(lc, ac));
+  float bP = rlBanda(fw, min(lc, ac) * 2.5); // (revisão 2: a pedra segue com volume a meia distância)
   float h = (topo * 0.03 + dot(incl, fqc - 0.5) * 0.02 * topo) * bP;
   return vec2(h, (topo - 0.85) * 1.2 * bP);
 }
@@ -268,7 +268,7 @@ function funcoes(W) {
     const a = smoothstep(jc.mul(0.5), jc.mul(0.5).add(0.05), borda)
     const topo = float(1.0).sub(float(1.0).sub(a).mul(float(1.0).sub(a)))
     const incl = rlH2(iqc.add(1.7)).sub(0.5)
-    const bP = banda(fw, min(lc, ac))
+    const bP = banda(fw, min(lc, ac).mul(2.5))
     const h = topo.mul(0.03).add(dot(incl, fqc.sub(0.5)).mul(0.02).mul(topo)).mul(bP)
     return vec2(h, topo.sub(0.85).mul(1.2).mul(bP))
   }).setLayout(L('rlPedra', 'vec2', [['p', 'vec2'], ['fw', 'float'], ['bloco', 'vec4']]))
