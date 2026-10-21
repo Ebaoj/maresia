@@ -24,6 +24,7 @@ import * as ocup1932 from './mundo/ocupacao1932.js'
 import { criarFachadas } from './mundo/fachadas.js'
 import { criarRua } from './mundo/rua.js'
 import { criarPraca } from './mundo/praca.js'
+import { criarBondes } from './mundo/bondes.js'
 import { criarArvores } from './mundo/arvores.js'
 import { criarPessoas } from './mundo/pessoas.js'
 import { criarAtores } from './mundo/atores.js'
@@ -120,6 +121,7 @@ async function iniciar() {
   const lugares = criarRua(cena, predios, grade)
   marcar('rua')
   criarPraca(cena) // a Praça do Ferreira: coreto coberto, jardins e bancos (docs/mapa-1932.md)
+  criarBondes(cena) // os trilhos das linhas de bonde da Light sobre a rede viária de 1932
   criarArvores(cena, predios, grade)
   marcar('arvores')
   const { coqueiros } = criarCoqueiros(cena, cfg)
