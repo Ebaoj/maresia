@@ -87,6 +87,11 @@ export function secaoMundo(gui, cfg) {
   mc.add(cfg.marcos, 'ficusEscala', 0.8, 2.5, 0.05).name(rec('fícus: tamanho'))
   mc.add(cfg.marcos, 'palmeiraEscala', 0.3, 1.2, 0.02).name(rec('palmeira: tamanho'))
   mc.add(cfg.marcos, 'distDetalhe', 40, 400, 5).name('detalhe some depois de (m)')
+  mc.add(cfg.marcos, 'metalBrilho', 0, 2, 0.05).name('esculturas: realce do metal')
+  mc.add(cfg.marcos, 'metalDuro', 0.01, 0.3, 0.01).name('esculturas: realce recortado')
+  mc.add(cfg.marcos, 'metalRim', 0, 1.5, 0.05).name('esculturas: borda do céu')
+  mc.add(cfg.marcos, 'metalCeu', 0, 1.5, 0.05).name('esculturas: luz do céu na sombra')
+  mc.addColor(cfg.marcos, 'corRimCeu').name('esculturas: cor da borda do céu')
   for (const [chave, nome] of [['corExcelsior', 'Excelsior'], ['corMajestic', 'Majestic'], ['corModerno', 'Cine Moderno'],
     ['corMercado', 'Mercado de Ferro'], ['corChapa', 'chapa do mercado'], ['corFerro', 'ferro fundido'], ['corBronze', 'jarros'], ['corFelinos', 'felinos (ferro)'], ['corGeneral', 'General (bronze)'],
     ['corBalaustrada', 'balaústres'], ['corPedra', 'cantaria'], ['corMosaicoClaro', 'mosaico claro ⟳'], ['corMosaicoEscuro', 'mosaico escuro ⟳']]) {

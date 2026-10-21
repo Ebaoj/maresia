@@ -11,7 +11,7 @@
 // falhar, fica a procedural (cfg.marcos.esculturasModelo = false força a procedural).
 
 import * as THREE from 'three'
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { registrarEstatico } from '../../render/sombra-estatica.js'
 import { Obra } from './obra.js'
@@ -96,7 +96,11 @@ function prepararModelo(gltf, def) {
   gltf.scene.updateMatrixWorld(true)
   const partes = []
   gltf.scene.traverse((o) => { if (o.isMesh) partes.push(limpa(o.geometry.clone().applyMatrix4(o.matrixWorld))) })
-  const g = mergeGeometries(partes)
+  // o modelo dizimado vem com uma normal por face (facetado, e a silhueta serrilhada no toon): junta os vértices
+  // iguais e refaz as normais suaves
+  const solto = mergeGeometries(partes)
+  solto.deleteAttribute('normal')
+  const g = mergeVertices(solto, 1e-4)
   if (def.giro) g.rotateY(def.giro)
   g.computeBoundingBox()
   const b = g.boundingBox

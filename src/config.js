@@ -318,8 +318,13 @@ export const PADRAO = {
     corChapa: '#7a4636',       // a chapa da cobertura do mercado, pintada de zarcão (HIPÓTESE pelo conceito aprovado)
     corFerro: '#2b2724',       // ferro fundido pintado de escuro (postes, grades, sacadas)
     corBronze: '#4a4236',      // jarros bronzeados da balaustrada dos Leões
-    corFelinos: '#454b3f',     // ferro fundido Val d'Osne dos felinos: quase preto, com um verde-bronze (mais escuro some a forma)
-    corGeneral: '#5a5040',     // bronze patinado escuro do General Tibúrcio
+    corFelinos: '#5a6450',     // ferro fundido Val d'Osne dos felinos: verde-bronze escuro, meio-tom legível (quase preto virava silhueta)
+    corGeneral: '#73603f',     // bronze patinado escuro do General Tibúrcio
+    metalBrilho: 0.45,         // o realce do metal onde a forma vira para o sol (metal.js)
+    metalDuro: 0.08,           // quanto o realce é recortado (menor = borda mais dura)
+    metalRim: 0.35,            // a borda fria do céu nas faces que olham para cima
+    metalCeu: 0.35,            // a luz do céu no lado da sombra das esculturas (de contraluz viravam silhueta)
+    corRimCeu: '#9cc0e0',      // a cor da borda do céu
     corBalaustrada: '#ede5d3', // balaústres de massa caiados
     corPedra: '#d8cfbd',       // cantaria e meio-fio
     corMosaicoClaro: '#d2c6ae', // pedra portuguesa branca (gasta: a branca pura estourava ao sol)

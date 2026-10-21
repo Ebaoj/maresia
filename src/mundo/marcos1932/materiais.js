@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { toon, texturizar, luzFixa } from '../../materiais.js'
 import { globais } from '../../globais.js'
 import { CAL } from '../../paleta.js'
+import { materialMetal, sincronizarMetal } from './metal.js'
 
 // chave -> [de onde vem a cor, textura pintada, metros por repetição]
 // a cor é uma chave de cfg.marcos (ao vivo) ou um hex fixo (da paleta)
@@ -32,8 +33,6 @@ const RECEITAS = {
   mosaicoEscuro: ['corMosaicoEscuro', 'pedra', 0.6],
   terra: ['#6b5136', 'areia', 1.0],
   saibro: ['#c9b08a', 'areia', 1.2],
-  felinos: ['corFelinos', 'pedra', 0.5],
-  general: ['corGeneral', 'pedra', 0.5],
   folha: ['#3f6e3a', 'folha', 1.2],
   flor: ['#b8553b', 'folha', 0.8], // urucum desbotado: o acento do canteiro
   bandeira: ['#4e8f3a', null],
@@ -57,6 +56,12 @@ export function criarMateriais(cfg) {
     mats[chave] = m
     if (doCfg) vivos.push([m, cor, hex])
   }
+  // o ferro fundido dos felinos e o bronze do General: toon com realce e borda de céu (metal.js)
+  for (const [chave, cor] of [['felinos', 'corFelinos'], ['general', 'corGeneral']]) {
+    mats[chave] = materialMetal(cfg.marcos[cor])
+    vivos.push([mats[chave], cor, cfg.marcos[cor]])
+  }
+  sincronizarMetal(cfg)
   // o interior das janelas acesas e o vidro dos lampiões: não recebem luz (brilham no filtro à noite)
   mats.vaoAceso = luzFixa(new THREE.MeshBasicMaterial({ color: '#4a3a30' }), 0.6, globais.uNoite)
   mats.vaoAceso.userData.semSombra = true
@@ -70,6 +75,7 @@ export function criarMateriais(cfg) {
   return {
     mats,
     atualizar() {
+      sincronizarMetal(cfg)
       for (const v of vivos) {
         const hex = cfg.marcos[v[1]]
         if (hex !== v[2]) { v[0].color.set(hex); v[2] = hex }
