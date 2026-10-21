@@ -25,7 +25,7 @@ export function secaoDesempenho(gui, cfg) {
   sombra.add(cfg.mundo, 'sombraPertoAFrente', 0, 20, 0.5).name('sombra de perto: à frente (m)')
   sombra.add(cfg.mundo, 'sombraSuave', 0, 3, 0.05).name('borda da sombra: suavidade (texels)')
   sombra.add(cfg.mundo, 'sombraFiltro', ['pintado', 'three']).name(rec('borda da sombra: filtro'))
-  sombra.add(cfg.mundo, 'sombraCopaCheia').name('sombra do coqueiro em lâminas')
+  sombra.add(cfg.mundo, 'sombraCopaCheia').name(rec('sombra do coqueiro em tufos'))
   sombra.add(cfg.mundo, 'sombraVies', 0, 1, 0.005).name('sombra: viés (m)')
   sombra.add(cfg.mundo, 'sombraViesNormal', 0, 4, 0.05).name('sombra: viés pela normal (texels)')
   sombra.add(cfg.mundo, 'passoSombraMin', 0, 15, 1).name('sombra anda em passos (min)')
