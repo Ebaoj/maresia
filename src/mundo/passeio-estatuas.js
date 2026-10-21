@@ -18,7 +18,7 @@ import * as THREE from 'three'
 function membro(o, chave, a, b, r) {
   const d = new THREE.Vector3().subVectors(b, a)
   const comp = d.length()
-  const g = new THREE.CapsuleGeometry(r, Math.max(0.01, comp), 3, 8)
+  const g = new THREE.CapsuleGeometry(r, Math.max(0.01, comp), 4, 12)
   const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize())
   g.applyQuaternion(q)
   const m = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5)
@@ -27,6 +27,54 @@ function membro(o, chave, a, b, r) {
 }
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z)
+
+// sólido de revolução por um perfil [raio, altura], achatado em z (o tronco é mais largo que fundo);
+// dobras: ondula o raio em volta (o panejamento)
+function torneado(perfil, achata = 0.72, dobras = 0, lados = 18) {
+  const g = new THREE.LatheGeometry(perfil.map(([r, h]) => new THREE.Vector2(r, h)), lados)
+  const p = g.attributes.position
+  for (let i = 0; i < p.count; i++) {
+    const a = Math.atan2(p.getZ(i), p.getX(i))
+    const k = dobras ? 1 + 0.07 * Math.sin(a * dobras) * Math.min(1, p.getY(i) < 0.3 ? 1 : 0.6) : 1
+    p.setX(i, p.getX(i) * k)
+    p.setZ(i, p.getZ(i) * k * achata)
+  }
+  g.computeVertexNormals()
+  return g
+}
+
+// corpo deitado de leão (a esfinge): um cilindro ao longo de z cuja seção (largura, dorso) segue o perfil
+// do animal, da anca ao peito, com a barriga chata no plinto
+function corpoDeLeao() {
+  const L = 1.7
+  const g = new THREE.CylinderGeometry(1, 1, L, 20, 28)
+  g.rotateX(Math.PI / 2) // eixo ao longo de z (a cauda em -z)
+  // [z, meia largura, altura do dorso]: anca alta e redonda, lombo que desce, peito e ombros altos
+  const chaves = [[-0.85, 0.27, 0.4], [-0.7, 0.45, 0.66], [-0.45, 0.42, 0.62], [-0.15, 0.37, 0.58], [0.15, 0.39, 0.68], [0.4, 0.42, 0.86], [0.62, 0.35, 0.84], [0.85, 0.14, 0.55]]
+  const interp = (z, k) => {
+    if (z <= chaves[0][0]) return chaves[0][k]
+    for (let i = 0; i < chaves.length - 1; i++) {
+      const [a] = chaves[i]
+      const [b] = chaves[i + 1]
+      if (z <= b) { const t = (z - a) / (b - a); const u = t * t * (3 - 2 * t); return chaves[i][k] + (chaves[i + 1][k] - chaves[i][k]) * u }
+    }
+    return chaves[chaves.length - 1][k]
+  }
+  const p = g.attributes.position
+  const baixo = 0.14
+  for (let i = 0; i < p.count; i++) {
+    const cx = p.getX(i)
+    const cy = p.getY(i)
+    const z = p.getZ(i) / L * 1.7
+    const w = interp(z, 1)
+    const topo = interp(z, 2)
+    const meio = (topo + baixo) / 2
+    const meia = (topo - baixo) / 2
+    p.setXYZ(i, cx * w, meio + Math.max(cy, -0.85) * meia, z - 0.25)
+  }
+  g.computeVertexNormals()
+  return g
+}
 
 // Figura em pé de ~1,75 m sobre (x, y, z), olhando para (sen ry, cos ry). pose:
 //   'apolo' (Prometeu, braço apontando o céu), 'voo' (Mercúrio na ponta do pé, braço erguido),
@@ -41,9 +89,8 @@ export function figura(o, chave, x, y, z, pose, ry = 0) {
   const cabeca = ombro.clone().add(V(0, 0.22, 0.05 * Math.sin(inclina)))
   // pernas
   if (pose === 'drapeada') {
-    const manto = new THREE.CylinderGeometry(0.17, 0.3, 0.95, 10)
-    manto.translate(0, 0.475, 0)
-    partes.push(['geo', manto])
+    // o manto até o pé, com as dobras do panejamento
+    partes.push(['geo', torneado([[0.31, 0], [0.29, 0.25], [0.24, 0.6], [0.2, 0.85], [0.17, 0.97], [0.01, 0.98]], 0.8, 11)])
   } else if (pose === 'banhista') {
     p(quadril.clone().add(V(-0.1, 0, 0)), V(-0.12, 0.3, 0.35), 0.075)
     p(V(-0.12, 0.3, 0.35), V(-0.1, 0.04, 0.3), 0.06)
@@ -58,9 +105,16 @@ export function figura(o, chave, x, y, z, pose, ry = 0) {
     p(quadril.clone().add(V(-0.1, 0, 0)), V(-0.11, 0.03, 0.03), 0.075)
     p(quadril.clone().add(V(0.1, 0, 0)), V(0.14, 0.03, -0.08), 0.075)
   }
-  // tronco e cabeça
-  p(quadril, ombro, 0.14)
-  partes.push(['geo', new THREE.SphereGeometry(0.115, 10, 8).translate(cabeca.x, cabeca.y, cabeca.z)])
+  // tronco torneado (quadril, cintura, peito, ombros), pescoço e cabeça
+  const alt = ombro.distanceTo(quadril)
+  const tronco = torneado([[0.02, -0.04], [0.16, 0], [0.15, alt * 0.25], [0.13, alt * 0.45], [0.165, alt * 0.75], [0.17, alt * 0.92], [0.06, alt + 0.02], [0.01, alt + 0.03]], 0.7)
+  tronco.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), ombro.clone().sub(quadril).normalize()))
+  tronco.translate(quadril.x, quadril.y, quadril.z)
+  partes.push(['geo', tronco])
+  p(ombro.clone().add(V(0, 0.02, 0)), cabeca.clone().add(V(0, -0.08, 0)), 0.05)
+  partes.push(['geo', new THREE.SphereGeometry(0.11, 16, 12).scale(0.9, 1.08, 0.98).translate(cabeca.x, cabeca.y, cabeca.z)])
+  // o coque do cabelo (atrás da cabeça), que dá o perfil de estátua clássica
+  partes.push(['geo', new THREE.SphereGeometry(0.06, 10, 8).translate(cabeca.x, cabeca.y + 0.05, cabeca.z - 0.09)])
   // braços
   const oe = ombro.clone().add(V(-0.2, -0.04, 0))
   const od = ombro.clone().add(V(0.2, -0.04, 0))
@@ -104,48 +158,56 @@ export function estatua(o, pedra, branco, x, y, z, pose, ry = 0, alto = 1.6) {
 // duas abas pelos ombros). Pedra lisa, uma cor só.
 export function esfinge(o, chave, x, y, z, ry = 0) {
   const gs = []
-  const elip = (cx, cy, cz, rx, ryy, rz, seg = 12) => { const g = new THREE.SphereGeometry(1, seg, Math.round(seg * 0.7)); g.scale(rx, ryy, rz); g.translate(cx, cy, cz); gs.push(g) }
+  const elip = (cx, cy, cz, rx, ryy, rz, seg = 16) => { const g = new THREE.SphereGeometry(1, seg, Math.round(seg * 0.75)); g.scale(rx, ryy, rz); g.translate(cx, cy, cz); gs.push(g) }
   const perna = (a, b, r) => { const t = { lista: [], geo(k, g) { this.lista.push(g) } }; membro(t, null, a, b, r); gs.push(t.lista[0]) }
-  // o plinto
-  const plinto = new THREE.BoxGeometry(0.95, 0.14, 2.35)
-  plinto.translate(0, 0.07, 0)
+  // o plinto com a borda chanfrada
+  const plinto = new THREE.BoxGeometry(0.98, 0.14, 2.4)
+  plinto.translate(0, 0.07, 0.05)
   gs.push(plinto)
-  // o corpo de leão deitado: lombo comprido, quartos traseiros redondos, peito alto
-  elip(0, 0.5, -0.2, 0.36, 0.34, 0.85)
-  elip(0, 0.42, -0.78, 0.4, 0.3, 0.38)
-  elip(0, 0.66, 0.38, 0.33, 0.42, 0.34)
-  // as patas da frente estendidas e as de trás dobradas ao lado
+  // o corpo de leão deitado: anca, dorso que desce, peito alto (um só sólido, sem emenda)
+  gs.push(corpoDeLeao())
+  // as patas de trás dobradas ao lado da anca, e o rabo enrolado sobre ela
   for (const lado of [-1, 1]) {
-    perna(V(lado * 0.2, 0.32, 0.45), V(lado * 0.21, 0.22, 1.02), 0.085)
-    elip(lado * 0.21, 0.2, 1.06, 0.1, 0.07, 0.11, 8)
-    elip(lado * 0.3, 0.27, -0.62, 0.12, 0.13, 0.34, 8)
+    elip(lado * 0.33, 0.3, -0.72, 0.12, 0.17, 0.32, 12)
+    perna(V(lado * 0.36, 0.17, -0.5), V(lado * 0.3, 0.17, -0.08), 0.07)
   }
-  // a cabeça com o nemes: o rosto arredondado, o pano que desce atrás em trapézio e as duas abas no peito
-  elip(0, 1.12, 0.47, 0.14, 0.18, 0.15)
-  const s = new THREE.Shape()
-  s.moveTo(-0.17, 0.2)
-  s.quadraticCurveTo(0, 0.3, 0.17, 0.2)
-  s.lineTo(0.3, -0.34)
-  s.lineTo(-0.3, -0.34)
-  s.lineTo(-0.17, 0.2)
-  const nemes = new THREE.ExtrudeGeometry(s, { depth: 0.34, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2, curveSegments: 6 })
-  nemes.translate(0, 1.06, 0.12)
-  gs.push(nemes)
+  const rabo = new THREE.TorusGeometry(0.22, 0.04, 6, 14, Math.PI * 1.1)
+  rabo.rotateX(Math.PI / 2)
+  rabo.translate(0.12, 0.44, -0.9)
+  gs.push(rabo)
+  // as patas da frente estendidas, paralelas, com os dedos
   for (const lado of [-1, 1]) {
-    const aba = new THREE.BoxGeometry(0.1, 0.42, 0.12)
-    aba.rotateX(-0.12)
-    aba.translate(lado * 0.19, 0.84, 0.53)
+    perna(V(lado * 0.2, 0.32, 0.32), V(lado * 0.21, 0.2, 0.62), 0.1)
+    perna(V(lado * 0.21, 0.2, 0.62), V(lado * 0.21, 0.18, 1.08), 0.085)
+    elip(lado * 0.21, 0.17, 1.12, 0.1, 0.07, 0.12, 12)
+  }
+  // a cabeça: rosto oval um pouco à frente, nariz e queixo
+  const yc = 1.08
+  const zc = 0.5
+  elip(0, yc, zc, 0.13, 0.17, 0.13)
+  const nariz = new THREE.BoxGeometry(0.05, 0.08, 0.06)
+  nariz.translate(0, yc - 0.02, zc + 0.12)
+  gs.push(nariz)
+  elip(0, yc - 0.15, zc + 0.03, 0.07, 0.05, 0.07, 10) // o queixo (a barba postiça, curta)
+  // o nemes: o pano que cobre a cabeça e se abre em leque atrás das orelhas (tronco de cone achatado),
+  // com o topo arredondado e as duas abas caindo pelo peito
+  const nemes = new THREE.CylinderGeometry(0.17, 0.33, 0.46, 16, 1, false, -Math.PI * 0.82, Math.PI * 1.64)
+  nemes.scale(1, 1, 0.75)
+  nemes.translate(0, yc - 0.05, zc - 0.07)
+  gs.push(nemes)
+  elip(0, yc + 0.16, zc - 0.04, 0.175, 0.1, 0.16, 14)
+  for (const lado of [-1, 1]) {
+    const aba = new THREE.CylinderGeometry(0.075, 0.1, 0.46, 6)
+    aba.scale(1, 1, 0.45)
+    aba.translate(lado * 0.2, yc - 0.33, zc + 0.02)
     gs.push(aba)
   }
-  // a faixa da testa e o rabo enrolado ao lado do quarto
-  const faixa = new THREE.TorusGeometry(0.15, 0.025, 4, 12, Math.PI)
+  // a faixa da testa e a cauda do pano atrás, sobre a nuca
+  const faixa = new THREE.TorusGeometry(0.15, 0.018, 4, 16, Math.PI)
   faixa.rotateX(-Math.PI / 2)
-  faixa.translate(0, 1.22, 0.47)
+  faixa.translate(0, yc + 0.09, zc)
   gs.push(faixa)
-  const rabo = new THREE.TorusGeometry(0.2, 0.04, 5, 10, Math.PI)
-  rabo.rotateY(Math.PI / 2)
-  rabo.translate(0.4, 0.18, -0.72)
-  gs.push(rabo)
+  perna(V(0, yc - 0.05, zc - 0.25), V(0, yc - 0.32, zc - 0.33), 0.06)
   for (const g of gs) { g.rotateY(ry); g.translate(x, y, z); o.geo(chave, g) }
 }
 

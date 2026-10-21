@@ -33,7 +33,10 @@ import { toonVertice } from '../materiais.js'
 import { criarAleatorio } from '../utils.js'
 
 const TABELA = (c) => ({
-  piso: { cor: '#e6dcc6', tex: 'areia', tam: 3, contraste: 0.35 },
+  // o cimento das avenidas: pedra quente e mais escura (o '#e6dcc6' de antes estourava para branco às 16-17h,
+  // de frente para o sol), com as juntas das placas desenhadas
+  piso: { cor: '#c4ae8c', tex: 'pedra', tam: 2.2, contraste: 0.45 },
+  junta: { cor: '#8a7660', detalhe: true },
   tijolo: { cor: '#c9a27e', tex: 'pedra', tam: 1.2, contraste: 0.5 },
   canteiro: { cor: '#7a8c4c', tex: 'folha', tam: 2, contraste: 0.5 },
   meiofio: { cor: CAL.calVelha },
@@ -45,8 +48,8 @@ const TABELA = (c) => ({
   pilar: { cor: '#efe8da', tex: 'cal', tam: 1.5, contraste: 0.6, massa: 0.6, recebe: false },
   pedra: { cor: '#e4dccb', tex: 'pedra', tam: 2, contraste: 0.3 },
   nicho: { cor: '#cfc6b4' },
-  estatua: { cor: '#f2ede2', detalhe: true, recebe: false },
-  esfinge: { cor: c.corEsfinge, proprio: true, recebe: false },
+  estatua: { cor: '#ece6d8', detalhe: true },
+  esfinge: { cor: c.corEsfinge, proprio: true },
   ferro: { cor: c.corFerro, detalhe: true, proprio: true },
   ferroGrosso: { cor: c.corFerro },
   lamp: { cor: c.corFerro, detalhe: true, proprio: true },
@@ -79,6 +82,12 @@ function trechos(eixos) {
   return out
 }
 
+// as juntas das placas de cimento: uma a cada 1,5 m atravessando a avenida e uma no meio dela
+function juntas(o, x0, x1, z0, z1) {
+  for (let x = x0 + 1.5; x < x1; x += 1.5) o.caixa('junta', x, 0.062, (z0 + z1) / 2, 0.035, 0.006, z1 - z0 - 0.1)
+  o.caixa('junta', (x0 + x1) / 2, 0.062, (z0 + z1) / 2, x1 - x0, 0.006, 0.035)
+}
+
 function laje(o, chave, x0, x1, z0, z1, alto = 0.06, y = 0) {
   o.bloco(chave, (x0 + x1) / 2, y, (z0 + z1) / 2, x1 - x0, alto, z1 - z0)
 }
@@ -101,6 +110,8 @@ function primeiroPlano(o, y2, arvores) {
   laje(o, 'piso', p1.x0, p1.x1, ...Z.caio)
   laje(o, 'tijolo', p1.x0, p1.x1, ...Z.carap)
   laje(o, 'piso', p1.x0, p1.x1, ...Z.mororo)
+  juntas(o, p1.x0, p1.x1, ...Z.caio)
+  juntas(o, p1.x0, p1.x1, ...Z.mororo)
   laje(o, 'piso', p1.x0, p1.x1, ...Z.borda)
   for (const [x, w] of EIXOS) laje(o, 'piso', x - w / 2, x + w / 2, Z.carap[1], Z.borda[0], 0.05)
   // praças nos eixos: o coreto, a caixa-d'água, o tanque da entrada
