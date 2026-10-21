@@ -4,11 +4,13 @@
 // detalhe longe da câmera. As fontes e as decisões de cada um estão no cabeçalho de cada arquivo.
 
 import { criarEstacao } from './estacao.js'
+import { criarSe } from './se1932.js'
 import { acenderVidros, uPincelMarcos } from './obra1932.js'
 
 export function criarMarcosNorte(cena, cfg) {
   const c = cfg.mundo.marcosNorte
   const marcos = {
+    se: criarSe(cena, cfg),
     estacao: criarEstacao(cena, cfg),
   }
   // as cores que o painel mexe: [marco, chave do material, chave do cfg]

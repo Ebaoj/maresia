@@ -12,7 +12,7 @@ export const DESTINOS = [
   ['Praça do Ferreira', 'pracaFerreira'],
   ['Passeio Público', 'passeioPublico'],
   ['Estação Central', 'pracaEstacao', 'estacao'],
-  ['Sé', 'se'],
+  ['Sé', 'se', 'se'],
   ['Forte', 'forte'],
   ['Mercado', 'mercado'],
   ['Theatro José de Alencar', 'theatro'],

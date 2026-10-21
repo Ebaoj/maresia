@@ -6,6 +6,8 @@
 import { PEGADAS } from './lotes-marcos.js'
 
 const LOCAIS = {
+  // a Sé vista do largo, a sudoeste, com o cruzeiro à direita e o mar atrás (se-velha.png, manhã)
+  se: { marco: 'se', de: [-10, 40], para: [2, -10], hora: 9.0, pitch: -0.22 },
   // a Estação vista da praça, a sudeste, a ala oeste fugindo à esquerda (estacao-central.png, tarde)
   estacao: { marco: 'estacao', de: [30, 50], para: [-5, 14], hora: 15.5, pitch: 0.02 },
 }

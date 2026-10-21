@@ -19,7 +19,7 @@ describe('painel: Ir para', () => {
 })
 
 // Os pontos de vista dos marcos de 1932 (src/mundo/vistas-marcos.js): o botão leva para onde o conceito foi
-// pintado, olhando para o marco, na hora do quadro (e não para o meio do marco)
+// pintado, olhando para o marco, na hora do quadro (e não para o meio do marco, onde o jogador caía dentro da Sé)
 import { VISTAS_MARCOS } from '../../src/mundo/vistas-marcos.js'
 import { marcoSob } from '../../src/mundo/lotes-marcos.js'
 describe('painel: Ir para os marcos de 1932', () => {
@@ -35,13 +35,14 @@ describe('painel: Ir para os marcos de 1932', () => {
       expect(-(Math.sin(v.yaw) * dx + Math.cos(v.yaw) * dz) / Math.hypot(dx, dz)).toBeGreaterThan(0.99)
       expect(marcoSob(v.alvo[0], v.alvo[1], 8)).toBe(v.marco)
     }
+    expect(marcoSob(VISTAS_MARCOS.se.x, VISTAS_MARCOS.se.z)).toBe('se') // no largo da Sé (o largo é do terreno dela)
   })
   it('o botão da vista teleporta com o giro e a hora do conceito', () => {
     const cfg = { fatia: { travar: true } }
     const chamadas = []
     const cam = { pitch: 0 }
-    irParaLugar(cfg, 'pracaEstacao', { irPara: (...a) => chamadas.push(a), cam }, 'estacao')
-    const v = VISTAS_MARCOS.estacao
+    irParaLugar(cfg, 'se', { irPara: (...a) => chamadas.push(a), cam }, 'se')
+    const v = VISTAS_MARCOS.se
     expect(chamadas).toEqual([[v.x, v.z, v.yaw, v.hora]])
     expect(cam.pitch).toBe(v.pitch)
   })
