@@ -136,7 +136,7 @@ export function criarCeu(cena, cfg = null) {
       p.hor.lerp(corPetroleo.set('#efe6d2'), k * 0.45) // CAL.cal
       // ao meio-dia o alto é azul fundo e o horizonte azul claro (o branco estourado do sertão não é o da costa)
       p.topo.lerp(corAzul.set(cfg.estilo.arcCeuAzulTopo || '#1a56b8'), azul)
-      p.hor.lerp(corAzul.set(cfg.estilo.arcCeuAzulHorizonte || '#9cc3ea'), azul)
+      p.hor.lerp(corAzul.set(cfg.estilo.arcCeuAzulHorizonte || '#dde8f0'), azul)
     }
     // a luz que projeta sombra anda em passos (a cada cfg.mundo.passoSombraMin minutos de jogo, ~1°): com o
     // sol girando um pouco a cada quadro, o mapa de sombra girava junto e a borda das sombras tremia
@@ -158,14 +158,14 @@ export function criarCeu(cena, cfg = null) {
 
     uniformes.uTopo.value.copy(p.topo)
     uniformes.uHor.value.copy(p.hor)
-    uniformes.uCeuRampa.value = THREE.MathUtils.lerp(cfg.estilo.arcCeuRampa ?? 0.45, cfg.estilo.arcCeuAzulRampa ?? 0.32, azul)
+    uniformes.uCeuRampa.value = THREE.MathUtils.lerp(cfg.estilo.arcCeuRampa ?? 0.45, cfg.estilo.arcCeuAzulRampa ?? 0.6, azul)
     uniformes.uAzul.value = azul
     uniformes.uCumulos.value.set(cfg.estilo.arcCeuCumulos ?? 0.75, cfg.estilo.arcCeuCumulosTamanho ?? 1.2)
     // a parada do meio: no visual Arcane, de dia, um azul claro esverdeado; senão o meio do caminho (o de antes)
     uniformes.uMeio.value.copy(p.hor).lerp(p.topo, 0.5)
     if (cfg.estilo.visual === 'arcane') {
       uniformes.uMeio.value.lerp(corMeio.copy(p.topo).lerp(corCiano.set(cfg.estilo.arcCeuMeio || '#6fa8bc'), 0.85), (cfg.estilo.arcCeuPetroleo ?? 0) * (1 - p.noite))
-      uniformes.uMeio.value.lerp(corAzul.set(cfg.estilo.arcCeuAzulMeio || '#3f84d6'), azul)
+      uniformes.uMeio.value.lerp(corAzul.set(cfg.estilo.arcCeuAzulMeio || '#5e98d9'), azul)
     }
     globais.uSolDir.value.copy(dirSol)
     globais.uSolCor.value.copy(p.luz)
@@ -222,7 +222,7 @@ export function criarCeu(cena, cfg = null) {
       // (sertão: de dia o ar é poeira clara e quente, arcArPoeira; o azul só como alívio)
       globais.uArCor.value.copy(uniformes.uMeio.value).lerp(p.hor, THREE.MathUtils.clamp((cfg.estilo.arcArPoeira ?? 0.2) + 0.7 * dourada + 0.4 * p.noite, 0, 1))
       // (meio-dia de agosto: pouca névoa, o ar da distância é azul claro, não poeira)
-      globais.uArCor.value.lerp(corAzul.set(cfg.estilo.arcCeuAzulAr || '#a9c6e4'), azul)
+      globais.uArCor.value.lerp(corAzul.set(cfg.estilo.arcCeuAzulAr || '#c3d5e5'), azul)
     } else {
       globais.uArCor.value.copy(p.hor).lerp(p.topo, 0.45 * (1 - quente))
     }

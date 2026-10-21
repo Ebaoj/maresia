@@ -53,10 +53,10 @@ export const PADRAO = {
     // ficam como estavam
     arcCeuAzul: 1.0,               // força (0 = o céu desbotado do sertão em todas as horas)
     arcCeuAzulTopo: '#1a56b8',     // o alto
-    arcCeuAzulMeio: '#3f84d6',     // o meio
-    arcCeuAzulHorizonte: '#9cc3ea', // o horizonte: azul claro, não mais o branco estourado
-    arcCeuAzulRampa: 0.32,         // altura (seno) em que o azul fundo chega com o sol alto
-    arcCeuAzulAr: '#a9c6e4',       // a cor do ar na distância ao meio-dia (pouca névoa, azulada)
+    arcCeuAzulMeio: '#5e98d9',     // o meio
+    arcCeuAzulHorizonte: '#dde8f0', // o horizonte: névoa clara, quase branca, de sal e sol (revisão 2: '#9cc3ea' saturava até o chão)
+    arcCeuAzulRampa: 0.6,          // altura (seno) em que o azul fundo chega com o sol alto (0,32 dava azul chapado até o horizonte)
+    arcCeuAzulAr: '#c3d5e5',       // a cor do ar na distância ao meio-dia (névoa clara e azulada)
     arcCeuCumulos: 0.75,           // cúmulos redondos pintados rente ao horizonte ao meio-dia: fração das posições com nuvem
     arcCeuCumulosTamanho: 1.2,     // tamanho deles
     nuvens: 70,                    // cúmulos de alísio no céu (quantos); vale ao recarregar
