@@ -10,6 +10,7 @@ import * as THREE from 'three'
 import { materialArcane, copiarPropriedades, matrizInstancia } from './arcane-tsl.js'
 import { usarModulo, ref } from './gpu/comum.js'
 import { instalarFaixasUnicas } from './gpu/faixas-uniform.js'
+import { instalarFiltroWebgl } from './filtro-sombra.js'
 
 let W = null // o módulo three/webgpu, no modo webgpu
 let renderizador = null
@@ -55,6 +56,9 @@ export async function criarRenderizador(cfg, canvas) {
     renderizador = renderer
     return { renderer, webgpu: true }
   }
+  // sombra (21/10/2026): borda presa ao mapa em vez do ruído de tela do three (render/filtro-sombra.js); antes do
+  // primeiro material compilar
+  if (!instalarFiltroWebgl()) console.warn('filtro da sombra: o trecho do three mudou, segue o PCF do three')
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap // suave desde o three 0.182
