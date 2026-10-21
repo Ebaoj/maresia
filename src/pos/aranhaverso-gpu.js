@@ -316,8 +316,9 @@ function fragTela(W, u, T, uvGL) {
           // A distância se tinge com a cor do céu na hora (azul ao meio-dia, quente no fim
           // da tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
           const Lc = dot(cor, LUM)
-          const comAr = mix(cor, U.uArCor.mul(float(0.55).add(Lc.mul(0.75))), 0.8)
-          cor.assign(mix(cor, comAr, km.mul(0.75)))
+          // (3b: menos clareamento e menos força; o véu bege da distância lavava a imagem inteira)
+          const comAr = mix(cor, U.uArCor.mul(float(0.35).add(Lc.mul(0.8))), 0.7)
+          cor.assign(mix(cor, comAr, km.mul(U.uArcArTinta)))
         }).Else(() => {
           const Lc = dot(cor, LUM)
           cor.assign(mix(cor, vec3(Lc), km.mul(0.6)))
@@ -356,7 +357,10 @@ function fragTela(W, u, T, uvGL) {
         const LnE = clamp(mix(Ln, Ln.mul(Ln).mul(float(3.0).sub(Ln.mul(2.0))), 0.3).sub(0.42).mul(1.12).add(0.42), 0.0, 1.0)
         Ln.assign(mix(LnE, Ln, ceu))
       })
-      cor.mulAssign(Ln.div(max(Lg, 1e-3)))
+      // 3b: abre a faixa de valor (níveis): o preto desce, a cal ao sol chega perto do branco. Só no mundo
+      Ln.assign(mix(clamp(Ln.sub(U.uArcPreto).div(max(U.uArcBranco.sub(U.uArcPreto), 0.05)), 0.0, 1.0), Ln, ceu))
+      // metade do ganho de valor entra como cinza somado (multiplicar tudo aumentava o croma junto, 3b)
+      cor.assign(mix(cor.mul(Ln.div(max(Lg, 1e-3))), cor.add(Ln.sub(Lg)), 0.5))
     })
     const L = dot(cor, LUM).toVar()
 
@@ -366,9 +370,10 @@ function fragTela(W, u, T, uvGL) {
         // A sombra esfria SEM mudar a cor do objeto: multiplicar pela cor da sombra puxava
         // o matiz (a areia virava azul). Aqui a sombra é uma cor fria misturada por cima, e
         // a luz é somada, nunca multiplicada.
-        const sombra = U.uTomSombra.mul(float(1.0).sub(smoothstep(0.05, 0.55, L)))
+        // (3b: o céu fica fora; a "sombra" azul e a luz somada o lavavam)
+        const sombra = U.uTomSombra.mul(float(1.0).sub(smoothstep(0.05, 0.55, L))).mul(float(1.0).sub(ceu))
         cor.assign(mix(cor, U.uCorSombra.mul(float(0.9).add(L.mul(0.5))), sombra.mul(0.8)))
-        cor.addAssign(U.uCorLuz.mul(U.uTomLuz).mul(smoothstep(0.55, 1.0, L)).mul(0.3))
+        cor.addAssign(U.uCorLuz.mul(U.uTomLuz).mul(smoothstep(0.55, 1.0, L)).mul(0.3).mul(float(1.0).sub(ceu)))
       }).Else(() => {
         cor.mulAssign(mix(vec3(1.0), U.uCorSombra.mul(1.6), U.uTomSombra.mul(float(1.0).sub(smoothstep(0.05, 0.55, L)))))
         cor.assign(mix(cor, cor.mul(U.uCorLuz).mul(1.2), U.uTomLuz.mul(smoothstep(0.55, 1.0, L))))
@@ -544,7 +549,7 @@ function fragTela(W, u, T, uvGL) {
         const sat = mx.sub(mn).div(max(mx, 1e-3))
         const neutro = float(1.0).sub(smoothstep(0.04, 0.26, sat))
         // só no mundo: o céu claro também é pouco saturado, e puxado para o cal virava creme e branco
-        cor.assign(mix(cor, mix(vec3(Lf), U.uCalCor, 0.4).mul(mx), neutro.mul(0.45).mul(U.uArcGradeCal).mul(float(1.0).sub(ceu))))
+        cor.assign(mix(cor, mix(vec3(Lf), U.uCalCor, 0.4).mul(mx), neutro.mul(U.uArcCalNeutro).mul(U.uArcGradeCal).mul(float(1.0).sub(ceu))))
         cor.assign(mix(vec3(Lf), cor, U.uArcGradeSaturacao))
       })
     })

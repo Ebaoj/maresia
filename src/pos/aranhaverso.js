@@ -111,7 +111,7 @@ uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uni
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
 uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
 uniform float uArcLuzEstrutura; uniform vec3 uArCor;
-uniform float uTelaPintura;
+uniform float uTelaPintura; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
@@ -193,8 +193,9 @@ void main() {
       // A distância se tinge com a cor do céu na hora (azul ao meio-dia, quente no fim da
       // tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
       float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
-      vec3 comAr = mix(cor, uArCor * (0.55 + 0.75 * Lc), 0.8);
-      cor = mix(cor, comAr, km * 0.75);
+      // (3b: menos clareamento e menos força; o véu bege da distância lavava a imagem inteira)
+      vec3 comAr = mix(cor, uArCor * (0.35 + 0.8 * Lc), 0.7);
+      cor = mix(cor, comAr, km * uArcArTinta);
     } else {
       float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
       cor = mix(cor, vec3(Lc), km * 0.6);
@@ -233,7 +234,11 @@ void main() {
       LnE = clamp((LnE - 0.42) * 1.12 + 0.42, 0.0, 1.0);
       Ln = mix(LnE, Ln, ceu);
     }
-    cor *= Ln / max(Lg, 1e-3);
+    // 3b: abre a faixa de valor (níveis): o preto desce, a cal ao sol chega perto do branco. Só no mundo
+    Ln = mix(clamp((Ln - uArcPreto) / max(uArcBranco - uArcPreto, 0.05), 0.0, 1.0), Ln, ceu);
+    // metade do ganho de valor entra como cinza somado, não só multiplicado: multiplicar tudo pela razão
+    // aumentava o croma junto e a areia clara virava amarelo-ovo (3b)
+    cor = mix(cor * (Ln / max(Lg, 1e-3)), cor + (Ln - Lg), 0.5);
   }
   float L = dot(cor, vec3(0.299, 0.587, 0.114));
 
@@ -242,9 +247,10 @@ void main() {
     // A sombra esfria SEM mudar a cor do objeto: multiplicar pela cor da sombra puxava o
     // matiz (a areia virava azul). Aqui a sombra é uma cor fria misturada por cima, e a
     // luz é somada, nunca multiplicada.
-    float sombra = uTomSombra * (1.0 - smoothstep(0.05, 0.55, L));
+    // (3b: o céu fica fora; ele tem cor própria, e a "sombra" azul e a luz somada o lavavam)
+    float sombra = uTomSombra * (1.0 - smoothstep(0.05, 0.55, L)) * (1.0 - ceu);
     cor = mix(cor, uCorSombra * (0.9 + 0.5 * L), sombra * 0.8);
-    cor += uCorLuz * uTomLuz * smoothstep(0.55, 1.0, L) * 0.3;
+    cor += uCorLuz * uTomLuz * smoothstep(0.55, 1.0, L) * 0.3 * (1.0 - ceu);
   } else {
     cor *= mix(vec3(1.0), uCorSombra * 1.6, uTomSombra * (1.0 - smoothstep(0.05, 0.55, L)));
     cor = mix(cor, cor * uCorLuz * 1.2, uTomLuz * smoothstep(0.55, 1.0, L));
@@ -437,7 +443,7 @@ void main() {
     float sat = (mx - mn) / max(mx, 1e-3);
     float neutro = 1.0 - smoothstep(0.04, 0.26, sat);
     // só no mundo: o céu claro também é pouco saturado, e puxado para o cal virava creme e branco
-    cor = mix(cor, mix(vec3(Lf), uCalCor, 0.4) * mx, neutro * 0.45 * uArcGradeCal * (1.0 - ceu));
+    cor = mix(cor, mix(vec3(Lf), uCalCor, 0.4) * mx, neutro * uArcCalNeutro * uArcGradeCal * (1.0 - ceu));
     cor = mix(vec3(Lf), cor, uArcGradeSaturacao);
   }
 
@@ -521,7 +527,7 @@ export class Aranhaverso {
       uSolTela: { value: new THREE.Vector3() }, uFlare: { value: 0 }, uCorFlare: { value: new THREE.Color(1, 0.8, 0.6) },
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
       uArcLuzEstrutura: { value: 1 }, uArCor: v3(),
-      uTelaPintura: { value: 0 },
+      uTelaPintura: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
       uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
     }
 
@@ -675,7 +681,7 @@ export class Aranhaverso {
     u.uVinheta.value = e.vinheta
     u.uDesfoque.value = e.desfoqueFundo
     u.uFoco.value = e.focoDistancia
-    u.uOclusao.value = e.oclusao
+    u.uOclusao.value = arc ? (e.arcOclusao ?? e.oclusao) : e.oclusao
     u.uBrilho.value = e.brilho
     u.uModo.value = e.pontosNaLuz ? 1 : 0
     u.uLimLuzPontos.value = e.limiarLuzPontos
@@ -726,6 +732,10 @@ export class Aranhaverso {
       ;(this.rtPinturaAlvo || this.rtPintura).setSize(meiaP ? Math.ceil(w / 2) : w, meiaP ? Math.ceil(h / 2) : h)
     }
     u.uTelaPintura.value = arc ? (e.arcTela ?? 0) : 0
+    u.uArcCalNeutro.value = e.arcGradeNeutro ?? 0.12
+    u.uArcArTinta.value = e.arcArTinta ?? 0.45
+    u.uArcPreto.value = e.arcPreto ?? 0
+    u.uArcBranco.value = e.arcBranco ?? 1
     this.globais.uPincel.value = e.pincel
     this.globais.uPincelEscala.value = e.pincelEscala
   }
