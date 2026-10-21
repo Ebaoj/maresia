@@ -16,6 +16,7 @@ describe('terrenos dos marcos de 1932', () => {
   it('cada marco cobre o ponto do dossiê', () => {
     expect(dentro(PEGADAS.estacao, ...ll(-38.5299, -3.7217))).toBe(true)
     expect(dentro(PEGADAS.se, ...ll(-38.5243, -3.7248))).toBe(true)
+    expect(dentro(PEGADAS.passeio, ...ll(-38.5263, -3.7226))).toBe(true)
   })
   it('a Estação olha para a Praça da Estação (a praça fica ao sul da malha, na frente)', () => {
     const [lx, lz] = localDaPegada(PEGADAS.estacao, ...lugaresJogo.pracaEstacao)

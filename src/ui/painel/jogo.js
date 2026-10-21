@@ -10,7 +10,8 @@ import { VISTAS_MARCOS } from '../../mundo/vistas-marcos.js'
 // src/mundo/vistas-marcos.js: o jogador vai para onde o quadro de conceito do marco foi pintado, olhando para ele.
 export const DESTINOS = [
   ['Praça do Ferreira', 'pracaFerreira'],
-  ['Passeio Público', 'passeioPublico'],
+  ['Passeio Público (Avenida Caio Prado)', 'passeioPublico', 'caioPrado'],
+  ['Passeio Público (escada das esfinges)', 'passeioPublico', 'esfinges'],
   ['Estação Central', 'pracaEstacao', 'estacao'],
   ['Sé', 'se', 'se'],
   ['Forte', 'forte'],

@@ -11,6 +11,7 @@ import {
 } from './fortaleza1932.js'
 import { pesoCidade1932, naCidade1932, eraRua1932 } from './ocupacao1932.js'
 import { pesoCampoUrubu } from './mapa1932.js'
+import { alturaComPasseio } from './passeio-terreno.js'
 
 const perlin = new ImprovedNoise()
 
@@ -85,7 +86,12 @@ const [pajX0, pajX1, pajZ0, pajZ1] = (() => {
 })()
 const [, aldeotaX] = [0, lugaresJogo.seminario[0] + 60] // as dunas começam a leste da Prainha
 
+// o chão com os patamares do Passeio Público (passeio-terreno.js): o resto do mapa é o relevo de sempre
 export function alturaBruta(x, z) {
+  return alturaComPasseio(x, z, alturaNatural)
+}
+
+function alturaNatural(x, z) {
   const s = distCosta(x, z)
   const bw = larguraPraia(x)
   let h

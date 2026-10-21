@@ -10,6 +10,10 @@ const LOCAIS = {
   se: { marco: 'se', de: [-10, 40], para: [2, -10], hora: 9.0, pitch: -0.22 },
   // a Estação vista da praça, a sudeste, a ala oeste fugindo à esquerda (estacao-central.png, tarde)
   estacao: { marco: 'estacao', de: [30, 50], para: [-5, 14], hora: 15.5, pitch: 0.02 },
+  // a Avenida Caio Prado olhando para o poente, o mar à direita do belvedere (passeio-caio-prado.png)
+  caioPrado: { marco: 'passeio', de: [-15, -33], para: [-45, -35], hora: 16.8, pitch: 0.08 },
+  // do alto da escada das esfinges, olhando os planos de baixo e o mar (passeio-planos.png)
+  esfinges: { marco: 'passeio', de: [-30, -36.2], para: [-30, -110], hora: 15, pitch: 0.2 },
 }
 
 function paraMundo(p, [lx, lz]) {

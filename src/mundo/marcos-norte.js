@@ -5,6 +5,7 @@
 
 import { criarEstacao } from './estacao.js'
 import { criarSe } from './se1932.js'
+import { criarPasseio } from './passeio1932.js'
 import { acenderVidros, uPincelMarcos } from './obra1932.js'
 
 export function criarMarcosNorte(cena, cfg) {
@@ -12,6 +13,7 @@ export function criarMarcosNorte(cena, cfg) {
   const marcos = {
     se: criarSe(cena, cfg),
     estacao: criarEstacao(cena, cfg),
+    passeio: criarPasseio(cena, cfg),
   }
   // as cores que o painel mexe: [marco, chave do material, chave do cfg]
   const CORES = [['se', 'fachada', 'corSe'], ['estacao', 'parede', 'corEstacao'], ['passeio', 'esfinge', 'corEsfinge'],

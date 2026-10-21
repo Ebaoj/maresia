@@ -28,10 +28,14 @@ const est = naMalha(ll(-38.5299, -3.7217), -15, 0)
 // Sé: a origem é o meio da fachada. O centro do terreno da catedral de hoje (OSM -38,5243, -3,7248)
 // fica no meio da nave da velha Sé, que tinha ~52 m: a fachada a 22 m dele, para o sul da malha
 const se = naMalha(ll(-38.5243, -3.7248), 0, 22)
+// Passeio Público: o centro do 1º plano, 20 m ao norte do ponto do OSM (-38,5263, -3,7226), para a
+// grade da Rua Dr. João Moreira ficar na frente das casas dela (passeio1932.js)
+const pp = naMalha(ll(-38.5263, -3.7226), 0, -20)
 
 export const PEGADAS = {
   estacao: { x: est[0], z: est[1], rot: ROT_MALHA, x0: -68, x1: 68, z0: -44, z1: 40, largo: [-80, 80, 14, 95] },
   se: { x: se[0], z: se[1], rot: ROT_MALHA, x0: -16, x1: 22, z0: -56, z1: 44, largo: [-40, 45, -10, 60] }, // z1: a praça da frente
+  passeio: { x: pp[0], z: pp[1], rot: ROT_MALHA, x0: -74, x1: 74, z0: -148, z1: 39 },
 }
 
 // o ponto (do mundo) em coordenada local de uma pegada
