@@ -199,6 +199,10 @@ export const PADRAO = {
   casario: {
     larguraAlvo: 10,     // a largura de verdade que a casa deve ter (m): a testada longa da planta e partida em casas
     folgaParede: 0.12,   // a fresta entre duas casas geminadas (m)
+    quintal: {
+      densidade: 0.25,   // a chance de uma arvore nascer no quintal de um lote
+      folga: 2.5,        // quantos metros atras da casa a arvore fica (m)
+    },
   },
   mundo: {
     passoSombraMin: 4,     // a luz da sombra anda em passos de N minutos de jogo (~1° a cada 4): sem isso a borda das sombras treme; 0 = contínuo

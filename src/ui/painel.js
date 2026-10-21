@@ -244,6 +244,9 @@ export function criarPainel(cfg) {
   const casario = gui.addFolder('Casario de 1932')
   casario.add(cfg.casario, 'larguraAlvo', 4, 26, 0.5).name('largura da casa (m) (recarregar)')
   casario.add(cfg.casario, 'folgaParede', 0, 0.6, 0.02).name('fresta entre as casas (m) (recarregar)')
+  const quintal = gui.addFolder('Quintais de 1932')
+  quintal.add(cfg.casario.quintal, 'densidade', 0, 1, 0.05).name('árvore por quintal (recarregar)')
+  quintal.add(cfg.casario.quintal, 'folga', 0, 8, 0.5).name('distância atrás da casa (m) (recarregar)')
 
   const urubu = gui.addFolder('Campo do Urubu')
   urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name('altura do galpão (m)')

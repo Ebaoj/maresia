@@ -33,6 +33,7 @@ import { criarHorizonte } from './mundo/horizonte.js'
 import { criarMarcos } from './mundo/marcos.js'
 import { criarPraia } from './mundo/praia.js'
 import { criarCoqueiros } from './mundo/vegetacao.js'
+import { criarQuintal1932 } from './mundo/quintal1932.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
 import { criarUrubu1932 } from './mundo/urubu1932.js'
@@ -129,8 +130,10 @@ async function iniciar() {
   criarBondes(cena) // os trilhos das linhas de bonde da Light sobre a rede viária de 1932
   criarArvores(cena, predios, grade)
   marcar('arvores')
-  const { coqueiros } = criarCoqueiros(cena, cfg)
+  const { coqueiros, pecas } = criarCoqueiros(cena, cfg)
   marcar('coqueiros')
+  criarQuintal1932(cena, cfg, pecas) // as árvores dos quintais de 1932, atrás das casas
+  marcar('quintal')
   const pessoas = criarPessoas(cena, grade)
   const horizonte = criarHorizonte(cena)
   const grama = criarGrama(cena, mapaAltura, cfg, toque.publico)

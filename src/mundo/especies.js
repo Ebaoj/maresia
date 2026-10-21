@@ -52,9 +52,11 @@ function galhoCurvo(pts, r0, r1, hex) {
 
 // cacho de folhagem: icosaedro amassado por ruído, base achatada, mais claro em cima.
 // "topo" tinge a parte de cima (folha nova acobreada do cajueiro, flor do murici).
-function cacho(raio, centro, escura, clara, semente, { achatar = 0.75, topo = null, forca = 0.45 } = {}) {
+// "detalhe" força o número de faces do icosaedro (1 = barato, para as árvores
+// distantes do quintal, que ninguém vê de perto).
+function cacho(raio, centro, escura, clara, semente, { achatar = 0.75, topo = null, forca = 0.45, detalhe = null } = {}) {
   // cacho grande com mais vértices: com poucos, as faixas do toon desenham os polígonos
-  const g = new THREE.IcosahedronGeometry(raio, raio > 0.9 ? 2 : 1)
+  const g = new THREE.IcosahedronGeometry(raio, detalhe ?? (raio > 0.9 ? 2 : 1))
   const p = g.attributes.position
   const v = new THREE.Vector3()
   const cores = []
@@ -87,7 +89,8 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z)
 // CAJUEIRO: tronco curto e torto que logo se abre em galhos grossos quase horizontais; alguns
 // descem até perto do chão. Copa baixa e larga (até ~12 m), verde escuro brilhante, com folha
 // nova acobreada no topo.
-export function cajueiro(rnd) {
+export function cajueiro(rnd, { barato = false } = {}) {
+  // "barato": a folhagem com menos faces (a arvore do quintal, longe de quem olha)
   const casca = '#5e4636'
   const partes = []
   const altT = rnd.entre(0.9, 1.5)
@@ -117,13 +120,55 @@ export function cajueiro(rnd) {
   let s = rnd.entre(0, 100)
   for (const p of pontas) {
     const r = rnd.entre(1.2, 1.9)
-    partes.push(cacho(r, p.clone().add(V(rnd.entre(-0.3, 0.3), r * 0.45, rnd.entre(-0.3, 0.3))), folhaEsc, folhaCla, s++, { topo: rnd.chance(0.4) ? cobre : null }))
+    partes.push(cacho(r, p.clone().add(V(rnd.entre(-0.3, 0.3), r * 0.45, rnd.entre(-0.3, 0.3))), folhaEsc, folhaCla, s++, { topo: rnd.chance(0.4) ? cobre : null, detalhe: barato ? 1 : null }))
   }
   // miolo da copa, mais alto, segurando a silhueta em domo baixo
   for (let i = 0; i < 4; i++) {
     const a = rnd.entre(0, Math.PI * 2)
     const r = rnd.entre(1.5, 2.2)
-    partes.push(cacho(r, inclina.clone().add(V(Math.cos(a) * rnd.entre(0.5, 1.8), rnd.entre(2.2, 3.0), Math.sin(a) * rnd.entre(0.5, 1.8))), folhaEsc, folhaCla, s++, { topo: cobre }))
+    partes.push(cacho(r, inclina.clone().add(V(Math.cos(a) * rnd.entre(0.5, 1.8), rnd.entre(2.2, 3.0), Math.sin(a) * rnd.entre(0.5, 1.8))), folhaEsc, folhaCla, s++, { topo: cobre, detalhe: barato ? 1 : null }))
+  }
+  return mergeGeometries(partes)
+}
+
+// MANGUEIRA: a árvore de quintal. Tronco grosso e reto (meio metro na base) que
+// sobe alto antes de abrir em galhos, e a copa em domo largo e cheia, verde
+// escuro, com a folha nova mais clara no alto. Nas fotos de Platt (1935) ela
+// sombreia o quintal inteiro; é a árvore dos quintais de 1932.
+export function mangueira(rnd, { barato = false } = {}) {
+  // "barato": a folhagem com menos faces (a arvore do quintal, longe de quem olha)
+  const partes = []
+  const casca = '#6a5647'
+  const altT = rnd.entre(3.4, 4.6)
+  const topo = V(rnd.entre(-0.25, 0.25), altT, rnd.entre(-0.25, 0.25))
+  partes.push(...galhoCurvo([V(0, 0, 0), V(topo.x * 0.3, altT * 0.55, topo.z * 0.3), topo], 0.52, 0.34, casca))
+  // galhos: sobem e abrem; a copa fecha em domo
+  const nGalhos = 5 + Math.floor(rnd.entre(0, 2.99))
+  const pontas = []
+  for (let i = 0; i < nGalhos; i++) {
+    const a = (i / nGalhos) * Math.PI * 2 + rnd.entre(-0.3, 0.3)
+    const dir = V(Math.cos(a), 0, Math.sin(a))
+    const L = rnd.entre(2.6, 4.2)
+    const p1 = topo.clone().addScaledVector(dir, L * 0.4).add(V(0, rnd.entre(0.9, 1.6), 0))
+    const p2 = topo.clone().addScaledVector(dir, L).add(V(0, rnd.entre(1.8, 2.8), 0))
+    partes.push(...galhoCurvo([topo, p1, p2], 0.22, 0.08, casca))
+    const lado = V(-dir.z, 0, dir.x).multiplyScalar(rnd.chance(0.5) ? 1 : -1)
+    const s1 = p1.clone().addScaledVector(lado, rnd.entre(0.9, 1.6)).add(V(0, rnd.entre(0.5, 1.1), 0))
+    partes.push(...galhoCurvo([p1, s1], 0.11, 0.05, casca))
+    pontas.push(p2, s1)
+  }
+  const folhaEsc = '#1f4a26'
+  const folhaCla = '#5c8a38'
+  let s = rnd.entre(0, 100)
+  for (const p of pontas) {
+    const r = rnd.entre(1.4, 2.0)
+    partes.push(cacho(r, p.clone().add(V(rnd.entre(-0.25, 0.25), r * 0.35, rnd.entre(-0.25, 0.25))), folhaEsc, folhaCla, s++, { detalhe: barato ? 1 : null }))
+  }
+  // o miolo da copa, mais alto, fechando o domo
+  for (let i = 0; i < 5; i++) {
+    const a = rnd.entre(0, Math.PI * 2)
+    const r = rnd.entre(1.7, 2.4)
+    partes.push(cacho(r, topo.clone().add(V(Math.cos(a) * rnd.entre(0.4, 1.6), rnd.entre(2.2, 3.2), Math.sin(a) * rnd.entre(0.4, 1.6))), folhaEsc, folhaCla, s++, { topo: '#6d9a42', detalhe: barato ? 1 : null }))
   }
   return mergeGeometries(partes)
 }
