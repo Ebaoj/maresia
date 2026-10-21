@@ -287,6 +287,18 @@ export const PADRAO = {
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
+    // Os marcos do norte do centro em 1932 (Sé velha, Estação Central, Passeio Público): src/mundo/marcos-norte.js
+    marcosNorte: {
+      se: true,             // a velha Sé de 1854 (demolida em 1938)
+      estacao: true,        // a Estação Central de 1880, de um pavimento
+      passeio: true,        // o Passeio Público com os três planos
+      detalheAte: 170,
+      pincel: 0.1,          // pincelada da borda das faixas de luz nas paredes deles (o jogo usa 0,35; em parede grande virava camuflagem)      // metros: além disso gradil, balaústre, estátua e lampião somem (a silhueta fica)
+      corSe: '#cddbd6',     // fachada verde-acinzentada da aquarela de 1859 (caiação tingida da paleta)
+      corEstacao: '#efe6d2', // creme claro (cal): a cor original não tem fonte
+      corFerro: '#2b2f2c',  // gradil, poste e grade: ferro escuro (verde quase preto, hipótese)
+      corEsfinge: '#d9cbb0', // pedra artificial lisa, de uma cor só (nota do Joabe nos conceitos)
+    },
     urubu: {
       alturaGalpao: 5.2,    // altura da parede do galpão de folha de zinco (src/mundo/urubu1932.js)
       alturaCerca: 1.8,     // altura do arame que cerca as tarefas de terra

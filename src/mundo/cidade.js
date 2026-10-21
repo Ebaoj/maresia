@@ -9,6 +9,7 @@ import { larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA } from './
 import { alturaTerreno, inclinacao } from './terreno.js'
 import { materialPredio } from '../materiais.js'
 import { FACHADAS, RESERVADOS, USO } from './casario1932.js'
+import { marcoSob } from './lotes-marcos.js'
 import { FACHADAS as CORES_CASARIO, CASAS_SIMPLES, CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
@@ -175,7 +176,7 @@ function casaAjustada(item) {
 }
 
 // por que uma fachada da planta não virou casa (serve para acertar o mapa)
-export const RECUSA = { sobreposta: 0, rio: 0, praia: 0, lagoa: 0, pajeu: 0, ladeira: 0, reservada: 0 }
+export const RECUSA = { sobreposta: 0, rio: 0, praia: 0, lagoa: 0, pajeu: 0, ladeira: 0, reservada: 0, marco: 0 }
 
 function casa(lote, x, z, w, d, rot, frente, alturaMin, alturaMax, cores) {
   // casas geminadas: testa só o miolo do lote (a vizinha colada não pode ser recusada pela folga dela)
@@ -198,6 +199,8 @@ function cidade(cas, sim) {
   const quadras = []
   for (const f of FACHADAS) {
     if (reservado(f.x, f.z)) { RECUSA.reservada++; continue }
+    // o terreno de um marco de 1932 em tamanho real (Sé, Estação, Passeio: lotes-marcos.js)
+    if (marcoSob(f.x, f.z, Math.hypot(f.w, f.d) / 2)) { RECUSA.marco++; continue }
     const galpao = f.uso === USO.Industrial || f.uso === USO.Transporte
     const lote = f.tipo === 'casario' ? cas : sim
     const alturaMin = galpao ? 4.6 : f.tipo === 'simples' ? 3.1 : 6.2

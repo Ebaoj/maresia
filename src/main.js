@@ -20,7 +20,7 @@ import { SombraPerto } from './render/sombra-perto.js'
 import { criarMar } from './mundo/mar.js'
 import { criarFaixas } from './mundo/faixas.js'
 import { criarCidade, RECUSA } from './mundo/cidade.js'
-import { criarEstacao } from './mundo/estacao.js'
+import { criarMarcosNorte } from './mundo/marcos-norte.js'
 import * as ocup1932 from './mundo/ocupacao1932.js'
 import { calcularChao1932 } from './mundo/chao1932.js'
 import { criarFachadas } from './mundo/fachadas.js'
@@ -114,7 +114,7 @@ async function iniciar() {
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
   void criarFaixas
   const { predios, casas, grade, quadras } = criarCidade(cena)
-  criarEstacao(cena) // a Estação Central de 1880
+  const marcosNorte = criarMarcosNorte(cena, cfg) // a velha Sé, a Estação Central e o Passeio Público de 1932
   const urubu = criarUrubu1932(cena, cfg) // o Campo do Urubu: galpões, tarefas, cozinha e o portão
   marcar('cidade')
   criarFachadas(cena, predios)
@@ -315,6 +315,7 @@ async function iniciar() {
     chaoSolto.atualizar(camera)
     praia.atualizar(t)
     cenografia.atualizar()
+    marcosNorte.atualizar(camera)
     casas.atualizar(camera)
     marcos.atualizar(t)
 

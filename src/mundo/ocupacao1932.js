@@ -13,6 +13,7 @@
 import malhaUrl from './mapa1932-malha.png'
 import { LON_POR_X, LAT_POR_Z, LIMITES, LUGARES_RESERVADOS, lugaresJogo } from './fortaleza1932.js'
 import dados from './mapa1932-dados.json'
+import { PEGADAS, noLargo } from './lotes-marcos.js'
 import lotes from './mapa1932-lotes.json'
 
 export const OCUPA_VAZIO = 0
@@ -153,6 +154,27 @@ export async function carregarOcupacao1932() {
       for (let i = i0; i <= i1; i++) {
         const x = LIMITES.x0 + (i + 0.5) * CEL
         if (Math.hypot(x - cx, z - cz) > raio) continue
+        const k = j * NX + i
+        if (classe[k] === OCUPA_VAZIO) classe[k] = OCUPA_RUA
+        peso[k] = 1
+      }
+    }
+  }
+
+  // Os marcos de 1932 em tamanho real (lotes-marcos.js): o terreno deles e o largo da frente são
+  // chão de cidade (terra batida, pedra), não mato, mesmo onde a planta oficial não tem lote
+  for (const p of Object.values(PEGADAS)) {
+    const l = p.largo || [0, 0, 0, 0]
+    const r = Math.hypot(Math.max(-p.x0, p.x1, -l[0], l[1]), Math.max(-p.z0, p.z1, -l[2], l[3])) + CEL
+    const i0 = Math.max(0, Math.floor((p.x - r - LIMITES.x0) / CEL))
+    const i1 = Math.min(NX - 1, Math.floor((p.x + r - LIMITES.x0) / CEL))
+    const j0 = Math.max(0, Math.floor((p.z - r - LIMITES.z0) / CEL))
+    const j1 = Math.min(NZ - 1, Math.floor((p.z + r - LIMITES.z0) / CEL))
+    for (let j = j0; j <= j1; j++) {
+      const z = LIMITES.z0 + (j + 0.5) * CEL
+      for (let i = i0; i <= i1; i++) {
+        const x = LIMITES.x0 + (i + 0.5) * CEL
+        if (!noLargo(x, z)) continue
         const k = j * NX + i
         if (classe[k] === OCUPA_VAZIO) classe[k] = OCUPA_RUA
         peso[k] = 1

@@ -2,14 +2,16 @@
 // Padrão para controle novo: pasta.add(cfg.grupo, 'chave', min, max, passo).name('nome em português')
 
 import { lugaresJogo } from '../../mundo/fortaleza1932.js'
+import { VISTAS_MARCOS } from '../../mundo/vistas-marcos.js'
 
 // "Ir para": atalhos para os lugares mais conhecidos de Fortaleza em 1932 (pedido do Joabe, 21/10/2026),
 // para conferir cada um. A chave é a de LUGARES em src/mundo/fortaleza1932.js; quem é prédio vai para a praça
-// ou o largo da frente (a Estação vai para a Praça da Estação).
+// ou o largo da frente (a Estação vai para a Praça da Estação). O 3º item, quando há, é um ponto de vista de
+// src/mundo/vistas-marcos.js: o jogador vai para onde o quadro de conceito do marco foi pintado, olhando para ele.
 export const DESTINOS = [
   ['Praça do Ferreira', 'pracaFerreira'],
   ['Passeio Público', 'passeioPublico'],
-  ['Estação Central', 'pracaEstacao'],
+  ['Estação Central', 'pracaEstacao', 'estacao'],
   ['Sé', 'se'],
   ['Forte', 'forte'],
   ['Mercado', 'mercado'],
@@ -26,11 +28,15 @@ export const DESTINOS = [
 ]
 
 // leva o jogador ao lugar: solta a fatia (senão ele bate na borda dela) e usa o teleporte do jogo
-export function irParaLugar(cfg, chave, maresia = globalThis.window?.maresia) {
+export function irParaLugar(cfg, chave, maresia = globalThis.window?.maresia, vista = null) {
   const p = lugaresJogo[chave]
   if (!p || !maresia?.irPara) return false
   cfg.fatia.travar = false
-  maresia.irPara(p[0], p[1])
+  const v = vista && VISTAS_MARCOS[vista]
+  if (v) {
+    maresia.irPara(v.x, v.z, v.yaw, v.hora)
+    if (maresia.cam) maresia.cam.pitch = v.pitch
+  } else maresia.irPara(p[0], p[1])
   return true
 }
 
@@ -54,9 +60,11 @@ export function secaoJogo(gui, cfg) {
 
   const ir = jogo.addFolder('Ir para')
   const botoes = {}
-  for (const [nome, chave] of DESTINOS) {
-    botoes[chave] = () => irParaLugar(cfg, chave)
-    ir.add(botoes, chave).name('📍 ' + nome)
+  for (const [nome, chave, vista] of DESTINOS) {
+    // a chave do botão é a do lugar; o segundo ponto de vista do mesmo lugar usa a da vista
+    const k = botoes[chave] ? vista : chave
+    botoes[k] = () => irParaLugar(cfg, chave, undefined, vista)
+    ir.add(botoes, k).name('📍 ' + nome)
   }
 
   const cam = jogo.addFolder('Câmera')
