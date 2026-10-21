@@ -293,6 +293,38 @@ export const PADRAO = {
       gente: 24,            // gente no campo: fila da cozinha, fila do portão e trabalho na terra
     },
   },
+  // Os marcos do centro de 1932 (src/mundo/marcos1932/; fontes no dossiê ~/Projetos/marcos-1932-pesquisa).
+  // Montados uma vez, quando o mundo nasce: o que não é cor só muda ao recarregar. As cores mudam ao vivo.
+  marcos: {
+    ligados: true,          // os marcos procedurais do centro (praça reformada, cinemas, Excelsior, Leões, Mercado)
+    pracaReforma: true,     // a Praça do Ferreira depois da reforma de Girão (Coluna da Hora, 1933, licença aceita pelo Joabe); false = a de 1932 com o coreto
+    excelsior: true,        // o Hotel Excelsior (1931)
+    cinemas: true,          // o Majestic Palace (1917) e o Cine Moderno (1921)
+    leoes: true,            // a Praça dos Leões (General Tibúrcio), com o Rosário e o Palácio da Luz
+    mercado: true,          // o Mercado de Ferro na Praça Carolina (1897-1937)
+    colunaAltura: 13,       // m: "cerca de 13 m" (Raimundo Girão); o conceito saiu alto demais
+    leoesMuro: 3.5,         // m: o muro de arrimo sobre a Sena Madureira (3 a 4 m, ~20 degraus na foto)
+    mercadoAltura: 11,      // m: a metade remontada nos Pinhões tem ~11 m
+    excelsiorAltura: 30,    // m até a platibanda ("aproximadamente 30 metros")
+    ficusEscala: 1.7,       // a copa redonda do fícus (o oiti do jogo, maior)
+    palmeiraEscala: 0.62,   // a palmeira da praça (o coqueiro do jogo, mais baixo)
+    distDetalhe: 170,       // m: além disso some o detalhe miúdo (balaústres, flores, ferragens)
+    esculturasModelo: true, // as esculturas da Praça dos Leões em modelo esculpido (GLB); sem ele, a forma procedural
+    // cores (da paleta: src/paleta.js, MARCOS)
+    corExcelsior: '#ece1c6',   // creme claro (a cor de 1932 não tem fonte; hoje é creme)
+    corMajestic: '#a3563f',    // vermelho-tijolo do cartão colorizado de 1925 (indício, não prova)
+    corModerno: '#e4d3b0',     // ocre muito claro (sem imagem livre da fachada)
+    corMercado: '#6b2b27',     // vermelho-escuro (memória de Otacílio de Azevedo)
+    corChapa: '#7a4636',       // a chapa da cobertura do mercado, pintada de zarcão (HIPÓTESE pelo conceito aprovado)
+    corFerro: '#2b2724',       // ferro fundido pintado de escuro (postes, grades, sacadas)
+    corBronze: '#4a4236',      // jarros bronzeados da balaustrada dos Leões
+    corFelinos: '#454b3f',     // ferro fundido Val d'Osne dos felinos: quase preto, com um verde-bronze (mais escuro some a forma)
+    corGeneral: '#5a5040',     // bronze patinado escuro do General Tibúrcio
+    corBalaustrada: '#ede5d3', // balaústres de massa caiados
+    corPedra: '#d8cfbd',       // cantaria e meio-fio
+    corMosaicoClaro: '#d2c6ae', // pedra portuguesa branca (gasta: a branca pura estourava ao sol)
+    corMosaicoEscuro: '#34302b', // pedra portuguesa preta
+  },
   fatia: {
     travar: true,          // prende o jogador na fatia vertical da Praia do Peixe (mundo/fatia.js)
   },

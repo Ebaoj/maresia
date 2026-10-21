@@ -71,5 +71,26 @@ export function secaoMundo(gui, cfg) {
   urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name(rec('altura do galpão (m)'))
   urubu.add(cfg.mundo.urubu, 'alturaCerca', 1, 3, 0.1).name(rec('altura do arame (m)'))
   urubu.add(cfg.mundo.urubu, 'gente', 0, 60, 1).name(rec('gente no campo'))
+  // os marcos do centro de 1932 (src/mundo/marcos1932/): montados uma vez; só as cores mudam ao vivo
+  const mc = mundo.addFolder('Marcos do centro (1932)')
+  mc.add(cfg.marcos, 'ligados').name(rec('marcos do centro'))
+  mc.add(cfg.marcos, 'pracaReforma').name(rec('Praça do Ferreira reformada (Coluna da Hora)'))
+  mc.add(cfg.marcos, 'excelsior').name(rec('Hotel Excelsior'))
+  mc.add(cfg.marcos, 'cinemas').name(rec('Majestic e Cine Moderno'))
+  mc.add(cfg.marcos, 'leoes').name(rec('Praça dos Leões'))
+  mc.add(cfg.marcos, 'mercado').name(rec('Mercado de Ferro'))
+  mc.add(cfg.marcos, 'esculturasModelo').name(rec('esculturas dos Leões em modelo'))
+  mc.add(cfg.marcos, 'colunaAltura', 8, 20, 0.5).name(rec('Coluna da Hora: altura (m)'))
+  mc.add(cfg.marcos, 'excelsiorAltura', 22, 36, 0.5).name(rec('Excelsior: altura (m)'))
+  mc.add(cfg.marcos, 'leoesMuro', 1.5, 5, 0.1).name(rec('Leões: muro de arrimo (m)'))
+  mc.add(cfg.marcos, 'mercadoAltura', 7, 14, 0.5).name(rec('Mercado: altura (m)'))
+  mc.add(cfg.marcos, 'ficusEscala', 0.8, 2.5, 0.05).name(rec('fícus: tamanho'))
+  mc.add(cfg.marcos, 'palmeiraEscala', 0.3, 1.2, 0.02).name(rec('palmeira: tamanho'))
+  mc.add(cfg.marcos, 'distDetalhe', 40, 400, 5).name('detalhe some depois de (m)')
+  for (const [chave, nome] of [['corExcelsior', 'Excelsior'], ['corMajestic', 'Majestic'], ['corModerno', 'Cine Moderno'],
+    ['corMercado', 'Mercado de Ferro'], ['corChapa', 'chapa do mercado'], ['corFerro', 'ferro fundido'], ['corBronze', 'jarros'], ['corFelinos', 'felinos (ferro)'], ['corGeneral', 'General (bronze)'],
+    ['corBalaustrada', 'balaústres'], ['corPedra', 'cantaria'], ['corMosaicoClaro', 'mosaico claro ⟳'], ['corMosaicoEscuro', 'mosaico escuro ⟳']]) {
+    mc.addColor(cfg.marcos, chave).name('cor: ' + nome)
+  }
   return mundo
 }

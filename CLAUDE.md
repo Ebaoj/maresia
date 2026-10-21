@@ -53,6 +53,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 | `src/mundo/blocos.js` | Divide cópias em blocos de 96 m para o three pular o que está fora da tela e da sombra |
 | `src/mundo/colisao.js` | Colisão 2D e altura do chão (inclui decks) |
 | `src/mundo/quarteirao.js` | Casas de 1932 com geometria de verdade: todo o casario e, em versão simples, o morro (vãos recuados, folhas 3D, beiral com telha canal, platibanda, sacada, calçada alta, janelas de fundos, interiores acesos à noite). LOD por bloco de 96 m: perto, a casa detalhada; longe, a caixa com fachada pintada. A câmera colide com caixas invisíveis |
+| `src/mundo/marcos1932/` | Marcos do centro de 1932 em código, um por arquivo: Praça do Ferreira reformada e Coluna da Hora, Hotel Excelsior, Majestic e Cine Moderno, Praça dos Leões (com o Rosário, o Palácio da Luz e as esculturas), Mercado de Ferro e a feira. `pegadas.js` diz onde cada um fica e o chão que a cidade não cobre; `vistas.js`, os pontos de vista dos conceitos (painel "Ir para"); provas em `docs/capturas/marcos/` |
 | `src/mundo/cenografia.js` | Cenografia de 1932: lampião a gás de parede (acende à noite e ilumina em volta por um mapa de luz visto de cima, lido em `pintar()`), cadeiras na calçada |
 | `src/mundo/toque.js` | Camada 1: mapa de toque (grama deita e deixa rastro) e ondinhas na água |
 | `src/mundo/areia.js` | Camada 1: areia que afunda (pegadas com borda, o mar alisa) e poeira |

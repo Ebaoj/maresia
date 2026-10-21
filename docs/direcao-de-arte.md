@@ -247,6 +247,36 @@ pedras no mar (Rio), a igreja no morro e o rio largo com pontes (Recife). Carros
   16/10/2026:** as fotos de Platt (1935) e do Arquivo Nirez mostram **coqueiral denso nas vilas de
   pescadores** e atrás da Praia do Peixe, e coqueiro novo plantado nos quintais. No centro, poucos.
 
+### Marcos do centro de 1932 (21/10/2026)
+
+Os marcos em volta da Praça do Ferreira, a Praça dos Leões e o Mercado de Ferro foram modelados em 3D, em código
+(`src/mundo/marcos1932/`), a partir dos conceitos que o Joabe aprovou (`~/Projetos/marcos-1932-pesquisa/conceitos/`) e
+do dossiê (`marcos-1932.md` e `detalhe-4-marcos.md`): FATO do dossiê vence o conceito; HIPÓTESE é o padrão. Cada
+arquivo diz no cabeçalho o que veio de onde. Provas (antes, depois e o conceito ao lado; de longe; de noite; WebGL)
+em `docs/capturas/marcos/<marco>/`.
+
+- **Licença de anacronismo: a Coluna da Hora.** O relógio é de 31/12/1933 e o coreto foi derrubado em 1932: a praça
+  "depois da reforma" é um ano adiante do jogo. O Joabe aprovou o conceito da praça reformada (21/10/2026) e a
+  peça é o centro simbólico da cidade. A praça de 1932 com o coreto continua no código (`cfg.marcos.pracaReforma =
+  false`). A coluna tem os ~13 m de Raimundo Girão, não a torre alta do conceito.
+- **Fachadas com cor própria** (exceção à regra "fachada nunca é acento", só onde há indício): o Majestic de
+  tijolo (cartão colorizado de 1925) e o Mercado de Ferro vermelho-escuro (memória de Otacílio de Azevedo), os dois
+  desbotados e escuros. Ficam em `MARCOS`, em `src/paleta.js`, e no painel (Mundo > Marcos do centro).
+- **Desvios aceitos pelo Joabe e corrigidos no 3D**: a coluna baixa (13 m); o tigre numa das pontas da escadaria
+  dos Leões e a serpente visível no leão do meio; o Excelsior com os ~49 x 16 m do OSM (o conceito saiu palaciano).
+- **Desvios do 3D, por causa do jogo**: o chão do jogo é plano na Praça dos Leões (o terreno não desce para a Sena
+  Madureira), então o muro de arrimo dá a volta e entra uma escada reta do lado da General Bezerril; o Excelsior
+  recua 6 m do centro OSM para caber a Major Facundo entre ele e o contorno da praça de 1932; o lado da praça do
+  Majestic não tem fonte (ficou no canto sudoeste, pela vista do postal de 1925).
+- **Esculturas dos Leões**: modelo esculpido (GLB, fora do git, em `arte/finais/marcos1932/`) com a forma
+  procedural de reserva; ferro quase preto com um verde de bronze e o bronze escuro do General, pelo caminho
+  pintado (`pintar()`), sem textura.
+- **Custo** (`maresia.medir`, WebGPU, 2000 x 1125, cinco repetições alternadas, 21/10/2026 às 20h10, load 3): no
+  ponto de vista de cada marco, ligado contra desligado: Praça do Ferreira 26,48 x 25,93 ms; Excelsior 19,68 x 19,64;
+  Leões 26,26 x 26,62; Mercado 24,43 x 25,08. As diferenças (de -0,7 a +0,6 ms) estão dentro do ruído da medição
+  (variantes que não mexem no lugar variam o mesmo tanto). Os lampiões, bancos e árvores dos marcos (instanciados,
+  fora dos grupos) não entraram no desliga.
+
 ## 6. Três ambientes
 
 ### A praia com a jangada

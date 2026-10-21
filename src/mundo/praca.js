@@ -233,7 +233,10 @@ function lampioesDaPraca() {
   return lista
 }
 
-export function criarPraca(cena) {
+// cfg.marcos.pracaReforma: a praça depois da reforma de 1932-33 vem de src/mundo/marcos1932/praca-reforma.js;
+// esta (a de 1932 com o coreto) fica para quando a reforma está desligada
+export function criarPraca(cena, cfg = null) {
+  if (cfg?.marcos?.ligados && cfg.marcos.pracaReforma) return { jardins: 0, coreto: null, lampioes: 0, reforma: true }
   const y0 = alturaTerreno(CENTRO[0], CENTRO[1])
   const m = new THREE.Matrix4()
   const q = new THREE.Quaternion()

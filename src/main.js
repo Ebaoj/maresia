@@ -21,6 +21,7 @@ import { criarMar } from './mundo/mar.js'
 import { criarFaixas } from './mundo/faixas.js'
 import { criarCidade, RECUSA } from './mundo/cidade.js'
 import { criarEstacao } from './mundo/estacao.js'
+import { criarMarcosCentro } from './mundo/marcos1932/index.js'
 import * as ocup1932 from './mundo/ocupacao1932.js'
 import { calcularChao1932 } from './mundo/chao1932.js'
 import { criarFachadas } from './mundo/fachadas.js'
@@ -115,11 +116,13 @@ async function iniciar() {
   void criarFaixas
   const { predios, casas, grade, quadras } = criarCidade(cena)
   criarEstacao(cena) // a Estação Central de 1880
+  // os marcos do centro (Coluna da Hora, cinemas, Excelsior, Leões, Mercado de Ferro): src/mundo/marcos1932/
+  const marcos1932 = criarMarcosCentro(cena, cfg)
   const urubu = criarUrubu1932(cena, cfg) // o Campo do Urubu: galpões, tarefas, cozinha e o portão
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')
-  const cenografia = criarCenografia(cena, predios.filter((p) => p.tipo === 'casario'))
+  const cenografia = criarCenografia(cena, predios.filter((p) => p.tipo === 'casario'), marcos1932.lampioes)
   const marcos = criarMarcos(cena)
   const praia = criarPraia(cena)
   const casasPalha = criarVilas(cena)
@@ -127,8 +130,9 @@ async function iniciar() {
   void nObjetosFatia
   // A praça vem antes da rua: assim os canteiros, o coreto e os lampiões já estão
   // reservados na grade de ocupação, e nenhum poste da rua cai em cima
-  criarPraca(cena) // a Praça do Ferreira: coreto coberto, jardins, bancos e lampiões a gás
+  criarPraca(cena, cfg) // a Praça do Ferreira de 1932 com o coreto (só quando a reforma está desligada)
   const lugares = criarRua(cena, predios, grade)
+  lugares.bancos.push(...marcos1932.bancos) // os bancos de ferro das praças dos marcos: dá para sentar
   marcar('rua')
   criarBondes(cena) // os trilhos das linhas de bonde da Light sobre a rede viária de 1932
   criarArvores(cena, predios, grade)
@@ -316,6 +320,7 @@ async function iniciar() {
     praia.atualizar(t)
     cenografia.atualizar()
     casas.atualizar(camera)
+    marcos1932.atualizar(camera)
     marcos.atualizar(t)
 
     // camada 1: quem toca o mundo
@@ -444,7 +449,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932, urubu,
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932, urubu, marcos1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

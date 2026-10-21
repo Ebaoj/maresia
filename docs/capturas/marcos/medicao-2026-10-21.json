@@ -1,0 +1,109 @@
+{
+    "pixels": "2000x1125",
+    "res": {
+        "226,494": {
+            "com": {
+                "ms": 26.48,
+                "cpu": 11.88
+            },
+            "sem_pracaReforma": {
+                "ms": 25.93,
+                "cpu": 12.2
+            },
+            "sem_excelsior": {
+                "ms": 26.1,
+                "cpu": 11.86
+            },
+            "sem_cinemas": {
+                "ms": 27.22,
+                "cpu": 12.05
+            },
+            "sem_leoes": {
+                "ms": 27.38,
+                "cpu": 11.61
+            },
+            "sem_mercado": {
+                "ms": 27.3,
+                "cpu": 11.82
+            }
+        },
+        "195,486": {
+            "com": {
+                "ms": 19.68,
+                "cpu": 6.51
+            },
+            "sem_pracaReforma": {
+                "ms": 20.13,
+                "cpu": 6.96
+            },
+            "sem_excelsior": {
+                "ms": 19.64,
+                "cpu": 6.91
+            },
+            "sem_cinemas": {
+                "ms": 19.52,
+                "cpu": 6.58
+            },
+            "sem_leoes": {
+                "ms": 19.59,
+                "cpu": 6.52
+            },
+            "sem_mercado": {
+                "ms": 19.7,
+                "cpu": 6.79
+            }
+        },
+        "386,461": {
+            "com": {
+                "ms": 26.26,
+                "cpu": 9.39
+            },
+            "sem_pracaReforma": {
+                "ms": 26.45,
+                "cpu": 9.48
+            },
+            "sem_excelsior": {
+                "ms": 26.46,
+                "cpu": 9.92
+            },
+            "sem_cinemas": {
+                "ms": 26.55,
+                "cpu": 9.43
+            },
+            "sem_leoes": {
+                "ms": 26.62,
+                "cpu": 9.88
+            },
+            "sem_mercado": {
+                "ms": 26.49,
+                "cpu": 9.82
+            }
+        },
+        "275,319": {
+            "com": {
+                "ms": 24.43,
+                "cpu": 7.72
+            },
+            "sem_pracaReforma": {
+                "ms": 24.09,
+                "cpu": 7.52
+            },
+            "sem_excelsior": {
+                "ms": 24.81,
+                "cpu": 7.4
+            },
+            "sem_cinemas": {
+                "ms": 24.93,
+                "cpu": 7.51
+            },
+            "sem_leoes": {
+                "ms": 24.78,
+                "cpu": 7.58
+            },
+            "sem_mercado": {
+                "ms": 25.08,
+                "cpu": 7.57
+            }
+        }
+    }
+}

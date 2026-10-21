@@ -2,6 +2,7 @@
 // Padrão para controle novo: pasta.add(cfg.grupo, 'chave', min, max, passo).name('nome em português')
 
 import { lugaresJogo } from '../../mundo/fortaleza1932.js'
+import { VISTAS } from '../../mundo/marcos1932/vistas.js'
 
 // "Ir para": atalhos para os lugares mais conhecidos de Fortaleza em 1932 (pedido do Joabe, 21/10/2026),
 // para conferir cada um. A chave é a de LUGARES em src/mundo/fortaleza1932.js; quem é prédio vai para a praça
@@ -23,14 +24,22 @@ export const DESTINOS = [
   ['Campo do Urubu', 'campoUrubu'],
   ['Oficinas do Urubu', 'oficinasUrubu'],
   ['Barra do Ceará', 'barraCeara'],
+  // os marcos do centro, do ponto de vista do conceito aprovado (o 3º item é a vista, marcos1932/vistas.js)
+  ['Coluna da Hora (vista do conceito)', 'pracaFerreira', 'colunaHora'],
+  ['Hotel Excelsior', 'excelsior', 'excelsior'],
+  ['Praça dos Leões: a escadaria', 'pracaLeoes', 'leoes'],
+  ['Mercado de Ferro (Praça Carolina)', 'mercadoFerro', 'mercado'],
 ]
 
 // leva o jogador ao lugar: solta a fatia (senão ele bate na borda dela) e usa o teleporte do jogo
-export function irParaLugar(cfg, chave, maresia = globalThis.window?.maresia) {
+// com vista (marcos1932/vistas.js), o jogador fica no ponto do conceito e a câmera olha para o marco
+export function irParaLugar(cfg, chave, maresia = globalThis.window?.maresia, vista = null) {
   const p = lugaresJogo[chave]
   if (!p || !maresia?.irPara) return false
   cfg.fatia.travar = false
-  maresia.irPara(p[0], p[1])
+  const v = vista && VISTAS[vista]
+  if (v) maresia.irPara(v.x, v.z, v.yaw)
+  else maresia.irPara(p[0], p[1])
   return true
 }
 
@@ -54,9 +63,10 @@ export function secaoJogo(gui, cfg) {
 
   const ir = jogo.addFolder('Ir para')
   const botoes = {}
-  for (const [nome, chave] of DESTINOS) {
-    botoes[chave] = () => irParaLugar(cfg, chave)
-    ir.add(botoes, chave).name('📍 ' + nome)
+  for (const [nome, chave, vista] of DESTINOS) {
+    const id = vista ? `vista_${vista}` : chave
+    botoes[id] = () => irParaLugar(cfg, chave, undefined, vista)
+    ir.add(botoes, id).name('📍 ' + nome)
   }
 
   const cam = jogo.addFolder('Câmera')
