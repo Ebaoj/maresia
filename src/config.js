@@ -55,6 +55,7 @@ export const PADRAO = {
     // reboco envelhecido (item 4, src/mundo/desgaste.js) e quina clara (na tela)
     arcDesgaste: 1.0,            // manchas de caiação, escorridos, umidade, sujeira na base, reboco caído mostrando a pedra
     arcAresta: 0.7,              // quina gasta e clara (perto, até ~45 m)
+    arcFx2d: 0,                  // item 7: traços de tinta verde e amarela e spray de retícula por cima (fx2d.js); 0 = desligado
     // pincelada na tela (src/pos/pintura.js): Kuwahara anisotrópico sobre a cor da cena, a superfície vira mancha de tinta
     arcPintura: 1.0,        // força (0 desliga o passe e o custo)
     arcPinturaRaio: 4.0,    // raio da pincelada, em pixels da imagem (não muda o custo)

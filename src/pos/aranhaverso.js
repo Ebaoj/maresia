@@ -11,6 +11,7 @@ import * as THREE from 'three'
 import { criarAleatorio } from '../utils.js'
 import { CAL } from '../paleta.js'
 import { fragTensor, fragKuwahara, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
+import { uniformsFx2d, GLSL_FX2D } from './fx2d.js'
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -111,6 +112,7 @@ uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uni
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
 uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
 uniform float uArcLuzEstrutura; uniform vec3 uArCor;
+uniform float uFx; uniform vec4 uFxA; uniform vec4 uFxB; uniform vec4 uFxC; uniform vec3 uFxCor1; uniform vec3 uFxCor2; uniform vec3 uFxSpray;
 uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcArClareia; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
@@ -141,6 +143,7 @@ vec3 paraHSV(vec3 c) {
   float d = q.x - min(q.w, q.y);
   return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1e-10)), d / (q.x + 1e-10), q.x);
 }
+${GLSL_FX2D}
 float distMatiz(float a, float b) { float d = abs(a - b); return min(d, 1.0 - d); }
 vec3 corDescasada(vec2 uv) {
   vec2 d = uv - 0.5;
@@ -457,6 +460,8 @@ void main() {
   }
 
   // 13. vinheta
+  // 2D por cima (item 7, fx2d.js), desligado por padrão
+  cor = aplicarFx2d(cor, uv, pg, uRes.x / uRes.y, ceu);
   cor *= 1.0 - uVinheta * smoothstep(0.45, 1.05, rv);
   gl_FragColor = vec4(clamp(cor, 0.0, 1.0), 1.0);
 }`
@@ -545,6 +550,7 @@ export class Aranhaverso {
     this.matClaro = shader(fragClaro, this.uClaro)
     this.matDesfoque = shader(fragDesfoque, this.uDesfoque)
     this.matTela = shader(fragTela, this.uTela)
+    Object.assign(this.uTela, uniformsFx2d())
     this.uPintura = uniformsPintura(THREE)
     this.uPintura.tensor.tCor.value = this.rtCor.textures[0]
     this.uPintura.kuwahara.tCor.value = this.rtCor.textures[0]
@@ -747,6 +753,7 @@ export class Aranhaverso {
     u.uArcCalNeutro.value = e.arcGradeNeutro ?? 0.12
     u.uArcArTinta.value = e.arcArTinta ?? 0.45
     u.uArcArClareia.value = e.arcArClareia ?? 0
+    u.uFx.value = arc ? (e.arcFx2d ?? 0) : 0
     u.uArcPreto.value = e.arcPreto ?? 0
     u.uArcBranco.value = e.arcBranco ?? 1
     this.globais.uPincel.value = e.pincel

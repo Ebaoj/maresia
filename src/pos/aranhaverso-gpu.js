@@ -11,6 +11,7 @@ import { Aranhaverso } from './aranhaverso.js'
 import { ref, funcoes, modulo, amostraAlvo } from '../render/gpu/comum.js'
 import { fragTensorGpu, fragKuwaharaGpu } from './pintura-gpu.js'
 import { amostrasPintura } from './pintura.js'
+import { aplicarFx2dTsl } from './fx2d.js'
 
 export class AranhaversoGpu {
   constructor(renderer, cena, camera, cfg, globais) {
@@ -561,6 +562,10 @@ function fragTela(W, u, T, uvGL) {
       })
     })
 
+    // 2D por cima (item 7, fx2d.js), desligado por padrão
+    If(U.uFx.greaterThan(0.001), () => {
+      cor.assign(aplicarFx2dTsl(W, U, { ruido, pontoGrade }, cor, uv, pg, U.uRes.x.div(U.uRes.y), ceu))
+    })
     // 13. vinheta
     cor.mulAssign(float(1.0).sub(U.uVinheta.mul(smoothstep(0.45, 1.05, rv))))
     return vec4(clamp(cor, 0.0, 1.0), 1.0)
