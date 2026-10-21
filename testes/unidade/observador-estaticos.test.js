@@ -25,6 +25,15 @@ const base = { estatico: true, animacao: false, instanciaDinamica: false, primei
 const decide = (campos) => decidirRefresh({ ...base, ...campos })
 
 describe('tabela de decisão', () => {
+  // Bug: chão preto perto do Forte (497, 133) e na Praia de Iracema, só no WebGPU (corrigido no commit do chão, 21/10/2026).
+  // O pedaço do terreno desenhado nos primeiros quadros, antes de a textura pintada (areia.jpg) chegar, ficava com a
+  // textura provisória (preta) no grupo de ligação: parado e igual, caía no NONE e nunca mais refazia. A textura
+  // pintada multiplica a cor, e preto vezes tudo dá preto. Textura nova carregada depois do último refresh total pede FULL.
+  it('parado igual, mas com textura carregada depois do último refresh total -> full', () => {
+    expect(decide({ texturasNovas: true })).toBe('full')
+    expect(decide({ texturasNovas: true, renderIdMudou: true })).toBe('full')
+    expect(decide({ texturasNovas: false })).toBe('none')
+  })
   it('não estático -> original', () => {
     expect(decide({ estatico: false })).toBe('original')
   })

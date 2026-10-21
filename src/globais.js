@@ -39,3 +39,8 @@ export const globais = {
   uArCor: { value: new THREE.Color('#9cc9e0') }, // a cor do ar: a distância se tinge com o céu da hora
 }
 globais.tLampioes.value.needsUpdate = true
+
+// Quantas texturas carregadas de arquivo já chegaram (materiais.js, texturaPintada). O remendo do observador de parados
+// (render/renderizador.js) refaz o grupo de ligação de quem foi desenhado antes da chegada: sem isso o parado ficava com
+// a textura provisória, preta, para sempre (o chão preto perto do Forte no WebGPU, 21/10/2026)
+export const geracaoTexturas = { valor: 0 }

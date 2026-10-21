@@ -48,6 +48,19 @@ export const PADRAO = {
     arcArPoeira: 0.55,           // sertão: de dia a distância vai para a poeira clara e quente do horizonte (0,2 = o azul frio do item 6)
     arcCeuPincel: 1.0,           // item 5: riscos de pincel seco, grão e banco de cúmulos no horizonte
     arcCeuMeio: '#d3d9d0',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
+    // céu de agosto em Fortaleza ao meio-dia (21/10/2026, pedido do Joabe): azul fundo, limpo e saturado da estação seca,
+    // só um pouco mais claro no horizonte, pouca névoa. Entra com o sol alto (das ~9h às ~15h); a hora dourada e a noite
+    // ficam como estavam
+    arcCeuAzul: 1.0,               // força (0 = o céu desbotado do sertão em todas as horas)
+    arcCeuAzulTopo: '#1a56b8',     // o alto
+    arcCeuAzulMeio: '#5e98d9',     // o meio
+    arcCeuAzulHorizonte: '#dde8f0', // o horizonte: névoa clara, quase branca, de sal e sol (revisão 2: '#9cc3ea' saturava até o chão)
+    arcCeuAzulRampa: 0.6,          // altura (seno) em que o azul fundo chega com o sol alto (0,32 dava azul chapado até o horizonte)
+    arcCeuAzulAr: '#c3d5e5',       // a cor do ar na distância ao meio-dia (névoa clara e azulada)
+    arcCeuCumulos: 0.75,           // cúmulos redondos pintados rente ao horizonte ao meio-dia: fração das posições com nuvem
+    arcCeuCumulosTamanho: 1.2,     // tamanho deles
+    nuvens: 70,                    // cúmulos de alísio no céu (quantos); vale ao recarregar
+    nuvensVento: 4.0,              // velocidade com que vão para oeste, levados pelo alísio de leste (m/s)
     arcGradeNeutro: 0.12,        // quanto o neutro puxa para o cal na gradação (0,45 dava véu bege em tudo)
     arcArTinta: 0.75,            // força da cor do ar na distância (conceito-sertão: o fundo lavado, pálido, de baixo contraste; o peso cresce no fundo, km * (0,4 + 0,6 km), então o meio não lava)
     arcArClareia: 0.45,          // item 6: quanto o fundo clareia para a cor do ar (perspectiva atmosférica)
@@ -234,6 +247,23 @@ export const PADRAO = {
     rodeiroLarg: 0.09,    // a largura do sulco (fração da meia-largura da rua)
     desgaste: 0.7,        // o quanto o meio da rua está polvilhado pelas rodas
     mato: 0.55,           // o mato ralo do quintal
+    // relevo pintado do chão (src/mundo/relevo-chao.js, 21/10/2026): altura fina que vira luz e sombra
+    relevo: 1.0,          // força geral (0 = o chão liso de antes)
+    relevoAreia: 1.0,     // ondulação do vento, riscos e morrotes na praia e nas dunas
+    relevoTerra: 1.0,     // torrões, pedrisco e o sulco da roda na rua e no quintal
+    relevoPedra: 1.0,     // topo abaulado e junta funda do paralelepípedo
+    relevoRacha: 1.0,     // placas e rachaduras da terra seca (Campo do Urubu)
+    relevoLonge: 70,      // metros em que o relevo some (custo e chiado de longe)
+    relevoCor: 0.8,       // quanto a fresta escurece e a pedra clareia
+    relevoMeioDia: 0.8,   // relevo a mais com o sol a pino (a luz de cima quase não marca inclinação pequena)
+    ondaAreia: 0.34,      // comprimento da ondulação da areia (m)
+    poeiraManchas: 1.0,   // rua e quintal: manchas grandes de poeira clara sobre terra socada (rua-terra.js)
+    poeiraParede: 1.0,    // rua: poeira juntada contra a parede
+    pegadasRua: 1.0,      // rua: meio pisado mais escuro, com pegadas
+    sulcoDuplo: 1.0,      // rua: o segundo par de sulcos de roda, mais raso
+    solto: true,          // chão solto em 3D perto da câmera: pedrisco, conchas, torrões e touceiras secas (chao-solto.js)
+    soltoRaio: 40,        // até quantos metros da câmera ele aparece
+    soltoDensidade: 1.0,  // quantas peças (1 = o padrão); vale ao recarregar
   },
   mundo: {
     // 21/10/2026: 0 (era 4). Com 4, o mapa de longe pulava ~1° a cada 4 s (1 min de jogo por segundo) e a sombra

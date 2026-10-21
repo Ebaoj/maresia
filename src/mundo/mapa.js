@@ -10,6 +10,7 @@ import {
   nomeBairro, trechosJogo, VILAS, LIMITES,
 } from './fortaleza1932.js'
 import { pesoCidade1932, naCidade1932, eraRua1932 } from './ocupacao1932.js'
+import { pesoCampoUrubu } from './mapa1932.js'
 
 const perlin = new ImprovedNoise()
 
@@ -172,6 +173,8 @@ export function densidadeGrama(x, z, h, inclinacao) {
   // dunas altas: só restinga
   d *= 1 - 0.7 * smooth(5, 10, h - 6)
   d *= 1 - smooth(0.75, 1.15, inclinacao)
+  // Campo do Urubu na seca de 1932: terra batida e rachada, sem grama (só touceira seca, espalhada em chao-solto.js)
+  d *= 1 - pesoCampoUrubu(x, z)
   return Math.min(1, Math.max(0, d))
 }
 

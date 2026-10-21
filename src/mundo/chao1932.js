@@ -216,6 +216,52 @@ export function posicaoNaRua1932(x, z) {
   return rota[k]
 }
 
+// A posição na rua contínua, num ponto qualquer (21/10/2026, segunda rodada do chão). A grade é de 3 m e a rua de
+// 1932, comprimida no mapa, tem uma ou duas células de largura: a crista ocupava a rua inteira e a posição saía 0 em
+// toda parte (sem sulco de roda, sem poeira na parede). Aqui a distância vem das células que não são rua, medida até
+// o quadrado de cada uma (não até o centro): d1 até a borda mais perto, d2 até a borda do outro lado; o meio da rua é
+// onde as duas se igualam. u = 1 - 2 d1 / (d1 + d2): 0 no meio, 1 na borda; -1 fora da rua.
+const RAIO_RUA = 5 // células procuradas em volta (15 m)
+export function posicaoNaRuaSuave(x, z) {
+  const k = indice(x, z)
+  if (k < 0 || !classe || classe[k] !== OCUPA_RUA) return -1
+  const ic = Math.floor((x - x0) / cel)
+  const jc = Math.floor((z - z0) / cel)
+  let d1 = Infinity
+  let qx = 0
+  let qz = 0
+  const perto = []
+  for (let dj = -RAIO_RUA; dj <= RAIO_RUA; dj++) {
+    const j = jc + dj
+    if (j < 0 || j >= nz) continue
+    for (let di = -RAIO_RUA; di <= RAIO_RUA; di++) {
+      const i = ic + di
+      if (i < 0 || i >= nx) continue
+      if (classe[j * nx + i] === OCUPA_RUA) continue
+      const ax = x0 + i * cel
+      const az = z0 + j * cel
+      const cx = Math.min(Math.max(x, ax), ax + cel)
+      const cz = Math.min(Math.max(z, az), az + cel)
+      const d = Math.hypot(x - cx, z - cz)
+      perto.push(d, cx, cz)
+      if (d < d1) { d1 = d; qx = cx; qz = cz }
+    }
+  }
+  const maximo = RAIO_RUA * cel
+  if (d1 === Infinity) return 0
+  // o outro lado: a borda mais perto na direção oposta à primeira
+  const nxD = x - qx
+  const nzD = z - qz
+  const nl = Math.hypot(nxD, nzD) || 1
+  let d2 = maximo
+  for (let t = 0; t < perto.length; t += 3) {
+    const vx = perto[t + 1] - x
+    const vz = perto[t + 2] - z
+    if ((vx * nxD + vz * nzD) / nl > 0.5 * perto[t]) d2 = Math.min(d2, perto[t])
+  }
+  return Math.max(0, Math.min(1, 1 - (2 * d1) / Math.max(d1 + d2, 1e-6)))
+}
+
 // a distância real (em metros) até a Praça do Ferreira
 export function distRealDaPraca(x, z) {
   const lon = LON_POR_X(x)

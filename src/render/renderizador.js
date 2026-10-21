@@ -12,6 +12,7 @@ import { usarModulo, ref } from './gpu/comum.js'
 import { instalarFaixasUnicas } from './gpu/faixas-uniform.js'
 import { instalarFiltroWebgl } from './filtro-sombra.js'
 import { instalarMisturaWebgl } from './sombra-perto.js'
+import { geracaoTexturas } from '../globais.js'
 
 let W = null // o módulo three/webgpu, no modo webgpu
 let renderizador = null
@@ -149,12 +150,16 @@ export function estatisticasObservador(zerar = false) {
 //   passe com velocity                  -> original      nó que o equals() não cobre         -> original
 //   parado, elegível, igual, renderId igual -> none      parado, elegível, igual, renderId novo -> shared
 //   parado, elegível, algo mudou        -> full
+//   parado, elegível, igual, textura carregada depois do último full -> full
 // renderIdMudou vem antes de iguais, que roda sempre (equals também sincroniza o cache de estado).
 export function decidirRefresh(c) {
   if (!avaliar(c.estatico) || avaliar(c.animacao) || avaliar(c.instanciaDinamica) || avaliar(c.primeira) ||
     avaliar(c.velocidade) || !avaliar(c.elegivel)) return 'original'
   const novo = avaliar(c.renderIdMudou)
   if (avaliar(c.iguais) === false) return 'full'
+  // textura que o equals() não vê (a pintada do terreno, amostrada por nó) carregou depois do último refresh total:
+  // o grupo de ligação ainda aponta para a provisória, preta (o chão preto perto do Forte, 21/10/2026)
+  if (avaliar(c.texturasNovas)) return 'full'
   return novo ? 'shared' : 'none'
 }
 function avaliar(v) { return typeof v === 'function' ? v() : v }
@@ -218,6 +223,7 @@ function avaliarEstado(estado, renderObject, opc) {
   return true
 }
 
+const geracaoVista = new WeakMap() // renderObject -> geracaoTexturas.valor no último refresh total
 const veredictos = new WeakMap() // nodeBuilderState -> true | motivo da recusa
 // O grupo de uniforms de objeto só pode ficar sem regravação se todo nó com atualização por objeto for do tipo que o
 // equals() cobre (aceitaNo). Vale para o shader (nodeBuilderState) inteiro, então é calculado uma vez por shader.
@@ -250,6 +256,11 @@ const pergunta = {
     obs.renderId = nf.renderId // o original faz o mesmo antes de chamar equals
     return true
   },
+  // geração das texturas carregadas (materiais.js, texturaPintada) vista no último refresh total deste objeto
+  texturasNovas: () => {
+    const ro = pergunta.ro
+    return geracaoVista.get(ro) !== geracaoTexturas.valor // quem devolve FULL grava a geração (remendarObservador)
+  },
   iguais: () => {
     const { obs, ro, nf } = pergunta
     try {
@@ -276,7 +287,9 @@ export function remendarObservador(Observador, T) {
     const decisao = decidirRefresh(pergunta)
     pergunta.obs = pergunta.ro = pergunta.nf = null
     estatisticas[decisao]++
-    return decisao === 'original' ? original.call(this, renderObject, nodeFrame) : tipos[decisao]
+    const tipo = decisao === 'original' ? original.call(this, renderObject, nodeFrame) : tipos[decisao]
+    if (tipo === tipos.full) geracaoVista.set(renderObject, geracaoTexturas.valor)
+    return tipo
   }
   return true
 }

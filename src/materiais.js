@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { globais } from './globais.js'
+import { globais, geracaoTexturas } from './globais.js'
 import { ref } from './render/gpu/comum.js'
 
 // Toon: a luz vira poucas faixas em vez de degradê contínuo, como pintura de animação.
@@ -198,7 +198,7 @@ export function pintar(mat, chave) {
 const _texturas = new Map()
 export function texturaPintada(nome) {
   if (!_texturas.has(nome)) {
-    const t = new THREE.TextureLoader().load(`/texturas/${nome}.jpg`)
+    const t = new THREE.TextureLoader().load(`/texturas/${nome}.jpg`, () => { geracaoTexturas.valor++ })
     t.wrapS = t.wrapT = THREE.RepeatWrapping
     t.colorSpace = THREE.NoColorSpace // valores crus: é detalhe, não cor
     t.anisotropy = 4

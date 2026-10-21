@@ -7,6 +7,7 @@
 
 import * as THREE from 'three'
 import { SAIDA_LUZ } from '../materiais.js'
+import { GLSL_CUMULOS, GLSL_CUMULOS_PINTAR, tslCumulos } from './ceu-cumulos.js'
 
 export const vertCeu = /* glsl */ `
 varying vec3 vDir;
@@ -18,7 +19,7 @@ void main() {
 
 export const fragCeu = /* glsl */ `
 uniform vec3 uTopo; uniform vec3 uHor; uniform vec3 uMeio; uniform vec3 uSolDir; uniform vec3 uSolCor;
-uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu; uniform float uArcPintado; uniform float uArcCeuPincel; uniform float uCeuRampa;
+uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu; uniform float uArcPintado; uniform float uArcCeuPincel; uniform float uCeuRampa; uniform float uAzul; uniform vec2 uCumulos;
 varying vec3 vDir;
 ${SAIDA_LUZ}
 float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
@@ -27,6 +28,7 @@ float vn(vec2 p) {
   vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
   return mix(mix(h2(i), h2(i + vec2(1, 0)), u.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), u.x), u.y);
 }
+${GLSL_CUMULOS}
 void main() {
   vec3 d = normalize(vDir);
   float y = max(d.y, 0.0);
@@ -54,7 +56,8 @@ void main() {
     cor = mix(mix(uHor, uMeio, clamp(t * 2.0, 0.0, 1.0)), uTopo, clamp(t * 2.0 - 1.0, 0.0, 1.0));
     // uma faixa quente rente ao horizonte: o maresia de Fortaleza
     float baixo = (1.0 - smoothstep(0.0, 0.08, y)) * uArcPintado;
-    cor = mix(cor, mix(uHor, uSolCor, 0.3), baixo * 0.45 * (1.0 - uNoite));
+    // (meio-dia de agosto, uAzul: o céu limpo da estação seca não tem essa faixa)
+    cor = mix(cor, mix(uHor, uSolCor, 0.3), baixo * 0.45 * (1.0 - uNoite) * (1.0 - uAzul));
     // cada pincelada puxa um pouco para o quente ou para o frio (a tinta não é uniforme)
     float tempT = (vn(vec2(az * 0.8, yP * 6.0) + 21.0) - 0.5) * 0.16 * uArcCeu;
     cor *= vec3(1.0 + tempT, 1.0, 1.0 - tempT);
@@ -64,13 +67,15 @@ void main() {
     float diagV = yP * 7.0 - az * 2.2;
     float risco = vn(vec2(diagU * 0.7, diagV * 11.0) + 51.0);
     float riscoClaro = smoothstep(0.72, 0.86, vn(vec2(diagU * 1.3, diagV * 26.0) + 61.0));
-    cor *= 1.0 + (risco - 0.5) * 0.14 * uArcCeuPincel;
-    cor = mix(cor, mix(uMeio, vec3(1.0), 0.3), riscoClaro * 0.16 * uArcCeuPincel * (1.0 - uNoite) * smoothstep(0.05, 0.3, y));
+    // (meio-dia de agosto: o céu limpo tem bem menos risco de pincel)
+    float limpo = 1.0 - 0.65 * uAzul;
+    cor *= 1.0 + (risco - 0.5) * 0.14 * uArcCeuPincel * limpo;
+    cor = mix(cor, mix(uMeio, vec3(1.0), 0.3), riscoClaro * 0.16 * uArcCeuPincel * (1.0 - uNoite) * smoothstep(0.05, 0.3, y) * limpo);
     cor *= 1.0 + (hash(floor(d * 700.0)) - 0.5) * 0.06 * uArcCeuPincel;
     float sA = dot(d, normalize(uSolDir));
     // o quente em volta do sol: no céu pintado só perto dele (60 graus de laranja sujavam o céu todo)
     float lavaSol = mix(smoothstep(0.55, 1.0, sA) * 0.38, smoothstep(0.78, 1.0, sA) * 0.28, uArcPintado);
-    cor = mix(cor, uSolCor * 1.05, lavaSol * (1.0 - uNoite) * uArcCeu);
+    cor = mix(cor, uSolCor * 1.05, lavaSol * (1.0 - uNoite) * uArcCeu * (1.0 - 0.6 * uAzul));
     // NUVENS EM MASSAS: manchas grandes de borda pintada. O ruído fino de antes lia como
     // granulado no céu, não como nuvem.
     float faixaN = smoothstep(0.02, 0.12, y) * (1.0 - smoothstep(0.32, 0.55, y));
@@ -91,7 +96,8 @@ void main() {
     vec3 corNuvemLuz = mix(mix(uHor, uSolCor, 0.55) * 1.12, mix(vec3(1.0, 0.96, 0.88), uSolCor, 0.3) * 1.05, uArcPintado);
     vec3 corNuvemSombra = mix(mix(uTopo, uHor, 0.55) * 0.92, mix(uMeio, uTopo, 0.35) * 0.95, uArcPintado);
     vec3 corNuvem = mix(corNuvemSombra, corNuvemLuz, clamp(ladoSol * 0.6 + topoN * 0.5, 0.0, 1.0));
-    cor = mix(cor, mix(corNuvem, uTopo * 0.6, uNoite * 0.7), nuvem * 0.85);
+    // (meio-dia de agosto: as massas saem, entram os cúmulos redondos logo abaixo)
+    cor = mix(cor, mix(corNuvem, uTopo * 0.6, uNoite * 0.7), nuvem * 0.85 * (1.0 - uAzul));
     // BANCO DE CÚMULOS no horizonte (item 5): massas que sobem de uma base reta, em grupos; topo claro e quente
     // do lado do sol, barriga azul acinzentada, borda recortada pelo pincel
     float grupo = smoothstep(0.5, 0.7, vn(vec2(az * 0.9, 3.0)));
@@ -103,7 +109,9 @@ void main() {
     float caroco = vn(vec2(az * 9.0, y * 45.0) + 81.0);
     float luzB = clamp(alturaRel * 0.8 + (caroco - 0.5) * 0.7 + (ladoSol - 0.5) * 0.6, 0.0, 1.0);
     vec3 corBanco = mix(mix(uMeio, uTopo, 0.3) * 0.92, mix(vec3(1.0, 0.95, 0.85), uSolCor, 0.35) * 1.08, smoothstep(0.35, 0.65, luzB));
-    cor = mix(cor, mix(corBanco, uTopo * 0.75, uNoite * 0.9), banco * uArcCeuPincel * uArcCeu);
+    cor = mix(cor, mix(corBanco, uTopo * 0.75, uNoite * 0.9), banco * uArcCeuPincel * uArcCeu * (1.0 - uAzul));
+    // CÚMULOS DO ALÍSIO (ceu-cumulos.js): duas camadas, em grupos, tamanhos e alturas variados
+${GLSL_CUMULOS_PINTAR}
     // O SOL PINTADO: o disco é pequeno e duro, o halo é a tinta quente em volta dele.
     float haloPintado = smoothstep(0.85, 0.999, sA) * 0.42 * (1.0 - uNoite) * uArcCeu * uArcPintado;
     cor = mix(cor, uSolCor * 1.2, haloPintado);
@@ -147,6 +155,7 @@ export function ceuTsl({ W, ref }, u) {
     const uu = f.mul(f).mul(float(3.0).sub(f.mul(2.0)))
     return mix(mix(h2(i), h2(i.add(vec2(1, 0))), uu.x), mix(h2(i.add(vec2(0, 1))), h2(i.add(vec2(1, 1))), uu.x), uu.y)
   }).setLayout({ name: 'ceuVn', type: 'float', inputs: [{ name: 'p', type: 'vec2' }] })
+  const pintarCumulos = tslCumulos(W, U, h2, vn) // ceu-cumulos.js
   const vDir = varying(normalize(positionLocal))
   const m = new W.MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false })
   // gl_Position = p.xyww: o céu fica no fundo da profundidade
@@ -174,7 +183,8 @@ export function ceuTsl({ W, ref }, u) {
       cor.assign(mix(mix(U.uHor, U.uMeio, clamp(t.mul(2.0), 0.0, 1.0)), U.uTopo, clamp(t.mul(2.0).sub(1.0), 0.0, 1.0)))
       // uma faixa quente rente ao horizonte: o maresia de Fortaleza
       const baixo = smoothstep(0.0, 0.08, y).oneMinus().mul(U.uArcPintado)
-      cor.assign(mix(cor, mix(U.uHor, U.uSolCor, 0.3), baixo.mul(0.45).mul(float(1.0).sub(U.uNoite))))
+      // (meio-dia de agosto, uAzul: o céu limpo da estação seca não tem essa faixa)
+      cor.assign(mix(cor, mix(U.uHor, U.uSolCor, 0.3), baixo.mul(0.45).mul(float(1.0).sub(U.uNoite)).mul(float(1.0).sub(U.uAzul))))
       const tempT = vn(vec2(az.mul(0.8), yP.mul(6.0)).add(21.0)).sub(0.5).mul(0.16).mul(U.uArcCeu)
       cor.mulAssign(vec3(float(1.0).add(tempT), 1.0, float(1.0).sub(tempT)))
       // RISCOS DE PINCEL SECO (item 5): pinceladas diagonais longas e grão fino preso ao céu
@@ -182,13 +192,15 @@ export function ceuTsl({ W, ref }, u) {
       const diagV = yP.mul(7.0).sub(az.mul(2.2))
       const risco = vn(vec2(diagU.mul(0.7), diagV.mul(11.0)).add(51.0))
       const riscoClaro = smoothstep(0.72, 0.86, vn(vec2(diagU.mul(1.3), diagV.mul(26.0)).add(61.0)))
-      cor.mulAssign(float(1.0).add(risco.sub(0.5).mul(0.14).mul(U.uArcCeuPincel)))
-      cor.assign(mix(cor, mix(U.uMeio, vec3(1.0), 0.3), riscoClaro.mul(0.16).mul(U.uArcCeuPincel).mul(float(1.0).sub(U.uNoite)).mul(smoothstep(0.05, 0.3, y))))
+      // (meio-dia de agosto: o céu limpo tem bem menos risco de pincel)
+      const limpo = float(1.0).sub(U.uAzul.mul(0.65))
+      cor.mulAssign(float(1.0).add(risco.sub(0.5).mul(0.14).mul(U.uArcCeuPincel).mul(limpo)))
+      cor.assign(mix(cor, mix(U.uMeio, vec3(1.0), 0.3), riscoClaro.mul(0.16).mul(U.uArcCeuPincel).mul(float(1.0).sub(U.uNoite)).mul(smoothstep(0.05, 0.3, y)).mul(limpo)))
       cor.mulAssign(float(1.0).add(hash(floor(d.mul(700.0))).sub(0.5).mul(0.06).mul(U.uArcCeuPincel)))
       const sA = dot(d, normalize(U.uSolDir))
       // o quente em volta do sol: no céu pintado só perto dele
       const lavaSol = mix(smoothstep(0.55, 1.0, sA).mul(0.38), smoothstep(0.78, 1.0, sA).mul(0.28), U.uArcPintado)
-      cor.assign(mix(cor, U.uSolCor.mul(1.05), lavaSol.mul(float(1.0).sub(U.uNoite)).mul(U.uArcCeu)))
+      cor.assign(mix(cor, U.uSolCor.mul(1.05), lavaSol.mul(float(1.0).sub(U.uNoite)).mul(U.uArcCeu).mul(float(1.0).sub(U.uAzul.mul(0.6)))))
       // NUVENS EM MASSAS: manchas grandes de borda pintada (o ruído fino lia como granulado)
       const faixaN = smoothstep(0.02, 0.12, y).mul(float(1.0).sub(smoothstep(0.32, 0.55, y)))
       const massa = vn(vec2(az.mul(0.62), y.mul(3.4)).add(7.0))
@@ -206,7 +218,8 @@ export function ceuTsl({ W, ref }, u) {
       const corNuvemLuz = mix(mix(U.uHor, U.uSolCor, 0.55).mul(1.12), mix(vec3(1.0, 0.96, 0.88), U.uSolCor, 0.3).mul(1.05), U.uArcPintado)
       const corNuvemSombra = mix(mix(U.uTopo, U.uHor, 0.55).mul(0.92), mix(U.uMeio, U.uTopo, 0.35).mul(0.95), U.uArcPintado)
       const corNuvem = mix(corNuvemSombra, corNuvemLuz, clamp(ladoSol.mul(0.6).add(topoN.mul(0.5)), 0.0, 1.0))
-      cor.assign(mix(cor, mix(corNuvem, U.uTopo.mul(0.6), U.uNoite.mul(0.7)), nuvemFinal.mul(0.85)))
+      // (meio-dia de agosto: as massas saem, entram os cúmulos redondos logo abaixo)
+      cor.assign(mix(cor, mix(corNuvem, U.uTopo.mul(0.6), U.uNoite.mul(0.7)), nuvemFinal.mul(0.85).mul(float(1.0).sub(U.uAzul))))
       // BANCO DE CÚMULOS no horizonte (item 5)
       const grupo = smoothstep(0.5, 0.7, vn(vec2(az.mul(0.9), 3.0)))
       // silhueta em calombos: onda larga, calombos médios e pequenos
@@ -217,7 +230,9 @@ export function ceuTsl({ W, ref }, u) {
       const caroco = vn(vec2(az.mul(9.0), y.mul(45.0)).add(81.0))
       const luzB = clamp(alturaRel.mul(0.8).add(caroco.sub(0.5).mul(0.7)).add(ladoSol.sub(0.5).mul(0.6)), 0.0, 1.0)
       const corBanco = mix(mix(U.uMeio, U.uTopo, 0.3).mul(0.92), mix(vec3(1.0, 0.95, 0.85), U.uSolCor, 0.35).mul(1.08), smoothstep(0.35, 0.65, luzB))
-      cor.assign(mix(cor, mix(corBanco, U.uTopo.mul(0.75), U.uNoite.mul(0.9)), banco.mul(U.uArcCeuPincel).mul(U.uArcCeu)))
+      cor.assign(mix(cor, mix(corBanco, U.uTopo.mul(0.75), U.uNoite.mul(0.9)), banco.mul(U.uArcCeuPincel).mul(U.uArcCeu).mul(float(1.0).sub(U.uAzul))))
+      // CÚMULOS DO ALÍSIO (ceu-cumulos.js)
+      pintarCumulos(cor, az, y)
       // O SOL PINTADO: o disco é pequeno e duro, o halo é a tinta quente em volta dele
       const haloPintado = smoothstep(0.85, 0.999, sA).mul(0.42).mul(float(1.0).sub(U.uNoite)).mul(U.uArcCeu).mul(U.uArcPintado)
       cor.assign(mix(cor, U.uSolCor.mul(1.2), haloPintado))

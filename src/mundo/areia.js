@@ -18,6 +18,13 @@ import { uAreiaTerreno } from './terreno.js'
 import { distCosta, larguraPraia } from './mapa.js'
 import { criarAleatorio } from '../utils.js'
 import { modulo, ref, amostraAlvo, uvTela, criarAlvo, criarPasse } from '../render/gpu/comum.js'
+import { GLSL_RELEVO_UNIFORM, GLSL_RELEVO_FUNCOES, glslRelevo, tslRelevo, ruidoRelevo, uRelevo } from './relevo-chao.js'
+import { GLSL_CALAMENTO_UNIFORM, uCalamento } from './calamento.js'
+import { GLSL_RODEIRO_UNIFORM, uRodeiro } from './rodeiro.js'
+import { uRuaTerra } from './rua-terra.js'
+
+// a linha da maré alta: onde a areia molhada encontra a seca, uma faixa fina mais escura e torta (GLSL e TSL)
+const MARE = 0.24
 
 const LONGE = new THREE.Vector2(1e6, 1e6)
 
@@ -149,6 +156,7 @@ function afundaTsl(uA) {
 // A malha fina no WebGPU: posição e normal no vértice, a normal da luz e a cor no fragmento (mesmas contas
 // de GLSL_VERTICE, GLSL_FRAGMENTO e dos trechos injetados)
 function malhaTsl(uM) {
+  let R = null // o relevo pintado (relevo-chao.js): um nó só para a normal e para a cor
   // as três passagens do vértice para o fragmento (o mesmo nó nos dois lados, senão vira duas)
   let V = null
   const vars = (W) => V || (V = { altura: W.varyingProperty('float', 'vAlturaA'), praia: W.varyingProperty('float', 'vPraia'), fundo: W.varyingProperty('float', 'vFundo') })
@@ -180,7 +188,7 @@ function malhaTsl(uM) {
     },
     // normal da luz pela altura no fragmento (a parede da pegada sai do mapa de 2,3 cm, não da malha)
     normal({ W }) {
-      const { vec2, vec3, vec4, normalize, texture, positionWorld, cameraViewMatrix } = W
+      const { vec2, vec3, vec4, normalize, texture, positionWorld } = W
       const uMapa = ref(uM.uMapaF), uMapaTam = ref(uM.uMapaTamF)
       const superficieF = (xz) => {
         const h = texture(uM.tAlturaF.value, xz.sub(uMapa.xy).div(uMapa.z).add(0.5).div(uMapaTam)).x
@@ -193,7 +201,10 @@ function malhaTsl(uM) {
       const xzF = positionWorld.xz
       const hxF = superficieF(xzF.add(vec2(eF, 0.0))).sub(superficieF(xzF.sub(vec2(eF, 0.0))))
       const hzF = superficieF(xzF.add(vec2(0.0, eF))).sub(superficieF(xzF.sub(vec2(0.0, eF))))
-      return normalize(cameraViewMatrix.mul(vec4(normalize(vec3(hxF.negate(), eF.mul(2.0), hzF.negate())), 0.0)).xyz)
+      const nF = normalize(vec3(hxF.negate(), eF.mul(2.0), hzF.negate()))
+      const v = vars(W)
+      R = R || tslRelevo(W, { solo: vec4(1.0, 0.0, 0.0, 0.0), molhada: W.float(1.0).sub(W.smoothstep(0.08, 0.35, v.altura)), nMundo: nF })
+      return R.normal
     },
     cor({ W }, rgb) {
       const { mix, smoothstep, Discard } = W
@@ -202,7 +213,12 @@ function malhaTsl(uM) {
       Discard(v.praia.lessThan(0.3))
       const base = mix(ref(uM.uMolhada), ref(uM.uSeca), smoothstep(0.0, 0.22, v.altura))
       // dentro da pegada a areia está compactada e um pouco mais escura
-      return mix(base, ref(uM.uFundo), smoothstep(0.004, 0.04, v.fundo).mul(0.55))
+      const rgbA = mix(base, ref(uM.uFundo), smoothstep(0.004, 0.04, v.fundo).mul(0.55))
+      // a linha da maré alta
+      const rlN = ruidoRelevo(W)
+      const linha = W.float(1.0).sub(smoothstep(0.0, 0.025, W.abs(v.altura.sub(MARE).sub(rlN(W.positionWorld.xz.mul(0.4)).sub(0.5).mul(0.06)))))
+      const rgbL = rgbA.mul(W.float(1.0).sub(linha.mul(0.18)))
+      return R ? rgbL.mul(R.corFator) : rgbL
     },
   }
 }
@@ -232,7 +248,7 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
   const geo = new THREE.PlaneGeometry(AREA_AREIA, AREA_AREIA, SEG, SEG).rotateX(-Math.PI / 2)
   const mat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: gradienteToon() })
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uM)
+    Object.assign(sh.uniforms, uM, uRelevo, uCalamento, uRodeiro, uRuaTerra)
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nuniform float uPasso;\n' + GLSL_VERTICE)
       .replace('#include <beginnormal_vertex>', `
@@ -249,25 +265,30 @@ export function criarAreia(cena, renderer, mapaAltura, cfg) {
         vPraia = praiaEm(xzA);
         vFundo = aA.r;`)
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vAlturaA; varying float vPraia; varying float vFundo;\nuniform vec3 uSeca; uniform vec3 uMolhada; uniform vec3 uFundo;\n' + GLSL_FRAGMENTO)
+      .replace('#include <common>', '#include <common>\nvarying float vAlturaA; varying float vPraia; varying float vFundo;\nuniform vec3 uSeca; uniform vec3 uMolhada; uniform vec3 uFundo;\n' + GLSL_FRAGMENTO +
+        GLSL_CALAMENTO_UNIFORM + GLSL_RODEIRO_UNIFORM + GLSL_RELEVO_UNIFORM + GLSL_RELEVO_FUNCOES)
       .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
+        vec3 nAreiaF;
         {
           float eF = uAreaF / ${TAM}.0;
           vec2 xzF = vPMundo.xz;
           float hxF = superficieF(xzF + vec2(eF, 0.0)) - superficieF(xzF - vec2(eF, 0.0));
           float hzF = superficieF(xzF + vec2(0.0, eF)) - superficieF(xzF - vec2(0.0, eF));
-          normal = normalize((viewMatrix * vec4(normalize(vec3(-hxF, 2.0 * eF, -hzF)), 0.0)).xyz);
-        }`)
+          nAreiaF = normalize(vec3(-hxF, 2.0 * eF, -hzF));
+          normal = normalize((viewMatrix * vec4(nAreiaF, 0.0)).xyz);
+        }` + glslRelevo({ solo: 'vec4(1.0, 0.0, 0.0, 0.0)', molhada: '1.0 - smoothstep(0.08, 0.35, vAlturaA)', base: 'nAreiaF' }))
       .replace('#include <color_fragment>', `#include <color_fragment>
         // só onde é praia; fora dela o chão de sempre aparece
         if (vPraia < 0.3) discard;
         diffuseColor.rgb = mix(uMolhada, uSeca, smoothstep(0.0, 0.22, vAlturaA));
         // dentro da pegada a areia está compactada e um pouco mais escura
-        diffuseColor.rgb = mix(diffuseColor.rgb, uFundo, smoothstep(0.004, 0.04, vFundo) * 0.55);`)
+        diffuseColor.rgb = mix(diffuseColor.rgb, uFundo, smoothstep(0.004, 0.04, vFundo) * 0.55);
+        // a linha da maré alta
+        diffuseColor.rgb *= 1.0 - 0.18 * (1.0 - smoothstep(0.0, 0.025, abs(vAlturaA - ${MARE} - (rlN(vPMundo.xz * 0.4) - 0.5) * 0.06)));`)
   }
   pintar(mat, 'areia-pintada')
   mat.userData.tsl = malhaTsl(uM)
-  texturizar(mat, { topo: 'areia', lado: 'pedra', tam: 3, contraste: 1.4, massa: 0.9 }) // igual ao terreno (terreno.js)
+  texturizar(mat, { topo: 'areia', lado: 'pedra', tam: 3, contraste: 0.6, massa: 0.9 }) // igual ao terreno (terreno.js)
   const malha = new THREE.Mesh(geo, mat)
   malha.frustumCulled = false
   malha.receiveShadow = true
