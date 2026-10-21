@@ -56,7 +56,8 @@ float rlBanda(float fw, float lam) { return 1.0 - smoothstep(0.2, 0.55, fw / lam
 
 // areia: ondulação do vento leste, riscos de vento e morrotes
 vec2 rlAreia(vec2 p, float molhada, float fw, float lam) {
-  float torto = rlN(p * 0.35) * 1.6 + rlN(p * 1.1 + 7.0) * 0.35;
+  // a crista serpenteia: curva larga de dezenas de metros, média e pequena (reta, a onda lia como veludo cotelê)
+  float torto = rlN(p * 0.06 + 21.0) * 6.0 + rlN(p * 0.35) * 1.6 + rlN(p * 1.1 + 7.0) * 0.35;
   // a frente da onda desliza de um trecho para outro (soma na fase; dividir a coordenada do mundo por um
   // comprimento variável fazia anéis a 700 m da origem)
   float s = fract((p.x + torto + p.y * 0.18) / lam + rlN(p * 0.03 + 13.0) * 3.0);
@@ -222,7 +223,8 @@ function funcoes(W) {
   const banda = (fw, lam) => float(1.0).sub(smoothstep(0.2, 0.55, fw.div(lam)))
 
   const rlAreia = Fn(([p, molhada, fw, lam]) => {
-    const torto = rlN(p.mul(0.35)).mul(1.6).add(rlN(p.mul(1.1).add(7.0)).mul(0.35))
+    // a crista serpenteia: curva larga, média e pequena
+    const torto = rlN(p.mul(0.06).add(21.0)).mul(6.0).add(rlN(p.mul(0.35)).mul(1.6)).add(rlN(p.mul(1.1).add(7.0)).mul(0.35))
     // a frente da onda desliza de um trecho para outro (soma na fase)
     const s = fract(p.x.add(torto).add(p.y.mul(0.18)).div(lam).add(rlN(p.mul(0.03).add(13.0)).mul(3.0)))
     const tri = s.lessThan(0.68).select(s.div(0.68), float(1.0).sub(s).div(0.32))
