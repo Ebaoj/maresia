@@ -1,5 +1,10 @@
 # Conceito narrativo (16/10/2026)
 
+> **21/10/2026, decisão do Joabe: o jogo fica só em 1932.** "Eu vou esquecer 1881 e ficar só com um
+> arco dentro de 1932 mesmo." As memórias de 1881 (greve dos jangadeiros, Dragão do Mar, a travessia
+> do avô) saem do jogo, e a jangada deixa de ser máquina do tempo. O texto abaixo fica como registro
+> do conceito de 16/10; onde fala de 1881, não vale mais. O arco novo de 1932 está em discussão.
+
 Definido pelo Joabe numa conversa à parte e adotado na Maresia em 16/10/2026.
 
 ## Em uma frase
