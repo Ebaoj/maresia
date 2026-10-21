@@ -11,6 +11,7 @@ import { criarPracaReforma } from './praca-reforma.js'
 import { criarExcelsior } from './excelsior.js'
 import { criarCinemas } from './cinemas.js'
 import { criarLeoes } from './leoes.js'
+import { criarMercado } from './mercado.js'
 
 // cada marco: [chave do cfg.marcos que liga, função que monta]. As funções devolvem { grupos, atualizar? }
 const MARCOS = [
@@ -18,6 +19,7 @@ const MARCOS = [
   ['excelsior', criarExcelsior],
   ['cinemas', criarCinemas],
   ['leoes', criarLeoes],
+  ['mercado', criarMercado],
 ]
 
 export function criarMarcosCentro(cena, cfg) {
