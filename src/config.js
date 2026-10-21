@@ -327,6 +327,7 @@ export const PADRAO = {
     corRimCeu: '#9cc0e0',      // a cor da borda do céu
     corBalaustrada: '#ede5d3', // balaústres de massa caiados
     corPedra: '#d8cfbd',       // cantaria e meio-fio
+    corColuna: '#d4bc92',      // a pedra quente da Coluna da Hora (a réplica é creme; o branco de caixa saía chapado)
     corMosaicoClaro: '#c9b38c', // pedra portuguesa clara: creme-ocre gasto (a branca estourava ao sol das 16h30)
     corMosaicoEscuro: '#45413b', // pedra portuguesa escura: cinza-carvão, não preto puro
   },

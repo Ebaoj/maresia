@@ -73,6 +73,7 @@ export const MARCOS = {
   general: '#73603f',
   balaustrada: '#ede5d3',
   pedra: '#d8cfbd',
+  coluna: '#d4bc92',
   mosaicoClaro: '#c9b38c',
   mosaicoEscuro: '#45413b',
 }

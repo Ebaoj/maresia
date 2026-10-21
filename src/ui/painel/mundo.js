@@ -94,7 +94,7 @@ export function secaoMundo(gui, cfg) {
   mc.addColor(cfg.marcos, 'corRimCeu').name('esculturas: cor da borda do céu')
   for (const [chave, nome] of [['corExcelsior', 'Excelsior'], ['corMajestic', 'Majestic'], ['corModerno', 'Cine Moderno'],
     ['corMercado', 'Mercado de Ferro'], ['corChapa', 'chapa do mercado'], ['corFerro', 'ferro fundido'], ['corBronze', 'jarros'], ['corFelinos', 'felinos (ferro)'], ['corGeneral', 'General (bronze)'],
-    ['corBalaustrada', 'balaústres'], ['corPedra', 'cantaria'], ['corMosaicoClaro', 'mosaico claro ⟳'], ['corMosaicoEscuro', 'mosaico escuro ⟳']]) {
+    ['corBalaustrada', 'balaústres'], ['corPedra', 'cantaria'], ['corColuna', 'Coluna da Hora'], ['corMosaicoClaro', 'mosaico claro ⟳'], ['corMosaicoEscuro', 'mosaico escuro ⟳']]) {
     mc.addColor(cfg.marcos, chave).name('cor: ' + nome)
   }
   return mundo
