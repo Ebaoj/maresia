@@ -145,12 +145,15 @@ export function pontoNaRua(rua, dist) {
 }
 
 // as fachadas em coordenada de jogo, ja agrupadas em casas
+let vaosDaTestada = []
 export const FACHADAS = (() => {
   const grupos = []
+  const vaos = [] // os trechos da testada sem construcao (a rua segue vazia)
   for (const cadeia of CADEIAS) {
     let grupo = []
     let largura = 0
     let anterior = null
+    let anteriorF = null
     let grupoDoVizinho = -1
     // o esticamento da ultima frente vista: a testada acumulada e comparada com
     // um limite medido no mundo comprimido, entao o limite acompanha a escala
@@ -189,8 +192,15 @@ export const FACHADAS = (() => {
       esticaF = esticamentoNoVao(-f.normal[1], f.normal[0], de[0], de[1])
       const folga = anterior ? Math.hypot(dx, dz) : 0
       const curta = largura < MIN_FRENTE * esticaF
-      if (folga > FOLGA_GRUPO * estica && !(curta && folga <= FOLGA_JUNTA * estica)) fechar()
+      if (folga > FOLGA_GRUPO * estica && !(curta && folga <= FOLGA_JUNTA * estica)) {
+        // Um vao na testada: a planta oficial nao tem construcao aqui, mas a
+        // rua continua. No Centro esse trecho vira casa geminada; nos bairros,
+        // muro com portao (src/mundo/cidade.js).
+        vaos.push({ a: anterior, b: de, normal: f.normal, largura: folga, uso: f.uso, prof: anteriorF ? anteriorF.prof : 0 })
+        fechar()
+      }
       anterior = para
+      anteriorF = f
       if (f.larg > MAX_FRENTE * esticaF) { grupo.push([k, entrada]); fechar(); continue } // fachada grande demais
       grupo.push([k, entrada])
       largura += f.larg
@@ -260,8 +270,14 @@ export const FACHADAS = (() => {
       rot: Math.atan2(nx, nz),
     })
   }
+  vaosDaTestada = vaos
   return saida
 })()
+
+// Os vaos da testada: os trechos da rua que a planta oficial deixa sem
+// construcao. No Centro eles viram casa geminada; nos bairros, muro com
+// portao (src/mundo/cidade.js).
+export const VAOS = vaosDaTestada
 
 // os lugares que a cidade nao pode cobrir: a reconstituicao de cada um entra por cima
 export const RESERVADOS = LUGARES_RESERVADOS

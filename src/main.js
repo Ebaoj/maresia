@@ -109,7 +109,7 @@ async function iniciar() {
   const mar = criarMar(cena, mapaAltura, cfg, toque.publico)
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
   void criarFaixas
-  const { predios, casas, grade, quadras } = criarCidade(cena)
+  const { predios, casas, grade, quadras, frente } = criarCidade(cena, cfg)
   criarEstacao(cena) // a Estação Central de 1880
   const urubu = criarUrubu1932(cena) // o Campo do Urubu: galpões, tarefas, cozinha e o portão
   marcar('cidade')
@@ -433,7 +433,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932, urubu,
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, ocupacao1932: ocup1932, urubu,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
