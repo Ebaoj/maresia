@@ -7,6 +7,7 @@ import { toon, texturizar, luzFixa } from '../../materiais.js'
 import { globais } from '../../globais.js'
 import { CAL } from '../../paleta.js'
 import { materialMetal, sincronizarMetal } from './metal.js'
+import { materialRebote, sincronizarRebote } from './rebote.js'
 
 // chave -> [de onde vem a cor, textura pintada, metros por repetição]
 // a cor é uma chave de cfg.marcos (ao vivo) ou um hex fixo (da paleta)
@@ -26,7 +27,7 @@ const RECEITAS = {
   telha: [CAL.telha, 'telha', 1.5],
   ferro: ['corFerro', null],
   bronze: ['corBronze', null],
-  excelsior: ['corExcelsior', 'cal', 2.5],
+  balaustreClaro: ['#f6f0e2', 'cal', 0.8],
   majestic: ['corMajestic', 'cal', 2.0],
   moderno: ['corModerno', 'cal', 2.5],
   rosario: [CAL.cal, 'cal', 2.0],
@@ -66,6 +67,10 @@ export function criarMateriais(cfg) {
     vivos.push([mats[chave], cor, cfg.marcos[cor]])
   }
   sincronizarMetal(cfg)
+  // o creme do Excelsior com a luz rebatida do chão no lado da sombra (rebote.js): sem ela o lado de sombra saía violeta
+  mats.excelsior = materialRebote(cfg.marcos.corExcelsior, { chao: 6 })
+  vivos.push([mats.excelsior, 'corExcelsior', cfg.marcos.corExcelsior])
+  sincronizarRebote(cfg)
   // o interior das janelas acesas e o vidro dos lampiões: não recebem luz (brilham no filtro à noite)
   mats.vaoAceso = luzFixa(new THREE.MeshBasicMaterial({ color: '#4a3a30' }), 0.6, globais.uNoite)
   mats.vaoAceso.userData.semSombra = true
@@ -80,6 +85,7 @@ export function criarMateriais(cfg) {
     mats,
     atualizar() {
       sincronizarMetal(cfg)
+      sincronizarRebote(cfg)
       for (const v of vivos) {
         const hex = cfg.marcos[v[1]]
         if (hex !== v[2]) { v[0].color.set(hex); v[2] = hex }

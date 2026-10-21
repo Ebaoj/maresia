@@ -62,7 +62,7 @@ export const ESQUADRIAS = ['#4f7c9a', '#5e8a6e', '#8a5a3c', '#c9963f', '#6c8f9e'
 // (memória de Otacílio de Azevedo). Os dois são desbotados e escuros, não acento: o acento continua no pano e na fruta.
 // O resto sai da cal. Os valores-padrão do painel (cfg.marcos) são estes.
 export const MARCOS = {
-  excelsior: '#ece1c6',
+  excelsior: '#f2e2c0',
   majestic: '#a3563f',
   moderno: '#e4d3b0',
   mercado: '#6b2b27',

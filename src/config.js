@@ -311,7 +311,9 @@ export const PADRAO = {
     distDetalhe: 170,       // m: além disso some o detalhe miúdo (balaústres, flores, ferragens)
     esculturasModelo: true, // as esculturas da Praça dos Leões em modelo esculpido (GLB); sem ele, a forma procedural
     // cores (da paleta: src/paleta.js, MARCOS)
-    corExcelsior: '#ece1c6',   // creme claro (a cor de 1932 não tem fonte; hoje é creme)
+    corExcelsior: '#f2e2c0',   // creme pálido (a cor de 1932 não tem fonte; hoje é creme/branco gelo)
+    rebote: 0.4,               // a luz quente que o chão devolve no lado de sombra do Excelsior (rebote.js)
+    corRebote: '#ffc98a',      // a cor dessa luz (a pedra e a cal ao sol da tarde)
     corMajestic: '#a3563f',    // vermelho-tijolo do cartão colorizado de 1925 (indício, não prova)
     corModerno: '#e4d3b0',     // ocre muito claro (sem imagem livre da fachada)
     corMercado: '#6b2b27',     // vermelho-escuro (memória de Otacílio de Azevedo)
