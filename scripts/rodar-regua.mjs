@@ -26,11 +26,12 @@ const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const PORTA = 9222 + (Number(process.env.PORTA_EXTRA) || 0)
 
 const perfil = mkdtempSync(join(tmpdir(), 'maresia-regua-'))
+// detached: o Chrome vira um grupo e o grupo inteiro morre junto (o helper de GPU junto)
 const chrome = spawn(CHROME, [
   '--headless=new', '--no-sandbox', '--use-angle=metal', '--enable-unsafe-webgpu',
   '--enable-features=Vulkan,UseSkiaRenderer', `--remote-debugging-port=${PORTA}`,
   `--user-data-dir=${perfil}`, '--window-size=2560,1544', 'about:blank',
-], { stdio: 'ignore' })
+], { stdio: 'ignore', detached: true })
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms))
 async function alvo () {
@@ -46,8 +47,11 @@ async function alvo () {
   throw new Error('chrome nao respondeu')
 }
 
+let ws = null
+let codigo = 0
+try {
 const pagina = await alvo()
-const ws = new WebSocket(pagina.webSocketDebuggerUrl)
+ws = new WebSocket(pagina.webSocketDebuggerUrl)
 let seq = 0
 const esperando = new Map()
 ws.addEventListener('message', (ev) => {
@@ -73,7 +77,7 @@ const mediana = (v) => {
 }
 
 const resultados = []
-for (let rodada = 0; rodada < RODADAS; rodada++) {
+for (let rodada = 0; rodada < RODADAS && codigo === 0; rodada++) {
   await cmd('Page.navigate', { url: `${URL_JOGO}/bancada-cidade.html?casas=${CASAS}&segundos=10${EXTRA}` })
   await dormir(3000)
   let r = null
@@ -85,13 +89,10 @@ for (let rodada = 0; rodada < RODADAS; rodada++) {
   }
   if (!r || !r.trechos) {
     console.log('REPROVA: a bancada não terminou', JSON.stringify(r).slice(0, 600))
-    ws.close(); chrome.kill()
-    process.exit(1)
-  }
-  if (r.casas !== CASAS) {
+    codigo = 1
+  } else if (r.casas !== CASAS) {
     console.log(`REPROVA: pediu ${CASAS} casas, a bancada gerou ${r.casas}`)
-    ws.close(); chrome.kill()
-    process.exit(1)
+    codigo = 1
   }
   resultados.push(r)
   console.log('rodada', rodada + 1, JSON.stringify({ casas: r.casas, copias: r.copias, msPrimeiroQuadro: r.msPrimeiroQuadro, trechos: r.trechos }))
@@ -119,12 +120,17 @@ const quebrados = await js('(window.__shadersQuebrados || []).slice(0, 3)')
 if (quebrados && quebrados.length) falhas.push(`shader quebrado: ${JSON.stringify(quebrados)}`)
 console.log(`abertura ${(abertura / 1000).toFixed(1)} s; ${CASAS} casas`)
 
-ws.close()
-chrome.kill()
-await dormir(300)
-try { rmSync(perfil, { recursive: true, force: true }) } catch { /* perfil temporario */ }
 if (falhas.length) {
   console.log('REPROVA: ' + falhas.join('; '))
-  process.exit(1)
+  codigo = 1
+} else {
+  console.log('PASSA')
 }
-console.log('PASSA')
+} finally {
+  // o navegador sempre sai, mesmo com erro: um Chrome órfão segura a máquina
+  try { ws?.close() } catch { /* ja fechado */ }
+  try { process.kill(-chrome.pid, 'SIGKILL') } catch { try { chrome.kill('SIGKILL') } catch { /* ja morto */ } }
+  await dormir(300)
+  try { rmSync(perfil, { recursive: true, force: true }) } catch { /* perfil temporario */ }
+}
+process.exit(codigo)
