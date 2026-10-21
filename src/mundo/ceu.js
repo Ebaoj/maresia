@@ -117,6 +117,7 @@ export function criarCeu(cena) {
   const corMeio = new THREE.Color()
   const corCiano = new THREE.Color()
   const corDouradaSombra = new THREE.Color()
+  const dirContinua = new THREE.Vector3(0, 1, 0) // direção da luz sem passos (mapa de sombra de perto)
   let cache = null // CacheSombra (F4): com ele ligado, a pose da luz fica congelada enquanto o mapa dos parados vale
 
   function atualizar(hora, centro, dt, cfg) {
@@ -136,6 +137,9 @@ export function criarCeu(cena) {
     const dirSolS = passoH > 0 ? direcaoSol(Math.round(hora / passoH) * passoH) : dirSol
     // de noite a luz principal vira a lua
     const dirLuz = deDia ? dirSolS.clone() : new THREE.Vector3(-dirSolS.x, -dirSolS.y, -0.3).normalize()
+    // a mesma luz sem os passos, para o mapa de sombra de perto (refeito todo quadro: segue o sol contínuo)
+    if (deDia) dirContinua.copy(dirSol)
+    else dirContinua.set(-dirSol.x, -dirSol.y, -0.3).normalize()
     // HORA DOURADA (luz-arcane, item 3; alvo: docs/referencias/forte-1932-joabe): com o sol baixo de dia, a
     // luz principal esquenta para laranja, a sombra fica longa e azul funda e o contraste sobe. O fator nasce
     // da altura do sol, então 8h ganha um pouco, 11h nada, 16h30 quase tudo e a noite nada.
@@ -147,6 +151,8 @@ export function criarCeu(cena) {
     const yMin = THREE.MathUtils.lerp(0.42, cfg.estilo.arcDouradaAltura ?? 0.42, dourada)
     dirLuz.y = Math.max(dirLuz.y, yMin)
     dirLuz.normalize()
+    dirContinua.y = Math.max(dirContinua.y, yMin)
+    dirContinua.normalize()
     const pertoHorizonte = THREE.MathUtils.smoothstep(Math.abs(dirSol.y), 0.0, 0.08)
 
     uniformes.uTopo.value.copy(p.topo)
@@ -221,7 +227,7 @@ export function criarCeu(cena) {
     return p
   }
 
-  return { atualizar, sol, usarCache: (c) => { cache = c } }
+  return { atualizar, sol, dirContinua, usarCache: (c) => { cache = c } }
 }
 
 function criarNuvens(cena) {

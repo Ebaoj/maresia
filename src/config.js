@@ -238,10 +238,16 @@ export const PADRAO = {
   mundo: {
     // 21/10/2026: 0 (era 4). Com 4, o mapa de longe pulava ~1° a cada 4 s (1 min de jogo por segundo) e a sombra
     // inteira dava um tranco visível. Com 0 o cache dos parados refaz a cada 0,05° (~5 vezes por segundo, cada vez
-    // só os parados)
+    // só os parados), e o mapa de perto segue o sol contínuo. Só vale para o mapa de longe
     passoSombraMin: 0,
     sombras: true,
     resolucaoSombra: 4096, // mapa de longe (346 m): 4096 = 8,5 cm por texel, 2048 mais leve
+    // mapa de perto (render/sombra-perto.js): janela pequena e densa em volta do jogador, refeita todo quadro
+    sombraPerto: true,
+    sombraPertoTamanho: 48,     // metros de lado (48 m em 2048 = 2,3 cm por texel; o de longe dá 8,5)
+    sombraPertoResolucao: 2048,
+    sombraPertoBorda: 0.12,     // fração da janela de perto em que ela se mistura com a de longe
+    sombraPertoAFrente: 8,      // metros à frente do jogador (para onde a câmera olha) onde a janela de perto fica
     sombraVies: 0.03,           // metros: tira o "acne" (sombra de si mesmo); o de antes eram 0,86 m e a sombra descolava do pé
     sombraViesNormal: 1.0,      // texels do mapa: empurra o ponto pela normal antes de ler a sombra
     sombraSuave: 1.0,           // texels: espaçamento da grade 3 x 3 que alisa a borda (render/filtro-sombra.js)

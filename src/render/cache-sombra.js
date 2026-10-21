@@ -37,7 +37,7 @@ export class CacheSombra {
     this.refazer = null
     this.aplicado = false // os parados estão com castShadow desligado (o mapa em cache está valendo)
     // motivos: quantas vezes cada um refez o mapa; chamadas*: desenhos do último passe dos parados e do dinâmico
-    this.stats = { refeitos: 0, quadros: 0, motivos: {}, msRefazer: 0, msQuadro: 0, parados: 0, chamadasEstatico: 0, chamadasDinamico: 0 }
+    this.stats = { refeitos: 0, quadros: 0, motivos: {}, msRefazer: 0, msQuadro: 0, parados: 0, chamadasEstatico: 0, chamadasDinamico: 0, chamadasOutras: 0 }
     this._c = new THREE.Vector3()
     this._d = new THREE.Vector3()
     const mat = new THREE.ShaderMaterial({
@@ -52,6 +52,7 @@ export class CacheSombra {
     // o three chama shadowMap.render sozinho dentro de render(); esta função toma o lugar dele
     const original = renderer.shadowMap.render
     this.original = original
+    this.soSol = [sol]
     renderer.shadowMap.render = (luzes, c, cam) => this.sombra(luzes, c, cam)
   }
 
@@ -84,13 +85,16 @@ export class CacheSombra {
     // O three chama isto em todo render(), também nas passadas do pós (sem luz nenhuma): ali não há sombra a fazer e
     // o cache continua valendo. (Tratar isso como "cache incompatível" refazia o mapa em todo quadro.)
     if (luzes.length === 0) return
-    // com o cache desligado, outra luz projetando sombra ou sem o sol na lista, o cache não sabe compor: caminho de sempre
-    if (!this.ligado || luzes.length !== 1 || luzes[0] !== sol || r.shadowMap.enabled === false) {
+    // com o cache desligado ou sem o sol na lista, o cache não sabe compor: caminho de sempre
+    if (!this.ligado || !luzes.includes(sol) || r.shadowMap.enabled === false) {
       this.desligar()
       return this.original.call(r.shadowMap, luzes, c, cam)
     }
     // mesma regra do three: sem autoUpdate, só refaz quando alguém pediu (o pós pede uma vez por quadro)
     if (r.shadowMap.autoUpdate === false && r.shadowMap.needsUpdate === false) return
+    // as outras luzes que projetam sombra (a de perto, sombra-perto.js) vão pelo caminho de sempre, depois do sol
+    const outras = luzes.length === 1 ? null : luzes.filter((l) => l !== sol)
+    luzes = this.soSol
     const t0 = performance.now()
     const chave = sol.shadow.mapSize.x * 4096 + sol.shadow.camera.right
     const assinatura = assinaturaEstaticos()
@@ -107,8 +111,22 @@ export class CacheSombra {
       this.stats.msRefazer = performance.now() - t1
     }
     this.compor(luzes, c, cam)
+    if (outras && outras.length) this.passeOutras(outras, c, cam)
     this.stats.quadros++
     this.stats.msQuadro = performance.now() - t0
+  }
+
+  // Outra luz (o mapa de perto): desenho completo de sempre, com os parados de volta. Enquanto o cache vale, os
+  // parados ficam com castShadow desligado (para o passe dinâmico do sol não os desenhar), e o mapa de perto
+  // ficaria só com quem se mexe.
+  passeOutras(outras, c, cam) {
+    const r = this.r
+    const lista = this.aplicado ? estaticosRegistrados() : null
+    if (lista) for (const o of lista) o.castShadow = true
+    r.shadowMap.needsUpdate = true
+    const chamadas = r.info.render.calls
+    try { this.original.call(r.shadowMap, outras, c, cam) } finally { if (lista) for (const o of lista) o.castShadow = false }
+    this.stats.chamadasOutras = r.info.render.calls - chamadas
   }
 
   garantirAlvo(tam) {
