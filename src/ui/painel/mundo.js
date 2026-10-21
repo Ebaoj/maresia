@@ -73,8 +73,9 @@ export function secaoMundo(gui, cfg) {
   mn.add(cfg.mundo.marcosNorte, 'passeio').name('Passeio Público')
   mn.add(cfg.mundo.marcosNorte, 'detalheAte', 40, 600, 10).name('detalhe até (m)')
   mn.add(cfg.mundo.marcosNorte, 'pincel', 0, 0.5, 0.01).name('pincelada nas paredes')
-  mn.addColor(cfg.mundo.marcosNorte, 'corSe').name('fachada da Sé')
-  mn.addColor(cfg.mundo.marcosNorte, 'corEstacao').name('parede da Estação')
+  mn.addColor(cfg.mundo.marcosNorte, 'corSe').name(rec('fachada da Sé'))
+  mn.addColor(cfg.mundo.marcosNorte, 'corEstacao').name(rec('parede da Estação'))
+  mn.addColor(cfg.mundo.marcosNorte, 'corSombra').name('sombra do reboco')
   mn.addColor(cfg.mundo.marcosNorte, 'corFerro').name('ferro (gradil, poste)')
   mn.addColor(cfg.mundo.marcosNorte, 'corEsfinge').name('pedra das esfinges')
 

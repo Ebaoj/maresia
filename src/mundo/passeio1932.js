@@ -37,8 +37,12 @@ const TABELA = (c) => ({
   tijolo: { cor: '#c9a27e', tex: 'pedra', tam: 1.2, contraste: 0.5 },
   canteiro: { cor: '#7a8c4c', tex: 'folha', tam: 2, contraste: 0.5 },
   meiofio: { cor: CAL.calVelha },
-  muro: { cor: CAL.cal, tex: 'cal', tam: 3, contraste: 0.3, recebe: false },
-  branco: { cor: '#f4eee2', tex: 'cal', tam: 2, contraste: 0.15, recebe: false },
+  // o reboco caiado das casas (quarteirao.js): manchas, salitre na base, cal caída
+  muro: { tipo: 'reboco', cor: CAL.cal, recebe: false },
+  branco: { tipo: 'reboco', cor: '#f4eee2', recebe: false },
+  // pilares e muretas: peças pequenas e baixas, onde o reboco das casas (que descasca mais perto do chão)
+  // virava tijolo à mostra quase inteiro; cal pintada, com a mancha da textura
+  pilar: { cor: '#efe8da', tex: 'cal', tam: 1.5, contraste: 0.6, massa: 0.6, recebe: false },
   pedra: { cor: '#e4dccb', tex: 'pedra', tam: 2, contraste: 0.3 },
   nicho: { cor: '#cfc6b4' },
   estatua: { cor: '#f2ede2', detalhe: true, recebe: false },
@@ -51,7 +55,7 @@ const TABELA = (c) => ({
   agua: { cor: '#5f9e9a' },
   lona: { cor: '#e8dcc4', recebe: false },
   telha: { tipo: 'telha', cor: CAL.telha },
-  usina: { cor: '#e9e2d2', tex: 'cal', tam: 3, contraste: 0.3, recebe: false },
+  usina: { tipo: 'reboco', gasto: true, cor: '#e9e2d2', recebe: false },
   zinco: { cor: '#5b5550' },
   chamine: { cor: '#4a3d36', tex: 'pedra', tam: 1.5, contraste: 0.5 },
   carvao: { cor: '#2e2a28' },
@@ -158,8 +162,8 @@ function escadaEsfinges(o, y2) {
   // os pilares das esfinges, no alto, e as esfinges confrontantes (uma olha para a outra)
   for (const lado of [-1, 1]) {
     const px = X + lado * 4.6
-    o.bloco('branco', px, 0, -36.1, 1.3, 1.9, 1.3)
-    o.bloco('branco', px, 1.9, -36.1, 1.55, 0.22, 1.55)
+    o.bloco('pilar', px, 0, -36.1, 1.3, 1.9, 1.3)
+    o.bloco('pilar', px, 1.9, -36.1, 1.55, 0.22, 1.55)
     esfinge(o, 'esfinge', px, 2.12, -36.1, lado > 0 ? -Math.PI / 2 : Math.PI / 2)
     o.solido(px, -36.1, 0.75, 0.75)
   }
@@ -175,7 +179,7 @@ function escadaEsfinges(o, y2) {
 function gradis(o) {
   const { p1 } = PLANOS
   const g = (ax, az, bx, bz, op) => {
-    gradil(o, 'branco', 'ferro', ax, az, bx, bz, 0, op)
+    gradil(o, 'pilar', 'ferro', ax, az, bx, bz, 0, op)
     const comp = Math.hypot(bx - ax, bz - az)
     if (ax === bx) o.solido(ax, (az + bz) / 2, 0.3, comp / 2)
     else o.solido((ax + bx) / 2, az, comp / 2, 0.3)
@@ -195,7 +199,7 @@ function gradis(o) {
   }
   // os pilares dos portões, mais altos, com urna
   for (const [px, pz] of [[29.5, 36.3], [34.5, 36.3], [p1.x0 + 0.2, -0.5], [p1.x0 + 0.2, 4.5], [p1.x1 - 0.2, -0.5], [p1.x1 - 0.2, 4.5]]) {
-    o.bloco('branco', px, 0, pz, 0.75, 2.8, 0.75)
+    o.bloco('pilar', px, 0, pz, 0.75, 2.8, 0.75)
     urna(o, 'estatua', px, 2.8, pz, 1.2)
   }
 }
@@ -231,7 +235,7 @@ function planosDeBaixo(o, y2, y3) {
   o.bloco('muro', 0, y3 - 0.6, -79.9, p2.x1 - p2.x0, y2 - y3 + 0.6, 3.2)
   o.piso(0, -79.9, p2.x1, 1.6, y2 + 0.02)
   for (const [a, b] of [[p2.x0, -32], [-28, p2.x1]]) {
-    balaustrada(o, 'branco', a, b, y2, -81.2, 0.9, 6)
+    balaustrada(o, 'pilar', a, b, y2, -81.2, 0.9, 6)
     o.solido((a + b) / 2, -81.2, (b - a) / 2, 0.25)
     for (let x = a; x <= b; x += 12) urna(o, 'estatua', x, y2 + 0.9, -81.2, 1.1)
   }

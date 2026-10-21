@@ -118,7 +118,7 @@ function criarClasse(W) {
       const lim = ref(globais.uArcLim)
       const suave = ref(globais.uArcSuave)
       const niveis = ref(globais.uArcNiveis)
-      const corSombra = ref(globais.uArcCorSombra)
+      const corSombra = ref(this.material.original?.userData.arcCorSombra || globais.uArcCorSombra)
       const sombraA = float(1.0).sub(smoothstep(lim.x.sub(suave), lim.x.add(suave), tA))
       const luzA = smoothstep(lim.y.sub(suave), lim.y.add(suave), tA)
       const cLuz = mix(vec3(1.0), tomA, 0.65).mul(niveis.z)

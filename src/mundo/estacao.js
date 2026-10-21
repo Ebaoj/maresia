@@ -26,9 +26,10 @@ import { fronton, molduraFronton, tramoComVao, relogio, urna, lampiaoColuna } fr
 export const ESTACAO = { L: 130, P: 28, centro: 20, piso: 1.0, cornija: 7.6, platibanda: 9.5, entablamento: 10.6 }
 
 const TABELA = (cor) => ({
-  parede: { cor: cor.parede, tex: 'cal', tam: 3, contraste: 0.2, recebe: false },
-  cimalha: { cor: '#f4eee2', tex: 'cal', tam: 2, contraste: 0.15, recebe: false },
-  pedra: { cor: CAL.calVelha, tex: 'pedra', tam: 2.5, contraste: 0.5 },
+  // o reboco caiado das casas (quarteirao.js): manchas grandes, salitre na base, cal caída nas quinas
+  parede: { tipo: 'reboco', cor: cor.parede, recebe: false },
+  cimalha: { tipo: 'reboco', cor: '#f6f1e6', recebe: false },
+  pedra: { cor: '#bfae8e', tex: 'pedra', tam: 2.5, contraste: 0.5 }, // embasamento: a barra mais escura
   porta: { cor: CAL.verde },
   telha: { tipo: 'telha', cor: CAL.telha },
   zinco: { cor: CAL.mangue },

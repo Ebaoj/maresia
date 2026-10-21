@@ -26,10 +26,11 @@ import * as THREE from 'three'
 export const SE = { largura: 22, torre: 6.5, cornija: 13.2, nave: 11, corredor: 5, comprimento: 42, capela: 9 }
 
 const TABELA = (c) => ({
-  fachada: { cor: c.corSe, tex: 'cal', tam: 3, contraste: 0.25, recebe: false, proprio: true },
-  branco: { cor: '#f4eee2', tex: 'cal', tam: 2, contraste: 0.15, recebe: false },
-  nave: { cor: CAL.cal, tex: 'cal', tam: 3, contraste: 0.25, recebe: false },
-  pedra: { cor: CAL.calVelha, tex: 'pedra', tam: 2.5, contraste: 0.5 },
+  // o reboco caiado das casas (quarteirao.js): manchas, salitre na base, cal caída; a cor de cada parte por vértice
+  fachada: { tipo: 'reboco', cor: c.corSe, recebe: false },
+  branco: { tipo: 'reboco', cor: '#f6f1e6', recebe: false }, // cimalhas, pilastras e molduras: brancas, à parte
+  nave: { tipo: 'reboco', cor: CAL.cal, recebe: false },
+  pedra: { cor: '#b9a888', tex: 'pedra', tam: 2.5, contraste: 0.5 }, // o socco: a barra mais escura
   telha: { tipo: 'telha', cor: CAL.telha },
   porta: { cor: ESQUADRIAS[1] },
   janela: { cor: '#3c4a48' },

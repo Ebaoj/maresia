@@ -186,6 +186,9 @@ export class Obra {
       if (!def) throw new Error(`obra ${this.nome}: material sem definição: ${chave}`)
       if (def.mat.vertexColors) for (const g of lista) colorir(g, def.cor || '#ffffff')
       else for (const g of lista) if (g.attributes.color) g.deleteAttribute('color')
+      // o reboco das casas mede a altura de cada ponto a partir do chão (salitre, sujeira, degradê): o chão
+      // do marco, no mundo
+      if (def.reboco) for (const g of lista) g.setAttribute('aChao', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(this.y0 + (def.chao || 0)), 1))
       const geo = mergeGeometries(lista)
       if (!geo) throw new Error(`obra ${this.nome}: não juntou ${chave}`)
       geo.computeBoundingSphere()
@@ -253,6 +256,24 @@ export function acenderVidros() {
 
 // a pincelada das paredes dos marcos (o painel mexe)
 export const uPincelMarcos = { value: 0.1 }
+// a cor da sombra no reboco dos marcos: azul-violeta fria (os conceitos), não o cinza-azulado do resto
+export const uSombraMarcos = { value: new THREE.Color('#646fae') }
+
+// O reboco caiado das casas (quarteirao.js): pinceladas de caiação, degradê, salitre subindo da base,
+// placas de cal caída mostrando a taipa, escorridos e o desgaste grande (desgaste.js), nos dois
+// renderizadores. Uma cópia só dos marcos (não reparte com as casas): leva a pincelada e a sombra próprias
+// (a cor de cada parede vai por vértice).
+const _rebocos = {}
+function rebocoMarcos(gasto) {
+  const k = gasto ? 'gasto' : 'novo'
+  if (!_rebocos[k]) {
+    const m = gasto ? casas().rebocoMorro : casas().reboco
+    m.userData.arcPincel = uPincelMarcos
+    m.userData.arcCorSombra = uSombraMarcos
+    _rebocos[k] = m
+  }
+  return _rebocos[k]
+}
 
 // Monta a tabela de materiais de um marco a partir de uma tabela simples:
 //   { chave: { cor, tex: 'cal' | 'pedra' | ..., tam, detalhe, sombra, recebe, tipo: 'telha' | 'madeira' | 'vidro' } }
@@ -265,7 +286,8 @@ export function materiaisObra(tabela) {
   const saida = {}
   for (const [chave, d] of Object.entries(tabela)) {
     let mat
-    if (d.tipo === 'telha') mat = casas().telhas
+    if (d.tipo === 'reboco') mat = rebocoMarcos(d.gasto)
+    else if (d.tipo === 'telha') mat = casas().telhas
     else if (d.tipo === 'madeira') mat = casas().pecas
     else if (d.tipo === 'vidro') mat = vidroLampiao()
     else if (d.tex) mat = texturizar(toon(d.cor, { semCache: true }), { topo: d.tex, lado: d.texLado || d.tex, tam: d.tam || 2.5, contraste: d.contraste ?? 0.8, massa: d.massa ?? 0.3 })
@@ -273,7 +295,7 @@ export function materiaisObra(tabela) {
     // parede grande e lisa: a pincelada da borda das faixas fica mais curta (cfg.mundo.marcosNorte.pincel); com a do
     // resto do jogo (0,35), a fachada inteira na luz rasante do sol de agosto virava camuflagem
     if (d.recebe === false) mat.userData.arcPincel = uPincelMarcos
-    saida[chave] = { mat, cor: d.cor, detalhe: !!d.detalhe, sombra: d.tipo === 'vidro' ? false : d.sombra, recebe: d.recebe }
+    saida[chave] = { mat, cor: d.cor, detalhe: !!d.detalhe, sombra: d.tipo === 'vidro' ? false : d.sombra, recebe: d.recebe, reboco: d.tipo === 'reboco', chao: d.chao }
   }
   return saida
 }

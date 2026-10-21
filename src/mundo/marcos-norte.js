@@ -6,7 +6,7 @@
 import { criarEstacao } from './estacao.js'
 import { criarSe } from './se1932.js'
 import { criarPasseio } from './passeio1932.js'
-import { acenderVidros, uPincelMarcos } from './obra1932.js'
+import { acenderVidros, uPincelMarcos, uSombraMarcos } from './obra1932.js'
 
 export function criarMarcosNorte(cena, cfg) {
   const c = cfg.mundo.marcosNorte
@@ -16,7 +16,8 @@ export function criarMarcosNorte(cena, cfg) {
     passeio: criarPasseio(cena, cfg),
   }
   // as cores que o painel mexe: [marco, chave do material, chave do cfg]
-  const CORES = [['se', 'fachada', 'corSe'], ['estacao', 'parede', 'corEstacao'], ['passeio', 'esfinge', 'corEsfinge'],
+  // (a fachada da Sé e a parede da Estação vão por vértice no reboco: mudam ao recarregar)
+  const CORES = [['passeio', 'esfinge', 'corEsfinge'],
     ['se', 'ferro', 'corFerro'], ['estacao', 'ferro', 'corFerro'], ['estacao', 'lamp', 'corFerro'], ['passeio', 'ferro', 'corFerro'], ['se', 'lamp', 'corFerro']]
   const materiais = CORES.map(([m, chave, k]) => {
     if (!marcos[m]) return null
@@ -28,6 +29,7 @@ export function criarMarcosNorte(cena, cfg) {
     atualizar(camera) {
       acenderVidros()
       uPincelMarcos.value = c.pincel
+      uSombraMarcos.value.set(c.corSombra)
       for (const [nome, m] of Object.entries(marcos)) m.atualizar(camera, c[nome] !== false, c.detalheAte)
       for (const item of materiais) {
         const hex = c[item[1]]
