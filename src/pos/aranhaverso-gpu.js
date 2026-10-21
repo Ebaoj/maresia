@@ -8,7 +8,9 @@
 
 import * as THREE from 'three'
 import { Aranhaverso } from './aranhaverso.js'
-import { ref, funcoes, modulo } from '../render/gpu/comum.js'
+import { ref, funcoes, modulo, amostraAlvo } from '../render/gpu/comum.js'
+import { fragTensorGpu, fragKuwaharaGpu } from './pintura-gpu.js'
+import { amostrasPintura } from './pintura.js'
 
 export class AranhaversoGpu {
   constructor(renderer, cena, camera, cfg, globais) {
@@ -31,6 +33,9 @@ export class AranhaversoGpu {
     this.rtOclusao = new W.RenderTarget(1, 1, meia)
     this.rtBrilhoA = new W.RenderTarget(1, 1, meia)
     this.rtBrilhoB = new W.RenderTarget(1, 1, meia)
+    // pincelada na tela (pintura.js): tensor em meia resolução e a cor pintada em resolução cheia
+    this.rtTensor = new W.RenderTarget(1, 1, meia)
+    this.rtPintura = new W.RenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false })
     this.corFundo = new THREE.Color(0, 0, 0)
     this.mrtCena = W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) })
 
@@ -57,7 +62,14 @@ export class AranhaversoGpu {
     // desfoque em vaivém: quatro passadas com fonte e direção fixas (A->B horizontal, B->A vertical, duas vezes)
     this.uDirs = [0, 1, 2, 3].map(() => W.uniform(new THREE.Vector2()))
     this.matDesfoque = [0, 1, 2, 3].map((k) => this.material(fragDesfoque(W, amostra(k % 2 ? this.rtBrilhoB.texture : this.rtBrilhoA.texture), this.uDirs[k], uvGL)))
-    this.matTela = this.material(fragTela(W, b.uTela, T, uvGL))
+    // a tela lê a cor da cena ou a cor pintada: a textura troca pelo objeto { value } (refTex), sem remontar o shader
+    this.fonteTela = { value: this.rtCor.textures[0] }
+    const Ttela = { ...T, cor: (q) => amostraAlvo(this.fonteTela, q), corN: (q) => amostraAlvo(this.fonteTela, q).level(0) }
+    this.matTela = this.material(fragTela(W, b.uTela, Ttela, uvGL))
+    this.matTensor = this.material(fragTensorGpu(W, b.uPintura.tensor, amostraN(this.rtCor.textures[0]), uvGL))
+    // um material por grade de amostras (4, 5 ou 7), montado na primeira vez que o painel pede
+    this.matsKuwahara = {}
+    this.kuwahara = (n) => (this.matsKuwahara[n] ||= this.material(fragKuwaharaGpu(W, b.uPintura.kuwahara, n, amostraN(this.rtCor.textures[0]), amostraN(this.rtTensor.texture), uvGL)))
     this.quad = new W.QuadMesh()
   }
 
@@ -80,6 +92,9 @@ export class AranhaversoGpu {
     this.rtOclusao.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
     this.rtBrilhoA.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtBrilhoB.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
+    this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
+    this.base.rtPinturaAlvo = this.rtPintura // o tamanho (cheio ou meio) sai em atualizar() da base
+    this.base.meiaPintura = null
     const tb = this.base.tamBrilho
     for (let i = 0; i < 2; i++) {
       this.uDirs[i * 2].value.set(tb.x * (1 + i), 0)
@@ -127,6 +142,13 @@ export class AranhaversoGpu {
     b.uClaro.uLimiar.value = e.limiarBrilho
     this.passo(this.matClaro, this.rtBrilhoA)
     for (let k = 0; k < 4; k++) this.passo(this.matDesfoque[k], k % 2 ? this.rtBrilhoA : this.rtBrilhoB)
+
+    // 4b. pincelada na tela (pintura.js)
+    if (b.pinturaLigada) {
+      this.passo(this.matTensor, this.rtTensor)
+      this.passo(this.kuwahara(amostrasPintura(e)), this.rtPintura)
+    }
+    this.fonteTela.value = b.pinturaLigada ? this.rtPintura.texture : this.rtCor.textures[0]
 
     // 5. tela: o filtro já entrega a cor final em sRGB; o three não pode converter de novo
     const espaco = r.outputColorSpace
@@ -453,6 +475,13 @@ function fragTela(W, u, T, uvGL) {
       cor.assign(mix(cor, imp, U.uMemoria))
     })
     cor.mulAssign(float(1.0).sub(U.uPapel.mul(ruido(px.mul(0.35)).mul(0.6).add(ruido(px.mul(0.04)).mul(0.4)))))
+    // tela de pintura (visual Arcane): trama de fios de algodão, irregular, presa à tela como a tela do quadro
+    If(U.uTelaPintura.greaterThan(0.001), () => {
+      const fioX = sin(px.x.mul(1.9).add(ruido(px.mul(vec2(0.03, 0.11))).mul(4.0)))
+      const fioY = sin(px.y.mul(1.9).add(ruido(px.mul(vec2(0.11, 0.03)).add(7.0)).mul(4.0)))
+      const trama = fioX.mul(fioY).mul(0.6).add(ruido(px.mul(0.5)).sub(0.5).mul(0.8))
+      cor.mulAssign(float(1.0).add(trama.mul(U.uTelaPintura)))
+    })
     cor.addAssign(hash(floor(px).add(fract(U.uTempo.mul(7.13)).mul(91.7))).sub(0.5).mul(U.uGrao))
 
     // 10. linhas de velocidade quando corre

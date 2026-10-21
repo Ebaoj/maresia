@@ -19,11 +19,16 @@ export function instalar(m) {
   // O último passe (a tela) vai para uma imagem fora da tela: ler a tela de verdade com o
   // painel escondido custa ~17 ms falsos. O cronômetro de GPU do WebGL no Mac (ANGLE/Metal)
   // deu números incoerentes, por isso não é usado.
+  // WebGPU: não há leitura síncrona; a leitura assíncrona de 1 pixel espera a placa terminar o que foi mandado
+  const ler = async (alvo) => {
+    if (m.renderer.readRenderTargetPixelsAsync) await m.renderer.readRenderTargetPixelsAsync(alvo, 0, 0, 1, 1)
+    else m.renderer.readRenderTargetPixels(alvo, 0, 0, 1, 1, px)
+  }
   async function medirAqui(quadros, alvo, vezes = 3) {
     const rodadas = []
     for (let r = 0; r < vezes; r++) {
       m.renderer.setRenderTarget(alvo)
-      m.renderer.readRenderTargetPixels(alvo, 0, 0, 1, 1, px)
+      await ler(alvo)
       const t0 = performance.now()
       let cpu = 0
       for (let i = 0; i < quadros; i++) {
@@ -31,7 +36,7 @@ export function instalar(m) {
         m.passo(1 / 60)
         cpu += performance.now() - a
       }
-      m.renderer.readRenderTargetPixels(alvo, 0, 0, 1, 1, px)
+      await ler(alvo)
       rodadas.push({ total: (performance.now() - t0) / quadros, cpu: cpu / quadros })
       await new Promise((res) => setTimeout(res, 30))
     }
@@ -49,7 +54,8 @@ export function instalar(m) {
     m.cam.camera.aspect = largura / altura
     m.cam.camera.updateProjectionMatrix()
     m.pos.tamanho(largura, altura, resolucao)
-    const alvo = new THREE.WebGLRenderTarget(Math.round(largura * resolucao), Math.round(altura * resolucao))
+    const Alvo = m.gpu ? m.gpu.W.RenderTarget : THREE.WebGLRenderTarget
+    const alvo = new Alvo(Math.round(largura * resolucao), Math.round(altura * resolucao))
     const passoOriginal = m.pos.passo
     m.pos.passo = function (material, destino) { return passoOriginal.call(this, material, destino ?? alvo) }
     const res = {}

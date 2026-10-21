@@ -10,6 +10,7 @@
 import * as THREE from 'three'
 import { criarAleatorio } from '../utils.js'
 import { CAL } from '../paleta.js'
+import { fragTensor, fragKuwahara, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -110,6 +111,7 @@ uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uni
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
 uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
 uniform float uArcLuzEstrutura; uniform vec3 uArCor;
+uniform float uTelaPintura;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
@@ -362,6 +364,13 @@ void main() {
     cor = mix(cor, imp, uMemoria);
   }
   cor *= 1.0 - uPapel * (ruido(px * 0.35) * 0.6 + ruido(px * 0.04) * 0.4);
+  // tela de pintura (visual Arcane): trama de fios de algodão, irregular, presa à tela como a tela do quadro
+  if (uTelaPintura > 0.001) {
+    float fioX = sin(px.x * 1.9 + ruido(px * vec2(0.03, 0.11)) * 4.0);
+    float fioY = sin(px.y * 1.9 + ruido(px * vec2(0.11, 0.03) + 7.0) * 4.0);
+    float trama = fioX * fioY * 0.6 + (ruido(px * 0.5) - 0.5) * 0.8;
+    cor *= 1.0 + trama * uTelaPintura;
+  }
   cor += (hash(floor(px) + fract(uTempo * 7.13) * 91.7) - 0.5) * uGrao;
 
   // 10. linhas de velocidade quando corre
@@ -475,6 +484,9 @@ export class Aranhaverso {
     this.rtOclusao = new THREE.WebGLRenderTarget(1, 1, meia)
     this.rtBrilhoA = new THREE.WebGLRenderTarget(1, 1, meia)
     this.rtBrilhoB = new THREE.WebGLRenderTarget(1, 1, meia)
+    // pincelada na tela (pintura.js): tensor em meia resolução e a cor pintada em resolução cheia
+    this.rtTensor = new THREE.WebGLRenderTarget(1, 1, meia)
+    this.rtPintura = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false })
     this.corFundo = new THREE.Color(0, 0, 0)
 
     const v3 = () => ({ value: new THREE.Vector3() })
@@ -507,6 +519,7 @@ export class Aranhaverso {
       uSolTela: { value: new THREE.Vector3() }, uFlare: { value: 0 }, uCorFlare: { value: new THREE.Color(1, 0.8, 0.6) },
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
       uArcLuzEstrutura: { value: 1 }, uArCor: v3(),
+      uTelaPintura: { value: 0 },
       uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
     }
 
@@ -515,6 +528,15 @@ export class Aranhaverso {
     this.matClaro = shader(fragClaro, this.uClaro)
     this.matDesfoque = shader(fragDesfoque, this.uDesfoque)
     this.matTela = shader(fragTela, this.uTela)
+    this.uPintura = uniformsPintura(THREE)
+    this.uPintura.tensor.tCor.value = this.rtCor.textures[0]
+    this.uPintura.kuwahara.tCor.value = this.rtCor.textures[0]
+    this.uPintura.kuwahara.tTensor.value = this.rtTensor.texture
+    this.matTensor = shader(fragTensor, this.uPintura.tensor)
+    // um material por grade de amostras (4, 5 ou 7), montado na primeira vez que o painel pede
+    this.matsKuwahara = {}
+    this.kuwahara = (n) => (this.matsKuwahara[n] ||= shader(fragKuwahara(n), this.uPintura.kuwahara))
+    this.pinturaLigada = false
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.matTela)
     this.quad.frustumCulled = false
     this.cenaTela = new THREE.Scene()
@@ -533,6 +555,11 @@ export class Aranhaverso {
     this.rtOclusao.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
     this.rtBrilhoA.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtBrilhoB.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
+    this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
+    this.tamCheio = [w, h]
+    this.meiaPintura = null // o tamanho do alvo pintado sai em atualizar(), pela opção do painel
+    this.uPintura.tensor.uTexel.value.set(1 / w, 1 / h)
+    this.uPintura.kuwahara.uTexel.value.set(1 / w, 1 / h)
     this.uTela.uRes.value.set(w, h)
     this.uTela.uPR.value = pixelRatio
     this.tamBrilho = new THREE.Vector2(1 / Math.ceil(w / 4), 1 / Math.ceil(h / 4))
@@ -679,6 +706,16 @@ export class Aranhaverso {
     const alvoVel = e.linhasVelocidade && !arc ? Math.min(1, Math.max(0, (velocidadeJogador - ini) / faixa)) : 0
     this.velocidade += (alvoVel - this.velocidade) * 0.1
     u.uVelocidade.value = this.velocidade
+    // pincelada na tela: a tela lê a cor pintada no lugar da cor crua
+    this.pinturaLigada = atualizarPintura(this.uPintura, e, arc)
+    // meia resolução: um quarto dos pixels (a pincelada fica um pouco mais mole na borda)
+    const meiaP = !!e.arcPinturaMeia
+    if (this.tamCheio && meiaP !== this.meiaPintura) {
+      this.meiaPintura = meiaP
+      const [w, h] = this.tamCheio
+      ;(this.rtPinturaAlvo || this.rtPintura).setSize(meiaP ? Math.ceil(w / 2) : w, meiaP ? Math.ceil(h / 2) : h)
+    }
+    u.uTelaPintura.value = arc ? (e.arcTela ?? 0) : 0
     this.globais.uPincel.value = e.pincel
     this.globais.uPincelEscala.value = e.pincelEscala
   }
@@ -715,6 +752,13 @@ export class Aranhaverso {
       this.uDesfoque.uDir.value.set(0, this.tamBrilho.y * (1 + i))
       this.passo(this.matDesfoque, this.rtBrilhoA)
     }
+
+    // 4b. pincelada na tela (pintura.js)
+    if (this.pinturaLigada) {
+      this.passo(this.matTensor, this.rtTensor)
+      this.passo(this.kuwahara(amostrasPintura(e)), this.rtPintura)
+    }
+    this.uTela.tCor.value = this.pinturaLigada ? this.rtPintura.texture : this.rtCor.textures[0]
 
     // 5. tela
     this.passo(this.matTela, null)
