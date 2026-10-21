@@ -101,6 +101,14 @@ function prepararObjetoAoDesenhar(renderer) {
       // material já em nó (a sombra, por exemplo) segue como veio; o do WebGL vira o convertido
       if (material && !material.isNodeMaterial) material = materialParaDesenho(object, material, antes)
     }
+    // passe de sombra da copa do coqueiro: o three copia material.alphaMap para o material da sombra dentro de
+    // renderObject; durante a chamada, o alphaMap é a máscara da sombra (lida pelo uv1, mundo/sombra-copa.js)
+    const mascara = sobre && sobre.isShadowPassMaterial && material && material.userData.alphaMapSombra
+    if (mascara) {
+      const visivel = material.alphaMap
+      material.alphaMap = mascara
+      try { return original.call(this, object, scene, camera, geometry, material, ...resto) } finally { material.alphaMap = visivel }
+    }
     return original.call(this, object, scene, camera, geometry, material, ...resto)
   }
 }
@@ -419,14 +427,16 @@ export function sincronizarSeguidos(lista = seguidos) {
 const LADO_SOMBRA = { [THREE.FrontSide]: THREE.BackSide, [THREE.BackSide]: THREE.FrontSide, [THREE.DoubleSide]: THREE.DoubleSide }
 function sombraComoWebgl(m, nm) {
   if (m.shadowSide === null || m.shadowSide === undefined) nm.shadowSide = LADO_SOMBRA[m.side]
+  // a copa do coqueiro tem uma máscara só da sombra (mundo/sombra-copa.js), trocada no passe de sombra em
+  // prepararObjetoAoDesenhar: o three 0.186 copia o alphaMap do material para o material da sombra a cada objeto
+  if (m.userData.alphaMapSombra && nm.userData !== m.userData) nm.userData.alphaMapSombra = m.userData.alphaMapSombra
   if (m.alphaTest > 0 && (m.map || m.alphaMap)) {
     const { Fn, texture, uv, float, vec4, Discard } = W
     nm.shadowNode = Fn(() => {
       let a = float(1)
       // a textura do momento (o rosto troca o map durante o jogo)
       if (m.map) a = a.mul(texture(m.map, uv()).onRenderUpdate(() => m.map).a)
-      // a copa do coqueiro tem uma máscara só da sombra (mundo/vegetacao.js, cfg.mundo.sombraCopaCheia)
-      if (m.alphaMap) a = a.mul(texture(m.userData.alphaMapSombra || m.alphaMap, uv()).onRenderUpdate(() => m.userData.alphaMapSombra || m.alphaMap).g)
+      if (m.alphaMap) a = a.mul(texture(m.alphaMap, uv()).onRenderUpdate(() => m.alphaMap).g)
       Discard(a.lessThan(m.alphaTest))
       return vec4(0, 0, 0, 1)
     })()

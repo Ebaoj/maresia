@@ -281,7 +281,7 @@ export const PADRAO = {
     sombraVies: 0.03,           // metros: tira o "acne" (sombra de si mesmo); o de antes eram 0,86 m e a sombra descolava do pé
     sombraViesNormal: 1.0,      // texels do mapa: empurra o ponto pela normal antes de ler a sombra
     sombraSuave: 1.0,           // texels: espaçamento da grade 3 x 3 que alisa a borda (render/filtro-sombra.js)
-    sombraCopaCheia: true,      // a sombra da copa do coqueiro sai em lâminas cheias, não no pente de folíolos finos
+    sombraCopaCheia: true,      // a sombra da copa do coqueiro sai de uma máscara própria, com folíolos em tufos irregulares (mundo/sombra-copa.js); recarregar
     sombraFiltro: 'pintado',    // 'pintado' (grade presa ao mapa) ou 'three' (o disco girado por ruído de tela, o de antes)
     cacheSombra: true,     // KAN-74 (F4): sombra dos objetos parados em cache (só WebGL); refaz com o sol, ao andar mais que cacheSombraRaio ou quando um parado aparece ou some. Ver docs/motor-f4-cache-sombra.md
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio

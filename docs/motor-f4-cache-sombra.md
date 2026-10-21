@@ -149,7 +149,21 @@ Queixa do Joabe jogando: "a sombra é muito mal definida, fica piscando, pixelad
    `lights_fragment_begin` (luz 0 = sol usa a mistura, luz 1 não ilumina; a intensidade da sombra da luz 1 carrega a
    largura da faixa). WebGPU: `sol.shadow.shadowNode` mistura o ShadowNode de longe (o do cache) com o de perto.
    Os dois caches passaram a compor o sol com outra luz (antes, uma segunda luz desligava o cache).
-5. **Coqueiro**: a sombra da copa sai de uma máscara só dela (14 folíolos grossos por lado, `sombraCopaCheia`).
+5. **Coqueiro** (`src/mundo/sombra-copa.js`): a sombra da copa sai de uma máscara só dela. A primeira versão (affa542,
+   14 folíolos iguais e igualmente espaçados) virava no chão um "espirógrafo" de arcos listrados (Poço da Draga ao
+   meio-dia, x 636 z 16) e no WebGPU nem chegava a valer (o three 0.186 copia o `alphaMap` do material para o material
+   da sombra; o `shadowNode` de `sombraComoWebgl` não é lido). Agora são 8 variantes sorteadas com semente, lado a lado
+   numa textura lida pelo `uv1` (cada uma das 10 folhas da malha usa uma): folíolos em tufos de 3 a 6 que se juntam
+   numa cunha, vãos de 6 a 29 px sorteados (nenhuma frequência constante), folha que afina na base e na ponta, nervura
+   torta, ponta quebrada, trecho de um lado escondido e, em 60% das variantes, uma segunda folha por baixo, de viés
+   (massa escura perto do tronco, copa com cara de 15 a 20 folhas). WebGL: `onBeforeShadow` troca o alphaMap do
+   material de profundidade; WebGPU: a troca é no `renderObject` do passe de sombra (`prepararObjetoAoDesenhar`).
+   `sombraCopaCheia` pede recarregar. Não há foto de sombra de coqueiro de verdade no disco; a forma seguiu a descrição
+   (folhas que irradiam e caem, folíolos em tufos irregulares, massa perto do tronco). Prova:
+   `coqueiro-poco-12h-a.jpg`, `-12h-b.jpg`, `-12h-recorte.png`, `-16h.jpg` (antes em cima), `coqueiro-poco-12h-webgpu-depois.png`,
+   `antes-depois-coqueiro-poco-12h.mp4` e `-16h.mp4`, a máscara em `mascara-sombra-copa.png` e a suíte
+   (`regressao-local-coqueiro.txt`, 14 de 14). Às 16h, de longe (mapa de longe, texel esticado pelo sol baixo), os
+   folíolos finos ficam mais claros que a mancha listrada de antes.
 6. Achados no caminho: o medidor não rodava no WebGL (leitura assíncrona sem buffer) e, no WebGPU, trocar a qualidade da
    sombra quebrava a cópia do cache (alvo no tamanho velho). Os dois corrigidos com teste.
 
