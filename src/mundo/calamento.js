@@ -25,9 +25,12 @@ export function sincronizarCalamento(cfg) {
   uCalamento.uBloco.value.set(c.bloco, c.largura, c.junta, c.desencontro)
 }
 
+// A declaracao do uniform vai no escopo global do shader: dentro de um bloco o GLSL
+// recusa ('uniform' : only allowed at global scope) e o terreno inteiro deixa de compilar.
+export const GLSL_CALAMENTO_UNIFORM = 'uniform vec4 uBloco;'
+
 // O trecho GLSL. Precisa de hPav (o hash do terreno) e de vPMundo/cameraPosition.
 export const GLSL_CALAMENTO = `
-  uniform vec4 uBloco;
   {
     float lc = max(uBloco.x, 0.02);
     float ac = max(uBloco.y, 0.02);

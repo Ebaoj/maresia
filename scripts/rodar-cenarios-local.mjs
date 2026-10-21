@@ -104,6 +104,13 @@ for (const nome of cenarios) {
   if (res?.medidas) console.log('        ' + JSON.stringify(res.medidas).slice(0, 300))
 }
 
+// o shader que não compila some da tela sem aviso: a lista fica no window
+const quebrados = await avaliar('JSON.stringify(window.__shadersQuebrados || [])')
+if (quebrados.valor && quebrados.valor !== '[]') {
+  console.log('--- shaders que nao compilaram ---')
+  console.log(quebrados.valor)
+}
+
 // o console: o Chrome pede o favicon sozinho e a fonte do Google às vezes não entra
 const externos = ['favicon.ico', 'fonts.googleapis.com', 'fonts.gstatic.com', 'localStorage']
 const reprovam = avisos.filter((a) => !externos.some((e) => a.includes(e)))

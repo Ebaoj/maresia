@@ -16,7 +16,10 @@ D = Path(__file__).resolve().parent
 ROTULO = sys.argv[1] if len(sys.argv) > 1 else 'aprovacao'
 SEGUNDOS = float(sys.argv[2]) if len(sys.argv) > 2 else 5
 FPS = int(sys.argv[3]) if len(sys.argv) > 3 else 25
-PORT = 5197
+# Portas em uso (docs/plano-20-10-2026.md, secao "Portas"):
+#   5195 dev do trunk, 5196 dev da arvore principal, 5197 dev do worktree /tmp/maresia-antes
+# O gravador fica na 5198, que ninguem mais usa.
+PORT = 5198
 SAIDA = D / 'aprovacao'
 SAIDA.mkdir(exist_ok=True)
 QUADROS = Path('/tmp/aprovacao-quadros')

@@ -7,7 +7,7 @@ import { lagoasJogo, lugaresJogo } from './fortaleza1932.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
 import { congelar } from './congelar.js'
 import { ref } from '../render/gpu/comum.js'
-import { GLSL_CALAMENTO, sincronizarCalamento, tslCalamento, uCalamento } from './calamento.js'
+import { GLSL_CALAMENTO, GLSL_CALAMENTO_UNIFORM, sincronizarCalamento, tslCalamento, uCalamento } from './calamento.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
 export const NX = Math.round((x1 - x0) / passo) + 1
@@ -289,6 +289,7 @@ function materialTerreno() {
       .replace('#include <common>', `#include <common>
         varying float vPiso; varying float vAreia;
         uniform vec2 uAreiaCentro; uniform float uAreiaMeia;
+        ${GLSL_CALAMENTO_UNIFORM}
         float hPav(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         // dentro do quadrado da areia fina, quem desenha a praia é ela
