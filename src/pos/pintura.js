@@ -72,7 +72,7 @@ export function fragKuwahara(n) {
   }
   return /* glsl */ `
 uniform sampler2D tCor; uniform sampler2D tTensor; uniform vec2 uTexel;
-uniform float uRaio; uniform float uForca; uniform float uAniso; uniform float uNitidez;
+uniform float uRaio; uniform float uForca; uniform float uAniso; uniform float uNitidez; uniform float uBorda;
 varying vec2 vUv;
 void main() {
   vec4 orig = texture2D(tCor, vUv);
@@ -101,7 +101,14 @@ ${linhas.join('\n')}
     soma += media * w; somaW += w;
   }
   vec3 res = soma / max(somaW, 1e-6);
-  gl_FragColor = vec4(mix(orig.rgb, res * res, uForca), orig.a);
+  // BORDA PROTEGIDA (direção do Joabe, 21/10: objeto nítido como no Arcane, pincelada só DENTRO da
+  // superfície): onde há borda forte (gradiente do tensor) ou traço fino que o filtro apagaria (o pixel
+  // difere muito do resultado: fio, poste, olho), fica a imagem original
+  float Lo = dot(sqrt(clamp(orig.rgb, 0.0, 4.0)), vec3(0.299, 0.587, 0.114));
+  float Lr = dot(res, vec3(0.299, 0.587, 0.114));
+  float borda = max(smoothstep(0.07, 0.18, sqrt(max(l1, 0.0))), smoothstep(0.06, 0.16, abs(Lo - Lr)));
+  float forca = uForca * (1.0 - borda * uBorda);
+  gl_FragColor = vec4(mix(orig.rgb, res * res, forca), orig.a);
 }`
 }
 
@@ -117,7 +124,7 @@ export function uniformsPintura(THREE) {
     tensor: { tCor: { value: null }, uTexel: { value: new THREE.Vector2(1, 1) } },
     kuwahara: {
       tCor: { value: null }, tTensor: { value: null }, uTexel: { value: new THREE.Vector2(1, 1) },
-      uRaio: { value: 3 }, uForca: { value: 1 }, uAniso: { value: 1 }, uNitidez: { value: 8 },
+      uRaio: { value: 3 }, uForca: { value: 1 }, uAniso: { value: 1 }, uNitidez: { value: 8 }, uBorda: { value: 1 },
     },
   }
 }
@@ -129,5 +136,6 @@ export function atualizarPintura(u, e, arc) {
   u.kuwahara.uForca.value = Math.min(1, e.arcPintura ?? 0)
   u.kuwahara.uAniso.value = Math.max(0.05, e.arcPinturaAniso ?? 1)
   u.kuwahara.uNitidez.value = e.arcPinturaNitidez ?? 8
+  u.kuwahara.uBorda.value = e.arcPinturaBorda ?? 1
   return ligado
 }

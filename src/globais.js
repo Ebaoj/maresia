@@ -33,6 +33,8 @@ export const globais = {
   uArcCeu: { value: 1 }, // céu pintado (pinceladas e nuvens de pincel) // quanto a textura pintada do mundo pesa (materiais.js, texturizar)
   uArcPintado: { value: 1 }, // o passe novo do céu: gradiente de verdade, nuvens em massas e halo pintado
   uArcDesgaste: { value: 1 }, // reboco envelhecido (mundo/desgaste.js): cfg.estilo.arcDesgaste no visual Arcane, 0 no quadrinho
+  uArcCeuPincel: { value: 1 }, // céu pintado (mundo/ceu-pintado.js): riscos de pincel seco, grão e banco de cúmulos
+  uSertao: { value: 0 }, // sol alto do sertão (ceu.js): sombra dura e escura ao meio-dia, vezes cfg.estilo.arcSertao
   uDourada: { value: 0 }, // hora dourada (ceu.js): 0 com o sol alto ou de noite, 1 com o sol baixo de dia, vezes cfg.estilo.arcDourada
   uArCor: { value: new THREE.Color('#9cc9e0') }, // a cor do ar: a distância se tinge com o céu da hora
 }

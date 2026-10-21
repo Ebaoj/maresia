@@ -37,27 +37,34 @@ export const PADRAO = {
     // hora dourada (luz-arcane, item 3): sol baixo de dia = luz laranja, sombra longa e azul funda, mais contraste
     arcDourada: 1.0,             // força (0 = a luz de antes em todas as horas)
     arcDouradaLuz: '#ffb36b',    // para onde a luz do sol puxa (3b: '#ff9d55' alaranjava tudo)
-    arcDouradaSombra: '#36508a', // para onde a sombra e a luz de céu puxam
+    arcDouradaSombra: '#5a4a8e', // para onde a sombra e a luz de céu puxam (conceito-sertão 2: sombra violeta no fim de tarde; era o azul '#36508a')
     arcDouradaAltura: 0.2,       // altura mínima da luz que faz sombra no auge da hora dourada (0,42 = sombra curta de antes)
     arcDouradaContraste: 0.15,   // contraste extra no auge
     // 3b (revisão do orquestrador, alvo forte-1932-joabe): menos véu, céu petróleo, faixa de valor larga, sombra fria
-    arcCeuTopo: '#1c4a63',       // azul petróleo do alto do céu de dia
+    arcCeuTopo: '#1d4a86',       // azul fundo do alto do céu de dia (sertão, 21/10: azul, não mais petróleo '#1c4a63')
     arcCeuPetroleo: 0.85,        // quanto o alto do céu puxa para ele
-    arcCeuMeio: '#6fa8bc',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
+    arcCeuRampa: 0.75,           // sertão: altura (seno) em que o azul fundo chega; perto do horizonte o céu fica desbotado e quente (0,45 era o céu petróleo do 3b)
+    arcSertao: 1.0,              // sertão ao meio-dia: sombra curta, dura e escura (luz de céu mais fraca, faixa de sombra mais funda)
+    arcArPoeira: 0.55,           // sertão: de dia a distância vai para a poeira clara e quente do horizonte (0,2 = o azul frio do item 6)
+    arcCeuPincel: 1.0,           // item 5: riscos de pincel seco, grão e banco de cúmulos no horizonte
+    arcCeuMeio: '#d3d9d0',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
     arcGradeNeutro: 0.12,        // quanto o neutro puxa para o cal na gradação (0,45 dava véu bege em tudo)
-    arcArTinta: 0.45,            // força da cor do ar na distância (0,75 lavava o fundo)
-    arcPreto: 0.07,              // níveis: o que vira preto
+    arcArTinta: 0.75,            // força da cor do ar na distância (conceito-sertão: o fundo lavado, pálido, de baixo contraste; o peso cresce no fundo, km * (0,4 + 0,6 km), então o meio não lava)
+    arcArClareia: 0.45,          // item 6: quanto o fundo clareia para a cor do ar (perspectiva atmosférica)
+    arcPreto: 0.04,              // níveis: o que vira preto (conceito-sertão: escuro com cor, nunca preto; era 0,07)
     arcBranco: 0.94,             // níveis: o que vira branco (a cal ao sol)
     arcSombraFria: 0.6,          // a luz do chão puxa para a do céu (sombra azul, não marrom)
     arcOclusao: 0.55,            // sombra de contato no visual Arcane
     // reboco envelhecido (item 4, src/mundo/desgaste.js) e quina clara (na tela)
     arcDesgaste: 1.0,            // manchas de caiação, escorridos, umidade, sujeira na base, reboco caído mostrando a pedra
     arcAresta: 0.7,              // quina gasta e clara (perto, até ~45 m)
+    arcFx2d: 0,                  // item 7: traços de tinta verde e amarela e spray de retícula por cima (fx2d.js); 0 = desligado
     // pincelada na tela (src/pos/pintura.js): Kuwahara anisotrópico sobre a cor da cena, a superfície vira mancha de tinta
-    arcPintura: 1.0,        // força (0 desliga o passe e o custo)
-    arcPinturaRaio: 4.0,    // raio da pincelada, em pixels da imagem (não muda o custo)
+    arcPintura: 0.85,       // força (0 desliga o passe e o custo); 0,85 desde a direção do sertão (21/10): modesto, objeto nítido
+    arcPinturaRaio: 3.0,    // raio da pincelada, em pixels da imagem (não muda o custo)
     arcPinturaAniso: 1.0,   // quanto a pincelada se estica ao longo das bordas (menor = mais esticada)
-    arcPinturaNitidez: 8,   // quanto a borda forte resiste (setor de menor variância ganha)
+    arcPinturaNitidez: 10,  // quanto a borda forte resiste (setor de menor variância ganha)
+    arcPinturaBorda: 1.0,   // protege borda forte e traço fino (fio, poste, rosto) do filtro: a pincelada fica dentro da superfície
     arcPinturaMeia: false,  // passe da pincelada em meia resolução (um quarto do custo, borda mais mole)
     arcPinturaAmostras: 4,  // grade de amostras: 4 (12 amostras, padrão para o M1), 5 (21) ou 7 (37, mais limpo e mais caro)
     arcTela: 0.05,          // trama da tela de pintura por cima de tudo

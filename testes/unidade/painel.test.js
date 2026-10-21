@@ -90,6 +90,7 @@ describe('painel: busca', () => {
       'Arcane: limite da sombra', 'Arcane: cor da sombra', 'Arcane: força da sombra',
       'Hora dourada: sombra', 'Luz e gradação: sombra, valor e ar',
       'Luz e gradação: sombra fria (luz do chão)', 'Luz e gradação: sombra de contato',
+      'Luz e gradação: sertão: sombra dura ao meio-dia',
     ])
   })
 

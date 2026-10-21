@@ -11,6 +11,7 @@ import * as THREE from 'three'
 import { criarAleatorio } from '../utils.js'
 import { CAL } from '../paleta.js'
 import { fragTensor, fragKuwahara, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
+import { uniformsFx2d, GLSL_FX2D } from './fx2d.js'
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -111,7 +112,8 @@ uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uni
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
 uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
 uniform float uArcLuzEstrutura; uniform vec3 uArCor;
-uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
+uniform float uFx; uniform vec4 uFxA; uniform vec4 uFxB; uniform vec4 uFxC; uniform vec3 uFxCor1; uniform vec3 uFxCor2; uniform vec3 uFxSpray;
+uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcArClareia; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
@@ -141,6 +143,7 @@ vec3 paraHSV(vec3 c) {
   float d = q.x - min(q.w, q.y);
   return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1e-10)), d / (q.x + 1e-10), q.x);
 }
+${GLSL_FX2D}
 float distMatiz(float a, float b) { float d = abs(a - b); return min(d, 1.0 - d); }
 vec3 corDescasada(vec2 uv) {
   vec2 d = uv - 0.5;
@@ -194,8 +197,11 @@ void main() {
       // tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
       float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
       // (3b: menos clareamento e menos força; o véu bege da distância lavava a imagem inteira)
-      vec3 comAr = mix(cor, uArCor * (0.35 + 0.8 * Lc), 0.7);
-      cor = mix(cor, comAr, km * uArcArTinta);
+      // (item 6: o fundo clareia para a cor do ar, não só se tinge, e perde um pouco de croma)
+      vec3 alvoAr = uArCor * mix(0.35 + 0.8 * Lc, 1.0, uArcArClareia);
+      vec3 comAr = mix(mix(cor, vec3(Lc), 0.3), alvoAr, 0.7);
+      // pesa mais no fundo que no meio do caminho (km * (0,4 + 0,6 km)): o meio da cena não lava
+      cor = mix(cor, comAr, clamp(km * (0.4 + 0.6 * km) * uArcArTinta * 1.4, 0.0, 1.0));
     } else {
       float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
       cor = mix(cor, vec3(Lc), km * 0.6);
@@ -225,7 +231,9 @@ void main() {
   if (uArcane > 0.5) {
     // gradação (visual Arcane): menos lavado, sombras mais fundas; curva em S na luminância, o matiz fica
     float Lg = dot(cor, vec3(0.299, 0.587, 0.114));
-    float Ln = clamp((Lg * uArcExposicao - 0.5) * uArcContraste + 0.5, 0.0, 1.0);
+    // (sertão: o céu não passa pela exposição baixa do mundo; ele tem a própria cor, e a 0,86 o horizonte
+    // desbotado virava cinza de dia nublado em vez de branco de sol)
+    float Ln = clamp((Lg * mix(uArcExposicao, 1.0, ceu) - 0.5) * uArcContraste + 0.5, 0.0, 1.0);
     Ln = mix(Ln, Ln * Ln * (3.0 - 2.0 * Ln), 0.35);
     if (uArcLuzEstrutura > 0.5) {
       // estrutura de valor: a curva em S separa sombra de luz (o valor não é só mais escuro)
@@ -454,6 +462,8 @@ void main() {
   }
 
   // 13. vinheta
+  // 2D por cima (item 7, fx2d.js), desligado por padrão
+  cor = aplicarFx2d(cor, uv, pg, uRes.x / uRes.y, ceu);
   cor *= 1.0 - uVinheta * smoothstep(0.45, 1.05, rv);
   gl_FragColor = vec4(clamp(cor, 0.0, 1.0), 1.0);
 }`
@@ -533,7 +543,7 @@ export class Aranhaverso {
       uSolTela: { value: new THREE.Vector3() }, uFlare: { value: 0 }, uCorFlare: { value: new THREE.Color(1, 0.8, 0.6) },
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
       uArcLuzEstrutura: { value: 1 }, uArCor: v3(),
-      uTelaPintura: { value: 0 }, uArcAresta: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
+      uTelaPintura: { value: 0 }, uArcAresta: { value: 0 }, uArcArClareia: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
       uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
     }
 
@@ -542,6 +552,7 @@ export class Aranhaverso {
     this.matClaro = shader(fragClaro, this.uClaro)
     this.matDesfoque = shader(fragDesfoque, this.uDesfoque)
     this.matTela = shader(fragTela, this.uTela)
+    Object.assign(this.uTela, uniformsFx2d())
     this.uPintura = uniformsPintura(THREE)
     this.uPintura.tensor.tCor.value = this.rtCor.textures[0]
     this.uPintura.kuwahara.tCor.value = this.rtCor.textures[0]
@@ -608,18 +619,21 @@ export class Aranhaverso {
     const gl = this.globais
     gl.uArcane.value = arc ? 1 : 0
     gl.uArcLim.value.set(e.arcSombra, e.arcLuz)
-    gl.uArcSuave.value = e.arcSuave
+    // sertão ao meio-dia: a passagem luz/sombra fica mais dura
+    gl.uArcSuave.value = e.arcSuave * (1 - 0.5 * gl.uSertao.value)
     gl.uArcPincel.value = e.arcPincel
     // hora dourada (ceu.js põe o fator em globais.uDourada): sombra mais azul e mais funda, mais contraste
     const dour = gl.uDourada.value
     gl.uArcCorSombra.value.set(e.arcCorSombra).lerp(this._corDourada.set(e.arcDouradaSombra || '#36508a'), dour * 0.6)
-    gl.uArcNiveis.value.set(e.arcNivelSombra * (1 - 0.22 * dour), e.arcNivelMeio, e.arcNivelLuz * (1 + 0.06 * dour))
+    const sert = gl.uSertao.value
+    gl.uArcNiveis.value.set(e.arcNivelSombra * (1 - 0.22 * dour) * (1 - 0.28 * sert), e.arcNivelMeio, e.arcNivelLuz * (1 + 0.06 * dour) * (1 + 0.08 * sert))
     gl.uTexForca.value = e.arcTextura
     // sombra: desde o three 0.182 o PCFShadowMap já é suave e o PCFSoftShadowMap não existe mais (o renderizador
     // volta o tipo para PCF dentro do render). A troca por visual que havia aqui achava o tipo diferente a cada
     // quadro e recompilava todos os materiais (KAN-70 T3, cenário semRecompilarParado)
     gl.uArcRim.value = arc ? e.arcRecorte : 0
     gl.uArcCeu.value = e.arcCeu
+    gl.uArcCeuPincel.value = e.arcCeuPincel ?? 0
     gl.uArcDesgaste.value = arc ? (e.arcDesgaste ?? 0) : 0
     u.uArcAresta.value = arc ? (e.arcAresta ?? 0) : 0
     gl.uArcPintado.value = e.arcCeuPintado ?? 1
@@ -742,6 +756,8 @@ export class Aranhaverso {
     u.uTelaPintura.value = arc ? (e.arcTela ?? 0) : 0
     u.uArcCalNeutro.value = e.arcGradeNeutro ?? 0.12
     u.uArcArTinta.value = e.arcArTinta ?? 0.45
+    u.uArcArClareia.value = e.arcArClareia ?? 0
+    u.uFx.value = arc ? (e.arcFx2d ?? 0) : 0
     u.uArcPreto.value = e.arcPreto ?? 0
     u.uArcBranco.value = e.arcBranco ?? 1
     this.globais.uPincel.value = e.pincel

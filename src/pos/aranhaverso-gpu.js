@@ -11,6 +11,7 @@ import { Aranhaverso } from './aranhaverso.js'
 import { ref, funcoes, modulo, amostraAlvo } from '../render/gpu/comum.js'
 import { fragTensorGpu, fragKuwaharaGpu } from './pintura-gpu.js'
 import { amostrasPintura } from './pintura.js'
+import { aplicarFx2dTsl } from './fx2d.js'
 
 export class AranhaversoGpu {
   constructor(renderer, cena, camera, cfg, globais) {
@@ -317,8 +318,11 @@ function fragTela(W, u, T, uvGL) {
           // da tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
           const Lc = dot(cor, LUM)
           // (3b: menos clareamento e menos força; o véu bege da distância lavava a imagem inteira)
-          const comAr = mix(cor, U.uArCor.mul(float(0.35).add(Lc.mul(0.8))), 0.7)
-          cor.assign(mix(cor, comAr, km.mul(U.uArcArTinta)))
+          // (item 6: o fundo clareia para a cor do ar, não só se tinge, e perde um pouco de croma)
+          const alvoAr = U.uArCor.mul(mix(float(0.35).add(Lc.mul(0.8)), float(1.0), U.uArcArClareia))
+          const comAr = mix(mix(cor, vec3(Lc), 0.3), alvoAr, 0.7)
+          // pesa mais no fundo que no meio do caminho: o meio da cena não lava
+          cor.assign(mix(cor, comAr, clamp(km.mul(km.mul(0.6).add(0.4)).mul(U.uArcArTinta).mul(1.4), 0.0, 1.0)))
         }).Else(() => {
           const Lc = dot(cor, LUM)
           cor.assign(mix(cor, vec3(Lc), km.mul(0.6)))
@@ -349,7 +353,8 @@ function fragTela(W, u, T, uvGL) {
     cor.assign(paraSRGB(cor.mul(U.uExposicao)))
     If(U.uArcane.greaterThan(0.5), () => {
       const Lg = dot(cor, LUM)
-      const Ln = clamp(Lg.mul(U.uArcExposicao).sub(0.5).mul(U.uArcContraste).add(0.5), 0.0, 1.0).toVar()
+      // (sertão: o céu não passa pela exposição baixa do mundo)
+      const Ln = clamp(Lg.mul(mix(U.uArcExposicao, float(1.0), ceu)).sub(0.5).mul(U.uArcContraste).add(0.5), 0.0, 1.0).toVar()
       Ln.assign(mix(Ln, Ln.mul(Ln).mul(float(3.0).sub(Ln.mul(2.0))), 0.35))
       If(U.uArcLuzEstrutura.greaterThan(0.5), () => {
         // estrutura de valor: a curva em S separa sombra de luz (o valor não é só mais escuro)
@@ -558,6 +563,10 @@ function fragTela(W, u, T, uvGL) {
       })
     })
 
+    // 2D por cima (item 7, fx2d.js), desligado por padrão
+    If(U.uFx.greaterThan(0.001), () => {
+      cor.assign(aplicarFx2dTsl(W, U, { ruido, pontoGrade }, cor, uv, pg, U.uRes.x.div(U.uRes.y), ceu))
+    })
     // 13. vinheta
     cor.mulAssign(float(1.0).sub(U.uVinheta.mul(smoothstep(0.45, 1.05, rv))))
     return vec4(clamp(cor, 0.0, 1.0), 1.0)

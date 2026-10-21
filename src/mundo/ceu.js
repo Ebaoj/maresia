@@ -4,7 +4,8 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { globais } from '../globais.js'
-import { gradienteToon, pintar, SAIDA_LUZ } from '../materiais.js'
+import { gradienteToon, pintar } from '../materiais.js'
+import { vertCeu, fragCeu, ceuTsl } from './ceu-pintado.js'
 import { criarAleatorio } from '../utils.js'
 
 // A paleta do céu segue a direção de arte: azul no alto, quente no horizonte (o maresia de
@@ -55,200 +56,6 @@ export function direcaoSol(hora) {
   return new THREE.Vector3(Math.cos(a), Math.sin(a), -0.35).normalize()
 }
 
-const vertCeu = /* glsl */ `
-varying vec3 vDir;
-void main() {
-  vDir = normalize(position);
-  vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  gl_Position = p.xyww;
-}`
-
-const fragCeu = /* glsl */ `
-uniform vec3 uTopo; uniform vec3 uHor; uniform vec3 uMeio; uniform vec3 uSolDir; uniform vec3 uSolCor;
-uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu; uniform float uArcPintado;
-varying vec3 vDir;
-${SAIDA_LUZ}
-float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
-float h2(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
-float vn(vec2 p) {
-  vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(h2(i), h2(i + vec2(1, 0)), u.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), u.x), u.y);
-}
-void main() {
-  vec3 d = normalize(vDir);
-  float y = max(d.y, 0.0);
-  vec3 cor = mix(uHor, uTopo, pow(y, 0.55));
-  if (uArcane > 0.5) {
-    // CÉU PINTADO (visual Arcane): o degradê vira pinceladas longas e horizontais, como num fundo
-    // pintado; um brilho largo e quente em volta do sol; nuvens de pincel baixas, com o lado do sol
-    // quente e a barriga fria. Azimute e altura como "tela", deriva lenta com o tempo.
-    float az = atan(d.z, d.x) + uTempo * 0.002;
-    // pinceladas largas (poucas por tela) e outras finas por cima, como pincel chato e pincel de detalhe
-    float yP = pow(y, 0.6);
-    float largo = vn(vec2(az * 1.1, yP * 9.0));
-    float fino = vn(vec2(az * 4.5, yP * 38.0) + 5.0);
-    float traco = 0.7 * largo + 0.3 * fino;
-    // GRADIENTE: o azul desce mais perto do horizonte (expoente 0,42; o de antes era 0,55) e só uma
-    // faixa fina rente ao chão fica quente. Com 1,05 (primeira tentativa) o céu de câmera baixa
-    // ficava quase todo cor de horizonte e o meio-dia virava branco.
-    float expoente = mix(0.55, 0.42, uArcPintado);
-    // (3b: no céu pintado a curva chega ao alto aos ~27 graus, como na referência; antes só no zênite)
-    float tBase = mix(pow(y, expoente), pow(smoothstep(0.0, 0.45, y), 0.6), uArcPintado);
-    float t = clamp(tBase + (traco - 0.5) * mix(0.42, 0.16, uArcPintado) * uArcCeu, 0.0, 1.0);
-    // três paradas (3b): horizonte, meio claro e alto. Duas paradas misturavam o pêssego do horizonte com o
-    // petróleo do alto e davam um cinza barrento no meio; o céu da referência passa por um azul claro
-    cor = mix(mix(uHor, uMeio, clamp(t * 2.0, 0.0, 1.0)), uTopo, clamp(t * 2.0 - 1.0, 0.0, 1.0));
-    // uma faixa quente rente ao horizonte: o maresia de Fortaleza
-    float baixo = (1.0 - smoothstep(0.0, 0.08, y)) * uArcPintado;
-    cor = mix(cor, mix(uHor, uSolCor, 0.3), baixo * 0.45 * (1.0 - uNoite));
-    // cada pincelada puxa um pouco para o quente ou para o frio (a tinta não é uniforme)
-    float tempT = (vn(vec2(az * 0.8, yP * 6.0) + 21.0) - 0.5) * 0.16 * uArcCeu;
-    cor *= vec3(1.0 + tempT, 1.0, 1.0 - tempT);
-    float sA = dot(d, normalize(uSolDir));
-    // o quente em volta do sol: no céu pintado só perto dele (60 graus de laranja sujavam o céu todo)
-    float lavaSol = mix(smoothstep(0.55, 1.0, sA) * 0.38, smoothstep(0.78, 1.0, sA) * 0.28, uArcPintado);
-    cor = mix(cor, uSolCor * 1.05, lavaSol * (1.0 - uNoite) * uArcCeu);
-    // NUVENS EM MASSAS: manchas grandes de borda pintada. O ruído fino de antes lia como
-    // granulado no céu, não como nuvem.
-    float faixaN = smoothstep(0.02, 0.12, y) * (1.0 - smoothstep(0.32, 0.55, y));
-    float massa = vn(vec2(az * 0.62, y * 3.4) + 7.0);
-    float detalhe = vn(vec2(az * 2.6, y * 13.0) + 17.0);
-    float massaV = massa * 0.78 + detalhe * 0.22;
-    float bordaPintada = (detalhe - 0.5) * 0.2;
-    // (3b: limiar 0,7 e só até ~15 graus: com 0,44 metade do céu baixo virava um lençol bege; sem nuvem o
-    // gradiente já é o petróleo da referência)
-    float nuvem = smoothstep(0.7, 0.8, massaV + bordaPintada) * faixaN * (1.0 - smoothstep(0.12, 0.26, y)) * uArcCeu * uArcPintado;
-    // a nuvem fina de antes fica por baixo, na força da antiga, enquanto o novo não entra
-    float nN = 0.65 * vn(vec2(az * 1.6, y * 9.0) + 11.0) + 0.35 * vn(vec2(az * 5.0, y * 30.0) + 3.0);
-    float nuvemFina = smoothstep(0.58, 0.7, nN) * faixaN * uArcCeu * (1.0 - uArcPintado);
-    nuvem = max(nuvem, nuvemFina);
-    float ladoSol = 0.5 + 0.5 * dot(normalize(vec2(d.x, d.z)), normalize(vec2(uSolDir.x, uSolDir.z)));
-    float topoN = smoothstep(0.5, 0.8, massaV); // a parte de cima pega mais luz
-    // nuvem pintada: luz branca-creme do sol, sombra azul acinzentada do céu (não mais pêssego com pêssego)
-    vec3 corNuvemLuz = mix(mix(uHor, uSolCor, 0.55) * 1.12, mix(vec3(1.0, 0.96, 0.88), uSolCor, 0.3) * 1.05, uArcPintado);
-    vec3 corNuvemSombra = mix(mix(uTopo, uHor, 0.55) * 0.92, mix(uMeio, uTopo, 0.35) * 0.95, uArcPintado);
-    vec3 corNuvem = mix(corNuvemSombra, corNuvemLuz, clamp(ladoSol * 0.6 + topoN * 0.5, 0.0, 1.0));
-    cor = mix(cor, mix(corNuvem, uTopo * 0.6, uNoite * 0.7), nuvem * 0.85);
-    // O SOL PINTADO: o disco é pequeno e duro, o halo é a tinta quente em volta dele.
-    float haloPintado = smoothstep(0.85, 0.999, sA) * 0.42 * (1.0 - uNoite) * uArcCeu * uArcPintado;
-    cor = mix(cor, uSolCor * 1.2, haloPintado);
-  } else {
-    // faixas de cor chapadas, como céu pintado
-    float faixas = floor(pow(y, 0.55) * 7.0) / 7.0;
-    cor = mix(cor, mix(uHor, uTopo, faixas), 0.35);
-  }
-  // sol
-  float s = dot(d, normalize(uSolDir));
-  float disco = smoothstep(0.9975, 0.9985, s);
-  float halo = smoothstep(0.96, 0.999, s) * 0.35;
-  cor += (uSolCor * 1.6) * disco * (1.0 - uNoite) + uSolCor * halo * (1.0 - uNoite);
-  // lua (do lado oposto) e estrelas
-  float l = dot(d, normalize(-uSolDir + vec3(0.0, 0.0, -0.3)));
-  cor += vec3(0.95, 0.92, 1.0) * smoothstep(0.9985, 0.9992, l) * uNoite;
-  vec3 g = floor(d * 220.0);
-  float estrela = step(0.9965, hash(g)) * smoothstep(0.05, 0.3, d.y);
-  float pisca = 0.6 + 0.4 * sin(uTempo * 3.0 + hash(g + 3.0) * 30.0);
-  cor += vec3(1.0, 0.95, 0.85) * estrela * pisca * uNoite;
-  // abaixo do horizonte: cor do horizonte (o mar cobre)
-  if (d.y < 0.0) cor = uHor;
-  gl_FragColor = vec4(cor, 1.0);
-  gLuz = vec4(1.0, 0.0, 0.0, 1.0);
-}`
-
-// O céu em TSL, para o modo webgpu (motor F2, KAN-68): as mesmas contas de vertCeu e fragCeu
-function ceuTsl({ W, ref }, u) {
-  const { Fn, vec2, vec3, vec4, float, max, pow, mix, clamp, dot, normalize, smoothstep, sin, floor, fract, step, atan2,
-    positionLocal, cameraProjectionMatrix, modelViewMatrix, varying } = W
-  const U = {}
-  for (const k in u) U[k] = ref(u[k])
-  const hash = (p) => fract(sin(dot(p, vec3(127.1, 311.7, 74.7))).mul(43758.5453))
-  const h2 = Fn(([p0]) => {
-    const p = fract(p0.mul(vec2(123.34, 456.21))).toVar()
-    p.addAssign(dot(p, p.add(45.32)))
-    return fract(p.x.mul(p.y))
-  }).setLayout({ name: 'ceuH2', type: 'float', inputs: [{ name: 'p', type: 'vec2' }] })
-  const vn = Fn(([p]) => {
-    const i = floor(p), f = fract(p)
-    const uu = f.mul(f).mul(float(3.0).sub(f.mul(2.0)))
-    return mix(mix(h2(i), h2(i.add(vec2(1, 0))), uu.x), mix(h2(i.add(vec2(0, 1))), h2(i.add(vec2(1, 1))), uu.x), uu.y)
-  }).setLayout({ name: 'ceuVn', type: 'float', inputs: [{ name: 'p', type: 'vec2' }] })
-  const vDir = varying(normalize(positionLocal))
-  const m = new W.MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false })
-  // gl_Position = p.xyww: o céu fica no fundo da profundidade
-  m.vertexNode = Fn(() => {
-    const p = cameraProjectionMatrix.mul(modelViewMatrix).mul(vec4(positionLocal, 1.0))
-    return vec4(p.x, p.y, p.w, p.w)
-  })()
-  m.colorNode = Fn(() => {
-    const d = normalize(vDir)
-    const y = max(d.y, 0.0)
-    const cor = mix(U.uHor, U.uTopo, pow(y, 0.55)).toVar()
-    W.If(U.uArcane.greaterThan(0.5), () => {
-      // CÉU PINTADO (visual Arcane)
-      const az = atan2(d.z, d.x).add(U.uTempo.mul(0.002))
-      const yP = pow(y, 0.6)
-      const largo = vn(vec2(az.mul(1.1), yP.mul(9.0)))
-      const fino = vn(vec2(az.mul(4.5), yP.mul(38.0)).add(5.0))
-      const traco = largo.mul(0.7).add(fino.mul(0.3))
-      // GRADIENTE: o azul desce mais perto do horizonte; só uma faixa fina rente ao chão fica quente
-      const expoente = mix(float(0.55), float(0.42), U.uArcPintado)
-      const tBase = mix(pow(y, expoente), pow(smoothstep(0.0, 0.45, y), 0.6), U.uArcPintado)
-      const t = clamp(tBase.add(traco.sub(0.5).mul(mix(float(0.42), float(0.16), U.uArcPintado)).mul(U.uArcCeu)), 0.0, 1.0)
-      // três paradas (3b): horizonte, meio claro e alto (duas davam cinza barrento no meio)
-      cor.assign(mix(mix(U.uHor, U.uMeio, clamp(t.mul(2.0), 0.0, 1.0)), U.uTopo, clamp(t.mul(2.0).sub(1.0), 0.0, 1.0)))
-      // uma faixa quente rente ao horizonte: o maresia de Fortaleza
-      const baixo = smoothstep(0.0, 0.08, y).oneMinus().mul(U.uArcPintado)
-      cor.assign(mix(cor, mix(U.uHor, U.uSolCor, 0.3), baixo.mul(0.45).mul(float(1.0).sub(U.uNoite))))
-      const tempT = vn(vec2(az.mul(0.8), yP.mul(6.0)).add(21.0)).sub(0.5).mul(0.16).mul(U.uArcCeu)
-      cor.mulAssign(vec3(float(1.0).add(tempT), 1.0, float(1.0).sub(tempT)))
-      const sA = dot(d, normalize(U.uSolDir))
-      // o quente em volta do sol: no céu pintado só perto dele
-      const lavaSol = mix(smoothstep(0.55, 1.0, sA).mul(0.38), smoothstep(0.78, 1.0, sA).mul(0.28), U.uArcPintado)
-      cor.assign(mix(cor, U.uSolCor.mul(1.05), lavaSol.mul(float(1.0).sub(U.uNoite)).mul(U.uArcCeu)))
-      // NUVENS EM MASSAS: manchas grandes de borda pintada (o ruído fino lia como granulado)
-      const faixaN = smoothstep(0.02, 0.12, y).mul(float(1.0).sub(smoothstep(0.32, 0.55, y)))
-      const massa = vn(vec2(az.mul(0.62), y.mul(3.4)).add(7.0))
-      const detalhe = vn(vec2(az.mul(2.6), y.mul(13.0)).add(17.0))
-      const massaV = massa.mul(0.78).add(detalhe.mul(0.22))
-      const bordaPintada = detalhe.sub(0.5).mul(0.2)
-      const nuvem = smoothstep(0.7, 0.8, massaV.add(bordaPintada)).mul(faixaN).mul(float(1.0).sub(smoothstep(0.12, 0.26, y))).mul(U.uArcCeu).mul(U.uArcPintado)
-      // a nuvem fina de antes fica por baixo, na força da antiga, enquanto o novo não entra
-      const nN = vn(vec2(az.mul(1.6), y.mul(9.0)).add(11.0)).mul(0.65).add(vn(vec2(az.mul(5.0), y.mul(30.0)).add(3.0)).mul(0.35))
-      const nuvemFina = smoothstep(0.58, 0.7, nN).mul(faixaN).mul(U.uArcCeu).mul(float(1.0).sub(U.uArcPintado))
-      const nuvemFinal = nuvem.max(nuvemFina)
-      const ladoSol = dot(normalize(vec2(d.x, d.z)), normalize(vec2(U.uSolDir.x, U.uSolDir.z))).mul(0.5).add(0.5)
-      const topoN = smoothstep(0.5, 0.8, massaV)
-      // nuvem pintada: luz branca-creme do sol, sombra azul acinzentada do céu
-      const corNuvemLuz = mix(mix(U.uHor, U.uSolCor, 0.55).mul(1.12), mix(vec3(1.0, 0.96, 0.88), U.uSolCor, 0.3).mul(1.05), U.uArcPintado)
-      const corNuvemSombra = mix(mix(U.uTopo, U.uHor, 0.55).mul(0.92), mix(U.uMeio, U.uTopo, 0.35).mul(0.95), U.uArcPintado)
-      const corNuvem = mix(corNuvemSombra, corNuvemLuz, clamp(ladoSol.mul(0.6).add(topoN.mul(0.5)), 0.0, 1.0))
-      cor.assign(mix(cor, mix(corNuvem, U.uTopo.mul(0.6), U.uNoite.mul(0.7)), nuvemFinal.mul(0.85)))
-      // O SOL PINTADO: o disco é pequeno e duro, o halo é a tinta quente em volta dele
-      const haloPintado = smoothstep(0.85, 0.999, sA).mul(0.42).mul(float(1.0).sub(U.uNoite)).mul(U.uArcCeu).mul(U.uArcPintado)
-      cor.assign(mix(cor, U.uSolCor.mul(1.2), haloPintado))
-    }).Else(() => {
-      const faixas = floor(pow(y, 0.55).mul(7.0)).div(7.0)
-      cor.assign(mix(cor, mix(U.uHor, U.uTopo, faixas), 0.35))
-    })
-    // sol
-    const s = dot(d, normalize(U.uSolDir))
-    const disco = smoothstep(0.9975, 0.9985, s)
-    const halo = smoothstep(0.96, 0.999, s).mul(0.35)
-    const dia = float(1.0).sub(U.uNoite)
-    cor.addAssign(U.uSolCor.mul(1.6).mul(disco).mul(dia).add(U.uSolCor.mul(halo).mul(dia)))
-    // lua (do lado oposto) e estrelas
-    const l = dot(d, normalize(U.uSolDir.negate().add(vec3(0.0, 0.0, -0.3))))
-    cor.addAssign(vec3(0.95, 0.92, 1.0).mul(smoothstep(0.9985, 0.9992, l)).mul(U.uNoite))
-    const g = floor(d.mul(220.0))
-    const estrela = step(0.9965, hash(g)).mul(smoothstep(0.05, 0.3, d.y))
-    const pisca = sin(U.uTempo.mul(3.0).add(hash(g.add(3.0)).mul(30.0))).mul(0.4).add(0.6)
-    cor.addAssign(vec3(1.0, 0.95, 0.85).mul(estrela).mul(pisca).mul(U.uNoite))
-    // abaixo do horizonte: cor do horizonte (o mar cobre)
-    return d.y.lessThan(0.0).select(U.uHor, cor)
-  })()
-  m.mrtNode = W.mrt({ gLuz: vec4(1.0, 0.0, 0.0, 1.0) })
-  return m
-}
 
 export function criarCeu(cena) {
   const uniformes = {
@@ -262,6 +69,8 @@ export function criarCeu(cena) {
     uArcane: globais.uArcane,
     uArcCeu: globais.uArcCeu,
     uArcPintado: globais.uArcPintado,
+    uArcCeuPincel: globais.uArcCeuPincel,
+    uCeuRampa: { value: 0.45 },
   }
   const ceu = new THREE.Mesh(
     new THREE.SphereGeometry(1800, 48, 24),
@@ -339,6 +148,7 @@ export function criarCeu(cena) {
 
     uniformes.uTopo.value.copy(p.topo)
     uniformes.uHor.value.copy(p.hor)
+    uniformes.uCeuRampa.value = cfg.estilo.arcCeuRampa ?? 0.45
     // a parada do meio: no visual Arcane, de dia, um azul claro esverdeado; senão o meio do caminho (o de antes)
     uniformes.uMeio.value.copy(p.hor).lerp(p.topo, 0.5)
     if (cfg.estilo.visual === 'arcane') uniformes.uMeio.value.lerp(corMeio.copy(p.topo).lerp(corCiano.set(cfg.estilo.arcCeuMeio || '#6fa8bc'), 0.85), (cfg.estilo.arcCeuPetroleo ?? 0) * (1 - p.noite))
@@ -377,7 +187,11 @@ export function criarCeu(cena) {
     hemi.color.copy(p.ceu)
     hemi.groundColor.copy(p.chao)
     // na hora dourada a luz de céu é mais fraca e mais azul: a sombra afunda e esfria (contraste de valor)
-    hemi.intensity = p.amb * (1 - 0.3 * dourada)
+    // SERTÃO ao meio-dia (direção do Joabe, 21/10: sol branco que cega, sombra curta, dura e escura): com o sol
+    // alto a luz de céu enfraquece e a sombra afunda (globais.uSertao, também lido em aranhaverso.js)
+    const sertao = deDia ? THREE.MathUtils.smoothstep(dirSol.y, 0.55, 0.9) * (cfg.estilo.arcSertao ?? 0) * (cfg.estilo.visual === 'arcane' ? 1 : 0) : 0
+    globais.uSertao.value = sertao
+    hemi.intensity = p.amb * (1 - 0.3 * dourada) * (1 - 0.35 * sertao)
     hemi.color.lerp(corDouradaSombra.set(cfg.estilo.arcDouradaSombra || '#36508a'), dourada * 0.45)
     // 3b: a luz que sobe do chão era areia (marrom) e sujava a sombra; no visual Arcane ela puxa para a luz de céu
     if (cfg.estilo.visual === 'arcane') hemi.groundColor.lerp(hemi.color, cfg.estilo.arcSombraFria ?? 0)
@@ -387,7 +201,14 @@ export function criarCeu(cena) {
     // A cor do ar: de longe o mundo se tinge com o céu. Ao meio-dia e à tarde o azul do
     // alto entra; no fim da tarde e na madrugada o quente do horizonte manda.
     const quente = THREE.MathUtils.clamp((p.hor.r - p.hor.b) * 2.2, 0, 1)
-    globais.uArCor.value.copy(p.hor).lerp(p.topo, 0.45 * (1 - quente))
+    if (cfg.estilo.visual === 'arcane') {
+      // PERSPECTIVA DE AR (item 6): de dia a distância esfria para o azul claro do meio do céu; na hora
+      // dourada esquenta para o horizonte (o ar fica dourado, como no fundo da referência)
+      // (sertão: de dia o ar é poeira clara e quente, arcArPoeira; o azul só como alívio)
+      globais.uArCor.value.copy(uniformes.uMeio.value).lerp(p.hor, THREE.MathUtils.clamp((cfg.estilo.arcArPoeira ?? 0.2) + 0.7 * dourada + 0.4 * p.noite, 0, 1))
+    } else {
+      globais.uArCor.value.copy(p.hor).lerp(p.topo, 0.45 * (1 - quente))
+    }
     const nevoa = p.hor.clone().lerp(p.topo, 0.25)
     cena.fog.color.copy(nevoa)
     cena.fog.near = cfg.mundo.nevoaPerto
@@ -397,7 +218,7 @@ export function criarCeu(cena) {
     globais.uNevoaLonge.value = cfg.mundo.nevoaLonge
 
     ceu.position.copy(centro)
-    nuvens.atualizar(dt, p, centro)
+    nuvens.atualizar(dt, p, centro, cfg)
     return p
   }
 
@@ -444,8 +265,10 @@ function criarNuvens(cena) {
   }
   cena.add(grupo)
   return {
-    atualizar(dt, p) {
-      material.emissive.copy(p.hor).multiplyScalar(0.35).add(p.ceu.clone().multiplyScalar(0.15))
+    atualizar(dt, p, centro, cfg) {
+      // (item 5: no visual Arcane menos brilho próprio, para a nuvem ter barriga azulada e topo claro)
+      const ke = cfg.estilo.visual === 'arcane' ? 0.45 : 1
+      material.emissive.copy(p.hor).multiplyScalar(0.35 * ke).add(p.ceu.clone().multiplyScalar(0.15 * ke))
       material.color.copy(p.luz).lerp(new THREE.Color(1, 1, 1), 0.5)
       for (const m of lista) {
         m.position.x += m.userData.vel * dt
