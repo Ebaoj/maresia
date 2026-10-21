@@ -3,7 +3,7 @@
 
 export const PADRAO = {
   tempo: {
-    hora: 17.1,          // começa no fim de tarde
+    hora: 16.6,          // começa na hora dourada (luz-arcane, item 3: o forte de 1932 da referência)
     velocidade: 1.0,     // horas do jogo por minuto real
     pausado: false,
   },
@@ -34,6 +34,12 @@ export const PADRAO = {
     arcGradeCal: 1.0,      // a gradação final: curva de contraste e saturação pela paleta "cal e sal" (0 = sem gradação)
     arcGradeContraste: 1.15,
     arcGradeSaturacao: 1.05,
+    // hora dourada (luz-arcane, item 3): sol baixo de dia = luz laranja, sombra longa e azul funda, mais contraste
+    arcDourada: 1.0,             // força (0 = a luz de antes em todas as horas)
+    arcDouradaLuz: '#ff9d55',    // para onde a luz do sol puxa
+    arcDouradaSombra: '#36508a', // para onde a sombra e a luz de céu puxam
+    arcDouradaAltura: 0.2,       // altura mínima da luz que faz sombra no auge da hora dourada (0,42 = sombra curta de antes)
+    arcDouradaContraste: 0.15,   // contraste extra no auge
     // pincelada na tela (src/pos/pintura.js): Kuwahara anisotrópico sobre a cor da cena, a superfície vira mancha de tinta
     arcPintura: 1.0,        // força (0 desliga o passe e o custo)
     arcPinturaRaio: 4.0,    // raio da pincelada, em pixels da imagem (não muda o custo)

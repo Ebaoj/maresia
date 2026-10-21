@@ -286,6 +286,8 @@ export function criarCeu(cena) {
 
   const nuvens = criarNuvens(cena)
 
+  const corDourada = new THREE.Color()
+  const corDouradaSombra = new THREE.Color()
   let cache = null // CacheSombra (F4): com ele ligado, a pose da luz fica congelada enquanto o mapa dos parados vale
 
   function atualizar(hora, centro, dt, cfg) {
@@ -298,8 +300,15 @@ export function criarCeu(cena) {
     const dirSolS = passoH > 0 ? direcaoSol(Math.round(hora / passoH) * passoH) : dirSol
     // de noite a luz principal vira a lua
     const dirLuz = deDia ? dirSolS.clone() : new THREE.Vector3(-dirSolS.x, -dirSolS.y, -0.3).normalize()
-    // truque de cenário: a luz nunca fica rasante demais, senão o chão inteiro cai na sombra
-    dirLuz.y = Math.max(dirLuz.y, 0.42)
+    // HORA DOURADA (luz-arcane, item 3; alvo: docs/referencias/forte-1932-joabe): com o sol baixo de dia, a
+    // luz principal esquenta para laranja, a sombra fica longa e azul funda e o contraste sobe. O fator nasce
+    // da altura do sol, então 8h ganha um pouco, 11h nada, 16h30 quase tudo e a noite nada.
+    const solBaixo = deDia ? (1 - THREE.MathUtils.smoothstep(dirSol.y, 0.22, 0.62)) * THREE.MathUtils.smoothstep(dirSol.y, 0.0, 0.1) : 0
+    const dourada = solBaixo * (cfg.estilo.arcDourada ?? 0) * (cfg.estilo.visual === 'arcane' ? 1 : 0)
+    globais.uDourada.value = dourada
+    // truque de cenário: a luz nunca fica rasante demais, senão o chão inteiro cai na sombra. Na hora dourada o
+    // limite desce (sombra longa, como no forte da referência), até cfg.estilo.arcDouradaAltura
+    dirLuz.y = Math.max(dirLuz.y, THREE.MathUtils.lerp(0.42, cfg.estilo.arcDouradaAltura ?? 0.42, dourada))
     dirLuz.normalize()
     const pertoHorizonte = THREE.MathUtils.smoothstep(Math.abs(dirSol.y), 0.0, 0.08)
 
@@ -310,8 +319,9 @@ export function criarCeu(cena) {
     globais.uNoite.value = p.noite
     globais.uAmbiente.value.copy(p.ceu).multiplyScalar(p.amb * 0.55)
 
-    sol.color.copy(p.luz)
-    sol.intensity = p.int * pertoHorizonte
+    sol.color.copy(p.luz).lerp(corDourada.set(cfg.estilo.arcDouradaLuz || '#ff9d55'), dourada * 0.55)
+    sol.intensity = p.int * pertoHorizonte * (1 + 0.12 * dourada)
+    globais.uSolCor.value.copy(sol.color)
     // Sombra estável: o centro da área de sombra anda em passos do tamanho de um pixel
     // do mapa de sombra, medidos no plano da luz. Assim a borda das sombras não "ferve"
     // quando o jogador anda.
@@ -338,7 +348,9 @@ export function criarCeu(cena) {
 
     hemi.color.copy(p.ceu)
     hemi.groundColor.copy(p.chao)
-    hemi.intensity = p.amb
+    // na hora dourada a luz de céu é mais fraca e mais azul: a sombra afunda e esfria (contraste de valor)
+    hemi.intensity = p.amb * (1 - 0.3 * dourada)
+    hemi.color.lerp(corDouradaSombra.set(cfg.estilo.arcDouradaSombra || '#36508a'), dourada * 0.45)
     const lum = (c) => 0.299 * c.r + 0.587 * c.g + 0.114 * c.b
     globais.uLuzRef.value = Math.max(0.2, sol.intensity * lum(sol.color) + hemi.intensity * lum(hemi.color))
 

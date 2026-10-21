@@ -474,6 +474,8 @@ export class Aranhaverso {
     this.cfg = cfg
     this.globais = globais
     this.velocidade = 0
+    this._corDourada = new THREE.Color()
+    this._v3Dourada = new THREE.Vector3()
     this.sinalGiro = -1 // medido: a grade precisa andar ao contrário do ponto na tela
 
     const prof = new THREE.DepthTexture(1, 1)
@@ -589,15 +591,17 @@ export class Aranhaverso {
     const arc = e.visual === 'arcane'
     u.uArcane.value = arc ? 1 : 0
     u.uArcLinha.value = e.arcLinha
-    u.uArcContraste.value = e.arcContraste
+    u.uArcContraste.value = e.arcContraste * (1 + (e.arcDouradaContraste ?? 0) * this.globais.uDourada.value)
     u.uArcExposicao.value = e.arcExposicao
     const gl = this.globais
     gl.uArcane.value = arc ? 1 : 0
     gl.uArcLim.value.set(e.arcSombra, e.arcLuz)
     gl.uArcSuave.value = e.arcSuave
     gl.uArcPincel.value = e.arcPincel
-    gl.uArcCorSombra.value.set(e.arcCorSombra)
-    gl.uArcNiveis.value.set(e.arcNivelSombra, e.arcNivelMeio, e.arcNivelLuz)
+    // hora dourada (ceu.js põe o fator em globais.uDourada): sombra mais azul e mais funda, mais contraste
+    const dour = gl.uDourada.value
+    gl.uArcCorSombra.value.set(e.arcCorSombra).lerp(this._corDourada.set(e.arcDouradaSombra || '#36508a'), dour * 0.6)
+    gl.uArcNiveis.value.set(e.arcNivelSombra * (1 - 0.22 * dour), e.arcNivelMeio, e.arcNivelLuz * (1 + 0.06 * dour))
     gl.uTexForca.value = e.arcTextura
     // sombra: desde o three 0.182 o PCFShadowMap já é suave e o PCFSoftShadowMap não existe mais (o renderizador
     // volta o tipo para PCF dentro do render). A troca por visual que havia aqui achava o tipo diferente a cada
@@ -697,6 +701,12 @@ export class Aranhaverso {
     srgb('#c08a3e', u.uMemOcre.value)
     srgb(e.corSombra, u.uCorSombra.value)
     u.uTomSombra.value = arc ? e.tomSombra * 0.4 : e.tomSombra
+    // hora dourada: a sombra da imagem final puxa para o azul fundo (a luz do sol já está laranja)
+    if (arc) {
+      const dour = this.globais.uDourada.value
+      u.uCorSombra.value.lerp(srgb(e.arcDouradaSombra || '#36508a', this._v3Dourada), dour * 0.7)
+      u.uTomSombra.value *= 1 + 1.4 * dour
+    }
     srgb(e.corLuz, u.uCorLuz.value)
     u.uTomLuz.value = arc ? e.tomLuz * 0.5 : e.tomLuz
     // linhas de velocidade a partir de ~70% da corrida (o corpo novo corre a 4,5 m/s; o antigo a 9)
