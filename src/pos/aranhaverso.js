@@ -9,6 +9,7 @@
 
 import * as THREE from 'three'
 import { criarAleatorio } from '../utils.js'
+import { CAL } from '../paleta.js'
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -108,6 +109,8 @@ uniform float uOclusao; uniform float uBrilho; uniform vec2 uDesloc;
 uniform vec3 uNevoaCor; uniform float uNevoaDens; uniform float uNevoaQueda; uniform float uMaresia;
 uniform vec3 uCorSombra; uniform float uTomSombra; uniform vec3 uCorLuz; uniform float uTomLuz;
 uniform float uArcane; uniform float uArcLinha; uniform vec3 uSolTela; uniform float uFlare; uniform vec3 uCorFlare; uniform float uArcContraste; uniform float uArcExposicao;
+uniform float uArcLuzEstrutura; uniform vec3 uArCor;
+uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
 ${COMUM}
@@ -184,9 +187,17 @@ void main() {
     // maresia: a partir de ~20 m a cor perde saturação e contraste e clareia para a névoa
     // (perspectiva atmosférica: o fundo vira silhueta clara, a frente guarda a cor)
     float km = 1.0 - exp(-max(length(pv) - 20.0, 0.0) * uMaresia);
-    float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
-    cor = mix(cor, vec3(Lc), km * 0.6);
-    cor = mix(cor, uNevoaCor, km * 0.3);
+    if (uArcane > 0.5 && uArcLuzEstrutura > 0.5) {
+      // A distância se tinge com a cor do céu na hora (azul ao meio-dia, quente no fim da
+      // tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
+      float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
+      vec3 comAr = mix(cor, uArCor * (0.55 + 0.75 * Lc), 0.8);
+      cor = mix(cor, comAr, km * 0.75);
+    } else {
+      float Lc = dot(cor, vec3(0.299, 0.587, 0.114));
+      cor = mix(cor, vec3(Lc), km * 0.6);
+      cor = mix(cor, uNevoaCor, km * 0.3);
+    }
   }
 
   // grade de pontos: acompanha o giro da câmera, para não escorregar sobre o mundo
@@ -213,13 +224,29 @@ void main() {
     float Lg = dot(cor, vec3(0.299, 0.587, 0.114));
     float Ln = clamp((Lg * uArcExposicao - 0.5) * uArcContraste + 0.5, 0.0, 1.0);
     Ln = mix(Ln, Ln * Ln * (3.0 - 2.0 * Ln), 0.35);
+    if (uArcLuzEstrutura > 0.5) {
+      // estrutura de valor: a curva em S separa sombra de luz (o valor não é só mais escuro)
+      // (só no mundo: no céu a curva estourava o azul claro em branco)
+      float LnE = mix(Ln, Ln * Ln * (3.0 - 2.0 * Ln), 0.3);
+      LnE = clamp((LnE - 0.42) * 1.12 + 0.42, 0.0, 1.0);
+      Ln = mix(LnE, Ln, ceu);
+    }
     cor *= Ln / max(Lg, 1e-3);
   }
   float L = dot(cor, vec3(0.299, 0.587, 0.114));
 
   // 5. sombra fria e luz quente
-  cor *= mix(vec3(1.0), uCorSombra * 1.6, uTomSombra * (1.0 - smoothstep(0.05, 0.55, L)));
-  cor = mix(cor, cor * uCorLuz * 1.2, uTomLuz * smoothstep(0.55, 1.0, L));
+  if (uArcane > 0.5 && uArcLuzEstrutura > 0.5) {
+    // A sombra esfria SEM mudar a cor do objeto: multiplicar pela cor da sombra puxava o
+    // matiz (a areia virava azul). Aqui a sombra é uma cor fria misturada por cima, e a
+    // luz é somada, nunca multiplicada.
+    float sombra = uTomSombra * (1.0 - smoothstep(0.05, 0.55, L));
+    cor = mix(cor, uCorSombra * (0.9 + 0.5 * L), sombra * 0.8);
+    cor += uCorLuz * uTomLuz * smoothstep(0.55, 1.0, L) * 0.3;
+  } else {
+    cor *= mix(vec3(1.0), uCorSombra * 1.6, uTomSombra * (1.0 - smoothstep(0.05, 0.55, L)));
+    cor = mix(cor, cor * uCorLuz * 1.2, uTomLuz * smoothstep(0.55, 1.0, L));
+  }
   L = dot(cor, vec3(0.299, 0.587, 0.114));
 
   float tremorH = ruido((px + uDesloc) * 0.05 + uTempo * 2.0) * 0.6;
@@ -386,7 +413,26 @@ void main() {
     }
   }
 
-  // 11. vinheta
+  // 12. GRADAÇÃO FINAL (visual Arcane): curva de contraste e saturação pela paleta "cal e sal".
+  // A fachada (cal, papel, areia) é a cor de fundo do jogo e nunca vira acento: o que é
+  // neutro perde um pouco de cor, e o que é saturado (mar, pano, fruta) fica.
+  if (uArcane > 0.5 && uArcGradeCal > 0.5) {
+    float Lf = dot(cor, vec3(0.299, 0.587, 0.114));
+    // a curva: os meios escurecem, as luzes abrem um pouco. O fator fica preso entre
+    // 0,7 e 1,25: uma curva sem limite transformava as sombras em preto chapado.
+    float curva = clamp((Lf - 0.5) * uArcGradeContraste + 0.5, 0.3, 1.0);
+    cor *= mix(1.0, clamp(curva / max(Lf, 0.15), 0.7, 1.25), uArcGradeCal * (1.0 - ceu));
+    // a saturação: o neutro puxa para o cal da paleta, o acento fica como está
+    float mx = max(cor.r, max(cor.g, cor.b));
+    float mn = min(cor.r, min(cor.g, cor.b));
+    float sat = (mx - mn) / max(mx, 1e-3);
+    float neutro = 1.0 - smoothstep(0.04, 0.26, sat);
+    // só no mundo: o céu claro também é pouco saturado, e puxado para o cal virava creme e branco
+    cor = mix(cor, mix(vec3(Lf), uCalCor, 0.4) * mx, neutro * 0.45 * uArcGradeCal * (1.0 - ceu));
+    cor = mix(vec3(Lf), cor, uArcGradeSaturacao);
+  }
+
+  // 13. vinheta
   cor *= 1.0 - uVinheta * smoothstep(0.45, 1.05, rv);
   gl_FragColor = vec4(clamp(cor, 0.0, 1.0), 1.0);
 }`
@@ -460,6 +506,8 @@ export class Aranhaverso {
       uCorSombra: v3(), uTomSombra: { value: 0.3 }, uCorLuz: v3(), uTomLuz: { value: 0.2 },
       uSolTela: { value: new THREE.Vector3() }, uFlare: { value: 0 }, uCorFlare: { value: new THREE.Color(1, 0.8, 0.6) },
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
+      uArcLuzEstrutura: { value: 1 }, uArCor: v3(),
+      uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
     }
 
     const shader = (frag, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, depthTest: false, depthWrite: false })
@@ -529,6 +577,13 @@ export class Aranhaverso {
     // quadro e recompilava todos os materiais (KAN-70 T3, cenário semRecompilarParado)
     gl.uArcRim.value = arc ? e.arcRecorte : 0
     gl.uArcCeu.value = e.arcCeu
+    gl.uArcPintado.value = e.arcCeuPintado ?? 1
+    u.uArcLuzEstrutura.value = e.arcLuzEstrutura ?? 1
+    { const c = this.globais.uArCor.value; u.uArCor.value.set(c.r, c.g, c.b) } // Color -> vec3 (copy daria NaN e a cena preta)
+    u.uArcGradeCal.value = e.arcGradeCal ?? 1
+    u.uArcGradeContraste.value = e.arcGradeContraste ?? 1.15
+    u.uArcGradeSaturacao.value = e.arcGradeSaturacao ?? 1.05
+    srgb(CAL.cal, u.uCalCor.value)
     // sol na tela, para o reflexo de lente: só quando está na frente da câmera
     {
       const dirS = this.globais.uSolDir.value

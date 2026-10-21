@@ -28,7 +28,12 @@ export const PADRAO = {
     reflexoLente: 1.0,     // lens flare quando a câmera olha para o sol (fantasmas, faixa anamórfica, anel); 0 desliga
     arcRecorte: 0.6,       // luz de recorte quente nas bordas contra o sol
     arcAr: 2.6,            // profundidade de ar: o fundo se separa em camadas (multiplica névoa e maresia); 1,8 deixava o fundo tão nítido quanto a frente
-    arcCeu: 1.0,           // céu pintado: pinceladas longas e nuvens de pincel (0 = céu liso)       // força das texturas pintadas do mundo (areia, palha, madeira; public/texturas)
+    arcCeu: 1.0,           // céu pintado: pinceladas longas e nuvens de pincel (0 = céu liso)
+    arcCeuPintado: 1.0,    // o passe do céu: gradiente de verdade (azul no alto, quente no horizonte), nuvens em massas e halo pintado no sol (0 = o céu de antes)
+    arcLuzEstrutura: 1.0,  // a luz: sombra que esfria sem mudar a cor do objeto, estrutura de valor e ar tingido pela hora (0 = a luz de antes)
+    arcGradeCal: 1.0,      // a gradação final: curva de contraste e saturação pela paleta "cal e sal" (0 = sem gradação)
+    arcGradeContraste: 1.15,
+    arcGradeSaturacao: 1.05,
     espessuraLinha: 1.3,
     limiarProfundidade: 0.07,
     limiarNormal: 0.55,

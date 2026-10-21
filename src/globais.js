@@ -31,5 +31,7 @@ export const globais = {
   uTexForca: { value: 0.8 },
   uArcRim: { value: 0.6 }, // luz de recorte quente nas bordas que pegam sol por trás
   uArcCeu: { value: 1 }, // céu pintado (pinceladas e nuvens de pincel) // quanto a textura pintada do mundo pesa (materiais.js, texturizar)
+  uArcPintado: { value: 1 }, // o passe novo do céu: gradiente de verdade, nuvens em massas e halo pintado
+  uArCor: { value: new THREE.Color('#9cc9e0') }, // a cor do ar: a distância se tinge com o céu da hora
 }
 globais.tLampioes.value.needsUpdate = true

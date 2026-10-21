@@ -289,9 +289,23 @@ function fragTela(W, u, T, uvGL) {
       const nev = float(1.0).sub(exp(length(pv).negate().mul(U.uNevoaDens))).mul(exp(max(pm.y, 0.0).negate().mul(U.uNevoaQueda)))
       cor.assign(mix(cor, U.uNevoaCor, clamp(nev, 0.0, 1.0)))
       const km = float(1.0).sub(exp(max(length(pv).sub(20.0), 0.0).negate().mul(U.uMaresia)))
-      const Lc = dot(cor, LUM)
-      cor.assign(mix(cor, vec3(Lc), km.mul(0.6)))
-      cor.assign(mix(cor, U.uNevoaCor, km.mul(0.3)))
+      If(U.uArcane.greaterThan(0.5), () => {
+        If(U.uArcLuzEstrutura.greaterThan(0.5), () => {
+          // A distância se tinge com a cor do céu na hora (azul ao meio-dia, quente no fim
+          // da tarde) em vez de virar cinza: era o cinza que lavava o fundo inteiro.
+          const Lc = dot(cor, LUM)
+          const comAr = mix(cor, U.uArCor.mul(float(0.55).add(Lc.mul(0.75))), 0.8)
+          cor.assign(mix(cor, comAr, km.mul(0.75)))
+        }).Else(() => {
+          const Lc = dot(cor, LUM)
+          cor.assign(mix(cor, vec3(Lc), km.mul(0.6)))
+          cor.assign(mix(cor, U.uNevoaCor, km.mul(0.3)))
+        })
+      }).Else(() => {
+        const Lc = dot(cor, LUM)
+        cor.assign(mix(cor, vec3(Lc), km.mul(0.6)))
+        cor.assign(mix(cor, U.uNevoaCor, km.mul(0.3)))
+      })
     })
 
     // grade de pontos: acompanha o giro da câmera
@@ -314,13 +328,33 @@ function fragTela(W, u, T, uvGL) {
       const Lg = dot(cor, LUM)
       const Ln = clamp(Lg.mul(U.uArcExposicao).sub(0.5).mul(U.uArcContraste).add(0.5), 0.0, 1.0).toVar()
       Ln.assign(mix(Ln, Ln.mul(Ln).mul(float(3.0).sub(Ln.mul(2.0))), 0.35))
+      If(U.uArcLuzEstrutura.greaterThan(0.5), () => {
+        // estrutura de valor: a curva em S separa sombra de luz (o valor não é só mais escuro)
+        // (só no mundo: no céu a curva estourava o azul claro em branco)
+        const LnE = clamp(mix(Ln, Ln.mul(Ln).mul(float(3.0).sub(Ln.mul(2.0))), 0.3).sub(0.42).mul(1.12).add(0.42), 0.0, 1.0)
+        Ln.assign(mix(LnE, Ln, ceu))
+      })
       cor.mulAssign(Ln.div(max(Lg, 1e-3)))
     })
     const L = dot(cor, LUM).toVar()
 
     // 5. sombra fria e luz quente
-    cor.mulAssign(mix(vec3(1.0), U.uCorSombra.mul(1.6), U.uTomSombra.mul(float(1.0).sub(smoothstep(0.05, 0.55, L)))))
-    cor.assign(mix(cor, cor.mul(U.uCorLuz).mul(1.2), U.uTomLuz.mul(smoothstep(0.55, 1.0, L))))
+    If(U.uArcane.greaterThan(0.5), () => {
+      If(U.uArcLuzEstrutura.greaterThan(0.5), () => {
+        // A sombra esfria SEM mudar a cor do objeto: multiplicar pela cor da sombra puxava
+        // o matiz (a areia virava azul). Aqui a sombra é uma cor fria misturada por cima, e
+        // a luz é somada, nunca multiplicada.
+        const sombra = U.uTomSombra.mul(float(1.0).sub(smoothstep(0.05, 0.55, L)))
+        cor.assign(mix(cor, U.uCorSombra.mul(float(0.9).add(L.mul(0.5))), sombra.mul(0.8)))
+        cor.addAssign(U.uCorLuz.mul(U.uTomLuz).mul(smoothstep(0.55, 1.0, L)).mul(0.3))
+      }).Else(() => {
+        cor.mulAssign(mix(vec3(1.0), U.uCorSombra.mul(1.6), U.uTomSombra.mul(float(1.0).sub(smoothstep(0.05, 0.55, L)))))
+        cor.assign(mix(cor, cor.mul(U.uCorLuz).mul(1.2), U.uTomLuz.mul(smoothstep(0.55, 1.0, L))))
+      })
+    }).Else(() => {
+      cor.mulAssign(mix(vec3(1.0), U.uCorSombra.mul(1.6), U.uTomSombra.mul(float(1.0).sub(smoothstep(0.05, 0.55, L)))))
+      cor.assign(mix(cor, cor.mul(U.uCorLuz).mul(1.2), U.uTomLuz.mul(smoothstep(0.55, 1.0, L))))
+    })
     L.assign(dot(cor, LUM))
 
     const tremorH = ruido(px.add(U.uDesloc).mul(0.05).add(U.uTempo.mul(2.0))).mul(0.6)
@@ -468,7 +502,25 @@ function fragTela(W, u, T, uvGL) {
       })
     })
 
-    // 11. vinheta
+    // 12. GRADAÇÃO FINAL (visual Arcane): curva de contraste e saturação pela paleta "cal e sal".
+    // A fachada nunca vira acento: o que é neutro perde cor, o que é saturado fica.
+    If(U.uArcane.greaterThan(0.5), () => {
+      If(U.uArcGradeCal.greaterThan(0.5), () => {
+        const Lf = dot(cor, LUM)
+        // a curva fica presa entre 0,7 e 1,25: sem limite, as sombras viravam preto chapado
+        const curva = clamp(Lf.sub(0.5).mul(U.uArcGradeContraste).add(0.5), 0.3, 1.0)
+        cor.mulAssign(mix(float(1.0), clamp(curva.div(max(Lf, 0.15)), 0.7, 1.25), U.uArcGradeCal.mul(float(1.0).sub(ceu))))
+        const mx = max(cor.r, max(cor.g, cor.b))
+        const mn = min(cor.r, min(cor.g, cor.b))
+        const sat = mx.sub(mn).div(max(mx, 1e-3))
+        const neutro = float(1.0).sub(smoothstep(0.04, 0.26, sat))
+        // só no mundo: o céu claro também é pouco saturado, e puxado para o cal virava creme e branco
+        cor.assign(mix(cor, mix(vec3(Lf), U.uCalCor, 0.4).mul(mx), neutro.mul(0.45).mul(U.uArcGradeCal).mul(float(1.0).sub(ceu))))
+        cor.assign(mix(vec3(Lf), cor, U.uArcGradeSaturacao))
+      })
+    })
+
+    // 13. vinheta
     cor.mulAssign(float(1.0).sub(U.uVinheta.mul(smoothstep(0.45, 1.05, rv))))
     return vec4(clamp(cor, 0.0, 1.0), 1.0)
   })()
