@@ -15,7 +15,7 @@ import { ocupacao } from './ocupacao.js'
 import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { criarCasas } from './quarteirao.js'
 import { criarAleatorio } from '../utils.js'
-import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha } from './fortaleza1932.js'
+import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha, FATOR_PRACA } from './fortaleza1932.js'
 
 const rnd = criarAleatorio(42)
 
@@ -63,12 +63,14 @@ class Lote {
 // eixos da grade de Herbster: ex = rua leste-sudeste, ez = rua sul-sudoeste (z cresce para o sul)
 // a grade continua valendo para o mobiliário e para o minimapa; as casas, nao: elas
 // seguem a planta oficial
+// A quadra e a rua foram medidas no mundo comprimido: com a praca descomprimida,
+// o mesmo quarteirao do centro ocupa FATOR_PRACA vezes mais unidades.
 const ROT = -(Math.PI / 2 - ANGULO_GRADE) // -17,5 graus
 const EX = [Math.cos(ROT), -Math.sin(ROT)]
 const EZ = [Math.sin(ROT), Math.cos(ROT)]
-const QUADRA_W = 34
-const QUADRA_D = 30
-const RUA = 9
+const QUADRA_W = 34 * FATOR_PRACA
+const QUADRA_D = 30 * FATOR_PRACA
+const RUA = 9 * FATOR_PRACA
 const [PFX, PFZ] = lugaresJogo.pracaFerreira
 export const GRADE = { rot: ROT, ex: EX, ez: EZ, w: QUADRA_W, d: QUADRA_D, rua: RUA, origem: [PFX, PFZ] }
 

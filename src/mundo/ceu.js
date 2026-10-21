@@ -232,8 +232,12 @@ export function criarCeu(cena) {
   const sol = new THREE.DirectionalLight(0xffffff, 2)
   sol.castShadow = true
   sol.shadow.mapSize.set(4096, 4096)
+  // A janela de sombra cobre 120 x 120 unidades no mundo comprimido (350 m de
+  // verdade no centro). Com a praca descomprimida (1:1), a mesma area real e
+  // 2,88 vezes maior em unidades de jogo: o texel da sombra continua do mesmo
+  // tamanho em centimetros.
   const sc = sol.shadow.camera
-  sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 500
+  sc.left = -173; sc.right = 173; sc.top = 173; sc.bottom = -173; sc.near = 1; sc.far = 1441
   sol.shadow.bias = -0.0006
   sol.shadow.normalBias = 0.06
   cena.add(sol)

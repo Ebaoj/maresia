@@ -14,7 +14,7 @@
 // da mesma rua: e assim que a rua fica cheia, sem buraco no meio do quarteirao.
 
 import dados from './mapa1932-lotes.json'
-import { ll, LIMITES, LUGARES_RESERVADOS } from './fortaleza1932.js'
+import { esticamentoNoVao, ll, LIMITES, LUGARES_RESERVADOS } from './fortaleza1932.js'
 
 export const USOS = dados.usos
 export const USO_FAVELA = 99
@@ -152,12 +152,15 @@ export const FACHADAS = (() => {
     let largura = 0
     let anterior = null
     let grupoDoVizinho = -1
+    // o esticamento da ultima frente vista: a testada acumulada e comparada com
+    // um limite medido no mundo comprimido, entao o limite acompanha a escala
+    let esticaF = 1
     // fecha o grupo: as casas sao trechos de testada encostada. Um grupo curto
     // demais (um lote de 4 m sozinho) entra no grupo anterior da MESMA rua; se
     // nao ha, ele vira casa assim mesmo, do tamanho que a planta deu.
     const fechar = () => {
       if (!grupo.length) return
-      if (largura < MIN_FRENTE && grupoDoVizinho >= 0) {
+      if (largura < MIN_FRENTE * esticaF && grupoDoVizinho >= 0) {
         grupos[grupoDoVizinho].push(...grupo)
       } else {
         grupos.push(grupo)
@@ -174,14 +177,24 @@ export const FACHADAS = (() => {
       // sem casa (e um vao na testada, nao uma casa gigante). Mas um lote
       // estreito sozinho (o quarto de criado) se junta com o vizinho da mesma
       // rua: e assim que a testada fica cheia.
-      const folga = anterior ? Math.hypot(de[0] - anterior[0], de[1] - anterior[1]) : 0
-      const curta = largura < MIN_FRENTE
-      if (folga > FOLGA_GRUPO && !(curta && folga <= FOLGA_JUNTA)) fechar()
+      // A folga, a testada acumulada e as larguras sao medidas em unidades de
+      // jogo e os limites foram medidos no mundo comprimido: perto da praca (que
+      // foi descomprimida para 1:1) o mesmo metro real ocupa mais unidades,
+      // entao os limites acompanham o esticamento local - que depende da
+      // direcao, porque no miolo o x e o z escalam diferente.
+      const dx = de[0] - (anterior ? anterior[0] : de[0])
+      const dz = de[1] - (anterior ? anterior[1] : de[1])
+      const estica = anterior ? esticamentoNoVao(dx, dz, de[0], de[1]) : 1
+      // a direcao da propria frente (a normal e a perpendicular dela)
+      esticaF = esticamentoNoVao(-f.normal[1], f.normal[0], de[0], de[1])
+      const folga = anterior ? Math.hypot(dx, dz) : 0
+      const curta = largura < MIN_FRENTE * esticaF
+      if (folga > FOLGA_GRUPO * estica && !(curta && folga <= FOLGA_JUNTA * estica)) fechar()
       anterior = para
-      if (f.larg > MAX_FRENTE) { grupo.push([k, entrada]); fechar(); continue } // fachada grande demais
+      if (f.larg > MAX_FRENTE * esticaF) { grupo.push([k, entrada]); fechar(); continue } // fachada grande demais
       grupo.push([k, entrada])
       largura += f.larg
-      if (largura >= MIN_FRENTE) fechar()
+      if (largura >= MIN_FRENTE * esticaF) fechar()
     }
     fechar()
   }
@@ -197,7 +210,8 @@ export const FACHADAS = (() => {
     }
     let total = 0
     for (const c of caminho) { c.inicio = total; total += Math.hypot(c.para[0] - c.de[0], c.para[1] - c.de[1]) }
-    if (total < 0.8) continue
+    // o mesmo vao de sempre, em unidades de jogo: perto da praca o grupo e maior
+    if (total < 0.8 * esticamentoNoVao(1, 0, caminho[0].de[0], caminho[0].de[1])) continue
     // a fachada fica um pouco menor que o grupo: a parede entre as casas tem
     // espessura, e nas ruas curvas o canto da casa nao entra no vizinho
     const larg = Math.min(total, MAX_FRENTE) * 0.96

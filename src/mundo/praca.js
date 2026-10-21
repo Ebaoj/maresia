@@ -31,8 +31,14 @@ import { CENTRO, CONTORNO, RAIO_MAX, dentroDaPraca, raioEm } from './praca1932.j
 
 const rnd = criarAleatorio(1932)
 
-// o coreto: raio da plataforma, altura da coluna, folga da grade
-const CORETO = { raio: 2.8, altura: 3.2, telhado: 1.3, grade: 0.9 }
+// A praça está em tamanho real (1:1) desde a descompressão local da
+// transformação lon/lat -> jogo (src/mundo/fortaleza1932.js): 1 unidade = 1 m
+// aqui dentro. Por isso as medidas daqui são metros de verdade, e não as
+// medidas da praça comprimida de antes.
+//   D  o coreto de 1923 (palanque coberto) e os jardins da reforma de 1920
+//   H  o tamanho do coreto (10 m de diâmetro, como os coretos de ferro da
+//      época), o tamanho dos canteiros (6 m) e onde eles ficam
+const CORETO = { raio: 5, altura: 3.2, telhado: 1.3, grade: 0.9 }
 
 // onde os jardins podem ficar: uma direção só serve se o canteiro inteiro couber
 // dentro da praça, com folga do coreto
@@ -43,12 +49,12 @@ function escolherJardins() {
     const ang = (k / cantos) * Math.PI * 2
     const r = raioEm(ang)
     const rr = r * 0.52
-    if (rr < CORETO.raio + 3.4 || rr > RAIO_MAX - 2) continue
+    if (rr < CORETO.raio + 3 || rr > RAIO_MAX - 4) continue
     const cx = CENTRO[0] + Math.cos(ang) * rr
     const cz = CENTRO[1] + Math.sin(ang) * rr
-    // o canteiro (4 x 4) tem de caber inteiro na praça
+    // o canteiro (7 x 7) tem de caber inteiro na praça
     let cabe = true
-    for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 0]]) {
+    for (const [dx, dz] of [[-3.5, -3.5], [3.5, -3.5], [-3.5, 3.5], [3.5, 3.5], [0, 0]]) {
       if (!dentroDaPraca(cx + dx, cz + dz)) { cabe = false; break }
     }
     if (cabe) bons.push({ ang, x: cx, z: cz })
@@ -94,7 +100,7 @@ function geometriaCoreto() {
 // o jardim: canteiro de alvenaria com grade de ferro, terra e arvoreira
 function geometriaCanteiro() {
   const partes = []
-  const a = 2.2
+  const a = 3.5
   // mureta de alvenaria
   partes.push(colorir(new THREE.BoxGeometry(a * 2, 0.42, 0.3).translate(0, 0.21, -a), '#d6c9a6'))
   partes.push(colorir(new THREE.BoxGeometry(a * 2, 0.42, 0.3).translate(0, 0.21, a), '#d6c9a6'))
@@ -151,8 +157,9 @@ function geometriaArbusto(rndA) {
 // nenhum: o anel de postes da Light com o fio dando a volta era anacrônico —
 // e o fio dele cortava a praça em diagonal, por causa do "braço" falso do
 // contorno antigo. As contas e as fontes estão em docs/mapa-1932.md.
-const PASSO_LAMPIAO = 10.4 // 30 m de rua: na praça são 0,348 un por metro
-const FOLGA_LAMPIAO = 0.9 // o lampião fica na calçada, um pouco para dentro
+const PASSO_LAMPIAO = 30 // 30 m de rua (João Nogueira, a iluminação de 1848): a praça
+// está em tamanho real, então o passo é o do mundo real
+const FOLGA_LAMPIAO = 2.6 // o lampião fica na calçada, um pouco para dentro
 
 // o ponto do contorno a uma distancia d do começo (o contorno é fechado)
 function pontoNoContorno(d) {
@@ -254,12 +261,12 @@ export function criarPraca(cena) {
     const ang = rnd.entre(0, Math.PI * 2)
     q.setFromAxisAngle(Y, ang)
     canteiros.push(m.clone().compose(new THREE.Vector3(j.x, y, j.z), q, new THREE.Vector3(1, 1, 1)))
-    ocupacao.marcar(j.x, j.z, 2.6, 2.6)
+    ocupacao.marcar(j.x, j.z, 3.9, 3.9)
     // arvoreira dentro do canteiro: oiti e murici, de copa pequena (a praça é
     // pequena no jogo e a copa do cajueiro a tomava inteira)
-    for (let k = 0; k < 2; k++) {
-      const ax = j.x + rnd.entre(-1.4, 1.4)
-      const az = j.z + rnd.entre(-1.4, 1.4)
+    for (let k = 0; k < 3; k++) {
+      const ax = j.x + rnd.entre(-2.4, 2.4)
+      const az = j.z + rnd.entre(-2.4, 2.4)
       const esp = rnd.chance(0.6) ? 'oiti' : 'murici'
       const esc = rnd.entre(0.7, 0.95)
       q.setFromAxisAngle(Y, rnd.entre(0, Math.PI * 2))
@@ -269,9 +276,9 @@ export function criarPraca(cena) {
     }
     // arbustos na frente da mureta
     for (let k = 0; k < 6; k++) {
-      const ax = j.x + rnd.entre(-2, 2)
-      const az = j.z + rnd.entre(-2, 2)
-      if (Math.hypot(ax - j.x, az - j.z) > 1.7) continue
+      const ax = j.x + rnd.entre(-2.9, 2.9)
+      const az = j.z + rnd.entre(-2.9, 2.9)
+      if (Math.hypot(ax - j.x, az - j.z) > 2.9) continue
       const e = rnd.entre(0.8, 1.2)
       q.setFromAxisAngle(Y, rnd.entre(0, Math.PI * 2))
       matrizesArbusto.push(m.clone().compose(new THREE.Vector3(ax, alturaTerreno(ax, az), az), q, new THREE.Vector3(e, e, e)))
@@ -279,8 +286,8 @@ export function criarPraca(cena) {
     // bancos em volta do jardim, virados para o canteiro
     for (let k = 0; k < 4; k++) {
       const a = (k / 4) * Math.PI * 2 + 0.4
-      const bx = j.x + Math.cos(a) * 3.1
-      const bz = j.z + Math.sin(a) * 3.1
+      const bx = j.x + Math.cos(a) * 4.8
+      const bz = j.z + Math.sin(a) * 4.8
       if (!dentroDaPraca(bx, bz)) continue
       const y = alturaTerreno(bx, bz)
       q.setFromAxisAngle(Y, -a + Math.PI / 2)

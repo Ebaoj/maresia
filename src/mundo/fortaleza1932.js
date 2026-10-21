@@ -2,83 +2,23 @@
 // latitude) e passa por uma compressão suave e variável: ~3,4 vezes no centro, ~8 nas pontas.
 // No jogo: x cresce para leste, z cresce para o sul (o mar fica em z negativo), 1 unidade = 1 m.
 // O que é documentado e o que é hipótese está marcado no documento; aqui ficam só os números.
+//
+// A ESCALA (a compressão e a descompressão da praça) é o sistema de
+// src/mundo/escala1932.js; aqui ficam os dados do mapa: costa, rio, lagoas,
+// lugares, bairros e as peças de praia.
 
-// interpolação cúbica monótona (sem ondas nem quinas entre os pontos)
-function pchip(xs, ys) {
-  const n = xs.length
-  const h = []
-  const d = []
-  for (let i = 0; i < n - 1; i++) {
-    h.push(xs[i + 1] - xs[i])
-    d.push((ys[i + 1] - ys[i]) / h[i])
-  }
-  const m = new Array(n).fill(0)
-  m[0] = d[0]
-  m[n - 1] = d[n - 2]
-  for (let i = 1; i < n - 1; i++) {
-    m[i] = d[i - 1] * d[i] <= 0 ? 0 : (3 * (h[i - 1] + h[i])) / ((2 * h[i] + h[i - 1]) / d[i - 1] + (h[i] + 2 * h[i - 1]) / d[i])
-  }
-  return (x) => {
-    if (x <= xs[0]) return ys[0] + m[0] * (x - xs[0])
-    if (x >= xs[n - 1]) return ys[n - 1] + m[n - 1] * (x - xs[n - 1])
-    let i = 0
-    while (i < n - 2 && xs[i + 1] < x) i++
-    const t = (x - xs[i]) / h[i]
-    const t2 = t * t
-    const t3 = t2 * t
-    return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h[i] * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h[i] * m[i + 1]
-  }
+import {
+  DESLOC, ll, LON_POR_X, LAT_POR_Z, LIMITES, pchip,
+  K_PRACA_X, K_PRACA_Z, FATOR_PRACA,
+  esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, escalaBaseJogo, metrosPorUn,
+  METRO_POR_GRAU_LAT, METRO_POR_GRAU_LON,
+} from './escala1932.js'
+
+export {
+  DESLOC, ll, LON_POR_X, LAT_POR_Z, LIMITES,
+  K_PRACA_X, K_PRACA_Z, FATOR_PRACA,
+  esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, escalaBaseJogo, metrosPorUn,
 }
-
-// compressão: longitude -> x e latitude -> z (mesmos nós do desenho docs/mapa-1932-gerar.py)
-const fx = pchip([-38.612, -38.548, -38.535, -38.512, -38.495, -38.4745, -38.452, -38.44], [0, 700, 1000, 1760, 1960, 2180, 2440, 2560])
-const fy = pchip([-3.77, -3.752, -3.736, -3.716, -3.705, -3.688], [1420, 1220, 1000, 340, 150, 0])
-export const DESLOC = { x: 1220, z: 420 }
-export function ll(lon, lat) {
-  return [fx(lon) - DESLOC.x, fy(lat) - DESLOC.z]
-}
-
-// A inversa das compressões: do ponto do jogo de volta para lon/lat. Serve para
-// ler o raster do uso dos lotes (src/mundo/mapa1932-malha.png) e para conferir
-// que uma marca do mapa caiu onde devia.
-// As tabelas são montadas uma vez, com busca binaria dentro da pchip; depois de
-// montadas a consulta é direta (índice + interpolação), porque o terreno pergunta
-// isso umas centenas de milhares de vezes.
-function tabelaInversa(f, dominio, faixa, passo) {
-  const n = Math.ceil((faixa[1] - faixa[0]) / passo) + 1
-  const tabela = new Float64Array(n)
-  const crescente = f(dominio[1]) > f(dominio[0])
-  for (let i = 0; i < n; i++) {
-    const alvo = faixa[0] + i * passo
-    let a = dominio[0]
-    let b = dominio[1]
-    for (let k = 0; k < 40; k++) {
-      const m = (a + b) / 2
-      if (crescente ? f(m) < alvo : f(m) > alvo) a = m
-      else b = m
-    }
-    tabela[i] = (a + b) / 2
-  }
-  return (v) => {
-    const t = (v - faixa[0]) / passo
-    if (t <= 0) return tabela[0]
-    if (t >= n - 1) return tabela[n - 1]
-    const i = t | 0
-    const r = t - i
-    return tabela[i] * (1 - r) + tabela[i + 1] * r
-  }
-}
-
-// x do jogo -> longitude; z do jogo -> latitude (fy é decrescente: a latitude
-// cresce para o norte e o z do jogo cresce para o sul)
-const LON_POR_X_BRUTO = tabelaInversa(fx, [-38.612, -38.44], [0, 2560], 0.5)
-const LAT_POR_Z_BRUTO = tabelaInversa(fy, [-3.77, -3.688], [0, 1420], 0.5)
-export const LON_POR_X = (x) => LON_POR_X_BRUTO(x + DESLOC.x)
-export const LAT_POR_Z = (z) => LAT_POR_Z_BRUTO(z + DESLOC.z)
-
-// os limites do mundo em coordenadas de jogo: a compressão vai de -38,612 a
-// -38,44 de longitude e de -3,77 a -3,688 de latitude (a grade do terreno, 3 m)
-export const LIMITES = { x0: -1221, x1: 1221, z0: -462, z1: 1002, passo: 3 }
 
 // costa de 1932 (hipótese guiada pela borda norte dos lotes; refinar sobre a planta de 1931-1932)
 const COSTA = [
@@ -140,12 +80,14 @@ export const LUGARES = {
 // entra por cima (a estacao, as pracas, o forte). O numero e o raio em unidades
 // de jogo; o mesmo raio serve para o chao: dentro dele e cidade (rua de pedra),
 // nao mato, mesmo que a planta oficial nao tenha lote ali.
+// O raio foi medido no mundo comprimido, entao ele acompanha o esticamento: onde
+// a praca foi descomprimida, o mesmo lugar ocupa mais unidades de jogo.
 export const LUGARES_RESERVADOS = [
   ['pracaFerreira', 26], ['passeioPublico', 20], ['forte', 10], ['se', 12], ['santaCasa', 12],
   ['pracaLeoes', 10], ['mercado', 16], ['theatro', 12], ['estacao', 20], ['pracaEstacao', 12],
   ['cemiterio', 22], ['seminario', 12], ['campoOtavioBonfim', 16], ['pracaMestres', 10],
   ['parqueLiberdade', 16], ['favela1932', 8],
-]
+].map(([chave, raio]) => [chave, raio * esticamento(...LUGARES[chave])])
 
 // bairros (para o nome na tela): o mais perto vence
 const BAIRROS = [

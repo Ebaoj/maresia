@@ -16,17 +16,21 @@ import { BONDES, LUGARES } from './mapa1932.js'
 import { RUAS } from './casario1932.js'
 import { dentroDaPraca, distanciaDaBorda } from './praca1932.js'
 import { ocupacao1932 } from './ocupacao1932.js'
+import { esticamentoJogo, FATOR_PRACA } from './fortaleza1932.js'
 
 // Ligacao entre ruas: a ponta de uma rua se liga a ponta de outra quando estao perto
 // (22 unidades de jogo ~= 60 m) e a rua continua quase em linha reta (a direcao de
 // saida de uma e a de chegada da outra, com 80 graus de folga). Com 16 unidades so
 // 3% da rede se ligava a praca; com 22, 95%.
+// A medida e em unidades do mundo comprimido: perto da praca (que foi
+// descomprimida para 1:1) as ruas estao maiores, entao o limite acompanha o
+// esticamento local de cada ponta.
 const LIGACAO = 22
 const CURVA = 1.4 // radianos (80 graus)
 
 // onde as linhas nascem: as pontas de rua que ficam na borda da praca. O bonde
 // saia da praca pelas ruas do entorno, e nao do meio dela.
-const NA_BORDA = 6 // unidades de folga para a borda da praca
+const NA_BORDA = 6 * FATOR_PRACA // unidades de folga para a borda da praca
 
 // o trilho fica no meio da pista: a cadeia e a linha da testada (a beira do
 // calco), e o meio da pista fica meia largura da rua para dentro. A largura se
@@ -72,9 +76,12 @@ export function construirGrafo() {
     nos.push({ rua: i, ponta: 0, x: primeiro[0], z: primeiro[1], dx: depois[0] - primeiro[0], dz: depois[1] - primeiro[1], viz: [] })
     nos.push({ rua: i, ponta: 1, x: ultimo[0], z: ultimo[1], dx: ultimo[0] - antes[0], dz: ultimo[1] - antes[1], viz: [] })
   }
+  // o esticamento local de cada ponta: perto da praca as ruas estao maiores em
+  // unidades de jogo, e os limites medidos no mundo comprimido valem em metros
+  for (const no of nos) no.estica = esticamentoJogo(no.x, no.z)
   // indice espacial: uma grade de LIGACAO. Cada ponta entra so na sua celula; a
   // busca olha as nove celulas vizinhas.
-  const CEL = LIGACAO
+  const CEL = LIGACAO * FATOR_PRACA
   const grade = new Map()
   const chave = (a, b) => `${a},${b}`
   for (let k = 0; k < nos.length; k++) {
@@ -93,7 +100,8 @@ export function construirGrafo() {
           if (m === k) continue
           const b = nos[m]
           const d = Math.hypot(b.x - a.x, b.z - a.z)
-          if (d > LIGACAO || d < 0.01) continue
+          const lim = LIGACAO * Math.sqrt(a.estica * b.estica)
+          if (d > lim || d < 0.01) continue
           // a rua tem de continuar: a direcao de saida de uma e a de chegada da
           // outra. (A ponta 0 da cadeia e a direcao para dentro dela; a ponta 1 e
           // a direcao para fora. E por isso que a regra vale para as duas
@@ -192,14 +200,16 @@ function rotaDoCaminho(nos, ant, destino) {
 
 // o trilho fica no meio da pista: a cadeia e a testada, e o meio da pista fica meia
 // largura da rua para dentro (a largura se mede na grade de ocupacao de 1932: da
-// testada ate o lote do outro lado).
+// testada ate o lote do outro lado). A medida acompanha a escala local da rua.
 function paraOMeioDaPista(x, z, nx, nz) {
+  const e = esticamentoJogo(x, z)
+  const passo = Math.min(3, 1.5 * e) // a grade de ocupacao tem celula de 3
   let largura = 0
-  for (let d = 1.5; d <= 24; d += 1.5) {
+  for (let d = passo; d <= 24 * e; d += passo) {
     if (ocupacao1932(x + nx * d, z + nz * d) > 1) { largura = d; break }
   }
   if (!largura) return [x, z]
-  const meio = Math.min(largura / 2, MEIA_LARGURA_MAX)
+  const meio = Math.min(largura / 2, MEIA_LARGURA_MAX * e)
   const px = x + nx * meio
   const pz = z + nz * meio
   // na borda da praca a "rua" e a propria praca: o trilho fica na borda, nao entra
@@ -209,6 +219,8 @@ function paraOMeioDaPista(x, z, nx, nz) {
 
 // troca o canto vivo por tres pontos (o trilho faz a curva)
 function arredondar(pontos) {
+  const meio = pontos[Math.floor(pontos.length / 2)]
+  const e = esticamentoJogo(meio[0], meio[1])
   const out = [pontos[0]]
   for (let i = 1; i < pontos.length - 1; i++) {
     const a = pontos[i - 1]
@@ -216,7 +228,7 @@ function arredondar(pontos) {
     const c = pontos[i + 1]
     const d1 = Math.hypot(b[0] - a[0], b[1] - a[1])
     const d2 = Math.hypot(c[0] - b[0], c[1] - b[1])
-    const r = Math.min(1.6, d1 * 0.4, d2 * 0.4)
+    const r = Math.min(1.6 * e, d1 * 0.4, d2 * 0.4)
     if (r < 0.05) { out.push(b); continue }
     const p1 = [b[0] + (a[0] - b[0]) * (r / (d1 || 1)), b[1] + (a[1] - b[1]) * (r / (d1 || 1))]
     const p2 = [b[0] + (c[0] - b[0]) * (r / (d2 || 1)), b[1] + (c[1] - b[1]) * (r / (d2 || 1))]
@@ -266,12 +278,13 @@ export function rotasDosBondes() {
     const fim = b.traco[b.traco.length - 1]
     // o no mais proximo do destino (a rede nao sempre chega ate a ponta: a linha
     // da Praia, por exemplo, morre na orla, onde a planta de 1932 nao tem testada)
+    const raioFim = 40 * esticamentoJogo(fim[0], fim[1])
     let melhor = -1
     let melhorDist = Infinity
     for (let k = 0; k < nos.length; k++) {
       if (!Number.isFinite(dist[k])) continue
       const d = Math.hypot(nos[k].x - fim[0], nos[k].z - fim[1])
-      if (d < 40 && d < melhorDist) { melhorDist = d; melhor = k }
+      if (d < raioFim && d < melhorDist) { melhorDist = d; melhor = k }
     }
     if (melhor < 0) {
       // sem no perto: fica com o alcancavel mais proximo da ponta
@@ -309,10 +322,11 @@ export function rotasDosBondes() {
   for (const [chave, lugar] of Object.entries(LUGARES)) {
     if (!NOMES[chave]) continue
     const [x, z] = lugar.ponto
+    const raio = 18 * esticamentoJogo(x, z)
     for (const pontos of linhas) {
       let achou = -1
       for (let i = 0; i < pontos.length; i++) {
-        if (Math.hypot(pontos[i][0] - x, pontos[i][1] - z) < 18) { achou = i; break }
+        if (Math.hypot(pontos[i][0] - x, pontos[i][1] - z) < raio) { achou = i; break }
       }
       if (achou < 0) continue
       paradas.push({ ponto: pontos[achou], direcao: direcaoDoTrecho(pontos, achou), nome: NOMES[chave] })

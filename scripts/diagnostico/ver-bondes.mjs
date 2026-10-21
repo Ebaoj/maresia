@@ -5,6 +5,7 @@
 
 import { rotasDosBondes } from '../../src/mundo/bondes.js'
 import { CENTRO, dentroDaPraca, distanciaDaBorda } from '../../src/mundo/praca1932.js'
+import { metrosPorUn } from '../../src/mundo/fortaleza1932.js'
 
 const t0 = performance.now()
 const r = rotasDosBondes()
@@ -26,11 +27,14 @@ for (const peca of r.linhas) {
   }
   for (let i = 1; i < peca.length; i++) {
     const d = Math.hypot(peca[i][0] - peca[i - 1][0], peca[i][1] - peca[i - 1][1])
-    if (d >= 10) saltos++
-    if (d > maior) maior = d
+    // o salto em metros de verdade: perto da praca a unidade vale 1 m, na
+    // ponta do mapa vale menos
+    const metros = d / metrosPorUn(peca[i][0], peca[i][1])
+    if (metros >= 10) saltos++
+    if (metros > maior) maior = metros
   }
 }
 console.log(`pontos dentro da praça: ${dentro}`)
 console.log(`distância até a borda da praça: ${bordaMin.toFixed(1)} a ${bordaMax.toFixed(1)} un`)
-console.log(`saltos de 10+ unidades (buracos de rua): ${saltos}  maior: ${maior.toFixed(1)} un`)
+console.log(`saltos de 10+ metros (buracos de rua): ${saltos}  maior: ${maior.toFixed(1)} m`)
 console.log(`centro da praça: ${CENTRO.map((v) => v.toFixed(1)).join(', ')}`)

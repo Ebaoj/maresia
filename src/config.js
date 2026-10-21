@@ -62,9 +62,9 @@ export const PADRAO = {
     raioOclusao: 1.4,
     brilho: 0.7,           // lâmpadas, janelas e sol estouram em halo
     limiarBrilho: 0.95,
-    nevoaDensidade: 0.0022, // névoa em camadas, mais densa embaixo
+    nevoaDensidade: 0.00076, // névoa em camadas, mais densa embaixo: a densidade é por unidade de jogo, e a praca descomprimida levou o centro a 1:1 (fator 2,88)
     nevoaQueda: 0.045,
-    maresia: 0.006,         // ao longe a cor perde saturação e contraste (perspectiva atmosférica)
+    maresia: 0.0021,         // ao longe a cor perde saturação e contraste (perspectiva atmosférica): taxa por metro de verdade, e a praca descomprimida levou o centro a 1:1 (fator 2,88)
     corSombra: '#7f8bb0',  // sombra lavanda clara (direção de arte: sombra com luz rebatida, nunca roxo escuro)
     tomSombra: 0.18,
     corLuz: '#ffd08a',     // luz puxa para o quente
@@ -156,7 +156,7 @@ export const PADRAO = {
     inclinacaoCorrida: 0.05,
   },
   grama: {
-    raio: 38,
+    raio: 109,          // unidades de jogo em volta do jogador: o mundo comprimido valia 38, e a praca descomprimida levou o centro a 1:1 (fator 2,88)
     quantidade: 200000,
     altura: 0.75,
     largura: 0.07,
@@ -192,9 +192,9 @@ export const PADRAO = {
     sombras: true,
     resolucaoSombra: 4096, // 4096 nítida, 2048 mais leve (a sombra é o maior custo do quadro)
     cacheSombra: true,     // KAN-74 (F4): sombra dos objetos parados em cache (só WebGL); refaz com o sol, ao andar mais que cacheSombraRaio ou quando um parado aparece ou some. Ver docs/motor-f4-cache-sombra.md
-    cacheSombraRaio: 15,   // metros que o jogador anda antes de a janela de sombra (60 m) se recentrar; a sombra sempre cobre pelo menos 60 - raio
-    nevoaPerto: 140,
-    nevoaLonge: 900,
+    cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
+    nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
+    nevoaLonge: 2593,
     urubu: {
       alturaGalpao: 5.2,    // altura da parede do galpão de folha de zinco (src/mundo/urubu1932.js)
       alturaCerca: 1.8,     // altura do arame que cerca as tarefas de terra

@@ -11,7 +11,7 @@ import { adicionarCirculo } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { criarAleatorio } from '../utils.js'
 import { instanciarEmBlocos } from './blocos.js'
-import { lugaresJogo } from './fortaleza1932.js'
+import { FATOR_PRACA, lugaresJogo } from './fortaleza1932.js'
 import { LIMITES, pesoCidade1932, linhaCosta } from './mapa.js'
 import { cajueiro, carnauba, mangueVermelho, murici, guajiru, oiti } from './especies.js'
 
@@ -101,7 +101,7 @@ export function criarArvores(cena, predios, grade) {
   for (let k = -9; k <= 9; k++) {
     for (let t = -420; t <= 420; t += rnd.entre(10, 16)) {
       const lado = rnd.chance(0.5) ? 1 : -1
-      const b = (k + 0.5) * pZ + lado * 3.4
+      const b = (k + 0.5) * pZ + lado * 3.4 * FATOR_PRACA
       const x = ox + t * grade.ex[0] + b * grade.ez[0]
       const z = oz + t * grade.ex[1] + b * grade.ez[1]
       if (Math.hypot(x - ox, z - oz) > 480 || pesoCidade1932(x, z) < 0.15) continue

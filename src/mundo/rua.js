@@ -8,7 +8,7 @@ import {
   linhaCosta, larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA, LARG_CALCADAO,
   NIVEL_CIDADE, pesos,
 } from './mapa.js'
-import { trechosJogo } from './fortaleza1932.js'
+import { esticamentoJogo, trechosJogo } from './fortaleza1932.js'
 import { dentroDaPraca } from './praca1932.js'
 import { RUAS, comprimentoRua, pontoNaRua } from './casario1932.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
@@ -118,19 +118,25 @@ function postesEFios(cena, predios, grade) {
   // Os postes ficam nas ruas de verdade: a linha da frente dos lotes de 1932, que
   // e a propria rede viaria da planta. Um poste a cada ~10 unidades (uns 30 m de
   // rua), na beira do calco, e os fios de luz e de bonde ligam um ao outro.
+  // O passo e o recuo seguem a escala local da rua: perto da praca (que foi
+  // descomprimida para 1:1) 10 unidades sao 10 m de verdade, e o poste tem de
+  // ficar a uns 30 m do outro como em qualquer rua.
   const linhas = []
   for (const rua of RUAS) {
     const comp = comprimentoRua(rua)
-    if (comp < 14) continue
+    const [mx, mz] = pontoNaRua(rua, Math.min(comp / 2, 40))
+    const estica = esticamentoJogo(mx, mz)
+    if (comp < 14 * estica) continue
     const atual = []
-    const passo = 10
+    const passo = 10 * estica
+    const recuo = 0.9 * estica
     let ultimoD = -passo // a distancia do ultimo poste aceito: um poste novo so entra
     // depois de um passo inteiro, senao a linha que se quebra deixa dois postes
     // colados na retomada
     for (let d = 0; d <= comp; d += passo) {
       const [x, z, nx, nz] = pontoNaRua(rua, d)
-      const px = x + nx * 0.9
-      const pz = z + nz * 0.9
+      const px = x + nx * recuo
+      const pz = z + nz * recuo
       // a praça é livre: nenhum poste no meio dela, e o fio da rua para na borda
       const naPraca = dentroDaPraca(px, pz)
       const ok = !naPraca && distCosta(px, pz) > larguraPraia(px) + FIM_AVENIDA + 4 && ocupacao.livre(px, pz, 0.5, 0.5)

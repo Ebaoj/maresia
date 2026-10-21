@@ -3,7 +3,7 @@ import {
   LIMITES, alturaBruta, distCosta, larguraPraia, fbm, smooth, mix,
   FIM_AVENIDA, densidadeGrama, rioX, RIO_MEIA_LARGURA, pesoCidade1932,
 } from './mapa.js'
-import { lagoasJogo, lugaresJogo } from './fortaleza1932.js'
+import { FATOR_PRACA, lagoasJogo, lugaresJogo } from './fortaleza1932.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
 import { congelar } from './congelar.js'
 import { ref } from '../render/gpu/comum.js'
@@ -96,9 +96,12 @@ const PALETA = {
 }
 
 const [pfX, pfZ] = lugaresJogo.pracaFerreira
-// calçamento de pedra só no centro de 1932; no resto as ruas eram de areia
+// calçamento de pedra só no centro de 1932; no resto as ruas eram de areia.
+// O raio foi medido no mundo comprimido (260 un = 750 m de centro): com a
+// praça descomprimida, o mesmo centro ocupa FATOR_PRACA vezes mais unidades.
 function calcamento(x, z) {
-  const centro = 1 - smooth(260, 380, Math.hypot(x - pfX, (z - pfZ) * 1.15))
+  const r = Math.hypot(x - pfX, (z - pfZ) * 1.15) / FATOR_PRACA
+  const centro = 1 - smooth(260, 380, r)
   return centro * smooth(0.12, 0.3, pesoCidade1932(x, z))
 }
 
