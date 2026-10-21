@@ -231,7 +231,9 @@ void main() {
   if (uArcane > 0.5) {
     // gradação (visual Arcane): menos lavado, sombras mais fundas; curva em S na luminância, o matiz fica
     float Lg = dot(cor, vec3(0.299, 0.587, 0.114));
-    float Ln = clamp((Lg * uArcExposicao - 0.5) * uArcContraste + 0.5, 0.0, 1.0);
+    // (sertão: o céu não passa pela exposição baixa do mundo; ele tem a própria cor, e a 0,86 o horizonte
+    // desbotado virava cinza de dia nublado em vez de branco de sol)
+    float Ln = clamp((Lg * mix(uArcExposicao, 1.0, ceu) - 0.5) * uArcContraste + 0.5, 0.0, 1.0);
     Ln = mix(Ln, Ln * Ln * (3.0 - 2.0 * Ln), 0.35);
     if (uArcLuzEstrutura > 0.5) {
       // estrutura de valor: a curva em S separa sombra de luz (o valor não é só mais escuro)
@@ -617,12 +619,14 @@ export class Aranhaverso {
     const gl = this.globais
     gl.uArcane.value = arc ? 1 : 0
     gl.uArcLim.value.set(e.arcSombra, e.arcLuz)
-    gl.uArcSuave.value = e.arcSuave
+    // sertão ao meio-dia: a passagem luz/sombra fica mais dura
+    gl.uArcSuave.value = e.arcSuave * (1 - 0.5 * gl.uSertao.value)
     gl.uArcPincel.value = e.arcPincel
     // hora dourada (ceu.js põe o fator em globais.uDourada): sombra mais azul e mais funda, mais contraste
     const dour = gl.uDourada.value
     gl.uArcCorSombra.value.set(e.arcCorSombra).lerp(this._corDourada.set(e.arcDouradaSombra || '#36508a'), dour * 0.6)
-    gl.uArcNiveis.value.set(e.arcNivelSombra * (1 - 0.22 * dour), e.arcNivelMeio, e.arcNivelLuz * (1 + 0.06 * dour))
+    const sert = gl.uSertao.value
+    gl.uArcNiveis.value.set(e.arcNivelSombra * (1 - 0.22 * dour) * (1 - 0.28 * sert), e.arcNivelMeio, e.arcNivelLuz * (1 + 0.06 * dour) * (1 + 0.08 * sert))
     gl.uTexForca.value = e.arcTextura
     // sombra: desde o three 0.182 o PCFShadowMap já é suave e o PCFSoftShadowMap não existe mais (o renderizador
     // volta o tipo para PCF dentro do render). A troca por visual que havia aqui achava o tipo diferente a cada

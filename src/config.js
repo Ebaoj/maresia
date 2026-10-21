@@ -41,10 +41,13 @@ export const PADRAO = {
     arcDouradaAltura: 0.2,       // altura mínima da luz que faz sombra no auge da hora dourada (0,42 = sombra curta de antes)
     arcDouradaContraste: 0.15,   // contraste extra no auge
     // 3b (revisão do orquestrador, alvo forte-1932-joabe): menos véu, céu petróleo, faixa de valor larga, sombra fria
-    arcCeuTopo: '#1c4a63',       // azul petróleo do alto do céu de dia
+    arcCeuTopo: '#1d4a86',       // azul fundo do alto do céu de dia (sertão, 21/10: azul, não mais petróleo '#1c4a63')
     arcCeuPetroleo: 0.85,        // quanto o alto do céu puxa para ele
+    arcCeuRampa: 0.75,           // sertão: altura (seno) em que o azul fundo chega; perto do horizonte o céu fica desbotado e quente (0,45 era o céu petróleo do 3b)
+    arcSertao: 1.0,              // sertão ao meio-dia: sombra curta, dura e escura (luz de céu mais fraca, faixa de sombra mais funda)
+    arcArPoeira: 0.55,           // sertão: de dia a distância vai para a poeira clara e quente do horizonte (0,2 = o azul frio do item 6)
     arcCeuPincel: 1.0,           // item 5: riscos de pincel seco, grão e banco de cúmulos no horizonte
-    arcCeuMeio: '#6fa8bc',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
+    arcCeuMeio: '#d3d9d0',       // a parada do meio do céu (azul claro esverdeado entre o horizonte e o alto)
     arcGradeNeutro: 0.12,        // quanto o neutro puxa para o cal na gradação (0,45 dava véu bege em tudo)
     arcArTinta: 0.5,             // força da cor do ar na distância (0,75 lavava o fundo; item 6 sobe de 0,45 com o ar já frio/dourado)
     arcArClareia: 0.3,           // item 6: quanto o fundo clareia para a cor do ar (perspectiva atmosférica)

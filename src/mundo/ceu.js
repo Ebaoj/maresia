@@ -70,6 +70,7 @@ export function criarCeu(cena) {
     uArcCeu: globais.uArcCeu,
     uArcPintado: globais.uArcPintado,
     uArcCeuPincel: globais.uArcCeuPincel,
+    uCeuRampa: { value: 0.45 },
   }
   const ceu = new THREE.Mesh(
     new THREE.SphereGeometry(1800, 48, 24),
@@ -147,6 +148,7 @@ export function criarCeu(cena) {
 
     uniformes.uTopo.value.copy(p.topo)
     uniformes.uHor.value.copy(p.hor)
+    uniformes.uCeuRampa.value = cfg.estilo.arcCeuRampa ?? 0.45
     // a parada do meio: no visual Arcane, de dia, um azul claro esverdeado; senão o meio do caminho (o de antes)
     uniformes.uMeio.value.copy(p.hor).lerp(p.topo, 0.5)
     if (cfg.estilo.visual === 'arcane') uniformes.uMeio.value.lerp(corMeio.copy(p.topo).lerp(corCiano.set(cfg.estilo.arcCeuMeio || '#6fa8bc'), 0.85), (cfg.estilo.arcCeuPetroleo ?? 0) * (1 - p.noite))
@@ -185,7 +187,11 @@ export function criarCeu(cena) {
     hemi.color.copy(p.ceu)
     hemi.groundColor.copy(p.chao)
     // na hora dourada a luz de céu é mais fraca e mais azul: a sombra afunda e esfria (contraste de valor)
-    hemi.intensity = p.amb * (1 - 0.3 * dourada)
+    // SERTÃO ao meio-dia (direção do Joabe, 21/10: sol branco que cega, sombra curta, dura e escura): com o sol
+    // alto a luz de céu enfraquece e a sombra afunda (globais.uSertao, também lido em aranhaverso.js)
+    const sertao = deDia ? THREE.MathUtils.smoothstep(dirSol.y, 0.55, 0.9) * (cfg.estilo.arcSertao ?? 0) * (cfg.estilo.visual === 'arcane' ? 1 : 0) : 0
+    globais.uSertao.value = sertao
+    hemi.intensity = p.amb * (1 - 0.3 * dourada) * (1 - 0.35 * sertao)
     hemi.color.lerp(corDouradaSombra.set(cfg.estilo.arcDouradaSombra || '#36508a'), dourada * 0.45)
     // 3b: a luz que sobe do chão era areia (marrom) e sujava a sombra; no visual Arcane ela puxa para a luz de céu
     if (cfg.estilo.visual === 'arcane') hemi.groundColor.lerp(hemi.color, cfg.estilo.arcSombraFria ?? 0)
@@ -198,7 +204,8 @@ export function criarCeu(cena) {
     if (cfg.estilo.visual === 'arcane') {
       // PERSPECTIVA DE AR (item 6): de dia a distância esfria para o azul claro do meio do céu; na hora
       // dourada esquenta para o horizonte (o ar fica dourado, como no fundo da referência)
-      globais.uArCor.value.copy(uniformes.uMeio.value).lerp(p.hor, THREE.MathUtils.clamp(0.2 + 0.7 * dourada + 0.4 * p.noite, 0, 1))
+      // (sertão: de dia o ar é poeira clara e quente, arcArPoeira; o azul só como alívio)
+      globais.uArCor.value.copy(uniformes.uMeio.value).lerp(p.hor, THREE.MathUtils.clamp((cfg.estilo.arcArPoeira ?? 0.2) + 0.7 * dourada + 0.4 * p.noite, 0, 1))
     } else {
       globais.uArCor.value.copy(p.hor).lerp(p.topo, 0.45 * (1 - quente))
     }

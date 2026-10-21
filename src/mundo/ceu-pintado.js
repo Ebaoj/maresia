@@ -18,7 +18,7 @@ void main() {
 
 export const fragCeu = /* glsl */ `
 uniform vec3 uTopo; uniform vec3 uHor; uniform vec3 uMeio; uniform vec3 uSolDir; uniform vec3 uSolCor;
-uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu; uniform float uArcPintado; uniform float uArcCeuPincel;
+uniform float uNoite; uniform float uTempo; uniform float uArcane; uniform float uArcCeu; uniform float uArcPintado; uniform float uArcCeuPincel; uniform float uCeuRampa;
 varying vec3 vDir;
 ${SAIDA_LUZ}
 float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
@@ -46,7 +46,8 @@ void main() {
     // ficava quase todo cor de horizonte e o meio-dia virava branco.
     float expoente = mix(0.55, 0.42, uArcPintado);
     // (3b: no céu pintado a curva chega ao alto aos ~27 graus, como na referência; antes só no zênite)
-    float tBase = mix(pow(y, expoente), pow(smoothstep(0.0, 0.45, y), 0.6), uArcPintado);
+    // (sertão, 21/10: o azul fundo só no alto; uCeuRampa = altura em que ele chega, cfg.estilo.arcCeuRampa)
+    float tBase = mix(pow(y, expoente), pow(smoothstep(0.0, uCeuRampa, y), 0.6 + uCeuRampa * 0.6), uArcPintado);
     float t = clamp(tBase + (traco - 0.5) * mix(0.42, 0.16, uArcPintado) * uArcCeu, 0.0, 1.0);
     // três paradas (3b): horizonte, meio claro e alto. Duas paradas misturavam o pêssego do horizonte com o
     // petróleo do alto e davam um cinza barrento no meio; o céu da referência passa por um azul claro
@@ -166,7 +167,8 @@ export function ceuTsl({ W, ref }, u) {
       const traco = largo.mul(0.7).add(fino.mul(0.3))
       // GRADIENTE: o azul desce mais perto do horizonte; só uma faixa fina rente ao chão fica quente
       const expoente = mix(float(0.55), float(0.42), U.uArcPintado)
-      const tBase = mix(pow(y, expoente), pow(smoothstep(0.0, 0.45, y), 0.6), U.uArcPintado)
+      // (sertão: o azul fundo só no alto; uCeuRampa = altura em que ele chega)
+      const tBase = mix(pow(y, expoente), pow(smoothstep(0.0, U.uCeuRampa, y), U.uCeuRampa.mul(0.6).add(0.6)), U.uArcPintado)
       const t = clamp(tBase.add(traco.sub(0.5).mul(mix(float(0.42), float(0.16), U.uArcPintado)).mul(U.uArcCeu)), 0.0, 1.0)
       // três paradas (3b): horizonte, meio claro e alto (duas davam cinza barrento no meio)
       cor.assign(mix(mix(U.uHor, U.uMeio, clamp(t.mul(2.0), 0.0, 1.0)), U.uTopo, clamp(t.mul(2.0).sub(1.0), 0.0, 1.0)))

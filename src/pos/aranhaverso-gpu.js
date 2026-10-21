@@ -353,7 +353,8 @@ function fragTela(W, u, T, uvGL) {
     cor.assign(paraSRGB(cor.mul(U.uExposicao)))
     If(U.uArcane.greaterThan(0.5), () => {
       const Lg = dot(cor, LUM)
-      const Ln = clamp(Lg.mul(U.uArcExposicao).sub(0.5).mul(U.uArcContraste).add(0.5), 0.0, 1.0).toVar()
+      // (sertão: o céu não passa pela exposição baixa do mundo)
+      const Ln = clamp(Lg.mul(mix(U.uArcExposicao, float(1.0), ceu)).sub(0.5).mul(U.uArcContraste).add(0.5), 0.0, 1.0).toVar()
       Ln.assign(mix(Ln, Ln.mul(Ln).mul(float(3.0).sub(Ln.mul(2.0))), 0.35))
       If(U.uArcLuzEstrutura.greaterThan(0.5), () => {
         // estrutura de valor: a curva em S separa sombra de luz (o valor não é só mais escuro)
