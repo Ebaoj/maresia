@@ -17,6 +17,27 @@ export const CAL = {
   telha: '#b5603f',
 }
 
+// O chão de 1932: a rua de terra batida, o quintal de terra com mato ralo
+// atrás das casas, e a areia só na praia e nas dunas (docs/mapa-1932.md).
+// As cores da terra saem da paleta da direção de arte: a taipa da rua, a
+// piúba do quintal; a poeira do meio da rua e o sulco da carroça são do
+// mesmo barro, mais claro e mais socado.
+export const CHAO = {
+  areiaSeca: '#f6d9a0',
+  areiaMolhada: '#d6ab72',
+  duna: '#f8e3b4',
+  rua: '#b8875e',        // terra batida: a rua de 1932 (a cor da taipa)
+  poeira: '#c9a97a',     // o meio da rua, polvilhado pelas rodas
+  rodeiro: '#96683c',    // o sulco da carroça: terra socada, mais escura
+  quintal: '#a08968',    // terra de quintal (a piúba gasta)
+  mato: '#8a8a5e',       // mato ralo do lote abandonado
+  matoSeco: '#96905c',   // o mato do terreno vazio
+  baseGrama: '#3d6e3a',
+  gramaEscura: '#3f7f52',
+  rocha: '#a3909a',
+  lama: '#8e7a5c',
+}
+
 // acentos: no máximo um forte por enquadramento perto da câmera
 export const ACENTO = {
   urucum: '#c2412d',

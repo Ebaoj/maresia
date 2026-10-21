@@ -187,6 +187,15 @@ export const PADRAO = {
     junta: 0.04,       // a fresta de areia entre dois blocos
     desencontro: 0.5,  // quanto a fiada seguinte desliza (0 = fiadas alinhadas, 0.5 = desencontradas)
   },
+  chao: {
+    centroRaio: 650,      // raio (em metros de verdade) do Centro calçado
+    centroBorda: 180,     // a faixa em que o calçamento acaba
+    rodeiroForca: 1.0,    // força do sulco da carroça na rua de terra
+    rodeiroPos: 0.16,     // onde o sulco fica na rua (0 = meio da rua, 0.5 = borda)
+    rodeiroLarg: 0.09,    // a largura do sulco (fração da meia-largura da rua)
+    desgaste: 0.7,        // o quanto o meio da rua está polvilhado pelas rodas
+    mato: 0.55,           // o mato ralo do quintal
+  },
   mundo: {
     passoSombraMin: 4,     // a luz da sombra anda em passos de N minutos de jogo (~1° a cada 4): sem isso a borda das sombras treme; 0 = contínuo
     sombras: true,

@@ -21,6 +21,7 @@ import { criarFaixas } from './mundo/faixas.js'
 import { criarCidade, RECUSA } from './mundo/cidade.js'
 import { criarEstacao } from './mundo/estacao.js'
 import * as ocup1932 from './mundo/ocupacao1932.js'
+import { calcularChao1932 } from './mundo/chao1932.js'
 import { criarFachadas } from './mundo/fachadas.js'
 import { criarRua } from './mundo/rua.js'
 import { criarPraca } from './mundo/praca.js'
@@ -98,6 +99,8 @@ async function iniciar() {
   definirTamBloco(cfg.desempenho.tamBloco, cfg.desempenho.copiasMinBloco, cfg.desempenho.tamBlocoMax)
   await ocup1932.carregarOcupacao1932() // a planta de 1932: onde havia lote, onde era rua (o terreno pergunta isso)
   marcar('ocupacao')
+  calcularChao1932() // o chão da cidade: rua, quintal e o rodeiro da carroça (depende da planta)
+  marcar('chao')
   const terreno = criarTerreno(cena, cfg)
   marcar('terreno')
   const { mapaAltura } = terreno

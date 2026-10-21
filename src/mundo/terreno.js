@@ -3,11 +3,14 @@ import {
   LIMITES, alturaBruta, distCosta, larguraPraia, fbm, smooth, mix,
   FIM_AVENIDA, densidadeGrama, rioX, RIO_MEIA_LARGURA, pesoCidade1932,
 } from './mapa.js'
-import { FATOR_PRACA, lagoasJogo, lugaresJogo } from './fortaleza1932.js'
+import { lagoasJogo } from './fortaleza1932.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
 import { congelar } from './congelar.js'
 import { ref } from '../render/gpu/comum.js'
 import { GLSL_CALAMENTO, GLSL_CALAMENTO_UNIFORM, sincronizarCalamento, tslCalamento, uCalamento } from './calamento.js'
+import { GLSL_RODEIRO, GLSL_RODEIRO_UNIFORM, sincronizarRodeiro, tslRodeiro, uRodeiro } from './rodeiro.js'
+import { CHAO_RUA, CHAO_QUINTAL, maskCentro1932, posicaoNaRua1932, tipoChao1932 } from './chao1932.js'
+import { CHAO } from '../paleta.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
 export const NX = Math.round((x1 - x0) / passo) + 1
@@ -78,61 +81,63 @@ export function inclinacao(x, z) {
 
 const C = (hex) => new THREE.Color(hex)
 const PALETA = {
-  areiaSeca: C('#f6d9a0'),
-  areiaMolhada: C('#d6ab72'),
   fundoMar: C('#c9a46e'),
   grama: C('#7aa85a'),
-  gramaEscura: C('#3f7f52'),
-  baseGrama: C('#3d6e3a'), // mesma cor da base das folhas: o vão entre elas não vira buraco
   mata: C('#1d7a4c'),
-  rocha: C('#a3909a'),
   pedra: C('#d3b08e'),
   pedra2: C('#b98f78'),
-  areiaChao: C('#e9d7ae'),
-  terraBatida: C('#cdb58c'),
-  duna: C('#f8e3b4'),
   serra: C('#3f9a62'),
-  lama: C('#8e7a5c'),
+}
+// as cores do chão mesmo estão na paleta (src/paleta.js): a terra da rua, a
+// terra do quintal, o mato, a areia da praia e da duna
+
+// O calçamento de 1932: paralelepípedo só nas ruas do Centro. O Centro é a
+// distância real até a Praça do Ferreira (a cidade do fim do século XIX era
+// estreita e tinha pedra batida no miolo, terra batida nos bairros).
+function calcamento(x, z, cfg) {
+  if (tipoChao1932(x, z) !== CHAO_RUA) return 0
+  return maskCentro1932(x, z, cfg.chao.centroRaio, cfg.chao.centroBorda)
 }
 
-const [pfX, pfZ] = lugaresJogo.pracaFerreira
-// calçamento de pedra só no centro de 1932; no resto as ruas eram de areia.
-// O raio foi medido no mundo comprimido (260 un = 750 m de centro): com a
-// praça descomprimida, o mesmo centro ocupa FATOR_PRACA vezes mais unidades.
-function calcamento(x, z) {
-  const r = Math.hypot(x - pfX, (z - pfZ) * 1.15) / FATOR_PRACA
-  const centro = 1 - smooth(260, 380, r)
-  return centro * smooth(0.12, 0.3, pesoCidade1932(x, z))
-}
-
-export function corChao(x, z, h, incl, dens, alvo) {
+export function corChao(x, z, h, incl, dens, alvo, cfg) {
   const s = distCosta(x, z)
   const bw = larguraPraia(x)
   const variacao = fbm(x * 0.09, z * 0.09, 2, 71)
   if (s < 0) {
     alvo.copy(PALETA.fundoMar)
   } else if (s < bw) {
-    alvo.copy(PALETA.areiaMolhada).lerp(PALETA.areiaSeca, smooth(0, 7, s))
+    alvo.copy(C(CHAO.areiaMolhada)).lerp(C(CHAO.areiaSeca), smooth(0, 7, s))
   } else {
-    // chão de Fortaleza: areia clara do tabuleiro, batida onde havia gente
-    const cidade = smooth(0.05, 0.3, pesoCidade1932(x, z))
-    alvo.copy(PALETA.areiaChao).lerp(PALETA.terraBatida, cidade * 0.8)
-    // rua da praia: areia batida
-    alvo.lerp(PALETA.terraBatida, 1 - smooth(bw + FIM_AVENIDA, bw + FIM_AVENIDA + 4, s))
+    // O chão de 1932: a rua é terra batida, o quintal atrás das casas é
+    // terra com mato ralo, e o que sobrou fora da cidade é mato seco.
+    // A areia fica só na praia e nas dunas.
+    const tipo = tipoChao1932(x, z)
+    if (tipo === CHAO_RUA) {
+      alvo.copy(C(CHAO.rua))
+    } else if (tipo === CHAO_QUINTAL) {
+      alvo.copy(C(CHAO.quintal))
+      // mato ralo: o quintal abandonado tem manchas de mato
+      const mato = smooth(0.05, 0.5, fbm(x * 0.3, z * 0.3, 2, 23) + 0.5)
+      alvo.lerp(C(CHAO.mato), mato * cfg.chao.mato)
+    } else {
+      alvo.copy(C(CHAO.matoSeco))
+    }
+    // rua da praia: areia batida, mais clara
+    alvo.lerp(C(CHAO.areiaSeca), 1 - smooth(bw + FIM_AVENIDA, bw + FIM_AVENIDA + 4, s))
     // dunas: areia branca, mais clara quanto mais alta
-    alvo.lerp(PALETA.duna, smooth(7, 12, h) * (1 - cidade))
+    alvo.lerp(C(CHAO.duna), smooth(7, 12, h) * (1 - smooth(0.05, 0.3, pesoCidade1932(x, z))))
     // onde tem grama, o chão fica verde
-    alvo.lerp(PALETA.baseGrama.clone().lerp(PALETA.gramaEscura, smooth(-0.3, 0.3, variacao) * 0.4), smooth(0.05, 0.45, dens))
+    alvo.lerp(C(CHAO.baseGrama).lerp(C(CHAO.gramaEscura), smooth(-0.3, 0.3, variacao) * 0.4), smooth(0.05, 0.45, dens))
   }
   // margens do rio e das lagoas: lama de mangue e de várzea
   const dr = Math.abs(x - rioX(z))
-  if (s > 0) alvo.lerp(PALETA.lama, 1 - smooth(RIO_MEIA_LARGURA * 0.9, RIO_MEIA_LARGURA * 1.8, dr))
+  if (s > 0) alvo.lerp(C(CHAO.lama), 1 - smooth(RIO_MEIA_LARGURA * 0.9, RIO_MEIA_LARGURA * 1.8, dr))
   for (const l of lagoasJogo) {
     const q = Math.hypot((x - l.x) / l.rx, (z - l.z) / l.rz)
-    if (q < 1.6) alvo.lerp(PALETA.lama, 1 - smooth(0.9, 1.5, q))
+    if (q < 1.6) alvo.lerp(C(CHAO.lama), 1 - smooth(0.9, 1.5, q))
   }
   // encosta íngreme
-  alvo.lerp(PALETA.rocha, smooth(0.85, 1.3, incl) * 0.5)
+  alvo.lerp(C(CHAO.rocha), smooth(0.85, 1.3, incl) * 0.5)
   // manchas de pintura
   alvo.multiplyScalar(1 + variacao * 0.12)
   return alvo
@@ -146,10 +151,12 @@ export function criarTerreno(cena, cfg) {
   const t0 = performance.now()
   calcularAlturas()
   sincronizarCalamento(cfg)
+  sincronizarRodeiro(cfg)
   const t1 = performance.now()
 
   const cores = new Float32Array(NX * NZ * 3)
   const piso = new Float32Array(NX * NZ)
+  const rota = new Float32Array(NX * NZ) // a posição na rua: 0 no meio, 1 na borda, -1 fora
   const normais = new Float32Array(NX * NZ * 3)
   const cor = new THREE.Color()
   const h = (i, j) => alturas[Math.min(NZ - 1, Math.max(0, j)) * NX + Math.min(NX - 1, Math.max(0, i))]
@@ -170,8 +177,9 @@ export function criarTerreno(cena, cfg) {
       densidades[k] = dens
       const sc = distCosta(x, z)
       areias[k] = sc > -3 && sc < larguraPraia(x) - 0.3 ? 1 : 0
-      corChao(x, z, hh, incl, dens, cor)
-      piso[k] = calcamento(x, z) * (1 - dens) * (sc > larguraPraia(x) + FIM_AVENIDA + 2 ? 1 : 0)
+      corChao(x, z, hh, incl, dens, cor, cfg)
+      piso[k] = calcamento(x, z, cfg) * (1 - dens) * (sc > larguraPraia(x) + FIM_AVENIDA + 2 ? 1 : 0)
+      rota[k] = posicaoNaRua1932(x, z)
       cores[k * 3] = cor.r
       cores[k * 3 + 1] = cor.g
       cores[k * 3 + 2] = cor.b
@@ -190,6 +198,7 @@ export function criarTerreno(cena, cfg) {
     const col = []
     const ps = []
     const ar = []
+    const rt = []
     const idx = []
     const ponto = (i, j, desce) => {
       const ii = Math.min(NX - 1, i0 + i * salto)
@@ -200,6 +209,7 @@ export function criarTerreno(cena, cfg) {
       col.push(cores[k * 3], cores[k * 3 + 1], cores[k * 3 + 2])
       ps.push(piso[k])
       ar.push(areias[k])
+      rt.push(rota[k])
       return pos.length / 3 - 1
     }
     for (let j = 0; j < m; j++) for (let i = 0; i < m; i++) ponto(i, j, 0)
@@ -233,6 +243,7 @@ export function criarTerreno(cena, cfg) {
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
     g.setAttribute('aPiso', new THREE.Float32BufferAttribute(ps, 1))
     g.setAttribute('aAreia', new THREE.Float32BufferAttribute(ar, 1))
+    g.setAttribute('aRota', new THREE.Float32BufferAttribute(rt, 1))
     g.setIndex(idx)
     g.computeBoundingSphere()
     const malha = new THREE.Mesh(g, material)
@@ -264,7 +275,8 @@ export function criarTerreno(cena, cfg) {
     malha: grupo,
     mapaAltura: criarMapaAltura(),
     atualizar(camera) {
-      sincronizarCalamento(cfg) // o painel mexe no calçamento ao vivo
+      sincronizarCalamento(cfg) // o painel mexe no calçamento e no rodeiro ao vivo
+      sincronizarRodeiro(cfg)
       const px = camera.position.x
       const pz = camera.position.z
       for (const p of pedacos) {
@@ -284,15 +296,16 @@ export function criarTerreno(cena, cfg) {
 function materialTerreno() {
   const mat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() })
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uAreiaTerreno, uCalamento)
+    Object.assign(sh.uniforms, uAreiaTerreno, uCalamento, uRodeiro)
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aPiso; varying float vPiso; attribute float aAreia; varying float vAreia;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPiso = aPiso; vAreia = aAreia;')
+      .replace('#include <common>', '#include <common>\nattribute float aPiso; varying float vPiso; attribute float aAreia; varying float vAreia; attribute float aRota; varying float vRota;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPiso = aPiso; vAreia = aAreia; vRota = aRota;')
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        varying float vPiso; varying float vAreia;
+        varying float vPiso; varying float vAreia; varying float vRota;
         uniform vec2 uAreiaCentro; uniform float uAreiaMeia;
         ${GLSL_CALAMENTO_UNIFORM}
+        ${GLSL_RODEIRO_UNIFORM}
         float hPav(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         // dentro do quadrado da areia fina, quem desenha a praia é ela
@@ -300,7 +313,8 @@ function materialTerreno() {
         if (vAreia > 0.7 && max(dA.x, dA.y) < uAreiaMeia) discard;
         if (vPiso > 0.01) {
           ${GLSL_CALAMENTO}
-        }`)
+        }
+        ${GLSL_RODEIRO}`)
   }
   mat.userData.tsl = terrenoTsl()
   // textura pintada (visual Arcane): a mesma da areia fina, senão o quadrado de 24 m em volta do jogador emenda
@@ -316,11 +330,13 @@ function terrenoTsl() {
       return Fn(() => {
         const vPiso = attribute('aPiso', 'float')
         const vAreia = attribute('aAreia', 'float')
+        const vRota = attribute('aRota', 'float')
         const rgb = vec3(rgb0).toVar()
         // dentro do quadrado da areia fina, quem desenha a praia é ela
         const dA = abs(positionWorld.xz.sub(ref(uAreiaTerreno.uAreiaCentro)))
         Discard(vAreia.greaterThan(0.7).and(max(dA.x, dA.y).lessThan(ref(uAreiaTerreno.uAreiaMeia))))
         rgb.assign(tslCalamento(W, rgb, vPiso))
+        rgb.assign(tslRodeiro(W, rgb, vRota, vPiso))
         return rgb
       })()
     },

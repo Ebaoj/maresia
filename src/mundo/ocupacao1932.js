@@ -207,6 +207,14 @@ export function ocupacaoCarregada() {
   return carregado
 }
 
+// A grade de ocupacao pronta, para quem precisa dela inteira (o chao de 1932
+// mede a distancia de cada celula ate a rua). A classe de cada celula: 0
+// vazio, 1 rua, 2+ o uso do lote.
+export function gradeOcupacao1932() {
+  if (!classe) return null
+  return { classe, nx: NX, nz: NZ, x0: LIMITES.x0, z0: LIMITES.z0, passo: CEL }
+}
+
 // o raster desenhado: o minimapa usa para mostrar a planta de 1932 como ela e
 export function malha1932() {
   return desenho

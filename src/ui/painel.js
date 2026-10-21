@@ -232,6 +232,15 @@ export function criarPainel(cfg) {
   cal.add(cfg.calamento, 'junta', 0, 0.12, 0.005).name('junta (m)')
   cal.add(cfg.calamento, 'desencontro', 0, 0.5, 0.05).name('fiadas desencontradas')
 
+  const chao = gui.addFolder('Chão de 1932')
+  chao.add(cfg.chao, 'centroRaio', 0, 1500, 10).name('Centro calçado: raio (m)')
+  chao.add(cfg.chao, 'centroBorda', 0, 600, 10).name('borda do calçamento (m)')
+  chao.add(cfg.chao, 'rodeiroForca', 0, 2, 0.05).name('força do rodeiro da carroça')
+  chao.add(cfg.chao, 'rodeiroPos', 0, 0.5, 0.01).name('rodeiro: onde fica na rua')
+  chao.add(cfg.chao, 'rodeiroLarg', 0.01, 0.3, 0.005).name('rodeiro: largura')
+  chao.add(cfg.chao, 'desgaste', 0, 2, 0.05).name('poeira do meio da rua')
+  chao.add(cfg.chao, 'mato', 0, 1, 0.05).name('mato ralo do quintal')
+
   const urubu = gui.addFolder('Campo do Urubu')
   urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name('altura do galpão (m)')
   urubu.add(cfg.mundo.urubu, 'alturaCerca', 1, 3, 0.1).name('altura do arame (m)')

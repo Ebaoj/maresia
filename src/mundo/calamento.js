@@ -45,8 +45,9 @@ export const GLSL_CALAMENTO = `
     float borda = min(min(fqc.x, 1.0 - fqc.x) * lc, min(fqc.y, 1.0 - fqc.y) * ac);
     float pedra = smoothstep(jc * 0.5, jc * 0.5 + 0.012, borda);
     float tomc = hPav(iqc + 3.1);
-    // pedra do Mucuripe: acinzentada, com algumas mais quentes
-    vec3 baseP = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))) * vec3(1.02, 0.98, 0.93), 0.82);
+    // pedra do Mucuripe: acinzentada, com algumas mais quentes. A pedra e
+    // pedra: a cor da terra de baixo so aparece na sombra da junta.
+    vec3 baseP = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))) * vec3(1.02, 0.98, 0.93), 0.92);
     vec3 c = baseP * mix(0.80, 1.12, tomc) * mix(vec3(1.0), vec3(1.06, 0.97, 0.88), step(0.80, hPav(iqc + 9.7)));
     c *= 1.0 + 0.08 * smoothstep(jc, jc * 3.0, borda) - 0.05; // face do bloco abaulada
     vec3 junta = mix(c * 0.45, vec3(0.70, 0.60, 0.46), 0.45);
@@ -76,7 +77,7 @@ export function tslCalamento(W, rgb, vPiso) {
   const borda = min(min(fqc.x, fqc.oneMinus()).mul(lc), min(fqc.y, fqc.oneMinus()).mul(ac))
   const pedra = smoothstep(jc.mul(0.5), jc.mul(0.5).add(0.012), borda)
   const tomc = hPav(iqc.add(3.1))
-  const baseP = mix(rgb, vec3(dot(rgb, vec3(0.3, 0.59, 0.11))).mul(vec3(1.02, 0.98, 0.93)), 0.82)
+  const baseP = mix(rgb, vec3(dot(rgb, vec3(0.3, 0.59, 0.11))).mul(vec3(1.02, 0.98, 0.93)), 0.92)
   const c = baseP.mul(mix(0.80, 1.12, tomc)).mul(mix(vec3(1.0), vec3(1.06, 0.97, 0.88), step(0.80, hPav(iqc.add(9.7)))))
   c.mulAssign(float(1.0).add(smoothstep(jc, jc.mul(3.0), borda).mul(0.08)).sub(0.05))
   const junta = mix(c.mul(0.45), vec3(0.70, 0.60, 0.46), 0.45)
