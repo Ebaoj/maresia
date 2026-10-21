@@ -3,8 +3,14 @@
 // aqui dentro (cfg.fatia.travar), da água até o fim do primeiro grupo de casas de palha.
 
 import { linhaCosta, larguraPraia } from './mapa.js'
+import { ll } from './fortaleza1932.js'
 
-const CX = 340
+// O lugar real da fatia, em lon/lat (o ponto da costa que x = 340 mostrava até 6b0e58b). Preso a lon/lat,
+// e não a um x do jogo, porque a escala do mapa muda (a Praça do Ferreira 1:1 empurrou tudo a leste
+// dela ~350 un, e a fatia tinha ficado num trecho de praia sem nada: testes/unidade/fatia.test.js).
+export const FATIA_LON = -38.51940234507335
+export const FATIA_LAT = -3.717700056847931
+const CX = ll(FATIA_LON, FATIA_LAT)[0]
 const LARGURA = 100
 const zCosta = linhaCosta(CX)
 export const FATIA = {
