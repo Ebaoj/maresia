@@ -18,14 +18,43 @@ export function fronton(o, chave, x, y, z, w, h, e) {
   o.geo(chave, g)
 }
 
-// a moldura do frontão (as duas águas da cimalha), um pouco à frente do tímpano
-export function molduraFronton(o, chave, x, y, z, w, h, esp = 0.35, prof = 0.5) {
+// a moldura do frontão (as duas águas da cimalha), um pouco à frente do tímpano. sombra: a chave da linha
+// escura pintada debaixo de cada água (a parede dos marcos não recebe sombra, então o relevo da cimalha é
+// desenhado: é a "linha de sombra" dos conceitos)
+export function molduraFronton(o, chave, x, y, z, w, h, esp = 0.35, prof = 0.5, sombra = null) {
   const ang = Math.atan2(h, w / 2)
   const comp = Math.hypot(w / 2, h) + esp
   for (const lado of [-1, 1]) {
     o.caixa(chave, x + (lado * w) / 4, y + h / 2, z, comp, esp, prof, 0, 0, -lado * ang)
+    if (sombra) {
+      // a faixa escura logo abaixo da água, rente ao tímpano
+      const dy = -esp * 0.9 / Math.cos(ang)
+      o.caixa(sombra, x + (lado * w) / 4, y + h / 2 + dy, z - prof / 2 + 0.03, comp - esp * 2, esp * 0.45, 0.05, 0, 0, -lado * ang)
+    }
   }
   o.caixa(chave, x, y - esp / 2, z, w + esp * 2, esp, prof)
+}
+
+// Cornija clássica ao longo de x (de xa a xb), com o pé em y, na face de parede z (olhando para +z):
+// filete, linha de sombra, dentículos, sofito escuro, coroa saliente e cimácio. As faixas escuras são
+// pintadas (a parede não recebe sombra): é o que faz a ordem neoclássica se ler de longe.
+export function cornija(o, { claro, sombra, dente = null }, xa, xb, y, z, s = 1) {
+  const c = Math.abs(xb - xa)
+  const m = (xa + xb) / 2
+  o.caixa(claro, m, y + 0.08 * s, z + 0.06 * s, c, 0.16 * s, 0.12 * s) // filete
+  o.caixa(sombra, m, y + 0.19 * s, z + 0.015, c, 0.06 * s, 0.03) // linha de sombra
+  if (dente) for (let x = Math.min(xa, xb) + 0.25 * s; x < Math.max(xa, xb) - 0.1; x += 0.44 * s) o.caixa(dente, x, y + 0.32 * s, z + 0.11 * s, 0.2 * s, 0.2 * s, 0.22 * s)
+  o.caixa(sombra, m, y + 0.43 * s, z + 0.22 * s, c + 0.1 * s, 0.035 * s, 0.42 * s) // o sofito, por baixo da coroa
+  o.caixa(claro, m, y + 0.56 * s, z + 0.3 * s, c + 0.24 * s, 0.22 * s, 0.6 * s) // coroa
+  o.caixa(claro, m, y + 0.72 * s, z + 0.22 * s, c + 0.12 * s, 0.12 * s, 0.44 * s) // cimácio
+}
+
+// anel deitado (base e capitel de coluna, colar de cúpula), em (x, y, z)
+export function anel(o, chave, x, y, z, r, tubo, lados = 16) {
+  const g = new THREE.TorusGeometry(r, tubo, 6, lados)
+  g.rotateX(Math.PI / 2)
+  g.translate(x, y, z)
+  o.geo(chave, g)
 }
 
 // contorno de um vão (reto ou em arco pleno) no plano xy, com o pé em y0
@@ -61,9 +90,11 @@ export function tramoComVao(o, chaves, x, y, z, w, h, vw, vh, py, e, arco = fals
   s.holes.push(furo)
   o.geo(chaves.parede, pos(new THREE.ExtrudeGeometry(s, { depth: e, bevelEnabled: false, curveSegments: 10 })))
   // a folha, recuada: fecha o vão por trás (porta de madeira, janela de venezianas)
-  const f = new THREE.Shape()
-  contorno(f, 0, py - 0.02, vw + 0.06, vh + 0.04, arco)
-  o.geo(chaves.folha, pos(new THREE.ExtrudeGeometry(f, { depth: 0.08, bevelEnabled: false, curveSegments: 10 }).translate(0, 0, -0.04)))
+  if (chaves.folha) { // sem folha: o vão fica aberto (o campanário)
+    const f = new THREE.Shape()
+    contorno(f, 0, py - 0.02, vw + 0.06, vh + 0.04, arco)
+    o.geo(chaves.folha, pos(new THREE.ExtrudeGeometry(f, { depth: 0.08, bevelEnabled: false, curveSegments: 10 }).translate(0, 0, -0.04)))
+  }
   if (chaves.moldura) {
     // a moldura clara em volta do vão, saliente
     const m = new THREE.Shape()
@@ -76,7 +107,7 @@ export function tramoComVao(o, chaves, x, y, z, w, h, vw, vh, py, e, arco = fals
 }
 
 // cúpula em bulbo (meia-laranja estrangulada), de raio r, sobre (x, y, z); gomos = lados
-export function bulbo(o, chave, x, y, z, r, h, lados = 8) {
+export function bulbo(o, chave, x, y, z, r, h, lados = 8, gomos = 0) {
   const pts = []
   const n = 14
   for (let i = 0; i <= n; i++) {
@@ -85,7 +116,20 @@ export function bulbo(o, chave, x, y, z, r, h, lados = 8) {
     const raio = r * (1 + 0.18 * Math.sin(t * Math.PI * 0.9)) * Math.pow(1 - t, 0.75)
     pts.push(new THREE.Vector2(Math.max(0.02, raio), t * h))
   }
-  const g = new THREE.LatheGeometry(pts, lados)
+  const g = new THREE.LatheGeometry(pts, Math.max(lados, 32))
+  // os gomos: o raio afunda entre as nervuras (8 gomos), para a cúpula ler volume e não ser um balão liso
+  if (gomos) {
+    const p = g.attributes.position
+    for (let i = 0; i < p.count; i++) {
+      const vx = p.getX(i)
+      const vz = p.getZ(i)
+      const a = Math.atan2(vz, vx)
+      const k = 1 - 0.07 * Math.pow(Math.abs(Math.sin(a * gomos / 2)), 0.6)
+      p.setX(i, vx * k)
+      p.setZ(i, vz * k)
+    }
+    g.computeVertexNormals()
+  }
   g.translate(x, y, z)
   o.geo(chave, g)
 }

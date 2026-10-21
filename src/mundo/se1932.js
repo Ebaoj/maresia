@@ -20,7 +20,7 @@ import { CAL, ESQUADRIAS } from '../paleta.js'
 import { PEGADAS } from './lotes-marcos.js'
 import { alturaTerreno } from './terreno.js'
 import { Obra, materiaisObra } from './obra1932.js'
-import { fronton, molduraFronton, tramoComVao, bulbo, cruz, relogio, urna, lampiaoColuna, gradil } from './ornatos1932.js'
+import { fronton, molduraFronton, tramoComVao, bulbo, cruz, relogio, urna, lampiaoColuna, gradil, cornija as cornijaClassica, anel } from './ornatos1932.js'
 import * as THREE from 'three'
 
 export const SE = { largura: 22, torre: 6.5, cornija: 13.2, nave: 11, corredor: 5, comprimento: 42, capela: 9 }
@@ -30,11 +30,15 @@ const TABELA = (c) => ({
   fachada: { tipo: 'reboco', cor: c.corSe, recebe: false },
   branco: { tipo: 'reboco', cor: '#f6f1e6', recebe: false }, // cimalhas, pilastras e molduras: brancas, à parte
   nave: { tipo: 'reboco', cor: CAL.cal, recebe: false },
+  sombra: { cor: '#8a7f86', recebe: false }, // as linhas de sombra pintadas das cornijas e do frontão
+  dente: { cor: '#f6f1e6', detalhe: true, recebe: false },
+  interior: { cor: '#2b272b' }, // o escuro de dentro do campanário
   pedra: { cor: '#b9a888', tex: 'pedra', tam: 2.5, contraste: 0.5 }, // o socco: a barra mais escura
   telha: { tipo: 'telha', cor: CAL.telha },
   porta: { cor: ESQUADRIAS[1] },
   janela: { cor: '#3c4a48' },
-  cupula: { cor: '#e6e0d4', recebe: false },
+  cupula: { cor: '#ebe5da', recebe: false },
+  cupulaEscura: { cor: '#6e6a70', recebe: false }, // colar e janelinhas do lanternim
   sino: { cor: '#6e5a3a' },
   relogio: { cor: '#f2ead6' },
   ferro: { cor: c.corFerro, proprio: true },
@@ -64,22 +68,35 @@ function torre(o, cx, comRelogio) {
   const Tb = T - 0.6
   const h = 4.0
   const e = 0.35
-  tramoComVao(o, { parede: 'fachada', folha: 'janela', moldura: 'branco' }, cx, yb, -0.3 - e, Tb, h, 1.7, 3.1, 0.5, e, true)
-  tramoComVao(o, { parede: 'fachada', folha: 'janela', moldura: 'branco' }, cx, yb, -T + 0.3 + e, Tb, h, 1.7, 3.1, 0.5, e, true, Math.PI)
-  tramoComVao(o, { parede: 'fachada', folha: 'janela', moldura: 'branco' }, cx + Tb / 2 - e, yb, zc, Tb, h, 1.7, 3.1, 0.5, e, true, Math.PI / 2)
-  tramoComVao(o, { parede: 'fachada', folha: 'janela', moldura: 'branco' }, cx - Tb / 2 + e, yb, zc, Tb, h, 1.7, 3.1, 0.5, e, true, -Math.PI / 2)
-  const sino = new THREE.LatheGeometry([[0.05, 0], [0.62, 0], [0.55, 0.15], [0.42, 0.6], [0.36, 1.0], [0.2, 1.15], [0.02, 1.2]].map(([r, y]) => new THREE.Vector2(r, y)), 10)
-  sino.translate(cx, yb + 1.4, zc)
-  o.geo('sino', sino)
+  // os vãos ficam abertos: atrás de cada um, meio metro de vão e o miolo escuro, e um sino pendurado no arco
+  const vao = { parede: 'fachada', moldura: 'branco' }
+  tramoComVao(o, vao, cx, yb, -0.3 - e, Tb, h, 1.7, 3.1, 0.5, e, true)
+  tramoComVao(o, vao, cx, yb, -T + 0.3 + e, Tb, h, 1.7, 3.1, 0.5, e, true, Math.PI)
+  tramoComVao(o, vao, cx + Tb / 2 - e, yb, zc, Tb, h, 1.7, 3.1, 0.5, e, true, Math.PI / 2)
+  tramoComVao(o, vao, cx - Tb / 2 + e, yb, zc, Tb, h, 1.7, 3.1, 0.5, e, true, -Math.PI / 2)
+  o.bloco('interior', cx, yb + 0.3, zc, Tb - 2 * e - 2.1, h - 0.3, Tb - 2 * e - 2.1)
+  o.bloco('interior', cx, yb + 0.02, zc, Tb - 0.1, 0.3, Tb - 0.1) // o piso do campanário
+  const perfilSino = [[0.04, 0], [0.48, 0], [0.43, 0.12], [0.33, 0.48], [0.28, 0.78], [0.15, 0.9], [0.02, 0.95]].map(([r, y]) => new THREE.Vector2(r, y))
+  for (const [sx, sz] of [[0, -0.3 - e - 0.45], [Tb / 2 - e - 0.5, 0], [-(Tb / 2 - e - 0.5), 0]]) {
+    const sino = new THREE.LatheGeometry(perfilSino, 12)
+    sino.translate(cx + sx, yb + 1.9, sz === 0 ? zc : sz)
+    o.geo('sino', sino)
+    o.caixa('interior', cx + sx, yb + 3.0, sz === 0 ? zc : sz, 0.08, 0.3, 0.08) // a haste
+  }
   // cornija do campanário, pináculos nas quinas
   o.bloco('branco', cx, yb + h, zc, T + 0.2, 0.6, T + 0.2)
   for (const lx of [-1, 1]) for (const lz of [-1, 1]) urna(o, 'detalhe', cx + lx * (T / 2 - 0.15), yb + h + 0.6, zc + lz * (T / 2 - 0.15), 1.6)
   // o tambor, o bulbo, o lanternim e a cruz
   const yd = yb + h + 0.6
-  o.cilindro('branco', cx, yd, zc, 2.75, 2.85, 0.6, 16)
-  bulbo(o, 'cupula', cx, yd + 0.6, zc, 2.6, 3.4, 16)
-  o.cilindro('branco', cx, yd + 3.7, zc, 0.42, 0.48, 1.0, 8)
-  bulbo(o, 'cupula', cx, yd + 4.7, zc, 0.5, 0.75, 8)
+  o.cilindro('branco', cx, yd, zc, 2.75, 2.85, 0.6, 24)
+  anel(o, 'cupulaEscura', cx, yd + 0.62, zc, 2.62, 0.1, 32) // o colar escuro na base do bulbo (a aquarela)
+  bulbo(o, 'cupula', cx, yd + 0.6, zc, 2.6, 3.4, 32, 8)
+  o.cilindro('branco', cx, yd + 3.7, zc, 0.42, 0.48, 1.0, 12)
+  for (let k = 0; k < 4; k++) {
+    const a = (k / 4) * Math.PI * 2 + Math.PI / 4
+    o.caixa('cupulaEscura', cx + Math.cos(a) * 0.43, yd + 4.2, zc + Math.sin(a) * 0.43, 0.2, 0.5, 0.2, -a)
+  }
+  bulbo(o, 'cupula', cx, yd + 4.7, zc, 0.5, 0.75, 16, 8)
   cruz(o, 'ferro', cx, yd + 5.35, zc, 1.9, 0.95, 0.09)
 }
 
@@ -109,12 +126,12 @@ function fachada(o) {
   // pilastras, faixa do primeiro andar, cornija e socco
   for (const px of [-W / 2, -W / 2 + T, W / 2 - T, W / 2]) o.bloco('branco', px, 0, 0.1, 0.8, cornija, 0.4)
   o.bloco('branco', 0, 6.8, 0.12, W + 0.4, 0.45, 0.5)
-  o.bloco('branco', 0, cornija - 0.2, 0.15, W + 0.8, 0.5, 0.75)
-  o.bloco('branco', 0, cornija + 0.3, 0.05, W + 1.0, 0.3, 0.9)
+  o.caixa('sombra', 0, 6.75, 0.02, W, 0.06, 0.05) // a sombra pintada sob a faixa do primeiro andar
+  cornijaClassica(o, { claro: 'branco', sombra: 'sombra', dente: 'dente' }, -W / 2 - 0.4, W / 2 + 0.4, cornija - 0.45, 0.3, 1.1)
   o.bloco('pedra', 0, -0.6, 0.15, W + 0.6, 1.2, 0.5)
   // o frontão entre as torres, com o óculo e a cruz
   fronton(o, 'fachada', 0, cornija + 0.6, -1.0, Wc + 0.4, 3.5, 1.0)
-  molduraFronton(o, 'branco', 0, cornija + 0.75, 0.05, Wc + 0.6, 3.5, 0.3, 0.45)
+  molduraFronton(o, 'branco', 0, cornija + 0.75, 0.225, Wc + 0.6, 3.5, 0.32, 0.45, 'sombra')
   const oc = new THREE.TorusGeometry(0.6, 0.14, 6, 16)
   oc.translate(0, cornija + 1.85, 0.06)
   o.geo('branco', oc)
@@ -143,6 +160,7 @@ function corpo(o) {
     o.bloco('nave', xc, -2, zm, C, 11.5, comp)
     o.caixa('telha', xc + lado * 0.2, 9.5 + 0.95, zm, C + 1.4, 0.28, comp + 1, 0, 0, -lado * 0.33) // meia-água, descendo para fora
     o.bloco('branco', lado * (N / 2 + C + 0.05), 9.1, zm, 0.3, 0.4, comp + 0.3) // cimalha
+    o.bloco('pedra', lado * (N / 2 + C + 0.05), -0.6, zm, 0.3, 1.3, comp + 0.3) // o socco
     for (let z = z0 - 3; z > z1 + 1.5; z -= 4.2) {
       for (const y of [2.6, 6.6]) {
         o.caixa('janela', lado * (N / 2 + C + 0.02), y, z, 0.06, 1.9, 1.0)

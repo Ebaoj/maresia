@@ -294,7 +294,7 @@ export const PADRAO = {
       passeio: true,        // o Passeio Público com os três planos
       detalheAte: 170,
       pincel: 0.1,          // pincelada da borda das faixas de luz nas paredes deles (o jogo usa 0,35; em parede grande virava camuflagem)      // metros: além disso gradil, balaústre, estátua e lampião somem (a silhueta fica)
-      corSe: '#b7cbc1',     // fachada verde-acinzentada da aquarela de 1859 e do conceito: a caiação #cddbd6 da paleta com 20% do verde de esquadria #5e8a6e
+      corSe: '#bccfc6',     // fachada verde-acinzentada da aquarela de 1859 e do conceito: a caiação #cddbd6 da paleta com 15% do verde de esquadria #5e8a6e
       corEstacao: '#ebdcba', // creme quente (a meia entre a cal #efe6d2 e o creme #e7d3a3 da paleta): a cor original não tem fonte
       corSombra: '#646fae', // sombra do reboco deles: azul-violeta fria (os conceitos), no lugar do cinza-azulado
       corFerro: '#2b2f2c',  // gradil, poste e grade: ferro escuro (verde quase preto, hipótese)
@@ -353,7 +353,8 @@ function mesclar(base, salvo) {
 // antigo destas chaves e nunca veria o novo. Valor salvo igual ao padrão antigo vira o padrão novo.
 export const PADRAO_MUDOU = [
   ['mundo.passoSombraMin', 4, 0], // 21/10/2026: a sombra dava um tranco a cada 4 s
-  ['mundo.marcosNorte.corSe', '#cddbd6', '#b7cbc1'], // 21/10/2026: reboco dos marcos, cores refeitas pelos conceitos
+  ['mundo.marcosNorte.corSe', '#cddbd6', '#bccfc6'], // 21/10/2026: reboco dos marcos, cores refeitas pelos conceitos
+  ['mundo.marcosNorte.corSe', '#b7cbc1', '#bccfc6'],
   ['mundo.marcosNorte.corEstacao', '#efe6d2', '#ebdcba'],
 ]
 
