@@ -8,10 +8,12 @@
 import { criarMateriais } from './materiais.js'
 import { Mobilia } from './mobiliario.js'
 import { criarPracaReforma } from './praca-reforma.js'
+import { criarExcelsior } from './excelsior.js'
 
 // cada marco: [chave do cfg.marcos que liga, função que monta]. As funções devolvem { grupos, atualizar? }
 const MARCOS = [
   ['pracaReforma', criarPracaReforma],
+  ['excelsior', criarExcelsior],
 ]
 
 export function criarMarcosCentro(cena, cfg) {
