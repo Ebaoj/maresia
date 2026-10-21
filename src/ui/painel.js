@@ -72,6 +72,7 @@ export function criarPainel(cfg) {
   arc.add(e, 'arcPinturaRaio', 1, 8, 0.1).name('pincelada: raio (px)')
   arc.add(e, 'arcPinturaAniso', 0.1, 4, 0.05).name('pincelada: esticar na borda')
   arc.add(e, 'arcPinturaNitidez', 1, 16, 0.5).name('pincelada: borda resiste')
+  arc.add(e, 'arcPinturaBorda', 0, 1, 0.01).name('pincelada: protege bordas')
   arc.add(e, 'arcPinturaMeia').name('pincelada: meia resolução')
   arc.add(e, 'arcPinturaAmostras', [4, 5, 7]).name('pincelada: grade de amostras')
   arc.add(e, 'arcTela', 0, 0.3, 0.005).name('trama da tela')

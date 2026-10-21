@@ -23,7 +23,7 @@ export function fragTensorGpu(W, u, amostra, uvGL) {
 export function fragKuwaharaGpu(W, u, n, amostra, amostraTensor, uvGL) {
   const { Fn, vec2, vec3, vec4, float, sqrt, clamp, max, abs, pow, mix, normalize, dot } = W
   const U = {}
-  for (const k of ['uTexel', 'uRaio', 'uForca', 'uAniso', 'uNitidez']) U[k] = ref(u[k])
+  for (const k of ['uTexel', 'uRaio', 'uForca', 'uAniso', 'uNitidez', 'uBorda']) U[k] = ref(u[k])
   return Fn(() => {
     const orig = amostra(uvGL)
     const peso = orig.a.lessThan(0.7).select(float(0.3), orig.a.lessThan(0.95).select(float(0.6), float(1.0)))
@@ -61,6 +61,12 @@ export function fragKuwaharaGpu(W, u, n, amostra, amostraTensor, uvGL) {
       somaW.addAssign(w)
     }
     const res = soma.div(max(somaW, 1e-6))
-    return vec4(mix(orig.rgb, res.mul(res), U.uForca), orig.a)
+    // BORDA PROTEGIDA: borda forte ou traço fino que o filtro apagaria fica com a imagem original
+    const LUM = vec3(...LUMV)
+    const Lo = dot(sqrt(clamp(orig.rgb, 0.0, 4.0)), LUM)
+    const Lr = dot(res, LUM)
+    const borda = max(W.smoothstep(0.07, 0.18, sqrt(max(l1, 0.0))), W.smoothstep(0.06, 0.16, abs(Lo.sub(Lr))))
+    const forca = U.uForca.mul(float(1.0).sub(borda.mul(U.uBorda)))
+    return vec4(mix(orig.rgb, res.mul(res), forca), orig.a)
   })()
 }

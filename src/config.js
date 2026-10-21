@@ -57,10 +57,11 @@ export const PADRAO = {
     arcAresta: 0.7,              // quina gasta e clara (perto, até ~45 m)
     arcFx2d: 0,                  // item 7: traços de tinta verde e amarela e spray de retícula por cima (fx2d.js); 0 = desligado
     // pincelada na tela (src/pos/pintura.js): Kuwahara anisotrópico sobre a cor da cena, a superfície vira mancha de tinta
-    arcPintura: 1.0,        // força (0 desliga o passe e o custo)
-    arcPinturaRaio: 4.0,    // raio da pincelada, em pixels da imagem (não muda o custo)
+    arcPintura: 0.85,       // força (0 desliga o passe e o custo); 0,85 desde a direção do sertão (21/10): modesto, objeto nítido
+    arcPinturaRaio: 3.0,    // raio da pincelada, em pixels da imagem (não muda o custo)
     arcPinturaAniso: 1.0,   // quanto a pincelada se estica ao longo das bordas (menor = mais esticada)
-    arcPinturaNitidez: 8,   // quanto a borda forte resiste (setor de menor variância ganha)
+    arcPinturaNitidez: 10,  // quanto a borda forte resiste (setor de menor variância ganha)
+    arcPinturaBorda: 1.0,   // protege borda forte e traço fino (fio, poste, rosto) do filtro: a pincelada fica dentro da superfície
     arcPinturaMeia: false,  // passe da pincelada em meia resolução (um quarto do custo, borda mais mole)
     arcPinturaAmostras: 4,  // grade de amostras: 4 (12 amostras, padrão para o M1), 5 (21) ou 7 (37, mais limpo e mais caro)
     arcTela: 0.05,          // trama da tela de pintura por cima de tudo
