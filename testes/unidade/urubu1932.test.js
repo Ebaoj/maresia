@@ -39,3 +39,21 @@ describe('o Campo do Urubu', () => {
   })
 
 })
+
+// Bug: os três controles "Campo do Urubu" do painel não faziam nada; urubu1932.js lia PADRAO.mundo.urubu em vez do
+// cfg do jogo (corrigido no commit do chão e da terra seca, 21/10/2026). Com o cfg, a gente do campo segue o número.
+describe('o Campo do Urubu lê o config do jogo', () => {
+  it('a quantidade de gente vem de cfg.mundo.urubu.gente', async () => {
+    const THREE = await import('three')
+    const { criarUrubu1932 } = await import('../../src/mundo/urubu1932.js')
+    const conta = (gente) => {
+      const cena = new THREE.Scene()
+      criarUrubu1932(cena, { mundo: { urubu: { alturaGalpao: 5.2, alturaCerca: 1.8, gente } } })
+      let n = 0
+      cena.traverse((o) => { if (o.name === 'urubu-gente') n += o.count })
+      return n
+    }
+    expect(conta(0)).toBe(0)
+    expect(conta(10)).toBe(10)
+  })
+})

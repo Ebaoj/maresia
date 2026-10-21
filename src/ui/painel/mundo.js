@@ -16,6 +16,20 @@ export function secaoMundo(gui, cfg) {
   chao.add(cfg.chao, 'rodeiroPos', 0, 0.5, 0.01).name('rodeiro: onde fica na rua')
   chao.add(cfg.chao, 'rodeiroLarg', 0.01, 0.3, 0.005).name('rodeiro: largura')
 
+  const rel = mundo.addFolder('Relevo do chão')
+  rel.add(cfg.chao, 'relevo', 0, 2, 0.05).name('força geral')
+  rel.add(cfg.chao, 'relevoAreia', 0, 2, 0.05).name('areia: ondulação e riscos')
+  rel.add(cfg.chao, 'relevoTerra', 0, 2, 0.05).name('terra: torrões, pedrisco, sulco')
+  rel.add(cfg.chao, 'relevoPedra', 0, 2, 0.05).name('paralelepípedo: topo e junta')
+  rel.add(cfg.chao, 'relevoRacha', 0, 2, 0.05).name('terra rachada')
+  rel.add(cfg.chao, 'relevoLonge', 10, 200, 5).name('some depois de (m)')
+  rel.add(cfg.chao, 'relevoCor', 0, 1.5, 0.05).name('fresta escura, pedra clara')
+  rel.add(cfg.chao, 'relevoMeioDia', 0, 3, 0.05).name('a mais com o sol a pino')
+  rel.add(cfg.chao, 'ondaAreia', 0.1, 1.2, 0.01).name('onda da areia (m)')
+  rel.add(cfg.chao, 'solto').name('pedrisco, conchas e touceiras em 3D')
+  rel.add(cfg.chao, 'soltoRaio', 5, 120, 1).name('chão solto até (m)')
+  rel.add(cfg.chao, 'soltoDensidade', 0, 3, 0.1).name(rec('chão solto: quantidade'))
+
   const cal = mundo.addFolder('Calçamento (paralelepípedo)')
   cal.add(cfg.calamento, 'bloco', 0.1, 0.8, 0.01).name('bloco: comprimento (m)')
   cal.add(cfg.calamento, 'largura', 0.05, 0.4, 0.01).name('bloco: altura da fiada (m)')
@@ -49,8 +63,9 @@ export function secaoMundo(gui, cfg) {
   it.add(cfg.interacao, 'ventoCoqueiros', 0, 3, 0.01).name('vento nas folhas e roupas')
 
   const urubu = mundo.addFolder('Campo do Urubu')
-  urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name('altura do galpão (m)')
-  urubu.add(cfg.mundo.urubu, 'alturaCerca', 1, 3, 0.1).name('altura do arame (m)')
-  urubu.add(cfg.mundo.urubu, 'gente', 0, 60, 1).name('gente no campo')
+  // o campo é montado uma vez, quando o mundo nasce (urubu1932.js lê o cfg): só muda ao recarregar
+  urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name(rec('altura do galpão (m)'))
+  urubu.add(cfg.mundo.urubu, 'alturaCerca', 1, 3, 0.1).name(rec('altura do arame (m)'))
+  urubu.add(cfg.mundo.urubu, 'gente', 0, 60, 1).name(rec('gente no campo'))
   return mundo
 }

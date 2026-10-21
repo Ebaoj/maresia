@@ -15,7 +15,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { toonVertice } from '../materiais.js'
 import { instanciarEmBlocos } from './blocos.js'
 import { adicionarCaixa } from './colisao.js'
-import { alturaTerreno } from './terreno.js'
+import { alturaTerreno, materialChao } from './terreno.js'
+import { congelar } from './congelar.js'
 import { criarAleatorio } from '../utils.js'
 import { CAMPO_URUBU, llInverso } from './mapa1932.js'
 import { ll } from './fortaleza1932.js'
@@ -27,7 +28,8 @@ import { PADRAO } from '../config.js'
 const ZINCO = '#c4c0b4'
 const ZINCO_ESCURO = '#a29d90'
 const ARAME = '#8a8578'
-const TERRA = '#d3c19b'
+// a terra das tarefas, revolvida e mais escura que o chão batido do campo (conceito-sertão 3)
+const TERRA_TAREFA = CAL.taipa
 
 // quantos metros de verdade vale uma unidade de jogo aqui (o mapa é comprimido)
 export function escalaNoCampo (x, z) {
@@ -169,7 +171,17 @@ function chaoDaTarefa (x, z, l, p, ang, r) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
   g.setIndex(idx)
   g.computeVertexNormals()
-  return colorir(g, TERRA)
+  // a terra da tarefa usa o material do chão (terreno.js): o mesmo relevo pintado, com torrões de terra revolvida
+  // e a rachadura da seca (relevo-chao.js); os atributos que o material do chão lê vão junto
+  const t = colorir(g, TERRA_TAREFA)
+  const n = t.attributes.position.count
+  const solo = new Float32Array(n * 4)
+  for (let i = 0; i < n; i++) solo.set([0, 0.65, 0.35, 0], i * 4)
+  t.setAttribute('aSolo', new THREE.BufferAttribute(solo, 4))
+  t.setAttribute('aPiso', new THREE.BufferAttribute(new Float32Array(n), 1))
+  t.setAttribute('aAreia', new THREE.BufferAttribute(new Float32Array(n), 1))
+  t.setAttribute('aRota', new THREE.BufferAttribute(new Float32Array(n).fill(-1), 1))
+  return t
 }
 
 // a cerca do campo: o arame de contorno, com o portão da triagem no lado da cidade
@@ -212,8 +224,9 @@ function cercaDoCampo (vertices, vao) {
   return mergeGeometries(partes)
 }
 
-export function criarUrubu1932 (cena) {
-  const cfg = PADRAO.mundo.urubu
+// cfg: o config do jogo (o painel mexe nele; vale ao recarregar). Sem ele, o padrão
+export function criarUrubu1932 (cena, cfgJogo = null) {
+  const cfg = cfgJogo?.mundo?.urubu ?? PADRAO.mundo.urubu
   const rnd = criarAleatorio(1932)
   const mat = toonVertice()
   const um = new THREE.Vector3(1, 1, 1)
@@ -271,8 +284,11 @@ export function criarUrubu1932 (cena) {
     }
   }
   instanciarEmBlocos(cena, geometriaCerca(tl, tp, cfg.alturaCerca), mat, cercas, null, { nome: 'urubu-cercas' })
-  // a terra das 20 tarefas é uma malha só, já no lugar do mundo
-  instanciarEmBlocos(cena, mergeGeometries(chaos), mat, [new THREE.Matrix4()], null, { nome: 'urubu-terra' })
+  // a terra das 20 tarefas é uma malha só, já no lugar do mundo, com o material do chão
+  const terra = new THREE.Mesh(mergeGeometries(chaos), materialChao() || mat)
+  terra.name = 'urubu-terra'
+  terra.receiveShadow = true
+  cena.add(congelar(terra))
 
   // ---- cozinha, posto e capela ----
   for (const c of CAMPO_URUBU.construcoes) {

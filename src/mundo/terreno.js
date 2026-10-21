@@ -1,22 +1,24 @@
 import * as THREE from 'three'
-import {
-  LIMITES, alturaBruta, distCosta, larguraPraia, fbm, smooth, mix,
-  FIM_AVENIDA, densidadeGrama, rioX, RIO_MEIA_LARGURA, pesoCidade1932,
-} from './mapa.js'
-import { lagoasJogo } from './fortaleza1932.js'
+import { LIMITES, alturaBruta, distCosta, larguraPraia, mix, FIM_AVENIDA, densidadeGrama } from './mapa.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
 import { congelar } from './congelar.js'
 import { ref } from '../render/gpu/comum.js'
-import { GLSL_CALAMENTO, GLSL_CALAMENTO_UNIFORM, sincronizarCalamento, tslCalamento, uCalamento } from './calamento.js'
+import { GLSL_CALAMENTO, GLSL_CALAMENTO_PIXEL, GLSL_CALAMENTO_UNIFORM, sincronizarCalamento, tslCalamento, uCalamento } from './calamento.js'
 import { GLSL_RODEIRO, GLSL_RODEIRO_UNIFORM, sincronizarRodeiro, tslRodeiro, uRodeiro } from './rodeiro.js'
-import { CHAO_RUA, CHAO_QUINTAL, maskCentro1932, posicaoNaRua1932, tipoChao1932 } from './chao1932.js'
-import { CHAO } from '../paleta.js'
+import { posicaoNaRua1932 } from './chao1932.js'
+import { calcamento, corChao, soloChao } from './solo-chao.js'
+import { GLSL_RELEVO_UNIFORM, GLSL_RELEVO_FUNCOES, glslRelevo, sincronizarRelevo, tslRelevo, uRelevo } from './relevo-chao.js'
 
 const { x0, x1, z0, z1, passo } = LIMITES
 export const NX = Math.round((x1 - x0) / passo) + 1
 export const NZ = Math.round((z1 - z0) / passo) + 1
 export const alturas = new Float32Array(NX * NZ)
 const densidades = new Float32Array(NX * NZ)
+// por vértice: o peso de cada tipo de chão (areia, terra, terra rachada, grama), o paralelepípedo e a posição na
+// rua; o chão solto (chao-solto.js) escolhe por aqui o que espalhar
+const solosG = new Float32Array(NX * NZ * 4)
+const pisoG = new Float32Array(NX * NZ)
+const rotaG = new Float32Array(NX * NZ)
 const areias = new Float32Array(NX * NZ) // 1 = praia (areia que afunda)
 
 // A malha fina de areia (areia.js) ocupa um quadrado em volta do jogador; ali o chão grosso some.
@@ -72,6 +74,18 @@ export function resumoRetangulo(xa, za, xb, zb, saida) {
   return saida
 }
 
+// O chão no vértice mais perto: { solo: [areia, terra, rachada, grama], piso, rota }. Só depois de criarTerreno.
+export function amostraSolo(x, z, alvo = { solo: [0, 0, 0, 0], piso: 0, rota: -1 }) {
+  const i = Math.round((x - x0) / passo)
+  const j = Math.round((z - z0) / passo)
+  if (i < 0 || j < 0 || i >= NX || j >= NZ) { alvo.solo.fill(0); alvo.piso = 0; alvo.rota = -1; return alvo }
+  const k = j * NX + i
+  for (let c = 0; c < 4; c++) alvo.solo[c] = solosG[k * 4 + c]
+  alvo.piso = pisoG[k]
+  alvo.rota = rotaG[k]
+  return alvo
+}
+
 export function inclinacao(x, z) {
   const e = 1.5
   const hx = alturaTerreno(x + e, z) - alturaTerreno(x - e, z)
@@ -79,69 +93,9 @@ export function inclinacao(x, z) {
   return Math.hypot(hx, hz) / (2 * e)
 }
 
-const C = (hex) => new THREE.Color(hex)
-const PALETA = {
-  fundoMar: C('#c9a46e'),
-  grama: C('#7aa85a'),
-  mata: C('#1d7a4c'),
-  pedra: C('#d3b08e'),
-  pedra2: C('#b98f78'),
-  serra: C('#3f9a62'),
-}
-// as cores do chão mesmo estão na paleta (src/paleta.js): a terra da rua, a
-// terra do quintal, o mato, a areia da praia e da duna
-
-// O calçamento de 1932: paralelepípedo só nas ruas do Centro. O Centro é a
-// distância real até a Praça do Ferreira (a cidade do fim do século XIX era
-// estreita e tinha pedra batida no miolo, terra batida nos bairros).
-function calcamento(x, z, cfg) {
-  if (tipoChao1932(x, z) !== CHAO_RUA) return 0
-  return maskCentro1932(x, z, cfg.chao.centroRaio, cfg.chao.centroBorda)
-}
-
-export function corChao(x, z, h, incl, dens, alvo, cfg) {
-  const s = distCosta(x, z)
-  const bw = larguraPraia(x)
-  const variacao = fbm(x * 0.09, z * 0.09, 2, 71)
-  if (s < 0) {
-    alvo.copy(PALETA.fundoMar)
-  } else if (s < bw) {
-    alvo.copy(C(CHAO.areiaMolhada)).lerp(C(CHAO.areiaSeca), smooth(0, 7, s))
-  } else {
-    // O chão de 1932: a rua é terra batida, o quintal atrás das casas é
-    // terra com mato ralo, e o que sobrou fora da cidade é mato seco.
-    // A areia fica só na praia e nas dunas.
-    const tipo = tipoChao1932(x, z)
-    if (tipo === CHAO_RUA) {
-      alvo.copy(C(CHAO.rua))
-    } else if (tipo === CHAO_QUINTAL) {
-      alvo.copy(C(CHAO.quintal))
-      // mato ralo: o quintal abandonado tem manchas de mato
-      const mato = smooth(0.05, 0.5, fbm(x * 0.3, z * 0.3, 2, 23) + 0.5)
-      alvo.lerp(C(CHAO.mato), mato * cfg.chao.mato)
-    } else {
-      alvo.copy(C(CHAO.matoSeco))
-    }
-    // rua da praia: areia batida, mais clara
-    alvo.lerp(C(CHAO.areiaSeca), 1 - smooth(bw + FIM_AVENIDA, bw + FIM_AVENIDA + 4, s))
-    // dunas: areia branca, mais clara quanto mais alta
-    alvo.lerp(C(CHAO.duna), smooth(7, 12, h) * (1 - smooth(0.05, 0.3, pesoCidade1932(x, z))))
-    // onde tem grama, o chão fica verde
-    alvo.lerp(C(CHAO.baseGrama).lerp(C(CHAO.gramaEscura), smooth(-0.3, 0.3, variacao) * 0.4), smooth(0.05, 0.45, dens))
-  }
-  // margens do rio e das lagoas: lama de mangue e de várzea
-  const dr = Math.abs(x - rioX(z))
-  if (s > 0) alvo.lerp(C(CHAO.lama), 1 - smooth(RIO_MEIA_LARGURA * 0.9, RIO_MEIA_LARGURA * 1.8, dr))
-  for (const l of lagoasJogo) {
-    const q = Math.hypot((x - l.x) / l.rx, (z - l.z) / l.rz)
-    if (q < 1.6) alvo.lerp(C(CHAO.lama), 1 - smooth(0.9, 1.5, q))
-  }
-  // encosta íngreme
-  alvo.lerp(C(CHAO.rocha), smooth(0.85, 1.3, incl) * 0.5)
-  // manchas de pintura
-  alvo.multiplyScalar(1 + variacao * 0.12)
-  return alvo
-}
+// o material do chão, para quem desenha chão por cima do terreno (a terra das tarefas do Campo do Urubu)
+let _material = null
+export function materialChao() { return _material }
 
 // O terreno é montado em pedaços de 96 m (48 células). Cada pedaço tem duas malhas: a detalhada
 // (passo 2 m) perto da câmera e a simples (passo 8 m) longe, com uma saia vertical que esconde a
@@ -152,11 +106,14 @@ export function criarTerreno(cena, cfg) {
   calcularAlturas()
   sincronizarCalamento(cfg)
   sincronizarRodeiro(cfg)
+  sincronizarRelevo(cfg)
   const t1 = performance.now()
 
   const cores = new Float32Array(NX * NZ * 3)
-  const piso = new Float32Array(NX * NZ)
-  const rota = new Float32Array(NX * NZ) // a posição na rua: 0 no meio, 1 na borda, -1 fora
+  const piso = pisoG
+  const rota = rotaG // a posição na rua: 0 no meio, 1 na borda, -1 fora
+  const solos = solosG // areia, terra, terra rachada, grama (relevo-chao.js)
+  const solo = [0, 0, 0, 0]
   const normais = new Float32Array(NX * NZ * 3)
   const cor = new THREE.Color()
   const h = (i, j) => alturas[Math.min(NZ - 1, Math.max(0, j)) * NX + Math.min(NX - 1, Math.max(0, i))]
@@ -180,6 +137,8 @@ export function criarTerreno(cena, cfg) {
       corChao(x, z, hh, incl, dens, cor, cfg)
       piso[k] = calcamento(x, z, cfg) * (1 - dens) * (sc > larguraPraia(x) + FIM_AVENIDA + 2 ? 1 : 0)
       rota[k] = posicaoNaRua1932(x, z)
+      soloChao(x, z, hh, dens, solo)
+      solos.set(solo, k * 4)
       cores[k * 3] = cor.r
       cores[k * 3 + 1] = cor.g
       cores[k * 3 + 2] = cor.b
@@ -188,6 +147,7 @@ export function criarTerreno(cena, cfg) {
 
   const t2 = performance.now()
   const material = materialTerreno()
+  _material = material
   const grupo = new THREE.Group()
   grupo.name = 'terreno'
   const pedacos = []
@@ -199,6 +159,7 @@ export function criarTerreno(cena, cfg) {
     const ps = []
     const ar = []
     const rt = []
+    const sl = []
     const idx = []
     const ponto = (i, j, desce) => {
       const ii = Math.min(NX - 1, i0 + i * salto)
@@ -210,6 +171,7 @@ export function criarTerreno(cena, cfg) {
       ps.push(piso[k])
       ar.push(areias[k])
       rt.push(rota[k])
+      sl.push(solos[k * 4], solos[k * 4 + 1], solos[k * 4 + 2], solos[k * 4 + 3])
       return pos.length / 3 - 1
     }
     for (let j = 0; j < m; j++) for (let i = 0; i < m; i++) ponto(i, j, 0)
@@ -244,6 +206,7 @@ export function criarTerreno(cena, cfg) {
     g.setAttribute('aPiso', new THREE.Float32BufferAttribute(ps, 1))
     g.setAttribute('aAreia', new THREE.Float32BufferAttribute(ar, 1))
     g.setAttribute('aRota', new THREE.Float32BufferAttribute(rt, 1))
+    g.setAttribute('aSolo', new THREE.Float32BufferAttribute(sl, 4))
     g.setIndex(idx)
     g.computeBoundingSphere()
     const malha = new THREE.Mesh(g, material)
@@ -277,6 +240,7 @@ export function criarTerreno(cena, cfg) {
     atualizar(camera) {
       sincronizarCalamento(cfg) // o painel mexe no calçamento e no rodeiro ao vivo
       sincronizarRodeiro(cfg)
+      sincronizarRelevo(cfg)
       const px = camera.position.x
       const pz = camera.position.z
       for (const p of pedacos) {
@@ -296,35 +260,52 @@ export function criarTerreno(cena, cfg) {
 function materialTerreno() {
   const mat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() })
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uAreiaTerreno, uCalamento, uRodeiro)
+    Object.assign(sh.uniforms, uAreiaTerreno, uCalamento, uRodeiro, uRelevo)
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aPiso; varying float vPiso; attribute float aAreia; varying float vAreia; attribute float aRota; varying float vRota;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPiso = aPiso; vAreia = aAreia; vRota = aRota;')
+      .replace('#include <common>', '#include <common>\nattribute float aPiso; varying float vPiso; attribute float aAreia; varying float vAreia; attribute float aRota; varying float vRota; attribute vec4 aSolo; varying vec4 vSolo;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPiso = aPiso; vAreia = aAreia; vRota = aRota; vSolo = aSolo;')
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        varying float vPiso; varying float vAreia; varying float vRota;
+        varying float vPiso; varying float vAreia; varying float vRota; varying vec4 vSolo;
         uniform vec2 uAreiaCentro; uniform float uAreiaMeia;
         ${GLSL_CALAMENTO_UNIFORM}
         ${GLSL_RODEIRO_UNIFORM}
+        ${GLSL_RELEVO_UNIFORM}
+        ${GLSL_RELEVO_FUNCOES}
         float hPav(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         // dentro do quadrado da areia fina, quem desenha a praia é ela
         vec2 dA = abs(vPMundo.xz - uAreiaCentro);
         if (vAreia > 0.7 && max(dA.x, dA.y) < uAreiaMeia) discard;
+        ${GLSL_CALAMENTO_PIXEL}
         if (vPiso > 0.01) {
           ${GLSL_CALAMENTO}
         }
         ${GLSL_RODEIRO}`)
+      // relevo pintado (relevo-chao.js): a normal ganha a altura fina de cada tipo de chão
+      .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>' + glslRelevo({
+        solo: 'vSolo', piso: 'vPiso', rota: 'vRota', molhada: 'vSolo.x * (1.0 - smoothstep(0.1, 0.45, vPMundo.y))',
+      }))
   }
   mat.userData.tsl = terrenoTsl()
   // textura pintada (visual Arcane): a mesma da areia fina, senão o quadrado de 24 m em volta do jogador emenda
-  return texturizar(pintar(mat, 'terreno-pintado'), { topo: 'areia', lado: 'pedra', tam: 3, contraste: 1.4, massa: 0.9 })
+  // (21/10/2026: contraste 1,4 -> 0,6: a covinha da textura de areia se repetia a cada 3 m em toda rua e quintal; o
+  // volume do chão agora vem do relevo pintado, relevo-chao.js. A areia fina, areia.js, usa os mesmos números)
+  return texturizar(pintar(mat, 'terreno-pintado'), { topo: 'areia', lado: 'pedra', tam: 3, contraste: 0.6, massa: 0.9 })
 }
 
 // O mesmo trecho de cor em TSL, para o modo webgpu (motor F2, KAN-68)
 function terrenoTsl() {
+  // o relevo: um nó só, usado na cor (fresta escura, pedra clara) e na normal da luz
+  let R = null
+  const relevo = (W) => R || (R = tslRelevo(W, {
+    solo: W.attribute('aSolo', 'vec4'), piso: W.attribute('aPiso', 'float'), rota: W.attribute('aRota', 'float'),
+    molhada: W.attribute('aSolo', 'vec4').x.mul(W.float(1.0).sub(W.smoothstep(0.1, 0.45, W.positionWorld.y))),
+    nMundo: W.normalWorld,
+  }))
   return {
     nome: 'terreno',
+    normal({ W }) { return relevo(W).normal },
     cor({ W }, rgb0) {
       const { Fn, vec2, vec3, abs, max, attribute, positionWorld, Discard } = W
       return Fn(() => {
@@ -337,6 +318,7 @@ function terrenoTsl() {
         Discard(vAreia.greaterThan(0.7).and(max(dA.x, dA.y).lessThan(ref(uAreiaTerreno.uAreiaMeia))))
         rgb.assign(tslCalamento(W, rgb, vPiso))
         rgb.assign(tslRodeiro(W, rgb, vRota, vPiso))
+        rgb.assign(rgb.mul(relevo(W).corFator))
         return rgb
       })()
     },
@@ -366,4 +348,4 @@ function criarMapaAltura() {
   }
 }
 
-export { mix }
+export { mix, corChao }

@@ -28,6 +28,8 @@ export function sincronizarCalamento(cfg) {
 // A declaracao do uniform vai no escopo global do shader: dentro de um bloco o GLSL
 // recusa ('uniform' : only allowed at global scope) e o terreno inteiro deixa de compilar.
 export const GLSL_CALAMENTO_UNIFORM = 'uniform vec4 uBloco;'
+// o tamanho do pixel no chão (m), calculado antes do if do calçamento: derivada de tela não vale dentro de condição
+export const GLSL_CALAMENTO_PIXEL = 'float fwCal = max(length(dFdx(vPMundo.xz)), length(dFdy(vPMundo.xz)));'
 
 // O trecho GLSL. Precisa de hPav (o hash do terreno) e de vPMundo/cameraPosition.
 export const GLSL_CALAMENTO = `
@@ -53,15 +55,19 @@ export const GLSL_CALAMENTO = `
     vec3 junta = mix(c * 0.45, vec3(0.70, 0.60, 0.46), 0.45);
     c = mix(junta, c, pedra);
     // o bloco tem 30 cm: a mais de ~60 m ele vira chiado, e o chão passa a ser
-    // a cor média da pedra (calçada cinza), não areia
+    // a cor média da pedra (calçada cinza), não areia. Também quando o pixel fica do tamanho da fiada
+    // (câmera rasante): sem isso as fiadas davam moiré em arco a 15 m (21/10/2026; fwCal vem de fora do if)
+    // (a média do desenho, não o cinza claro de longe: o cinza no lugar das fiadas estourava de branco ao meio-dia)
     float longe = 1.0 - smoothstep(60.0, 200.0, distance(cameraPosition, vPMundo));
+    float nitida = 1.0 - smoothstep(0.25, 0.6, fwCal / min(lc, ac));
+    vec3 mediaDesenho = mix(baseP * 0.93, mix(baseP * 0.42, vec3(0.70, 0.60, 0.46), 0.45), clamp(jc * 2.0 / min(lc, ac), 0.0, 0.6));
     vec3 media = mix(baseP, vec3(0.60, 0.58, 0.54), 0.6);
-    diffuseColor.rgb = mix(diffuseColor.rgb, mix(media, c, longe), vPiso);
+    diffuseColor.rgb = mix(diffuseColor.rgb, mix(media, mix(mediaDesenho, c, nitida), longe), vPiso);
   }`
 
 // O mesmo trecho em TSL, para o modo webgpu (motor F2, KAN-68).
 export function tslCalamento(W, rgb, vPiso) {
-  const { Fn, vec2, vec3, float, floor, fract, min, max, smoothstep, mix, step, sin, dot, distance, If, cameraPosition, positionWorld } = W
+  const { Fn, vec2, vec3, float, floor, fract, min, max, smoothstep, mix, step, sin, dot, distance, If, cameraPosition, positionWorld, dFdx, dFdy, length } = W
   const hPav = (p) => fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453))
   const b = ref(uCalamento.uBloco)
   const lc = max(b.x, float(0.02))
@@ -82,11 +88,16 @@ export function tslCalamento(W, rgb, vPiso) {
   c.mulAssign(float(1.0).add(smoothstep(jc, jc.mul(3.0), borda).mul(0.08)).sub(0.05))
   const junta = mix(c.mul(0.45), vec3(0.70, 0.60, 0.46), 0.45)
   c.assign(mix(junta, c, pedra))
-  const longe = float(1.0).sub(smoothstep(60.0, 200.0, distance(cameraPosition, positionWorld)))
   const media = mix(baseP, vec3(0.60, 0.58, 0.54), 0.6)
   return Fn(() => {
+    // o tamanho do pixel no chão fica fora do If (o WGSL recusa derivada dentro de condição)
+    const fwCal = max(length(dFdx(positionWorld.xz)), length(dFdy(positionWorld.xz))).toVar()
+    // (a média do desenho, não o cinza claro de longe: o cinza no lugar das fiadas estourava de branco ao meio-dia)
+    const longe = float(1.0).sub(smoothstep(60.0, 200.0, distance(cameraPosition, positionWorld)))
+    const nitida = float(1.0).sub(smoothstep(0.25, 0.6, fwCal.div(min(lc, ac))))
+    const mediaDesenho = mix(baseP.mul(0.93), mix(baseP.mul(0.42), vec3(0.70, 0.60, 0.46), 0.45), W.clamp(jc.mul(2.0).div(min(lc, ac)), 0.0, 0.6))
     If(vPiso.greaterThan(0.01), () => {
-      rgb.assign(mix(rgb, mix(media, c, longe), vPiso))
+      rgb.assign(mix(rgb, mix(media, mix(mediaDesenho, c, nitida), longe), vPiso))
     })
     return rgb
   })()

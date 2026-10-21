@@ -36,6 +36,7 @@ export const CHAO = {
   gramaEscura: '#3f7f52',
   rocha: '#a3909a',
   lama: '#8e7a5c',
+  terraRachada: '#c99f72', // o chão do Campo do Urubu na seca de 1932: terra clara, batida e rachada (conceito-sertão 3)
 }
 
 // acentos: no máximo um forte por enquadramento perto da câmera

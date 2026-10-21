@@ -44,6 +44,7 @@ import { criarMapa } from './ui/mapa.js'
 import { trechosJogo } from './mundo/fortaleza1932.js'
 import { criarToque } from './mundo/toque.js'
 import { criarAreia } from './mundo/areia.js'
+import { criarChaoSolto } from './mundo/chao-solto.js'
 import { criarFisica } from './mundo/fisica.js'
 import { distCosta as distCostaAreia, larguraPraia as larguraPraiaAreia } from './mundo/mapa.js'
 import { Jogador } from './jogador/controle.js'
@@ -111,7 +112,7 @@ async function iniciar() {
   void criarFaixas
   const { predios, casas, grade, quadras } = criarCidade(cena)
   criarEstacao(cena) // a Estação Central de 1880
-  const urubu = criarUrubu1932(cena) // o Campo do Urubu: galpões, tarefas, cozinha e o portão
+  const urubu = criarUrubu1932(cena, cfg) // o Campo do Urubu: galpões, tarefas, cozinha e o portão
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')
@@ -137,6 +138,8 @@ async function iniciar() {
   marcar('grama')
   const areia = criarAreia(cena, renderer, mapaAltura, cfg)
   marcar('areia')
+  const chaoSolto = criarChaoSolto(cena, cfg) // pedrisco, conchas, torrões e touceiras secas perto da câmera
+  marcar('chaoSolto')
   const fisica = await criarFisica(cena, cfg, { coqueiros, toque, areia })
   marcar('fisica')
 
@@ -302,6 +305,7 @@ async function iniciar() {
     mar.atualizar(jogador.pos)
     grama.atualizar(jogador.pos, camera)
     terreno.atualizar(camera)
+    chaoSolto.atualizar(camera)
     praia.atualizar(t)
     cenografia.atualizar()
     casas.atualizar(camera)

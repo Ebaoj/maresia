@@ -234,6 +234,19 @@ export const PADRAO = {
     rodeiroLarg: 0.09,    // a largura do sulco (fração da meia-largura da rua)
     desgaste: 0.7,        // o quanto o meio da rua está polvilhado pelas rodas
     mato: 0.55,           // o mato ralo do quintal
+    // relevo pintado do chão (src/mundo/relevo-chao.js, 21/10/2026): altura fina que vira luz e sombra
+    relevo: 1.0,          // força geral (0 = o chão liso de antes)
+    relevoAreia: 1.0,     // ondulação do vento, riscos e morrotes na praia e nas dunas
+    relevoTerra: 1.0,     // torrões, pedrisco e o sulco da roda na rua e no quintal
+    relevoPedra: 1.0,     // topo abaulado e junta funda do paralelepípedo
+    relevoRacha: 1.0,     // placas e rachaduras da terra seca (Campo do Urubu)
+    relevoLonge: 70,      // metros em que o relevo some (custo e chiado de longe)
+    relevoCor: 0.8,       // quanto a fresta escurece e a pedra clareia
+    relevoMeioDia: 0.8,   // relevo a mais com o sol a pino (a luz de cima quase não marca inclinação pequena)
+    ondaAreia: 0.34,      // comprimento da ondulação da areia (m)
+    solto: true,          // chão solto em 3D perto da câmera: pedrisco, conchas, torrões e touceiras secas (chao-solto.js)
+    soltoRaio: 40,        // até quantos metros da câmera ele aparece
+    soltoDensidade: 1.0,  // quantas peças (1 = o padrão); vale ao recarregar
   },
   mundo: {
     passoSombraMin: 4,     // a luz da sombra anda em passos de N minutos de jogo (~1° a cada 4): sem isso a borda das sombras treme; 0 = contínuo

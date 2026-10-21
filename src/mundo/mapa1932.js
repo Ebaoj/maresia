@@ -89,6 +89,35 @@ export function dentroDoCampo(x, z) {
   return dentro
 }
 
+// Quanto o ponto é chão do Campo do Urubu: 1 dentro do polígono, caindo a 0 a "margem" unidades de jogo fora dele.
+// O chão do campo é terra seca, batida e rachada (a seca de 1932, quadro docs/referencias/conceito-sertao/3-campo-urubu.png):
+// a grama não nasce aí (mapa.js) e o terreno pinta a terra rachada (terreno.js).
+let _caixaCampo = null
+export function pesoCampoUrubu(x, z, margem = 25) {
+  const p = CAMPO_URUBU.poligono
+  if (!_caixaCampo) {
+    _caixaCampo = [Infinity, Infinity, -Infinity, -Infinity]
+    for (const [px, pz] of p) {
+      _caixaCampo[0] = Math.min(_caixaCampo[0], px); _caixaCampo[1] = Math.min(_caixaCampo[1], pz)
+      _caixaCampo[2] = Math.max(_caixaCampo[2], px); _caixaCampo[3] = Math.max(_caixaCampo[3], pz)
+    }
+  }
+  const [ax, az, bx, bz] = _caixaCampo
+  if (x < ax - margem || x > bx + margem || z < az - margem || z > bz + margem) return 0
+  if (dentroDoCampo(x, z)) return 1
+  // fora: distância até a borda mais perto
+  let d = Infinity
+  for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+    const [x1, z1] = p[j]
+    const [x2, z2] = p[i]
+    const dx = x2 - x1, dz = z2 - z1
+    const t = Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / (dx * dx + dz * dz || 1)))
+    d = Math.min(d, Math.hypot(x - (x1 + t * dx), z - (z1 + t * dz)))
+  }
+  const t = Math.min(1, d / margem)
+  return 1 - t * t * (3 - 2 * t)
+}
+
 // ll() é uma compressão com sentido (x cresce para leste, z cresce para o sul), então
 // dá para inverter: é o que liga um ponto do jogo ao pixel do raster do uso dos lotes.
 // A longitude cresce com x; a latitude cresce com -z.
