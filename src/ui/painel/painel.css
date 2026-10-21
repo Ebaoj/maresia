@@ -1,0 +1,10 @@
+/* Painel de ajustes (tecla H): a barra de busca e a legenda no alto, no estilo do lil-gui */
+.lil-gui .painel-topo { padding: 4px var(--padding) 6px; display: flex; flex-direction: column; gap: 4px; }
+.lil-gui .painel-busca {
+  width: 100%; box-sizing: border-box; height: var(--widget-height);
+  background: var(--widget-color); color: var(--text-color); border: 0; outline: none;
+  border-radius: var(--widget-border-radius); padding: 0 var(--padding);
+  font-family: var(--font-family); font-size: var(--input-font-size);
+}
+.lil-gui .painel-busca:focus { background: var(--focus-color); }
+.lil-gui .painel-legenda { color: var(--text-color); opacity: 0.6; font-size: 11px; line-height: 1.3; }

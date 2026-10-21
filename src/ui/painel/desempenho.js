@@ -1,0 +1,25 @@
+// Seção "Desempenho": renderizador, resolução, blocos de cópias e a sombra.
+// Padrão para controle novo: pasta.add(cfg.grupo, 'chave', min, max, passo).name('nome'); rec('nome') se pede recarregar
+
+import { rec } from './comum.js'
+
+export function secaoDesempenho(gui, cfg) {
+  const d = cfg.desempenho
+  const des = gui.addFolder('Desempenho')
+  des.add(d, 'mostrarFps').name('mostrar FPS')
+  des.add(d, 'renderizador', ['webgl', 'webgpu']).name(rec('renderizador'))
+  des.add(d, 'resolucao', 0.5, 2, 0.05).name('resolução')
+  des.add(d, 'resolucaoDinamica').name('resolução dinâmica')
+  des.add(d, 'resolucaoMin', 0.4, 1.25, 0.05).name('resolução dinâmica: mínima')
+  des.add(d, 'tamBloco', [96, 192, 384]).name(rec('bloco de cópias (m)'))
+  des.add(d, 'motorPlaca').name(rec('árvores na placa (WebGPU)'))
+  des.add(d, 'atoresVat').name(rec('atores em textura (WebGPU)'))
+
+  const sombra = des.addFolder('Sombra')
+  sombra.add(cfg.mundo, 'sombras').name('sombras')
+  sombra.add(cfg.mundo, 'resolucaoSombra', [1024, 2048, 4096]).name('qualidade da sombra')
+  sombra.add(cfg.mundo, 'passoSombraMin', 0, 15, 1).name('sombra anda em passos (min)')
+  sombra.add(cfg.mundo, 'cacheSombra').name('sombra dos parados em cache')
+  sombra.add(cfg.mundo, 'cacheSombraRaio', 5, 40, 1).name('cache da sombra: raio (m)')
+  return des
+}
