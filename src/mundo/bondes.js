@@ -1,5 +1,9 @@
 // As linhas de bonde da Light (1913-1947): as dez linhas que saem da Praca do Ferreira.
 //
+// Este arquivo e o dado: o grafo das ruas, o caminho mais curto e a rota de cada
+// linha. O desenho (trilho, travessa, parada e letreiro) esta em
+// src/mundo/bondes-malha.js.
+//
 // O traco do dado (src/mundo/mapa1932-dados.json) e esquematico: uma reta entre ancoras
 // reais, nao a rota historica. Aqui o trilho e desenhado sobre a rede viaria de verdade
 // da planta de 1932: um grafo das ruas (as cadeias de src/mundo/casario1932.js) e o
@@ -8,15 +12,10 @@
 // Nesta rodada sao so os trilhos no chao e as paradas. O bonde andando fica para a
 // proxima (ver docs/mapa-1932.md).
 
-import * as THREE from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { BONDES, LUGARES } from './mapa1932.js'
 import { RUAS } from './casario1932.js'
-import { alturaTerreno } from './terreno.js'
-import { toon, toonVertice } from '../materiais.js'
-import { colorir } from './cenografia.js'
-import { instanciarEmBlocos } from './blocos.js'
-import { CENTRO as CENTRO_PRACA } from './praca1932.js'
+import { dentroDaPraca, distanciaDaBorda } from './praca1932.js'
+import { ocupacao1932 } from './ocupacao1932.js'
 
 // Ligacao entre ruas: a ponta de uma rua se liga a ponta de outra quando estao perto
 // (22 unidades de jogo ~= 60 m) e a rua continua quase em linha reta (a direcao de
@@ -24,9 +23,16 @@ import { CENTRO as CENTRO_PRACA } from './praca1932.js'
 // 3% da rede se ligava a praca; com 22, 95%.
 const LIGACAO = 22
 const CURVA = 1.4 // radianos (80 graus)
-const BITOLA = 1.0 // a distancia entre os dois trilhos, em unidades de jogo
-const ESPESSURA = 0.14
-const RAIO_PRACA = 30 // onde as linhas nascem: as pontas de rua em volta da praca
+
+// onde as linhas nascem: as pontas de rua que ficam na borda da praca. O bonde
+// saia da praca pelas ruas do entorno, e nao do meio dela.
+const NA_BORDA = 6 // unidades de folga para a borda da praca
+
+// o trilho fica no meio da pista: a cadeia e a linha da testada (a beira do
+// calco), e o meio da pista fica meia largura da rua para dentro. A largura se
+// mede na grade de ocupacao da planta de 1932: da testada ate o lote do outro
+// lado. O deslocamento e limitado, senao o trilho entra na praca.
+const MEIA_LARGURA_MAX = 6 // unidades (uns 17 m)
 
 // o nome das paradas: o dado tem o papel de cada lugar, nao o nome
 const NOMES = {
@@ -88,7 +94,11 @@ export function construirGrafo() {
           const b = nos[m]
           const d = Math.hypot(b.x - a.x, b.z - a.z)
           if (d > LIGACAO || d < 0.01) continue
-          // a rua tem de continuar: a direcao de saida de uma e a de chegada da outra
+          // a rua tem de continuar: a direcao de saida de uma e a de chegada da
+          // outra. (A ponta 0 da cadeia e a direcao para dentro dela; a ponta 1 e
+          // a direcao para fora. E por isso que a regra vale para as duas
+          // pontas: a mesma rua partida em duas cadeias liga ponta 0 com ponta
+          // 1, e as duas faces da mesma rua ligam ponta 0 com ponta 0.)
           const la = Math.hypot(a.dx, a.dz) || 1
           const lb = Math.hypot(b.dx, b.dz) || 1
           const cos = (a.dx * b.dx + a.dz * b.dz) / (la * lb)
@@ -152,31 +162,49 @@ export function dijkstra(nos, origens) {
   return { dist, ant }
 }
 
-// ---------- o caminho em polilinha ----------
+// ---------- a rota ----------
 
-// junta os trechos de rua do caminho e arredonda as curvas, para o trilho nao ficar
-// com o canto vivo
-function polilinhaDoCaminho(nos, ant, destino) {
-  const trechos = []
+// a rota do caminho: as cadeias uma de tras da outra, cada uma percorrida da ponta
+// do no ate a outra ponta. A ordem e da praca para o destino, e a rota e continua
+// (sem vaivem: antes as cadeias vinham ao contrario e a polilinha saltava de um
+// quarteirao para o outro).
+function rotaDoCaminho(nos, ant, destino) {
+  const caminho = []
   let k = destino
-  while (k >= 0) {
-    const no = nos[k]
-    trechos.push(no)
-    k = ant[k]
-  }
+  while (k >= 0) { caminho.push(nos[k]); k = ant[k] }
+  caminho.reverse() // agora vai da origem (a praca) para o destino
   const pontos = []
-  // o caminho vem do destino para a praca: a rua de cada no e percorrida da ponta do
-  // no ate a outra ponta. No fim, a polilinha fica da praca para o destino.
-  for (const no of trechos) {
-    const rua = RUAS[no.rua].pontos
-    const lista = no.ponta === 1 ? [...rua].reverse() : rua
-    for (const p of lista) {
+  for (const no of caminho) {
+    const rua = RUAS[no.rua]
+    const lista = no.ponta === 1
+      ? { pontos: [...rua.pontos].reverse(), normais: [...rua.normais].reverse() }
+      : rua
+    for (let i = 0; i < lista.pontos.length; i++) {
+      const p = lista.pontos[i]
       const ultimo = pontos[pontos.length - 1]
       if (ultimo && Math.hypot(ultimo[0] - p[0], ultimo[1] - p[1]) < 0.01) continue
-      pontos.push([p[0], p[1]])
+      const n = lista.normais[i]
+      pontos.push([p[0], p[1], n[0], n[1]])
     }
   }
-  return arredondar(pontos.reverse())
+  return pontos
+}
+
+// o trilho fica no meio da pista: a cadeia e a testada, e o meio da pista fica meia
+// largura da rua para dentro (a largura se mede na grade de ocupacao de 1932: da
+// testada ate o lote do outro lado).
+function paraOMeioDaPista(x, z, nx, nz) {
+  let largura = 0
+  for (let d = 1.5; d <= 24; d += 1.5) {
+    if (ocupacao1932(x + nx * d, z + nz * d) > 1) { largura = d; break }
+  }
+  if (!largura) return [x, z]
+  const meio = Math.min(largura / 2, MEIA_LARGURA_MAX)
+  const px = x + nx * meio
+  const pz = z + nz * meio
+  // na borda da praca a "rua" e a propria praca: o trilho fica na borda, nao entra
+  if (dentroDaPraca(px, pz)) return [x, z]
+  return [px, pz]
 }
 
 // troca o canto vivo por tres pontos (o trilho faz a curva)
@@ -216,92 +244,18 @@ function comprimento(pontos) {
   return t
 }
 
-// ---------- o desenho ----------
+// ---------- as rotas das linhas ----------
 
-// dois trilhos de aco assentados no paralelepipedo, no caminho da linha.
-// A geometria e montada na mao (um quad no topo e dois de lado por trecho): uma
-// BoxGeometry por trecho custava 178 mil vertices e 1 s de carga.
-// dois trilhos de aco assentados no paralelepipedo, no caminho da linha.
-// A geometria e montada na mao (um quad no topo e dois de lado por trecho): uma
-// BoxGeometry por trecho custava 178 mil vertices e 1 s de carga.
-function geometriaTrilho(linhas) {
-  const pos = []
-  const idx = []
-  let base = 0
-  const quad = (a, b, c, d) => {
-    for (const p of [a, b, c, d]) pos.push(p[0], p[1], p[2])
-    idx.push(base, base + 2, base + 1, base, base + 3, base + 2)
-    base += 4
-  }
-  for (const pontos of linhas) {
-    for (let i = 0; i < pontos.length - 1; i++) {
-      const [x0, z0] = pontos[i]
-      const [x1, z1] = pontos[i + 1]
-      const dx = x1 - x0
-      const dz = z1 - z0
-      const comp = Math.hypot(dx, dz)
-      if (comp < 0.01) continue
-      const nx = -dz / comp
-      const nz = dx / comp
-      const y0 = alturaTerreno(x0, z0) + 0.15
-      const y1 = alturaTerreno(x1, z1) + 0.15
-      for (const lado of [-1, 1]) {
-        const ox = (nx * BITOLA * lado) / 2
-        const oz = (nz * BITOLA * lado) / 2
-        const e = ESPESSURA / 2
-        // o topo do trilho
-        quad(
-          [x0 + ox - nx * e, y0, z0 + oz - nz * e],
-          [x1 + ox - nx * e, y1, z1 + oz - nz * e],
-          [x1 + ox + nx * e, y1, z1 + oz + nz * e],
-          [x0 + ox + nx * e, y0, z0 + oz + nz * e]
-        )
-        // as duas laterais, para o trilho ter volume de um ponto de vista baixo
-        quad(
-          [x0 + ox - nx * e, y0, z0 + oz - nz * e],
-          [x1 + ox - nx * e, y1, z1 + oz - nz * e],
-          [x1 + ox - nx * e, y1 - 0.05, z1 + oz - nz * e],
-          [x0 + ox - nx * e, y0 - 0.05, z0 + oz - nz * e]
-        )
-        quad(
-          [x0 + ox + nx * e, y0, z0 + oz + nz * e],
-          [x0 + ox + nx * e, y0 - 0.05, z0 + oz + nz * e],
-          [x1 + ox + nx * e, y1 - 0.05, z1 + oz + nz * e],
-          [x1 + ox + nx * e, y1, z1 + oz + nz * e]
-        )
-      }
-    }
-  }
-  if (!pos.length) return null
-  const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
-  g.setIndex(idx)
-  g.computeVertexNormals()
-  return g
-}
-
-// as travessas de madeira: sem elas o trilho some de longe (9 cm de acao viram
-// um pixel a 40 m)
-function geometriaTravessa() {
-  return new THREE.BoxGeometry(BITOLA + 0.34, 0.07, 0.2).translate(0, 0.035, 0)
-}
-
-// a parada: um poste de madeira com a placa, no chao de paralelepipedo
-function geometriaParada() {
-  const partes = []
-  partes.push(colorir(new THREE.CylinderGeometry(0.08, 0.1, 2.3, 6).translate(0, 1.15, 0), '#7a6248'))
-  partes.push(colorir(new THREE.BoxGeometry(0.9, 0.34, 0.05).translate(0, 2.05, 0), '#e9dcc0'))
-  partes.push(colorir(new THREE.BoxGeometry(0.9, 0.05, 0.09).translate(0, 2.24, 0), '#3b3038'))
-  return mergeGeometries(partes.map((g) => g.toNonIndexed()))
-}
-
-export function criarBondes(cena) {
+// As rotas: cada linha da Light sai da borda da praca e segue as ruas de verdade.
+// O trilho nunca entra na praca (ela era o jardim e o coreto): se a rota cutting
+// atravessar, o pedaco de dentro e descartado.
+export function rotasDosBondes() {
   const nos = construirGrafo()
-  // as origens: as pontas de rua em volta da praca do Ferreira
+  // as origens: as pontas de rua na borda da praca
   const origens = []
   for (let k = 0; k < nos.length; k++) {
-    const d = Math.hypot(nos[k].x - CENTRO_PRACA[0], nos[k].z - CENTRO_PRACA[1])
-    if (d < RAIO_PRACA && d > 6) origens.push({ no: k, custo: d })
+    const borda = Math.abs(distanciaDaBorda(nos[k].x, nos[k].z))
+    if (borda < NA_BORDA) origens.push({ no: k, custo: borda })
   }
   const { dist, ant } = dijkstra(nos, origens)
 
@@ -328,25 +282,26 @@ export function criarBondes(cena) {
       }
     }
     if (melhor < 0) { relatorio.push({ nome: b.nome, erro: 'sem caminho' }); continue }
-    const pontos = polilinhaDoCaminho(nos, ant, melhor)
-    if (pontos.length < 2) { relatorio.push({ nome: b.nome, erro: 'caminho vazio' }); continue }
-    // o trilho comeca na borda da praca: o coreto fica no meio, entao o bonde para
-    // antes dele
-    let corte = 0
-    for (let i = 0; i < pontos.length; i++) {
-      if (Math.hypot(pontos[i][0] - CENTRO_PRACA[0], pontos[i][1] - CENTRO_PRACA[1]) < 6) { corte = i; break }
-    }
-    const trecho = corte > 0 ? pontos.slice(corte) : pontos
-    linhas.push(trecho)
-    paradas.push({ ponto: trecho[0], direcao: direcaoDoTrecho(trecho, 0), nome: 'Praça do Ferreira' })
-    paradas.push({ ponto: trecho[trecho.length - 1], direcao: direcaoDoTrecho(trecho, trecho.length - 1), nome: b.nome })
+    const crua = rotaDoCaminho(nos, ant, melhor)
+    if (crua.length < 2) { relatorio.push({ nome: b.nome, erro: 'caminho vazio' }); continue }
+    // o trilho no meio da pista
+    const pontos = crua.map(([x, z, nx, nz]) => paraOMeioDaPista(x, z, nx, nz))
+    // o trilho nao entra na praca: o pedaco de dentro e descartado
+    const pecas = foraDaPraca(pontos)
+    if (!pecas.length) { relatorio.push({ nome: b.nome, erro: 'rota dentro da praca' }); continue }
+    for (const peca of pecas) linhas.push(peca)
+    const primeira = pecas[0]
+    const ultima = pecas[pecas.length - 1]
+    paradas.push({ ponto: primeira[0], direcao: direcaoDoTrecho(primeira, 0), nome: 'Praça do Ferreira' })
+    paradas.push({ ponto: ultima[ultima.length - 1], direcao: direcaoDoTrecho(ultima, ultima.length - 1), nome: b.nome })
     relatorio.push({
       nome: b.nome,
-      pontos: trecho.length,
-      comprimento: Math.round(comprimento(trecho)),
+      pontos: pecas.reduce((t, p) => t + p.length, 0),
+      pedacos: pecas.length,
+      comprimento: Math.round(comprimento(primeira)),
       sobra: Math.round(melhorDist), // quanto falta para a ponta nominal do dado
-      comeca: trecho[0].map((v) => Math.round(v)),
-      termina: trecho[trecho.length - 1].map((v) => Math.round(v)),
+      comeca: primeira[0].map((v) => Math.round(v)),
+      termina: ultima[ultima.length - 1].map((v) => Math.round(v)),
     })
   }
 
@@ -366,57 +321,23 @@ export function criarBondes(cena) {
     }
   }
 
-  // as travessas de madeira, atravessadas na via
-  const matrizesTravessa = []
-  const m4 = new THREE.Matrix4()
-  const q = new THREE.Quaternion()
-  const Y = new THREE.Vector3(0, 1, 0)
-  for (const pontos of linhas) {
-    for (let i = 0; i < pontos.length - 1; i++) {
-      const [x0, z0] = pontos[i]
-      const [x1, z1] = pontos[i + 1]
-      const comp = Math.hypot(x1 - x0, z1 - z0)
-      if (comp < 0.05) continue
-      const ang = -Math.atan2(z1 - z0, x1 - x0)
-      q.setFromAxisAngle(Y, ang)
-      for (let d = 0; d < comp; d += 0.45) {
-        const t = d / comp
-        const x = x0 + (x1 - x0) * t
-        const z = z0 + (z1 - z0) * t
-        matrizesTravessa.push(m4.clone().compose(
-          new THREE.Vector3(x, alturaTerreno(x, z) + 0.13, z), q, new THREE.Vector3(1, 1, 1)
-        ))
-      }
+  return { linhas, paradas, relatorio }
+}
+
+// a parte da rota que fica fora da praca (a praca e o jardim e o coreto: o bonde
+// passava pelas ruas do entorno). Se a rota atravessar a praca, ela quebra em
+// pedacos: o trilho nao existe dentro da praca.
+function foraDaPraca(pontos) {
+  const pecas = []
+  let atual = []
+  for (const p of pontos) {
+    if (dentroDaPraca(p[0], p[1])) {
+      if (atual.length > 1) pecas.push(arredondar(atual))
+      atual = []
+      continue
     }
+    atual.push(p)
   }
-  if (matrizesTravessa.length) {
-    instanciarEmBlocos(cena, geometriaTravessa(), toon('#5e4529'), matrizesTravessa, null, { nome: 'travessas-bonde' })
-  }
-
-  // o desenho
-  const geo = geometriaTrilho(linhas)
-  if (geo) {
-    const matTrilho = toon('#38352f', { side: THREE.DoubleSide })
-    const malha = new THREE.Mesh(geo, matTrilho)
-    malha.name = 'trilhos-bonde'
-    malha.receiveShadow = true
-    cena.add(malha)
-  }
-  // as paradas, cada uma no seu lugar
-  if (paradas.length) {
-    const matrizes = paradas.map(({ ponto: [x, z], direcao }) => {
-      // na calçada, 1,4 unidade para o lado do trilho
-      const px = x + -direcao[1] * 1.4
-      const pz = z + direcao[0] * 1.4
-      return new THREE.Matrix4().makeTranslation(px, alturaTerreno(px, pz), pz)
-    })
-    const malha = new THREE.InstancedMesh(geometriaParada(), toonVertice(), matrizes.length)
-    matrizes.forEach((m, i) => malha.setMatrixAt(i, m))
-    malha.instanceMatrix.needsUpdate = true
-    malha.name = 'paradas-bonde'
-    malha.castShadow = true
-    cena.add(malha)
-  }
-
-  return { linhas: linhas.length, paradas: paradas.length, relatorio }
+  if (atual.length > 1) pecas.push(arredondar(atual))
+  return pecas
 }
