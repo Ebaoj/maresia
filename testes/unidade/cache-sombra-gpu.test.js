@@ -97,6 +97,22 @@ describe('cache de sombra no WebGPU', () => {
     expect(t.cache.alvoEstatico.width).toBe(64)
   })
 
+  // Bug 21/10/2026 (sombra nítida): trocar a qualidade da sombra no painel com o WebGPU deixava o alvo em cache no
+  // tamanho velho; a cópia de 4096 para 2048 era recusada pelo WebGPU em todo quadro (sem sombra de parado).
+  it('com o mapa em tamanho novo, o alvo em cache e o mapa vivo ficam do mesmo tamanho antes da cópia', () => {
+    const t = montar()
+    t.malha('casa', true)
+    t.noSol.shadowMap.setSize = function (w, h) { this.width = w; this.height = h }
+    t.quadro()
+    t.sol.shadow.mapSize.set(32, 32) // o céu troca o tamanho pedido; o mapa vivo do ShadowNode ainda é o velho
+    const p = t.quadro()
+    const copia = p.find((x) => x.tipo === 'copia')
+    expect(copia).toBeTruthy()
+    expect(t.cache.alvoEstatico.width).toBe(32)
+    expect(t.noSol.shadowMap.width).toBe(32)
+    expect(t.cache.stats.motivos.tamanho).toBe(1)
+  })
+
   it('quadros seguintes sem mudança não refazem o mapa dos parados: só cópia e dinâmicos', () => {
     const t = montar()
     t.malha('casa', true); t.malha('neto', false)

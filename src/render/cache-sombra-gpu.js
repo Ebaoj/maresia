@@ -84,6 +84,12 @@ export class CacheSombraGpu {
     }
     const t0 = performance.now()
     const shadow = no.shadow
+    // tamanho novo (painel, "qualidade da sombra"): o mapa vivo só mudava de tamanho dentro do passe de sempre,
+    // depois de o alvo em cache já ter sido refeito no tamanho velho; a cópia de 4096 para 2048 ficava inválida
+    // em todo quadro (erro de validação do WebGPU, 21/10/2026). O mapa vivo muda antes, e o alvo acompanha.
+    if (mapa.setSize && (mapa.width !== shadow.mapSize.width || mapa.height !== shadow.mapSize.height)) {
+      mapa.setSize(shadow.mapSize.width, shadow.mapSize.height, mapa.depth)
+    }
     const chave = shadow.mapSize.width * 4096 + shadow.camera.right
     const assinatura = assinaturaEstaticos()
     if (!this.refazer) {
