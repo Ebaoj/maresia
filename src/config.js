@@ -316,7 +316,7 @@ export const PADRAO = {
     corRebote: '#ffc98a',      // a cor dessa luz (a pedra e a cal ao sol da tarde)
     corMajestic: '#a3563f',    // vermelho-tijolo do cartão colorizado de 1925 (indício, não prova)
     corModerno: '#e4d3b0',     // ocre muito claro (sem imagem livre da fachada)
-    corMercado: '#6b2b27',     // vermelho-escuro (memória de Otacílio de Azevedo)
+    corMercado: '#8a2f28',     // vermelho-escuro sangue-de-boi (memória de Otacílio de Azevedo); #6b2b27 lia marrom-preto
     corChapa: '#7a4636',       // a chapa da cobertura do mercado, pintada de zarcão (HIPÓTESE pelo conceito aprovado)
     corFerro: '#2b2724',       // ferro fundido pintado de escuro (postes, grades, sacadas)
     corBronze: '#4a4236',      // jarros bronzeados da balaustrada dos Leões

@@ -65,7 +65,7 @@ export const MARCOS = {
   excelsior: '#f2e2c0',
   majestic: '#a3563f',
   moderno: '#e4d3b0',
-  mercado: '#6b2b27',
+  mercado: '#8a2f28',
   chapa: '#7a4636',
   ferro: '#2b2724',
   bronze: '#4a4236',

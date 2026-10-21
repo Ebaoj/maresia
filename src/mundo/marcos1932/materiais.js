@@ -33,6 +33,7 @@ const RECEITAS = {
   rosario: [CAL.cal, 'cal', 2.0],
   palacio: ['#f1ead8', 'cal', 2.5],
   mercado: ['corMercado', null],
+  mercadoFundo: ['#4f1f1b', null], // a chapa do fundo das venezianas, na sombra do vermelho
   chapa: ['corChapa', null],
   mosaicoClaro: ['corMosaicoClaro', 'pedra', 0.6],
   mosaicoEscuro: ['corMosaicoEscuro', 'pedra', 0.6],

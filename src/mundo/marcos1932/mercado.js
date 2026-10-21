@@ -54,19 +54,53 @@ function maoFrancesa(obra, x, z, lado) {
   obra.add('mercado', new THREE.TorusGeometry(0.22, 0.04, 4, 10).translate(x + lado * 0.42, BEIRAL - 0.42, z))
 }
 
-// faixa de venezianas metálicas entre y0 e y1, ao longo de x (face z) ou de z (face x)
+// faixa de venezianas metálicas entre y0 e y1, ao longo de x (face z) ou de z (face x): o painel de chapa de
+// fundo (fica de longe: é ele que enche a parede alta e o lanternim) e as lâminas inclinadas na frente
 function venezianas(obra, a0, a1, fixo, y0, y1, eixo) {
-  const n = Math.floor((y1 - y0) / 0.22)
   const comp = a1 - a0
   const meio = (a0 + a1) / 2
+  const alt = y1 - y0
+  const fundo = new THREE.BoxGeometry(eixo === 'x' ? comp : 0.02, alt, eixo === 'x' ? 0.02 : comp)
+  obra.add('mercadoFundo', fundo.translate(eixo === 'x' ? meio : fixo, y0 + alt / 2, eixo === 'x' ? fixo : meio))
+  // a moldura do painel
+  for (const yy of [y0, y1]) {
+    const g = new THREE.BoxGeometry(eixo === 'x' ? comp : 0.08, 0.08, eixo === 'x' ? 0.08 : comp)
+    obra.add('mercado', g.translate(eixo === 'x' ? meio : fixo, yy, eixo === 'x' ? fixo : meio))
+  }
+  const n = Math.floor(alt / 0.17)
   for (let i = 0; i < n; i++) {
-    const y = y0 + (i + 0.5) * ((y1 - y0) / n)
-    const g = new THREE.BoxGeometry(eixo === 'x' ? comp : 0.03, 0.16, eixo === 'x' ? 0.03 : comp)
+    const y = y0 + (i + 0.5) * (alt / n)
+    const g = new THREE.BoxGeometry(eixo === 'x' ? comp : 0.04, 0.15, eixo === 'x' ? 0.04 : comp)
     if (eixo === 'x') g.rotateX(0.6)
     else g.rotateZ(-0.6)
     obra.add('mercadoFino', g.translate(eixo === 'x' ? meio : fixo, y, eixo === 'x' ? fixo : meio))
   }
   obra.detalhe.add('mercadoFino')
+}
+
+// o lambrequim: a franja de chapa recortada em gotas pendurada sob o beiral (o friso do conceito)
+const GOTA = (() => {
+  const s = new THREE.Shape()
+  s.moveTo(-0.13, 0)
+  s.lineTo(0.13, 0)
+  s.lineTo(0.13, -0.28)
+  s.quadraticCurveTo(0.1, -0.42, 0, -0.5)
+  s.quadraticCurveTo(-0.1, -0.42, -0.13, -0.28)
+  s.lineTo(-0.13, 0)
+  const furo = new THREE.Path()
+  furo.absarc(0, -0.2, 0.06, 0, Math.PI * 2, false)
+  s.holes.push(furo)
+  return new THREE.ExtrudeGeometry(s, { depth: 0.025, bevelEnabled: false, curveSegments: 4 })
+})()
+function lambrequim(obra, a0, a1, fixo, y, eixo) {
+  for (let a = a0 + 0.15; a < a1; a += 0.3) {
+    const g = GOTA.clone()
+    if (eixo === 'z') g.rotateY(Math.PI / 2)
+    obra.add('mercadoFino', g.translate(eixo === 'x' ? a : fixo, y, eixo === 'x' ? fixo : a))
+  }
+  // a régua de onde a franja pende
+  const r = new THREE.BoxGeometry(eixo === 'x' ? a1 - a0 : 0.06, 0.14, eixo === 'x' ? 0.06 : a1 - a0)
+  obra.add('mercado', r.translate(eixo === 'x' ? (a0 + a1) / 2 : fixo, y + 0.07, eixo === 'x' ? fixo : (a0 + a1) / 2))
 }
 
 export function criarMercado(cena, cfg, mats, mobilia) {
@@ -106,13 +140,37 @@ export function criarMercado(cena, cfg, mats, mobilia) {
     obra.caixa('mercado', 0, 4.3, (s * W) / 2, L + 0.2, 0.18, 0.22)
     venezianas(obra, -L / 2, L / 2, (s * W) / 2, 4.4, BEIRAL - 0.2, 'x')
     obra.caixa('mercado', (s * L) / 2, 4.3, 0, 0.22, 0.18, W)
+    // o lambrequim sob o beiral dos dois lados compridos e sob a linha da empena
+    lambrequim(obra, -L / 2 - 0.6, L / 2 + 0.6, s * (W / 2 + 0.5), BEIRAL - 0.05, 'x')
+    lambrequim(obra, -W / 2, W / 2, s * (L / 2 + 0.2), BEIRAL - 0.25, 'z')
+    // a arcada: um arco entre cada par de colunas, com o tímpano vazado da viga de 4,3 m
+    // arco abatido: raio de 3,6 m com a corda no vão entre as colunas, o fecho encostado na viga
+    const rA = 3.6
+    const t0 = Math.acos((MODULO / 2 - 0.15) / rA)
+    for (let x = -L / 2; x < L / 2 - 0.1; x += MODULO) {
+      const arco = new THREE.TorusGeometry(rA, 0.09, 5, 16, Math.PI - 2 * t0).rotateZ(t0)
+      obra.add('mercado', arco.translate(x + MODULO / 2, 4.3 - rA, (s * W) / 2))
+    }
   }
   // as empenas: tímpano de venezianas e o portal alto em arco no meio
   for (const s of [-1, 1]) {
     const x = (s * L) / 2
-    for (const z of [-9, -3, 3, 9]) {
-      const top = BEIRAL + (cume - BEIRAL) * (1 - (Math.abs(z) + 3) / (W / 2))
-      venezianas(obra, z - 3, z + 3, x, BEIRAL + 0.25, Math.max(BEIRAL + 0.6, top), 'z')
+    // o tímpano inteiro: o painel triangular de chapa e as lâminas encurtando até a cumeeira
+    const tri = new THREE.Shape()
+    tri.moveTo(-W / 2, 0)
+    tri.lineTo(W / 2, 0)
+    tri.lineTo(0, cume - BEIRAL)
+    tri.lineTo(-W / 2, 0)
+    obra.add('mercadoFundo', new THREE.ExtrudeGeometry(tri, { depth: 0.02, bevelEnabled: false }).rotateY(Math.PI / 2).translate(x, BEIRAL + 0.1, 0))
+    for (let yy = BEIRAL + 0.25; yy < cume - 0.1; yy += 0.17) {
+      const meia = (W / 2) * (1 - (yy - BEIRAL - 0.1) / (cume - BEIRAL)) - 0.15
+      if (meia < 0.2) break
+      const g = new THREE.BoxGeometry(0.04, 0.15, meia * 2).rotateZ(-0.6)
+      obra.add('mercadoFino', g.translate(x + s * 0.03, yy, 0))
+    }
+    for (const z of [-8, -4, 0, 4, 8]) {
+      const top = BEIRAL + 0.1 + (cume - BEIRAL) * (1 - Math.abs(z) / (W / 2))
+      obra.caixa('mercado', x + s * 0.05, (BEIRAL + top) / 2, z, 0.08, top - BEIRAL, 0.08)
     }
     const arco = new THREE.TorusGeometry(3.0, 0.14, 6, 18, Math.PI).rotateY(Math.PI / 2).translate(x, 4.3, 0)
     obra.add('mercado', arco)
