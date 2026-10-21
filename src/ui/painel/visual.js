@@ -1,0 +1,107 @@
+// Seção "Visual": a chave entre os dois estilos e os ajustes de cada um.
+// Padrão para controle novo: pasta.add(cfg.estilo, 'chave', min, max, passo).name('nome'); rec('nome') se pede recarregar
+
+import { rec } from './comum.js'
+
+export function secaoVisual(gui, cfg) {
+  const e = cfg.estilo
+  const visual = gui.addFolder('Visual')
+  visual.add(e, 'visual', ['arcane', 'quadrinho']).name(rec('estilo'))
+
+  // Arcane: pintor de luz nos materiais (docs/pesquisa-arcane.md)
+  const arc = visual.addFolder('Arcane')
+  arc.add(e, 'arcExposicao', 0.5, 1.5, 0.01).name('exposição')
+  arc.add(e, 'arcContraste', 0.6, 2, 0.01).name('contraste')
+  arc.add(e, 'arcSaturacao', 0, 2, 0.01).name('saturação')
+  arc.add(e, 'arcSombra', 0, 1, 0.01).name('limite da sombra')
+  arc.add(e, 'arcLuz', 0, 1.5, 0.01).name('limite da luz')
+  arc.add(e, 'arcSuave', 0, 0.3, 0.005).name('passagem entre faixas')
+  arc.add(e, 'arcPincel', 0, 1, 0.01).name('pincelada na borda')
+  arc.addColor(e, 'arcCorSombra').name('cor da sombra')
+  arc.add(e, 'arcNivelSombra', 0, 1.2, 0.01).name('força da sombra')
+  arc.add(e, 'arcNivelMeio', 0, 1.5, 0.01).name('força do meio-tom')
+  arc.add(e, 'arcNivelLuz', 0, 2, 0.01).name('força da luz')
+  arc.add(e, 'arcRecorte', 0, 2, 0.05).name('luz de recorte')
+  arc.add(e, 'arcAr', 0, 4, 0.05).name('profundidade de ar')
+  arc.add(e, 'arcCeu', 0, 2, 0.05).name('céu pintado')
+  arc.add(e, 'arcTextura', 0, 2, 0.05).name('textura pintada do mundo')
+  arc.add(e, 'arcLinha', 0, 1, 0.01).name('contorno da silhueta')
+  arc.add(e, 'arcGrao', 0, 0.2, 0.005).name('grão de filme')
+  arc.add(e, 'reflexoLente', 0, 3, 0.05).name('reflexo de lente (sol)')
+
+  // Quadrinho: o filtro Aranhaverso (src/pos/aranhaverso.js)
+  const quad = visual.addFolder('Quadrinho')
+  quad.add(e, 'tonsLuz', [2, 3, 5]).name(rec('degraus de luz'))
+
+  const traco = quad.addFolder('Traço de nanquim')
+  traco.add(e, 'espessuraLinha', 0.5, 4, 0.05).name('espessura')
+  traco.add(e, 'intensidadeTinta', 0, 1, 0.01).name('força')
+  traco.add(e, 'pesoCenario', 0, 1, 0.01).name('força no cenário')
+  traco.addColor(e, 'corTinta').name('cor da tinta')
+  traco.add(e, 'tremorLinha', 0, 4, 0.05).name('tremor')
+  traco.add(e, 'fpsTraco', 1, 24, 1).name('redesenhos por segundo')
+  traco.add(e, 'distanciaLinha', 40, 800, 5).name('alcance (m)')
+  traco.add(e, 'limiarProfundidade', 0.01, 0.4, 0.005).name('sensibilidade: silhueta')
+  traco.add(e, 'limiarNormal', 0.05, 1, 0.01).name('sensibilidade: dobras')
+
+  const ret = quad.addFolder('Retícula e hachura')
+  ret.add(e, 'tamanhoPonto', 2, 16, 0.1).name('tamanho do ponto')
+  ret.add(e, 'intensidadeReticula', 0, 1, 0.01).name('força dos pontos')
+  ret.add(e, 'limiarReticula', 0, 1, 0.01).name('pontos a partir de que sombra')
+  ret.addColor(e, 'corReticula').name('cor do ponto')
+  ret.add(e, 'tintaReticula', 0, 1, 0.01).name('quanto da cor')
+  ret.add(e, 'hachura', 0, 1, 0.01).name('hachura')
+  ret.add(e, 'espacoHachura', 2, 14, 0.1).name('espaço da hachura')
+  ret.add(e, 'limiarHachura', 0, 0.6, 0.01).name('hachura a partir de que sombra')
+
+  const lente = quad.addFolder('Lente e impressão')
+  lente.add(e, 'exposicao', 0.4, 2, 0.01).name('exposição')
+  lente.add(e, 'saturacao', 0, 2, 0.01).name('saturação')
+  lente.add(e, 'vinheta', 0, 1, 0.01).name('vinheta')
+  lente.add(e, 'papel', 0, 0.3, 0.005).name('textura de papel')
+  lente.add(e, 'grao', 0, 0.2, 0.005).name('grão')
+  lente.add(e, 'desfoqueFundo', 0, 2, 0.01).name('desfoque do fundo')
+  lente.add(e, 'focoDistancia', 20, 500, 1).name('começa a desfocar (m)')
+  lente.add(e, 'aberracao', 0, 0.06, 0.001).name('aberração cromática')
+  lente.add(e, 'desalinho', 0, 5, 0.05).name('cor fora do traço')
+  lente.add(e, 'linhasVelocidade').name('linhas de velocidade')
+
+  const luz = visual.addFolder('Luz e pintura')
+  luz.add(e, 'pincel', 0, 1.2, 0.01).name('pincelada')
+  luz.add(e, 'pincelEscala', 0.1, 3, 0.01).name('tamanho da pincelada')
+  luz.add(e, 'brilho', 0, 3, 0.01).name('brilho das luzes')
+  luz.add(e, 'limiarBrilho', 0.3, 3, 0.01).name('brilha a partir de')
+  luz.add(e, 'oclusao', 0, 1.5, 0.01).name('cantos escuros (AO)')
+  luz.add(e, 'raioOclusao', 0.2, 5, 0.05).name('alcance dos cantos (m)')
+  luz.addColor(e, 'corSombra').name('cor da sombra')
+  luz.add(e, 'tomSombra', 0, 1, 0.01).name('quanto da cor na sombra')
+  luz.addColor(e, 'corLuz').name('cor da luz')
+  luz.add(e, 'tomLuz', 0, 1, 0.01).name('quanto da cor na luz')
+
+  const nevoa = visual.addFolder('Névoa e maresia')
+  nevoa.add(e, 'maresia', 0, 0.03, 0.0005).name('maresia (o fundo perde cor)')
+  nevoa.add(e, 'nevoaDensidade', 0, 0.01, 0.0001).name('névoa em camadas')
+  nevoa.add(e, 'nevoaQueda', 0, 0.3, 0.001).name('névoa some com a altura')
+  nevoa.add(cfg.mundo, 'nevoaPerto', 10, 600, 1).name('névoa começa (m)')
+  nevoa.add(cfg.mundo, 'nevoaLonge', 100, 2000, 1).name('névoa total (m)')
+
+  // fase A: pontos na luz e hachura na sombra, decididos pela luz recebida
+  const mask = visual.addFolder('Luz como máscara')
+  mask.add(e, 'pontosNaLuz').name('pontos na luz, hachura na sombra')
+  mask.add(e, 'limiarLuzPontos', 0.3, 2, 0.01).name('pontos a partir de (luz)')
+  mask.add(e, 'intensidadePontosLuz', 0, 1, 0.01).name('força dos pontos')
+  mask.addColor(e, 'corPontoLuz').name('cor dos pontos')
+  mask.add(e, 'limiarHachuraLuz', 0, 1.2, 0.01).name('hachura abaixo de (luz)')
+  mask.add(e, 'hachuraOclusao', 0, 3, 0.01).name('cantos viram hachura')
+  mask.add(e, 'hachuraCruzada', 0, 1, 0.01).name('hachura cruzada')
+  mask.add(e, 'brilhoEmPontos', 0, 1, 0.01).name('brilho em pontos')
+  mask.add(e, 'distanciaReticula', 30, 800, 5).name('pontos e hachura até (m)')
+
+  // 0 = 1932 (presente, quadrinho baixo); 1 = 1881 (memória impressa em cinco tintas)
+  const epoca = visual.addFolder('Época')
+  epoca.add(e, 'memoria', 0, 1, 0.01).name('1932 → 1881 (memória)').listen()
+  const atalhosEpoca = { presente: () => { e.memoria = 0 }, memoria: () => { e.memoria = 1 } }
+  epoca.add(atalhosEpoca, 'presente').name('⛵ 1932 (presente)')
+  epoca.add(atalhosEpoca, 'memoria').name('📰 1881 (memória)')
+  return visual
+}

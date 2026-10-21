@@ -1,275 +1,60 @@
-// Painel de debug: cada número do jogo vira um controle deslizante.
+// Painel de ajustes (tecla H): cada número do jogo vira um controle deslizante.
 // É o "mini motor de jogo" do vídeo do André Elias: ajustar no olho, não no prompt.
+//
+// No alto: a legenda e as ações (restaurar, copiar). Embaixo, as seções, todas fechadas: Jogo, Visual, Mundo, Personagem, Desempenho e Laboratório, uma por arquivo em src/ui/painel/.
+// Controle novo entra no arquivo da seção certa, sempre ligado a uma chave do cfg (config.js).
 
 import GUI from 'lil-gui'
 import { salvarConfig, restaurarPadrao } from '../config.js'
+import { LEGENDA } from './painel/comum.js'
+import { montarSecoes } from './painel/secoes.js'
+
+const NOME_RESTAURAR = '↺ Restaurar padrão'
+const NOME_COPIAR = '📋 Copiar ajustes'
 
 export function criarPainel(cfg) {
-  const gui = new GUI({ title: 'Maresia · ajustes (H esconde)' })
+  const gui = new GUI({ title: 'Maresia · ajustes (H esconde)', width: 300 })
   let visivel = true
 
-  const lab=gui.addFolder('Laboratório Jolt / Ammo (recarregar)').close()
-  for(const [chave,min,max,passo] of [['lado',8,24,1],['passoTerreno',.25,2,.25],['semente',1,9999,1],['bolas',1,12,1],['cocos',0,30,1],['alturaQueda',.5,5,.25],['gravidade',5,35,1],['subpassos',1,4,1],['raioRoteiro',1,4,.25],['duracaoMedicao',6,30,1],['cameraDistancia',3,12,.5],['cameraAltura',1,8,.25],['resolucao',.5,2,.25]]) lab.add(cfg.laboratorioFisica,chave,min,max,passo)
-  const tempo = gui.addFolder('Hora do dia')
-  tempo.add(cfg.tempo, 'hora', 0, 24, 0.01).name('hora').listen()
-  tempo.add(cfg.tempo, 'velocidade', 0, 30, 0.1).name('horas por minuto')
-  tempo.add(cfg.tempo, 'pausado').name('parar o relógio')
-  const atalhos = {
-    amanhecer: () => { cfg.tempo.hora = 5.9 },
-    meioDia: () => { cfg.tempo.hora = 12 },
-    porDoSol: () => { cfg.tempo.hora = 17.6 },
-    noite: () => { cfg.tempo.hora = 21 },
-  }
-  tempo.add(atalhos, 'amanhecer').name('🌅 amanhecer')
-  tempo.add(atalhos, 'meioDia').name('☀️ meio-dia')
-  tempo.add(atalhos, 'porDoSol').name('🌇 pôr do sol')
-  tempo.add(atalhos, 'noite').name('🌙 noite')
-
-  const e = cfg.estilo
-  const arc = gui.addFolder('Visual (Arcane)')
-  arc.add(e, 'visual', ['arcane', 'quadrinho']).name('visual (recarregar)')
-  arc.add(e, 'arcSombra', 0, 1, 0.01).name('limite da sombra')
-  arc.add(e, 'arcLuz', 0, 1.5, 0.01).name('limite da luz')
-  arc.add(e, 'arcSuave', 0, 0.3, 0.005).name('passagem entre faixas')
-  arc.add(e, 'arcPincel', 0, 1, 0.01).name('pincelada na borda')
-  arc.addColor(e, 'arcCorSombra').name('cor da sombra')
-  arc.add(e, 'arcNivelSombra', 0, 1.2, 0.01).name('força da sombra')
-  arc.add(e, 'arcNivelMeio', 0, 1.5, 0.01).name('força do meio-tom')
-  arc.add(e, 'arcNivelLuz', 0, 2, 0.01).name('força da luz')
-  arc.add(e, 'arcLinha', 0, 1, 0.01).name('contorno da silhueta')
-  arc.add(e, 'arcSaturacao', 0, 2, 0.01).name('saturação')
-  arc.add(e, 'arcGrao', 0, 0.2, 0.005).name('grão de filme')
-  arc.add(e, 'arcTextura', 0, 2, 0.05).name('textura pintada do mundo')
-  arc.add(e, 'reflexoLente', 0, 3, 0.05).name('reflexo de lente (sol)')
-  arc.add(e, 'arcRecorte', 0, 2, 0.05).name('luz de recorte')
-  arc.add(e, 'arcAr', 0, 4, 0.05).name('profundidade de ar')
-  arc.add(e, 'arcCeu', 0, 2, 0.05).name('céu pintado')
-  arc.add(e, 'arcContraste', 0.6, 2, 0.01).name('contraste')
-  arc.add(e, 'arcExposicao', 0.5, 1.5, 0.01).name('exposição')
-  const est = gui.addFolder('Estética (quadrinho)')
-  const epoca = gui.addFolder('Época')
-  epoca.add(e, 'memoria', 0, 1, 0.01).name('1932 → 1881 (memória)').listen()
-  const atalhosEpoca = { presente: () => { e.memoria = 0 }, memoria: () => { e.memoria = 1 } }
-  epoca.add(atalhosEpoca, 'presente').name('⛵ 1932 (presente)')
-  epoca.add(atalhosEpoca, 'memoria').name('📰 1881 (memória)')
-  const traco = est.addFolder('Traço de nanquim')
-  traco.add(e, 'espessuraLinha', 0.5, 4, 0.05).name('espessura')
-  traco.add(e, 'intensidadeTinta', 0, 1, 0.01).name('força')
-  traco.addColor(e, 'corTinta').name('cor da tinta')
-  traco.add(e, 'limiarProfundidade', 0.01, 0.4, 0.005).name('sensib. silhueta')
-  traco.add(e, 'limiarNormal', 0.05, 1, 0.01).name('sensib. dobras')
-  traco.add(e, 'distanciaLinha', 40, 800, 5).name('alcance (m)')
-  traco.add(e, 'tremorLinha', 0, 4, 0.05).name('tremor')
-  traco.add(e, 'fpsTraco', 1, 24, 1).name('redesenhos/s')
-
-  const ret = est.addFolder('Retícula e hachura')
-  ret.add(e, 'tamanhoPonto', 2, 16, 0.1).name('tamanho do ponto')
-  ret.add(e, 'limiarReticula', 0, 1, 0.01).name('a partir de que sombra')
-  ret.add(e, 'intensidadeReticula', 0, 1, 0.01).name('força')
-  ret.addColor(e, 'corReticula').name('cor do ponto')
-  ret.add(e, 'tintaReticula', 0, 1, 0.01).name('quanto da cor')
-  ret.add(e, 'hachura', 0, 1, 0.01).name('hachura')
-  ret.add(e, 'espacoHachura', 2, 14, 0.1).name('espaço da hachura')
-  ret.add(e, 'limiarHachura', 0, 0.6, 0.01).name('hachura a partir de')
-
-  const lente = est.addFolder('Lente e impressão')
-  lente.add(e, 'aberracao', 0, 0.06, 0.001).name('aberração cromática')
-  lente.add(e, 'desalinho', 0, 5, 0.05).name('cor fora do traço')
-  lente.add(e, 'desfoqueFundo', 0, 2, 0.01).name('desfoque do fundo')
-  lente.add(e, 'focoDistancia', 20, 500, 1).name('começa a desfocar (m)')
-  lente.add(e, 'saturacao', 0, 2, 0.01).name('saturação')
-  lente.add(e, 'exposicao', 0.4, 2, 0.01).name('exposição')
-  lente.add(e, 'papel', 0, 0.3, 0.005).name('textura de papel')
-  lente.add(e, 'grao', 0, 0.2, 0.005).name('grão')
-  lente.add(e, 'vinheta', 0, 1, 0.01).name('vinheta')
-  lente.add(e, 'linhasVelocidade').name('linhas de velocidade')
-
-  const luz = est.addFolder('Luz e pintura')
-  luz.add(e, 'pincel', 0, 1.2, 0.01).name('pincelada')
-  luz.add(e, 'pincelEscala', 0.1, 3, 0.01).name('tamanho da pincelada')
-  luz.add(e, 'oclusao', 0, 1.5, 0.01).name('cantos escuros (AO)')
-  luz.add(e, 'raioOclusao', 0.2, 5, 0.05).name('alcance dos cantos (m)')
-  luz.add(e, 'brilho', 0, 3, 0.01).name('brilho das luzes')
-  luz.add(e, 'limiarBrilho', 0.3, 3, 0.01).name('o que brilha a partir de')
-  luz.add(e, 'nevoaDensidade', 0, 0.01, 0.0001).name('névoa em camadas')
-  luz.add(e, 'nevoaQueda', 0, 0.3, 0.001).name('névoa some com a altura')
-  luz.add(e, 'maresia', 0, 0.03, 0.0005).name('maresia (fundo perde cor)')
-  luz.addColor(e, 'corSombra').name('cor da sombra')
-  luz.add(e, 'tomSombra', 0, 1, 0.01).name('quanto da cor na sombra')
-  luz.addColor(e, 'corLuz').name('cor da luz')
-  luz.add(e, 'tomLuz', 0, 1, 0.01).name('quanto da cor na luz')
-  traco.add(e, 'pesoCenario', 0, 1, 0.01).name('força no cenário')
-
-  const mask = est.addFolder('Luz como máscara')
-  mask.add(e, 'pontosNaLuz').name('pontos na luz, hachura na sombra')
-  mask.add(e, 'limiarLuzPontos', 0.3, 2, 0.01).name('pontos a partir de (luz)')
-  mask.add(e, 'intensidadePontosLuz', 0, 1, 0.01).name('força dos pontos')
-  mask.addColor(e, 'corPontoLuz').name('cor dos pontos')
-  mask.add(e, 'limiarHachuraLuz', 0, 1.2, 0.01).name('hachura abaixo de (luz)')
-  mask.add(e, 'hachuraOclusao', 0, 3, 0.01).name('cantos viram hachura')
-  mask.add(e, 'hachuraCruzada', 0, 1, 0.01).name('hachura cruzada')
-  mask.add(e, 'brilhoEmPontos', 0, 1, 0.01).name('brilho em pontos')
-  mask.add(e, 'distanciaReticula', 30, 800, 5).name('pontos e hachura até (m)')
-
-  const fat = gui.addFolder('Fatia vertical')
-  fat.add(cfg.fatia, 'travar').name('prender o jogador na fatia')
-  est.add(e, 'tonsLuz', [2, 3, 5]).name('degraus de luz (recarregar)')
-
-  const p = gui.addFolder('Personagem')
-  p.add(cfg.personagem, 'velocidade', 1, 10, 0.1).name('andar (m/s)')
-  p.add(cfg.personagem, 'corrida', 2, 20, 0.1).name('correr (m/s)')
-  p.add(cfg.personagem, 'pulo', 2, 20, 0.1).name('força do pulo')
-  p.add(cfg.personagem, 'gravidade', 5, 60, 0.5)
-  p.add(cfg.personagem, 'fpsPose', 4, 60, 1).name('poses por segundo')
-  p.add(cfg.personagem, 'posicaoEm2').name('corpo todo "em 2"')
-  p.add(cfg.personagem, 'corpoNovo').name('corpo novo (mocap; recarregar)')
-  p.add(cfg.personagem, 'modeloJogador', ['neto-tripo', 'neto-tripo-partes', 'neto-tripo-p2', 'neto-vestido', 'neto', 'boneco']).name('modelo do jogador (recarregar)')
-  p.add(cfg.personagem, 'chapeu').name('chapéu no neto (recarregar)')
-  p.add(cfg.personagem, 'ombros', 0.6, 1.1, 0.01).name('largura dos ombros (recarregar)')
-  p.add(cfg.personagem, 'folgaCamisa', 0, 0.05, 0.002).name('folga da camisa (recarregar)')
-  p.add(cfg.personagem, 'clavicula', 0, 40, 1).name('ombro: caimento (graus)')
-  p.add(cfg.personagem, 'panoSolto', 0, 2, 0.05).name('tecido solto (força)')
-  for (const [chave,min,max,passo,nome] of [
-    ['roupaEspessura',.002,.012,.001,'tecido: margem de contato'],
-    ['roupaFolga',.01,.10,.005,'camisa: liberdade no tronco'],
-    ['roupaBarra',.02,.15,.005,'camisa: liberdade da barra'],
-    ['roupaManga',.01,.10,.005,'camisa: liberdade das mangas'],
-    ['roupaGola',.005,.04,.005,'camisa: sustentação da gola'],
-    ['roupaFlexao',.001,.08,.001,'tecido: flexibilidade'],
-    ['roupaAmortecimento',.1,2,.1,'tecido: amortecimento'],
-    ['roupaIteracoes',4,16,1,'tecido: iterações'],
-  ]) p.add(cfg.personagem,chave,min,max,passo).name(nome+' (recarregar)')
-  p.add(cfg.personagem, 'dedosReferenciaAndar', ['andar', 'mm-andar', 'mm-curva-andando']).name('dedos: referência ao andar (recarregar)')
-  p.add(cfg.personagem, 'dedosFecharCiclo', 0, .3, .01).name('dedos: emenda do ciclo (recarregar)')
-  p.add(cfg.personagem, 'ammoSubpassos', 1, 4, 1).name('Ammo: subpassos nativos (recarregar)')
-  p.add(cfg.personagem, 'ammoPassosAssentar', 0, 120, 1).name('Ammo: passos de assentamento (recarregar)')
-  const ammo = p.addFolder('Ammo: contato da camisa (recarregar)').close()
-  for (const [chave,min,max,passo,nome] of [
-    ['ammoIteracoes',2,12,1,'iterações'],
-    ['ammoPeleMargem',.002,.012,.001,'margem da pele (m)'],
-    ['ammoPeleAltura',0,.8,.05,'início do contato no tórax'],
-    ['ammoPeleLargura',.4,1,.05,'largura do contato'],
-    ['ammoPeleReducao',0,.8,.1,'redução do colisor'],
-    ['ammoBracoMargem',.004,.016,.001,'braço: margem de contato (m)'],
-    ['ammoBracoInicio',.1,.3,.01,'braço: início do contato (m)'],
-    ['ammoBracoFim',.3,.6,.01,'braço: fim do contato (m)'],
-    ['ammoBracoReducao',0,.8,.1,'braço: redução do colisor'],
-    ['ammoCalcaAltura',.65,.85,.01,'calça: início do contato (m)'],
-    ['ammoCalcaReducao',0,.9,.05,'calça: redução do colisor'],
-    ['ammoEncaixeFolga',.002,.025,.001,'folga inicial (m)'],
-    ['ammoEncaixeMaximo',.01,.08,.005,'ajuste máximo (m)'],
-    ['ammoBarraExtra',0,.03,.002,'extensão da barra (m)'],
-    ['ammoBarraTransicao',.01,.06,.005,'transição da barra (m)'],
-  ]) ammo.add(cfg.personagem,chave,min,max,passo).name(nome)
-  p.add(cfg.personagem, 'roupaJolt').name('roupa no Jolt (recarregar)')
-  p.add(cfg.personagem, 'avo').name('avô perto do começo (recarregar)')
-  p.add(cfg.personagem, 'avoMovimento', ['parado', 'velho-parado']).name('movimento do avô (recarregar)')
-  p.add(cfg.personagem, 'rostoAvo').name('avô com rosto desenhado (recarregar)')
-  p.add(cfg.personagem, 'avoTripo').name('avô do Tripo ao lado (recarregar)')
-  p.add(cfg.personagem, 'avoTripoMovimento', ['velho-parado', 'parado']).name('movimento do avô do Tripo (recarregar)')
-  p.add(cfg.personagem, 'dobras', 0, 1.5, 0.05).name('dobras desenhadas')
-  p.add(cfg.personagem, 'rostoNeto').name('rosto desenhado no neto (recarregar)')
-  p.add(cfg.personagem, 'estiloRostoNeto', ['atual', 'aranhaverso', 'grande', 'grande-mel', 'grande-oval', 'gato', 'gato-ambar', 'gato-palpebra', 'minimo', 'minimo-feijao', 'minimo-brilho', 'brilho-alto', 'brilho-maior', 'brilho-duplo', 'brilho-castanho', 'brilho-sobrancelha', 'brilho-triste-oval']).name('estilo do rosto desenhado').onChange((v) => { window.maresia?.jogador?.animador?.rosto?.estilo(v); window.maresia?.avo?.rosto?.estilo(v) })
-  p.add(cfg.personagem, 'velocidadeNova', 0.8, 10, 0.1).name('corpo novo: andar (m/s)')
-  p.add(cfg.personagem, 'corridaNova', 2, 15, 0.1).name('corpo novo: correr (m/s)')
-  p.add(cfg.personagem, 'peNoChao').name('corpo novo: pé no chão (IK)')
-  p.add(cfg.personagem, 'inclinar').name('corpo novo: inclinar na curva')
-  p.add(cfg.personagem, 'afundaAreia', 0, 0.08, 0.005).name('corpo novo: afunda na areia (m)')
-  p.add(cfg.personagem, 'joelhos', 0, 40, 1).name('corpo novo: joelho parado (graus)')
-  p.add(cfg.personagem, 'motionMatching').name('corpo novo: motion matching')
-  p.add(cfg.personagem, 'fpsAcao', 6, 60, 1).name('poses por segundo na ação')
-  p.add(cfg.personagem, 'pausaPulo').name('pausa no alto do pulo')
-  p.add(cfg.personagem, 'multiplos', 0, 1.5, 0.05).name('múltiplos (rastro em retícula)')
-
-  const c = gui.addFolder('Câmera')
-  c.add(cfg.camera, 'distancia', 2.5, 45, 0.1).name('distância').listen()
-  c.add(cfg.camera, 'altura', 0, 5, 0.05)
-  c.add(cfg.camera, 'fov', 25, 100, 1).name('abertura (fov)')
-  c.add(cfg.camera, 'inclinacaoCorrida', 0, 0.3, 0.005).name('inclinação correndo')
-
-  const g = gui.addFolder('Grama')
-  g.add(cfg.grama, 'raio', 10, 80, 1).name('raio em volta (m)')
-  g.add(cfg.grama, 'quantidade', 5000, 200000, 1000).name('quantidade de folhas')
-  g.add(cfg.grama, 'altura', 0.1, 2, 0.01)
-  g.add(cfg.grama, 'largura', 0.02, 0.5, 0.005)
-  g.add(cfg.grama, 'ventoForca', 0, 2, 0.01).name('força do vento')
-  g.add(cfg.grama, 'ventoVelocidade', 0, 2, 0.01).name('velocidade do vento')
-  g.add(cfg.grama, 'ventoEscala', 0.005, 0.4, 0.005).name('tamanho das rajadas')
-  g.add(cfg.grama, 'lodPerto', 1, 40, 0.5).name('cheia até (m da câmera)')
-  g.add(cfg.grama, 'fracaoLonge', 0.05, 1, 0.01).name('fração de folhas longe')
-  g.add(cfg.grama, 'larguraLonge', 1, 4, 0.05).name('folhas de longe mais largas')
-  g.add(cfg.grama, 'virarCamera', 0, 1, 0.01).name('folhas viradas p/ câmera')
-
-  const it = gui.addFolder('Interação com o ambiente')
-  it.add(cfg.interacao, 'recuperaGrama', 0.05, 3, 0.01).name('grama levanta (por s)')
-  it.add(cfg.interacao, 'amorteceOnda', 0.9, 0.999, 0.001).name('ondinhas duram')
-  it.add(cfg.interacao, 'pegadas').name('pegadas na areia')
-  it.add(cfg.interacao, 'duracaoPegada', 2, 120, 1).name('pegada dura (s)')
-  it.add(cfg.interacao, 'ventoCoqueiros', 0, 3, 0.01).name('vento nas folhas e roupas')
-
-  const m = gui.addFolder('Mar')
-  m.addColor(cfg.mar, 'corFundo').name('fundo')
-  m.addColor(cfg.mar, 'corRaso').name('raso')
-  m.addColor(cfg.mar, 'corEspuma').name('espuma')
-  m.add(cfg.mar, 'ondas', 0, 2, 0.01)
-
-  const mundo = gui.addFolder('Mundo e desempenho')
-  mundo.add(cfg.mundo, 'sombras')
-  mundo.add(cfg.mundo, 'resolucaoSombra', [1024, 2048, 4096]).name('qualidade da sombra')
-  mundo.add(cfg.mundo, 'passoSombraMin', 0, 15, 1).name('sombra anda em passos (min)')
-  mundo.add(cfg.mundo, 'cacheSombra').name('sombra dos parados em cache')
-  mundo.add(cfg.mundo, 'cacheSombraRaio', 5, 40, 1).name('cache da sombra: raio (m)')
-  mundo.add(cfg.mundo, 'nevoaPerto', 10, 600, 1).name('névoa começa (m)')
-  mundo.add(cfg.mundo, 'nevoaLonge', 100, 2000, 1).name('névoa total (m)')
-  mundo.add(cfg.desempenho, 'resolucao', 0.5, 2, 0.05).name('resolução')
-  mundo.add(cfg.desempenho, 'resolucaoDinamica').name('resolução dinâmica')
-  mundo.add(cfg.desempenho, 'resolucaoMin', 0.4, 1.25, 0.05).name('resolução mínima')
-  mundo.add(cfg.desempenho, 'mostrarFps').name('mostrar FPS')
-
-  const cal = gui.addFolder('Calçamento (paralelepípedo)')
-  cal.add(cfg.calamento, 'bloco', 0.1, 0.8, 0.01).name('bloco: comprimento (m)')
-  cal.add(cfg.calamento, 'largura', 0.05, 0.4, 0.01).name('bloco: altura da fiada (m)')
-  cal.add(cfg.calamento, 'junta', 0, 0.12, 0.005).name('junta (m)')
-  cal.add(cfg.calamento, 'desencontro', 0, 0.5, 0.05).name('fiadas desencontradas')
-
-  const chao = gui.addFolder('Chão de 1932')
-  chao.add(cfg.chao, 'centroRaio', 0, 1500, 10).name('Centro calçado: raio (m)')
-  chao.add(cfg.chao, 'centroBorda', 0, 600, 10).name('borda do calçamento (m)')
-  chao.add(cfg.chao, 'rodeiroForca', 0, 2, 0.05).name('força do rodeiro da carroça')
-  chao.add(cfg.chao, 'rodeiroPos', 0, 0.5, 0.01).name('rodeiro: onde fica na rua')
-  chao.add(cfg.chao, 'rodeiroLarg', 0.01, 0.3, 0.005).name('rodeiro: largura')
-  chao.add(cfg.chao, 'desgaste', 0, 2, 0.05).name('poeira do meio da rua')
-  chao.add(cfg.chao, 'mato', 0, 1, 0.05).name('mato ralo do quintal')
-
-  const urubu = gui.addFolder('Campo do Urubu')
-  urubu.add(cfg.mundo.urubu, 'alturaGalpao', 3, 8, 0.1).name('altura do galpão (m)')
-  urubu.add(cfg.mundo.urubu, 'alturaCerca', 1, 3, 0.1).name('altura do arame (m)')
-  urubu.add(cfg.mundo.urubu, 'gente', 0, 60, 1).name('gente no campo')
-  mundo.add(cfg.desempenho, 'renderizador', ['webgl', 'webgpu']).name('renderizador (recarregar)')
-  mundo.add(cfg.desempenho, 'tamBloco', [96, 192, 384]).name('bloco de cópias, m (recarregar)')
-  mundo.add(cfg.desempenho, 'motorPlaca').name('árvores na placa, WebGPU (recarregar)')
-  mundo.add(cfg.desempenho, 'atoresVat').name('atores em textura, WebGPU (recarregar)')
-  mundo.add(cfg.audio, 'volume', 0, 1, 0.01).name('volume')
-
+  // ---- ações no alto
+  let confirmando = null // restaurar apaga todos os ajustes salvos: pede um segundo clique
   const acoes = {
+    restaurar: () => {
+      if (!confirmando) {
+        acoesCtl.restaurar.name('↺ clique de novo para restaurar tudo')
+        confirmando = setTimeout(() => { confirmando = null; acoesCtl.restaurar.name(NOME_RESTAURAR) }, 3000)
+        return
+      }
+      clearTimeout(confirmando)
+      confirmando = null
+      acoesCtl.restaurar.name(NOME_RESTAURAR)
+      restaurarPadrao(cfg)
+      gui.controllersRecursive().forEach((k) => k.updateDisplay())
+    },
     copiar: async () => {
       try {
         await navigator.clipboard.writeText(JSON.stringify(cfg, null, 2))
         acoesCtl.copiar.name('✔ copiado!')
-        setTimeout(() => acoesCtl.copiar.name('📋 copiar ajustes'), 1500)
+        setTimeout(() => acoesCtl.copiar.name(NOME_COPIAR), 1500)
       } catch { /* sem permissão de área de transferência */ }
-    },
-    restaurar: () => {
-      restaurarPadrao(cfg)
-      gui.controllersRecursive().forEach((k) => k.updateDisplay())
     },
   }
   const acoesCtl = {
-    copiar: gui.add(acoes, 'copiar').name('📋 copiar ajustes'),
-    restaurar: gui.add(acoes, 'restaurar').name('↺ restaurar padrão'),
+    restaurar: gui.add(acoes, 'restaurar').name(NOME_RESTAURAR),
+    copiar: gui.add(acoes, 'copiar').name(NOME_COPIAR),
   }
 
-  for (const f of [p, c, g, m, mundo, ret, lente, traco, it]) f.close()
+  // ---- as seções
+  montarSecoes(gui, cfg)
+
+  for (const f of gui.foldersRecursive()) f.close()
+
+  // ---- legenda da marca de recarregar, antes das ações
+  const legenda = document.createElement('div')
+  legenda.className = 'painel-legenda'
+  legenda.style.cssText = 'padding: 4px var(--padding); opacity: 0.6; font-size: 11px'
+  legenda.textContent = LEGENDA
+  gui.$children.prepend(legenda)
 
   // só grava quando você mexe em algo no painel
   gui.onFinishChange(() => salvarConfig(cfg))
