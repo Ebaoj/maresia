@@ -104,6 +104,10 @@ try {
     const v = await avaliar('!!window.maresia?.cena')
     if (v.valor) { pronto = true; break }
   }
+  // a cena existe antes de os modelos chegarem: o corpo do jogador (o .glb do neto) carrega depois, dentro de
+  // maresia.pronto. Com o Mac carregado, os cenários do corpo começavam antes e reprovavam com "sem os ossos"
+  // (21/10/2026: pesParados, poseCongelada e meiaVolta, no 03d7bb1 e no f4d9cc1 iguais). Espera os modelos.
+  if (pronto) await avaliar('Promise.race([window.maresia.pronto, new Promise((r) => setTimeout(r, 180000))]).then(() => true)')
   const estado = (await avaliar('JSON.stringify({ webgpu: window.maresia?.webgpu ?? null, renderizador: window.maresia?.cfg?.desempenho?.renderizador ?? null, quebrados: (window.__shadersQuebrados || []).length })', false)).valor
   console.log('--- estado ---', estado)
   if (!pronto) {
