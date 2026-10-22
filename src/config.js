@@ -516,12 +516,25 @@ export function migrarPadroes(salvo) {
   return salvo
 }
 
+// Modo leve (22/10/2026): ?leve na URL (ou ?leve=0.7 para escolher a resolução) deixa o jogo mais leve para
+// jogar enquanto os agentes trabalham na mesma máquina: WebGPU (o caminho mais rápido) e resolução menor.
+// Vale por cima do que está salvo, só nesta abertura; o padrão não muda.
+export function aplicarModoLeve(cfg, busca) {
+  const p = new URLSearchParams(busca || '')
+  if (!p.has('leve')) return false
+  const r = parseFloat(p.get('leve'))
+  cfg.desempenho.renderizador = 'webgpu'
+  cfg.desempenho.resolucao = Number.isFinite(r) ? Math.min(Math.max(r, 0.6), 1.25) : 0.85
+  return true
+}
+
 export function carregarConfig() {
   const cfg = copiaProfunda(PADRAO)
   try {
     const salvo = JSON.parse(localStorage.getItem(CHAVE) || 'null')
     if (salvo) mesclar(cfg, migrarPadroes(salvo))
   } catch { /* navegador sem storage: segue com o padrão */ }
+  aplicarModoLeve(cfg, globalThis.location?.search)
   return cfg
 }
 
