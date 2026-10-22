@@ -72,6 +72,33 @@ variantes "sem árvores" deram o mesmo número nas duas, de 17,1 a 19,5 ms). Sa�
 | Praça do Ferreira | 0,77 / 0,58 | 0,35 / 0,35 | 17,8 / 17,5 |
 | Rua de oitis | 2,53 / 2,31 | 0,43 / 0,49 | 21,3 / 19,5 |
 
+Depois da contraluz (`2a3bfdb`), uma rodada a mais (antes, depois, antes no meio): árvores depois 1,04 / 0,88 ms no
+Passeio, 0,49 / 0,50 na Praça e 0,58 / 0,62 na rua; antes 4,47 / 0,60 / 1,96 (load de 4,4 a 6,4).
+
 As árvores novas custam menos que as antigas, apesar dos cartões e do vento: a malha é indexada (o vértice roda
 uma vez, não seis), e de longe vai só a copa simples (de 160 a 740 triângulos por árvore, antes eram de 1,4 mil a
 4,3 mil em todas). O orçamento pedido (no máximo ~2 ms a mais) fica com folga.
+
+## 6. Provas (`docs/capturas/arvores/`)
+
+- `passeio-12.jpg`, `passeio-16h5.jpg`, `praca-12.jpg`, `praca-16h5.jpg`, `rua-12.jpg`, `rua-16h5.jpg`: antes em cima,
+  depois embaixo, o conceito ao lado (WebGPU); as mesmas com `-WebGL` no nome. O antes é o servidor rodando `debf939`,
+  com a mesma câmera, hora e janela (1280 x 720).
+- `especies-1.jpg` (oiti, fícus, cajueiro, carnaúba) e `especies-2.jpg` (mangue, murici, guajiru), antes e depois de
+  perto, nos dois renderizadores. O "fícus" de antes é o oiti esticado que a praça usava.
+- `antes-vento-*.mp4` e `depois-vento-*.mp4`: câmera parada 8 s no Passeio e num oiti, e andando sob o renque da Caio
+  Prado (30 quadros por segundo, passo fixo, `maresia.gravar`). `vento-amplitude.jpg`: quanto cada pixel varia nos 7 s
+  de câmera parada (antes, oiti depois, Passeio depois): antes só as nuvens mexem; depois a copa e os galhos mexem, o
+  pé do tronco e o chão não.
+- `memoria-1881.jpg`: as árvores novas no modo memória (1881), legíveis nas cinco tintas.
+- Nos dois renderizadores: nenhum shader quebrado (`__shadersQuebrados` vazio), nenhum material sem `gLuz`
+  (`__semLuz` vazio no WebGL), nada em "falta portar" no WebGPU.
+
+## 7. O que ainda não ficou como o conceito
+
+- Ao meio-dia o baixo da copa fica quase preto: é a sombra dura do sertão (`uSertao`), que já fazia o mesmo antes;
+  as cores de sombra foram clareadas, mas o pós-processo leva ao preto. Mexer nisso é decisão da luz do jogo, não da
+  árvore.
+- A copa ainda fecha mais que a do conceito (pouco céu dentro); dá para abrir com menos cachos de miolo por espécie.
+- A sombra no chão não balança (a dos parados fica em cache, de propósito).
+- O vento da grama (`grama.js`) continua com a direção própria dele; só árvores e coqueiros usam `cfg.vento`.
