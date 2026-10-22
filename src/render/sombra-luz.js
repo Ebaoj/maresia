@@ -11,12 +11,21 @@ const _Y = new THREE.Vector3(0, 1, 0)
 // Centro da janela de sombra preso à grade de texels do mapa, medida no plano da luz (a mesma base da câmera
 // de sombra do three: lookAt com o "cima" (0, 1, 0)). Com o centro andando em passos de um texel, a borda das
 // sombras não "ferve" quando o jogador anda ou gira a câmera.
-export function alinharAoTexel(centro, dirLuz, texel, saida = new THREE.Vector3()) {
+//
+// ancora (opcional, pisca 22/10/2026): a grade passa por esse ponto em vez da origem do mundo. Sem ela, quando o sol
+// gira um pouco (todo quadro, no mapa de perto), a grade gira em volta da origem do mundo, e no Centro (~3,5 km dela)
+// um giro de 0,008° (um quadro a 1 h de jogo por minuto) a desloca ~0,5 m, ou ~22 texels com fração qualquer: toda
+// borda de sombra pulava uma fração de texel diferente a cada quadro e piscava. Com a âncora no centro do quadro
+// anterior, o giro é em volta da janela e um ponto a 30 m dela anda 0,2 texel por quadro, sempre para o mesmo lado.
+// Translação (o jogador andando) continua em passos inteiros de texel, como antes.
+export function alinharAoTexel(centro, dirLuz, texel, saida = new THREE.Vector3(), ancora = null) {
   _frente.copy(dirLuz).negate()
   _direita.crossVectors(_frente, Math.abs(_frente.y) > 0.99 ? _X : _Y).normalize()
   _cima.crossVectors(_direita, _frente).normalize()
-  const r = centro.dot(_direita)
-  const u = centro.dot(_cima)
+  const ax = ancora ? ancora.x : 0, ay = ancora ? ancora.y : 0, az = ancora ? ancora.z : 0
+  const dx = centro.x - ax, dy = centro.y - ay, dz = centro.z - az
+  const r = dx * _direita.x + dy * _direita.y + dz * _direita.z
+  const u = dx * _cima.x + dy * _cima.y + dz * _cima.z
   return saida.copy(centro)
     .addScaledVector(_direita, Math.round(r / texel) * texel - r)
     .addScaledVector(_cima, Math.round(u / texel) * texel - u)

@@ -17,6 +17,7 @@ import { CAL, ESQUADRIAS } from '../paleta.js'
 
 const CALCADA = 0.25
 const LARG_CALCADA = 1.6
+const MEIO_FIO = 0.16 // largura do meio-fio, na beira da calçada
 const PAREDE = 0.32
 const MX = 0.3 // folga da placa de parede dos lados do vão
 const MT = 0.35 // folga em cima do vão
@@ -219,8 +220,10 @@ export function pecasDaCasa(it, rnd, simples) {
 
   // embasamento interrompido nas portas do térreo, e cunhais
   const portasTerreo = vaos.filter((v) => v.porta && !v.alto).map((v) => [v.cx - v.w / 2 - 0.13, v.cx + v.w / 2 + 0.13]).sort((a, b) => a[0] - b[0])
-  let xb = -F / 2
-  for (const [a, b] of [...portasTerreo, [F / 2, F / 2]]) {
+  // 2 mm aquém da quina (pisca, 22/10/2026): a ponta do barrado ficava no mesmo plano da face de fora do cunhal e as
+  // duas cores brigavam (z-fighting) vistas da rua do lado
+  let xb = -F / 2 + 0.002
+  for (const [a, b] of [...portasTerreo, [F / 2 - 0.002, F / 2]]) {
     if (a - xb > 0.05) caixa('pecas', (xb + a) / 2, calcada + 0.4, zf + 0.025, a - xb, 0.8, 0.05, barra)
     xb = b
   }
@@ -304,9 +307,11 @@ export function pecasDaCasa(it, rnd, simples) {
   }
 
   if (!simples) {
-    const zc = zf + LARG_CALCADA / 2
-    caixa('pecas', 0, CALCADA / 2, zc, F, CALCADA, LARG_CALCADA, rnd.escolha(['#cdbb9c', '#c8b596', '#d3c3a5']))
-    caixa('pecas', 0, CALCADA / 2 - 0.02, zf + LARG_CALCADA - 0.08, F, calcada + 0.04, 0.16, '#a99b84')
+    // a calçada acaba onde o meio-fio começa (pisca, 22/10/2026): as duas caixas iam até a mesma beira, com a frente e o
+    // topo no mesmo plano, e as duas cores brigavam pixel a pixel (z-fighting) numa faixa ao longo de toda a rua
+    const zc = zf + (LARG_CALCADA - MEIO_FIO) / 2
+    caixa('pecas', 0, CALCADA / 2, zc, F, CALCADA, LARG_CALCADA - MEIO_FIO, rnd.escolha(['#cdbb9c', '#c8b596', '#d3c3a5']))
+    caixa('pecas', 0, CALCADA / 2 - 0.02, zf + LARG_CALCADA - MEIO_FIO / 2, F, calcada + 0.04, MEIO_FIO, '#a99b84')
   }
   return lista
 }

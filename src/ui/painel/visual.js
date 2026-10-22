@@ -154,6 +154,11 @@ export function secaoVisual(gui, cfg) {
   dof.add(e, 'dofRaio', 1, 24, 0.5).name('raio máximo (px em 720p)')
   dof.add(e, 'dofOrdem', ['antes', 'depois']).name('antes ou depois da pincelada')
 
+  // estabilização no tempo contra o pisca (src/pos/estabilizar.js): vale nos dois estilos e nos dois renderizadores
+  const est = visual.addFolder('Estabilizar (contra o pisca)')
+  est.add(e, 'estabilizar', 0, 0.95, 0.01).name('cor do quadro anterior (0 desliga)')
+  est.add(e, 'estabilizarGama', 0.25, 3, 0.05).name('faixa das vizinhas')
+
   // fase A: pontos na luz e hachura na sombra, decididos pela luz recebida
   const mask = visual.addFolder('Luz como máscara')
   mask.add(e, 'pontosNaLuz').name('pontos na luz, hachura na sombra')

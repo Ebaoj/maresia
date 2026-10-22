@@ -122,6 +122,10 @@ export const PADRAO = {
     dofLonge: 0.7,         // desfoque máximo do fundo (fração do raio)
     dofRaio: 10,           // raio máximo (px numa imagem de 720 de altura)
     dofOrdem: 'antes',     // 'antes' ou 'depois' da pincelada na tela (A/B em docs/capturas/profundidade/)
+    // estabilização no tempo (src/pos/estabilizar.js, docs/pisca-22-10.md): o que é mais fino que um pixel deixa de piscar
+    // andando; quanto da cor do quadro anterior fica (0 desliga o passe e o custo)
+    estabilizar: 0.85,
+    estabilizarGama: 1.25, // largura da faixa das cores vizinhas em que a cor de antes pode ficar (menor = menos rastro, mais pisca)
     linhasVelocidade: true,
     pincel: 0.35,          // variação de pincelada nos materiais
     pincelEscala: 0.6,
