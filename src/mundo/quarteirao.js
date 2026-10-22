@@ -28,6 +28,7 @@ export const FATIA = { x0: -73, x1: -35, z0: 134, z1: 170 }
 
 const CALCADA = 0.25 // altura da calçada sobre o chão
 const LARG_CALCADA = 1.6
+const MEIO_FIO = 0.16 // largura do meio-fio, na beira da calçada
 const PAREDE = 0.32 // espessura da fachada (o recuo dos vãos)
 
 const cor = new THREE.Color()
@@ -216,8 +217,10 @@ function casa(it, P, rnd, simples) {
   // embasamento (barrado em relevo) e cunhais nas quinas
   // o barrado é interrompido nas portas do térreo
   const portasTerreo = vaos.filter((v) => v.porta && !v.alto).map((v) => [v.cx - v.w / 2 - 0.13, v.cx + v.w / 2 + 0.13]).sort((a, b) => a[0] - b[0])
-  let xb = -F / 2
-  for (const [a, b] of [...portasTerreo, [F / 2, F / 2]]) {
+  // 2 mm aquém da quina (pisca, 22/10/2026): a ponta do barrado ficava no mesmo plano da face de fora do cunhal e as
+  // duas cores brigavam (z-fighting) vistas da rua do lado
+  let xb = -F / 2 + 0.002
+  for (const [a, b] of [...portasTerreo, [F / 2 - 0.002, F / 2]]) {
     if (a - xb > 0.05) pecas.caixa(base, (xb + a) / 2, calcada + 0.4, zf + 0.025, a - xb, 0.8, 0.05, barra)
     xb = b
   }
@@ -325,8 +328,10 @@ function casa(it, P, rnd, simples) {
   if (simples) return
   // calçada alta com meio-fio, e o deck para o personagem subir
   const zc = zf + LARG_CALCADA / 2
-  pecas.caixa(base, 0, CALCADA / 2, zc, F, CALCADA, LARG_CALCADA, rnd.escolha(['#cdbb9c', '#c8b596', '#d3c3a5']))
-  pecas.caixa(base, 0, CALCADA / 2 - 0.02, zf + LARG_CALCADA - 0.08, F, calcada + 0.04, 0.16, '#a99b84')
+  // a calçada acaba onde o meio-fio começa (pisca, 22/10/2026): com as duas caixas até a mesma beira, a frente e o topo
+  // ficavam no mesmo plano e as duas cores brigavam pixel a pixel (z-fighting) ao longo da rua
+  pecas.caixa(base, 0, CALCADA / 2, zf + (LARG_CALCADA - MEIO_FIO) / 2, F, CALCADA, LARG_CALCADA - MEIO_FIO, rnd.escolha(['#cdbb9c', '#c8b596', '#d3c3a5']))
+  pecas.caixa(base, 0, CALCADA / 2 - 0.02, zf + LARG_CALCADA - MEIO_FIO / 2, F, calcada + 0.04, MEIO_FIO, '#a99b84')
   const centro = new THREE.Vector3(0, 0, zc).applyMatrix4(base)
   if (SO_PLANEJAR) adicionarDeck(centro.x, centro.z, F / 2, LARG_CALCADA / 2, ang + it.rot, chao + CALCADA)
 }
