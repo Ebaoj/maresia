@@ -8,16 +8,18 @@
 // lugares, bairros e as peças de praia.
 
 import {
-  DESLOC, ll, LON_POR_X, LAT_POR_Z, LIMITES, pchip,
-  K_PRACA_X, K_PRACA_Z, FATOR_PRACA,
+  DESLOC, ll, llInverso, LIMITES, pchip,
+  K_PRACA_X, K_PRACA_Z, FATOR_PRACA, ANGULO_GRADE,
   esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, escalaBaseJogo, metrosPorUn,
+  metrosDoVao, direcaoJogo, comprimentoJogo, geoDe, gradeDe, llInversoRapido, norteJogo,
   METRO_POR_GRAU_LAT, METRO_POR_GRAU_LON,
 } from './escala1932.js'
 
 export {
-  DESLOC, ll, LON_POR_X, LAT_POR_Z, LIMITES,
-  K_PRACA_X, K_PRACA_Z, FATOR_PRACA,
+  DESLOC, ll, llInverso, LIMITES,
+  K_PRACA_X, K_PRACA_Z, FATOR_PRACA, ANGULO_GRADE,
   esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, escalaBaseJogo, metrosPorUn,
+  metrosDoVao, direcaoJogo, comprimentoJogo, geoDe, gradeDe, llInversoRapido, norteJogo,
 }
 
 // costa de 1932 (hipótese guiada pela borda norte dos lotes; refinar sobre a planta de 1931-1932)
@@ -29,6 +31,16 @@ const COSTA = [
   [-38.486, -3.7208], [-38.481, -3.7186], [-38.4775, -3.7158], [-38.4745, -3.7136], [-38.471, -3.714], [-38.466, -3.7168],
   [-38.459, -3.721], [-38.452, -3.726], [-38.444, -3.732], [-38.436, -3.739],
 ]
+// a latitude da costa de 1932 numa longitude (a polilinha oficial, interpolada em linha reta):
+// serve para prender um lugar da praia na costa de verdade (a fatia da Praia do Peixe, src/mundo/fatia.js)
+export function latCostaReal(lon) {
+  for (let i = 0; i < COSTA.length - 1; i++) {
+    const [a, la] = COSTA[i]
+    const [b, lb] = COSTA[i + 1]
+    if ((lon - a) * (lon - b) <= 0 && a !== b) return la + ((lon - a) / (b - a)) * (lb - la)
+  }
+  return null
+}
 // largura da faixa de areia (m de jogo) ao longo da costa, de oeste para leste
 const PRAIA = [[-38.62, 34], [-38.595, 30], [-38.57, 28], [-38.545, 22], [-38.532, 22], [-38.527, 10], [-38.522, 34], [-38.515, 40], [-38.5, 44], [-38.48, 38], [-38.46, 52], [-38.44, 52]]
 // rio Ceará (com meandros), da foz para o sul
@@ -93,6 +105,13 @@ export const LUGARES_RESERVADOS = [
   ['parqueLiberdade', 16], ['favela1932', 8], ['mercadoFerro', 16],
 ].map(([chave, raio]) => [chave, raio * esticamento(...LUGARES[chave])])
 
+// Os círculos que continuam só como chão (terra de cidade em vez de mato) e não tiram mais casa: o
+// lugar ganhou o chão exato do marco (marcos1932/pegadas.js, lotes-marcos.js) ou o contorno da praça
+// (praca1932.js), e o círculo, maior que o marco, deixava a praça sem as fachadas em volta (21/10/2026:
+// 13 fachadas da Praça do Ferreira). O "mercado" é o Mercado Público de depois de 1937: em 1932 ali
+// havia casa (a planta tem os lotes), o Mercado de Ferro é o "mercadoFerro".
+export const RESERVA_SO_CHAO = new Set(['pracaFerreira', 'pracaLeoes', 'mercadoFerro', 'se', 'estacao', 'passeioPublico', 'mercado'])
+
 // bairros (para o nome na tela): o mais perto vence. O 4º número (opcional) encurta o alcance de um
 // lugar pequeno: a distância até ele conta multiplicada (o Poço da Draga é a vila junto da Ponte Velha,
 // não pode tomar o Passeio Público do Centro: testes/unidade/bairros.test.js).
@@ -153,7 +172,10 @@ function rioCearaXBusca(z) {
   return c[i][0] + (c[i + 1][0] - c[i][0]) * t
 }
 
-// tabelas a cada 1 m (o mapa pergunta isso centenas de milhares de vezes ao montar o terreno)
+// tabelas a cada 1 m (o mapa pergunta isso centenas de milhares de vezes ao montar o terreno).
+// A tabela cobre o mundo inteiro: fora dela a busca devolve o valor da borda e a
+// linha da costa (e o eixo do rio) saem do lugar - a tabela antiga parava em
+// x = 1500 e o mapa agora chega a 3214.
 function tabela(f, ini, fim) {
   const t = new Float32Array(Math.ceil(fim - ini) + 2)
   for (let i = 0; i < t.length; i++) t[i] = f(ini + i)
@@ -163,8 +185,8 @@ function tabela(f, ini, fim) {
     return t[i] + (t[i + 1] - t[i]) * (fi - i)
   }
 }
-export const costaZ = tabela(costaZBusca, -1400, 1500)
-export const rioCearaX = tabela(rioCearaXBusca, -700, 1300)
+export const costaZ = tabela(costaZBusca, LIMITES.x0 - 300, LIMITES.x1 + 300)
+export const rioCearaX = tabela(rioCearaXBusca, LIMITES.z0 - 300, LIMITES.z1 + 300)
 
 // distância de um ponto a uma polilinha
 export function distPolilinha(x, z, pts) {
@@ -191,7 +213,7 @@ const METROS_LON = 111320 * Math.cos((3.72 * Math.PI) / 180)
 export function nomeBairro(x, z) {
   // a comparação é em metros reais (lon/lat), não em unidades do jogo: a escala do mapa varia (a Praça do
   // Ferreira é 1:1, o resto comprimido) e, no jogo, o Centro esticado perdia os próprios marcos
-  const lon = LON_POR_X(x), lat = LAT_POR_Z(z)
+  const [lon, lat] = llInverso(x, z)
   const kx = METROS_LON, ky = METROS_LAT
   let melhor = null
   let d = Infinity
@@ -204,7 +226,7 @@ export function nomeBairro(x, z) {
 
 // grade de Herbster: as ruas do centro correm a 72,5 graus do leste (medido nos lotes de 1932).
 // No jogo (z para o sul) a direção da rua "norte-nordeste" é (cos, -sin).
-export const ANGULO_GRADE = (72.5 * Math.PI) / 180
+// O ângulo mora em src/mundo/quadroGrade1932.js: é o referencial da compressão.
 
 // trechos da praia por longitude: onde ficavam as vilas de pescadores e as jangadas
 const TRECHOS = {

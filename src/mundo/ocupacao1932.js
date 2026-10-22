@@ -11,7 +11,7 @@
 // do jogo (carregarOcupacao1932), antes de montar o terreno.
 
 import malhaUrl from './mapa1932-malha.png'
-import { LON_POR_X, LAT_POR_Z, LIMITES, LUGARES_RESERVADOS, lugaresJogo } from './fortaleza1932.js'
+import { llInverso, LIMITES, LUGARES_RESERVADOS, lugaresJogo } from './fortaleza1932.js'
 import dados from './mapa1932-dados.json'
 import { PEGADAS, noLargo } from './lotes-marcos.js'
 import lotes from './mapa1932-lotes.json'
@@ -107,8 +107,7 @@ export async function carregarOcupacao1932() {
       for (let k = 0; k < 5; k++) {
         const dx = k === 0 ? 0 : (k === 1 || k === 2 ? -CEL / 2 : CEL / 2)
         const dz = k === 0 ? 0 : (k === 1 || k === 3 ? -CEL / 2 : 0)
-        const lon = LON_POR_X(x + dx)
-        const lat = LAT_POR_Z(z + dz)
+        const [lon, lat] = llInverso(x + dx, z + dz)
         const [px, py] = pixelDe(lon, lat)
         const ix = px | 0
         const iy = py | 0

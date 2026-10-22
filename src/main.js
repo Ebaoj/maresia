@@ -32,9 +32,12 @@ import { criarArvores } from './mundo/arvores.js'
 import { criarPessoas } from './mundo/pessoas.js'
 import { criarAtores } from './mundo/atores.js'
 import { criarHorizonte } from './mundo/horizonte.js'
+import { criarTelhadosLonge } from './mundo/telhados-longe.js'
 import { criarMarcos } from './mundo/marcos.js'
 import { criarPraia } from './mundo/praia.js'
 import { criarCoqueiros } from './mundo/vegetacao.js'
+import { criarQuintal1932 } from './mundo/quintal1932.js'
+import { criarVida1932 } from './mundo/vida1932.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
 import { criarUrubu1932 } from './mundo/urubu1932.js'
@@ -118,7 +121,7 @@ async function iniciar() {
   const mar = criarMar(cena, mapaAltura, cfg, toque.publico)
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
   void criarFaixas
-  const { predios, casas, grade, quadras } = criarCidade(cena)
+  const { predios, casas, grade, quadras, frente } = criarCidade(cena, cfg)
   // os marcos do centro (Coluna da Hora, cinemas, Excelsior, Leões, Mercado de Ferro): src/mundo/marcos1932/
   const marcos1932 = criarMarcosCentro(cena, cfg)
   const marcosNorte = criarMarcosNorte(cena, cfg) // a velha Sé, a Estação Central e o Passeio Público de 1932
@@ -139,12 +142,17 @@ async function iniciar() {
   lugares.bancos.push(...marcos1932.bancos) // os bancos de ferro das praças dos marcos: dá para sentar
   marcar('rua')
   criarBondes(cena) // os trilhos das linhas de bonde da Light sobre a rede viária de 1932
+  const vida1932 = criarVida1932(cena, cfg, predios) // carroças, jumentos, carga, potes, varais e o fio do bonde
+  marcar('vida')
   criarArvores(cena, predios, grade)
   marcar('arvores')
-  const { coqueiros } = criarCoqueiros(cena, cfg)
+  const { coqueiros, pecas } = criarCoqueiros(cena, cfg)
   marcar('coqueiros')
-  const pessoas = criarPessoas(cena, grade)
+  const quintal1932 = criarQuintal1932(cena, cfg, pecas) // as árvores dos quintais de 1932, atrás das casas
+  marcar('quintal')
+  const pessoas = criarPessoas(cena, grade, cfg)
   const horizonte = criarHorizonte(cena)
+  const telhadosLonge = criarTelhadosLonge(cena, cfg) // a silhueta dos telhados de 1932 até o horizonte
   const grama = criarGrama(cena, mapaAltura, cfg, toque.publico)
   marcar('grama')
   const areia = criarAreia(cena, renderer, mapaAltura, cfg)
@@ -312,7 +320,10 @@ async function iniciar() {
     centroPerto.copy(jogador.pos).addScaledVector(frenteCam, cfg.mundo.sombraPertoAFrente ?? 8)
     sombraPerto.atualizar(ceu.dirContinua, centroPerto)
     horizonte.atualizar(paleta)
-    pessoas.atualizar(dt, t)
+    telhadosLonge.atualizar(camera, paleta)
+    quintal1932.atualizar(camera)
+    casasPalha.atualizarLonge?.(camera, cfg.mundo.palhaPerto)
+    pessoas.atualizar(dt, t, cfg.tempo.hora)
     atores?.atualizar(dt, jogador.pos)
     const fpsAvo = cfg.estilo.visual === 'arcane' ? cfg.personagem.fpsAcao : cfg.personagem.fpsPose // Arcane: 24 poses
     avo?.atualizar(dt, fpsAvo)
@@ -456,7 +467,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932, urubu, marcos1932,
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

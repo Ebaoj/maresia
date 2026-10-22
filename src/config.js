@@ -292,6 +292,42 @@ export const PADRAO = {
     soltoRaio: 40,        // até quantos metros da câmera ele aparece
     soltoDensidade: 1.0,  // quantas peças (1 = o padrão); vale ao recarregar
   },
+  // a gente do Centro de dia (src/mundo/pessoas.js); recarregar
+  pessoas: {
+    andandoCentro: 400,  // andando nas calçadas do Centro (além dos 150 da cidade inteira)
+    raioCentro: 600,     // até onde (m de verdade da Praça do Ferreira)
+    gruposPraca: 45,     // grupinhos conversando na Praça do Ferreira e na calçada dela
+    gruposFeira: 30,     // na feira do Mercado de Ferro
+    gruposEstacao: 14,   // na praça da Estação Central
+    gruposSe: 8,         // no largo da Sé
+    diaDe: 6,            // o movimento do dia começa (hora)
+    diaAte: 18.5,        // e acaba
+  },
+  // a vida de rua de 1932 nos espaços abertos (src/mundo/vida1932.js); tudo muda ao recarregar
+  vida: {
+    ligada: true,
+    feiraCarrocas: 5,     // carroças paradas em volta da feira do Mercado de Ferro
+    feiraPilhas: 10,      // pilhas de sacos e caixotes na feira
+    estacaoCarrocas: 4,   // carroças na praça da Estação Central
+    estacaoPilhas: 8,     // pilhas de fardos de algodão e sacos na Estação
+    raioCentro: 500,      // até onde (m de verdade da Praça do Ferreira) as ruas do Centro ganham pote, caixote e carroça
+    passoRua: 45,         // de quantos em quantos metros de rua (média)
+    raioBairros: 2500,    // até onde os bairros ganham pote e varal (m de verdade)
+    potesBairro: 0.25,    // a chance de uma casa simples ter pote na porta
+    varais: 0.15,         // a chance de uma casa simples ter varal no quintal
+    bonde: true,          // o poste e o fio aéreo do bonde sobre o trilho
+    raioBonde: 2500,      // até onde o fio do bonde vai (m de verdade)
+    passoPoste: 32,       // de quantos em quantos metros de trilho um poste do bonde
+  },
+  casario: {
+    larguraAlvo: 10,     // a largura de verdade que a casa deve ter (m): a testada longa da planta e partida em casas
+    folgaParede: 0.12,   // a fresta entre duas casas geminadas (m)
+    quintal: {
+      densidade: 0.25,   // a chance de uma arvore nascer no quintal de um lote
+      folga: 2.5,        // quantos metros atras da casa a arvore fica (m)
+      ate: 320,          // longe disso (m da câmera) o bloco de quintais sai do desenho
+    },
+  },
   mundo: {
     // 21/10/2026: 0 (era 4). Com 4, o mapa de longe pulava ~1° a cada 4 s (1 min de jogo por segundo) e a sombra
     // inteira dava um tranco visível. Com 0 o cache dos parados refaz a cada 0,05° (~5 vezes por segundo, cada vez
@@ -314,6 +350,16 @@ export const PADRAO = {
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
+    palhaPerto: 220,     // até essa distância (un) a palhoça das vilas é a de perto; depois, a caixa de taipa e palha (vilas.js)
+    // os telhados ao longe (src/mundo/telhados-longe.js): faixa de silhueta que acompanha a câmera e só sobe onde a planta tem cidade
+    telhadosLonge: {
+      ligado: true,
+      distancia: 900,    // un da câmera até a faixa
+      alturaMin: 7,      // altura do telhado (un)
+      alturaMax: 13,
+      mistura: 0.38,     // quanto da névoa entra na cor (0 = barro, 1 = céu)
+      refazer: 60,       // a câmera anda isso (un) e a faixa se refaz
+    },
     // Os marcos do norte do centro em 1932 (Sé velha, Estação Central, Passeio Público): src/mundo/marcos-norte.js
     marcosNorte: {
       se: true,             // a velha Sé de 1854 (demolida em 1938)

@@ -37,8 +37,29 @@ describe('terrenos dos marcos de 1932', () => {
         for (const p of Object.values(PEGADAS)) expect(dentro(p, x, z)).toBe(false)
       }
     }
-    // e a exclusão é pequena: só o terreno dos marcos, não um bairro
+    // e a exclusão é pequena: só o terreno dos marcos, não um bairro.
+    // O limite era "menos de 60 casas", calibrado em 5.678 fachadas (debf939, 29 puladas). A testada
+    // partida em casas de 10 m (06d44c3) levou a planta a 21.932 fachadas no mesmo chão, e a contagem
+    // passou a medir a partição, não a exclusão. O limite vira fração, com a mesma razão calibrada
+    // (60 / 5.678 = 1,06%, arredondada para baixo: 1%), e cada marco ganha o seu teto.
     expect(pulam).toBeGreaterThan(0)
-    expect(pulam).toBeLessThan(60)
+    expect(pulam / FACHADAS.length).toBeLessThan(0.01)
+  })
+  it('nenhum marco engole o bairro em volta: pula no máximo 30% das fachadas a 50 m dele', () => {
+    // um marco em tamanho real no mapa comprimido cobre lotes da planta (a Estação fica numa faixa
+    // comprimida ~3 vezes); 30% é o teto acima do que já se via em debf939 (15 a 17%) e hoje (13 a 22%)
+    for (const [nome, p] of Object.entries(PEGADAS)) {
+      let perto = 0
+      let pula = 0
+      for (const f of FACHADAS) {
+        const [lx, lz] = localDaPegada(p, f.x, f.z)
+        const d = Math.hypot(Math.max(p.x0 - lx, 0, lx - p.x1), Math.max(p.z0 - lz, 0, lz - p.z1))
+        if (d > 50) continue
+        perto++
+        if (marcoSob(f.x, f.z, Math.hypot(f.w, f.d) / 2) === nome) pula++
+      }
+      expect(perto, nome).toBeGreaterThan(20)
+      expect(pula / perto, nome).toBeLessThan(0.3)
+    }
   })
 })

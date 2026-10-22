@@ -297,5 +297,8 @@ export function criarCoqueiros(cena, cfg) {
   return {
     quantidade: lista.length,
     coqueiros: matrizes.map((mm) => ({ pos: new THREE.Vector3().setFromMatrixPosition(mm), copa: new THREE.Vector3(1.9, 8.0, 0).applyMatrix4(mm), espera: 0 })),
+    // as mesmas peças (tronco, copa e materiais) para o coqueiro dos quintais
+    // de 1932 (src/mundo/quintal1932.js): a geometria e o material sao um só
+    pecas: { geoTronco, geoCopa, matTronco, matCopa },
   }
 }
