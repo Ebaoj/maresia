@@ -24,7 +24,7 @@ import { congelar } from './congelar.js'
 import { ocupacao } from './ocupacao.js'
 import { luzFixa, toon, texturizar } from '../materiais.js'
 import { registrarLampiao } from './cenografia.js'
-import { materiaisDasCasas } from './quarteirao.js'
+import { materiaisDasCasas, materialRebocoMarco } from './quarteirao.js'
 import { globais } from '../globais.js'
 
 // a malha de Herbster no jogo: o eixo x local (leste da malha) vai para (cos, -sen) do rotation.y
@@ -37,6 +37,16 @@ function preparar(geo) {
   if (g.attributes.uv1) g.deleteAttribute('uv1')
   if (!g.attributes.normal) g.computeVertexNormals()
   return g
+}
+
+// a caixa da peça em planta (x0, z0, x1, z1, no referencial do marco), repetida em cada vértice
+export function caixaDaPeca(g) {
+  g.computeBoundingBox()
+  const b = g.boundingBox
+  const n = g.attributes.position.count
+  const a = new Float32Array(n * 4)
+  for (let i = 0; i < n; i++) a.set([b.min.x, b.min.z, b.max.x, b.max.z], i * 4)
+  return new THREE.BufferAttribute(a, 4)
 }
 
 function colorir(g, hex) {
@@ -189,6 +199,9 @@ export class Obra {
       // o reboco das casas mede a altura de cada ponto a partir do chão (salitre, sujeira, degradê): o chão
       // do marco, no mundo
       if (def.reboco) for (const g of lista) g.setAttribute('aChao', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(this.y0 + (def.chao || 0)), 1))
+      // e a caixa de cada peça no referencial do marco (x0, z0, x1, z1): a quina vertical, onde a cal cai mais
+      // (desgaste-marcos.js)
+      if (def.reboco) for (const g of lista) g.setAttribute('aCaixa', caixaDaPeca(g))
       const geo = mergeGeometries(lista)
       if (!geo) throw new Error(`obra ${this.nome}: não juntou ${chave}`)
       geo.computeBoundingSphere()
@@ -264,12 +277,13 @@ export const uNoiteReboco = { value: 0.55 }
 // O reboco caiado das casas (quarteirao.js): pinceladas de caiação, degradê, salitre subindo da base,
 // placas de cal caída mostrando a taipa, escorridos e o desgaste grande (desgaste.js), nos dois
 // renderizadores. Uma cópia só dos marcos (não reparte com as casas): leva a pincelada e a sombra próprias,
-// e a cor do material é o escurecer da noite (a cor de cada parede vai por vértice).
+// e a cor do material é o escurecer da noite (a cor de cada parede vai por vértice). A cal caída é a dos marcos
+// (desgaste-marcos.js): em metros, embaixo e nas quinas, sem crescer com o tamanho da parede.
 const _rebocos = {}
 function rebocoMarcos(gasto) {
   const k = gasto ? 'gasto' : 'novo'
   if (!_rebocos[k]) {
-    const m = gasto ? casas().rebocoMorro : casas().reboco
+    const m = materialRebocoMarco(gasto ? 0.85 : 0.4)
     m.userData.arcPincel = uPincelMarcos
     m.userData.arcCorSombra = uSombraMarcos
     _rebocos[k] = m

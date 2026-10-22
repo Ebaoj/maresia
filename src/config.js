@@ -401,6 +401,15 @@ export const PADRAO = {
       noiteReboco: 0.55,    // quanto do reboco fica à noite (a parede não recebe a sombra da lua e clareava mais que as casas)
       corFerro: '#2b2f2c',  // gradil, poste e grade: ferro escuro (verde quase preto, hipótese)
       corEsfinge: '#d9cbb0', // pedra artificial lisa, de uma cor só (nota do Joabe nos conceitos)
+      // a cal caída do reboco deles (src/mundo/desgaste-marcos.js), em metros: poucas placas, embaixo e nas quinas
+      // (conceito se-velha.png); a regra das casas espalhava tijolo pela fachada inteira e pelo alto das torres
+      cascaTam: 1.1,        // m: o tamanho típico de uma placa
+      cascaLim: 0.69,       // quanto cai embaixo (maior = menos placas)
+      cascaBaixa: 2.2,      // m acima do chão do marco: até aqui a chance é cheia
+      cascaAlta: 6,         // m: daqui para cima a parede não descasca
+      cascaQuina: 0.7,      // m: a faixa junto da quina vertical de cada peça, onde cai um pouco mais
+      cascaQuinaAlta: 10,   // m: a quina descasca até aqui (o alto das torres fica caiado)
+      cascaFundo: 0.07,     // quanto a placa precisa crescer para mostrar a pedra (o resto é o reboco grosso)
     },
     urubu: {
       alturaCerca: 1.8,     // altura do arame que cerca as tarefas de terra

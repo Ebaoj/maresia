@@ -146,6 +146,13 @@ export function secaoMundo(gui, cfg) {
   mn.add(cfg.mundo.marcosNorte, 'noiteReboco', 0.1, 1, 0.01).name('reboco à noite')
   mn.addColor(cfg.mundo.marcosNorte, 'corFerro').name('ferro (gradil, poste)')
   mn.addColor(cfg.mundo.marcosNorte, 'corEsfinge').name('pedra das esfinges')
+  mn.add(cfg.mundo.marcosNorte, 'cascaTam', 0.2, 3, 0.05).name('cal caída: tamanho da placa (m)')
+  mn.add(cfg.mundo.marcosNorte, 'cascaLim', 0.5, 1, 0.01).name('cal caída: menos placas')
+  mn.add(cfg.mundo.marcosNorte, 'cascaBaixa', 0, 10, 0.1).name('cal caída: cheia até (m)')
+  mn.add(cfg.mundo.marcosNorte, 'cascaAlta', 0.5, 30, 0.1).name('cal caída: some em (m)')
+  mn.add(cfg.mundo.marcosNorte, 'cascaQuina', 0.1, 3, 0.05).name('cal caída: faixa da quina (m)')
+  mn.add(cfg.mundo.marcosNorte, 'cascaQuinaAlta', 0.5, 30, 0.1).name('cal caída: quina some em (m)')
+  mn.add(cfg.mundo.marcosNorte, 'cascaFundo', 0, 0.3, 0.005).name('cal caída: pedra só no miolo')
 
   const urubu = mundo.addFolder('Campo do Urubu')
   // o campo é montado uma vez, quando o mundo nasce (urubu1932.js lê o cfg): só muda ao recarregar
