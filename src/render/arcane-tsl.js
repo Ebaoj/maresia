@@ -35,10 +35,10 @@ function montar(W) {
 }
 
 // fator da textura pintada e da pincelada sobre a cor (o bloco do normal_fragment_begin)
-function fatorPintado(W, tp, nMundo) {
+function fatorPintado(W, tp, nMundo, pPintura = null) {
   const { vec2, vec3, texture, positionWorld, attribute, mix, pow, abs, dot, max, step, float, normalize } = W
   const n = normalize(nMundo)
-  const pW = positionWorld
+  const pW = pPintura || positionWorld
   let fator = vec3(1.0)
   if (tp) {
     const wT = pow(abs(n), vec3(4.0)).toVar()
@@ -116,7 +116,7 @@ function criarClasse(W) {
       const pesoIrr = max(dot(irrL, LUM), 1e-3)
       const tomA = clamp(irrL.div(pesoIrr), 0.0, 2.0)
       const nA = normalize(this.material.nMundo)
-      const pinA = T.pincelada(positionWorld.mul(3.1), nA).sub(0.5)
+      const pinA = T.pincelada((this.material.pPintura || positionWorld).mul(3.1), nA).sub(0.5)
       // um material pode ter a própria pincelada da borda das faixas (materiais.js, pintar)
       const tA = lumA.add(pinA.mul(ref(this.material.original?.userData.arcPincel || globais.uArcPincel)))
       const lim = ref(globais.uArcLim)
@@ -185,6 +185,13 @@ function criarClasse(W) {
       const inst = object.isInstancedMesh && object.instanceMatrix?.isInstancedBufferAttribute ? matrizInstancia(W, object) : null
       const instMat = inst?.no || null
       const ctx = { W, builder, material: this.original, objeto: object, instancia: instMat }
+      // ponto em que a pintura se prende (textura em três eixos, pincelada): a posição antes do vento, para a
+      // textura andar junto com a folha que balança e não escorrer por cima dela (vento-arvores.js)
+      if (extra?.pintura) {
+        this.pPintura = varyingProperty('vec3', 'vPMundoPintura')
+        const loc = W.vec4(extra.pintura(ctx), 1.0)
+        this.pPintura.assign((instMat ? modelWorldMatrix.mul(instMat).mul(loc) : modelWorldMatrix.mul(loc)).xyz)
+      }
       if (extra?.posicao) positionLocal.assign(extra.posicao(ctx))
       if (geometry.morphAttributes.position || geometry.morphAttributes.normal || geometry.morphAttributes.color) W.morphReference(object)
       if (object.isSkinnedMesh === true) W.skinning(object)
@@ -210,7 +217,7 @@ function criarClasse(W) {
       const extra = this.original.userData.tsl
       let rgb = diffuseColor.rgb
       if (extra?.cor) rgb = extra.cor(ctx, rgb)
-      const { fator, tom, uPincel } = fatorPintado(W, this.original.userData.texPintada, this.nMundo)
+      const { fator, tom, uPincel } = fatorPintado(W, this.original.userData.texPintada, this.nMundo, this.pPintura)
       rgb = rgb.mul(fator)
       rgb = mix(rgb, rgb.mul(vec3(1.07, 0.96, 1.05)), tom.sub(0.5).mul(uPincel).mul(1.6))
       diffuseColor.assign(vec4(rgb, diffuseColor.a))

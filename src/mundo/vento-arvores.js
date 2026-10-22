@@ -72,15 +72,32 @@ const GLSL_VERTICE = /* glsl */ `
     transformed = mix(transformed, aCentro + bb, aCanto.z);
   }
   #endif
+  preVentoA = transformed;
   vec3 ladoL = tA * vec3(-uVentoDir.y, 0.0, uVentoDir.x) / sA;
   vec3 desA = wL * aVento.x * uVentoTronco * forcaA * (0.3 + 0.7 * balA) * 0.3;
   float phA = aVento.z + faseA;
   float gA = aVento.y * uVentoGalhos * forcaA;
   desA += (wL * (0.55 + 0.45 * sin(uTempoA * 1.9 + phA)) + ladoL * (sin(uTempoA * 1.37 + phA * 1.3) * 0.55) + vec3(0.0, sin(uTempoA * 2.3 + phA * 0.7) * 0.35, 0.0)) * gA * 0.1;
   float fA = aVento.w * uVentoFolhas * forcaA;
-  vec3 qA = transformed * 3.1 + phA;
-  desA += vec3(sin(uTempoA * 8.3 + qA.y), cos(uTempoA * 9.7 + qA.x), sin(uTempoA * 7.1 + qA.z)) * fA * 0.035;
+  // a folha tremula inteira (fase pelo centro do cartão): fase por vértice deformava o cartão e a copa "fervia"
+  #ifdef ARV_CARTAO
+    vec3 qA = aCentro * 3.1 + phA;
+  #else
+    vec3 qA = transformed * 3.1 + phA;
+  #endif
+  desA += vec3(sin(uTempoA * 5.3 + qA.y), cos(uTempoA * 6.1 + qA.x), sin(uTempoA * 4.6 + qA.z)) * fA * 0.035;
   transformed += desA;
+}`
+
+// a pintura (textura em três eixos, pincelada) presa à posição antes do vento: com a do vento ela escorria por cima
+// da folha que balança. Entra depois do código do pintar() no project_vertex e troca o vPMundo dele
+const GLSL_PINTURA = /* glsl */ `
+{
+  vec4 pvA = vec4(preVentoA, 1.0);
+  #ifdef USE_INSTANCING
+    pvA = instanceMatrix * pvA;
+  #endif
+  vPMundo = (modelMatrix * pvA).xyz;
 }`
 
 // luz do céu na borda de cima da copa: o halo claro que separa a massa do céu nos conceitos
@@ -127,6 +144,7 @@ export function ventoPalmeira(mat, alturaRef = 8.2) {
   const anterior = mat.onBeforeCompile
   const glsl = `
 {` + GLSL_BASE + `
+  preVentoA = transformed;
   float hP = clamp(transformed.y / ${alturaRef.toFixed(2)}, 0.0, 1.2);
   transformed += wL * pow(hP, 1.5) * ${(Math.min(alturaRef, 14) / 8).toFixed(3)} * uVentoTronco * forcaA * (0.3 + 0.7 * balA) * 0.3 * uVentoPalmA;
 }`
@@ -135,12 +153,14 @@ export function ventoPalmeira(mat, alturaRef = 8.2) {
     Object.assign(sh.uniforms, u)
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>\n${DECL_VENTO} uniform float uVentoPalmA;`)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + glsl)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvec3 preVentoA = transformed;\n' + glsl)
+      .replace('#include <project_vertex>', '#include <project_vertex>\n' + GLSL_PINTURA)
   }
   const antes = mat.userData.tsl
   mat.userData.tsl = {
     ...(antes || {}),
     nome: (antes?.nome || 'palmeira') + '+vento',
+    pintura({ W }) { return W.positionLocal },
     posicao(ctx) {
       const { W } = ctx
       const { pow, clamp, positionLocal } = W
@@ -173,29 +193,35 @@ function aplicarVento(mat, cartao) {
     const decl = DECL_VENTO
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>\n${decl}\nattribute vec4 aVento;\n#ifdef ARV_CARTAO\nattribute vec3 aCentro; attribute vec3 aCanto;\n#endif`)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + GLSL_VERTICE)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvec3 preVentoA = transformed;\n' + GLSL_VERTICE)
+      .replace('#include <project_vertex>', '#include <project_vertex>\n' + GLSL_PINTURA)
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uArvBorda; uniform vec3 uArvBordaCor; uniform float uArvTransluz; uniform float uArvPreenche; uniform vec3 uArvCeu; uniform vec3 uArvChao;')
       .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_BORDA)
       .replace('#include <aomap_fragment>', GLSL_PREENCHE + '\n#include <aomap_fragment>')
   }
+  // a posição sem vento: o cartão virado para a câmera (encolhendo de longe); o corpo como está
+  const virado = (W, instancia) => {
+    const { vec3, float, attribute, positionLocal, mix, smoothstep, distance, cameraPosition, cameraViewMatrix } = W
+    if (!cartao) return positionLocal
+    const { baseA, sA, tA } = baseTsl(W, instancia, u)
+    const vm = cameraViewMatrix
+    const dX = vec3(vm.element(0).x, vm.element(1).x, vm.element(2).x)
+    const dY = vec3(vm.element(0).y, vm.element(1).y, vm.element(2).y)
+    const canto = attribute('aCanto', 'vec3')
+    const lod = ref(u.uArvLod)
+    const enc = float(1).sub(smoothstep(lod.x, lod.y, distance(cameraPosition, baseA)))
+    const bb = tA.mul(dX.mul(canto.x).add(dY.mul(canto.y))).div(sA).mul(enc)
+    return mix(positionLocal, attribute('aCentro', 'vec3').add(bb), canto.z)
+  }
   mat.userData.tsl = {
     nome: cartao ? 'arvore-cartao' : 'arvore-corpo',
+    pintura({ W, instancia }) { return virado(W, instancia) },
     posicao({ W, instancia }) {
-      const { vec3, float, attribute, positionLocal, sin, cos, mix, smoothstep, distance, cameraPosition, cameraViewMatrix } = W
+      const { vec3, attribute, positionLocal, sin, cos } = W
       const R = (k) => ref(u[k])
-      const { t, baseA, sA, tA, wL, faseA, forca, bal } = baseTsl(W, instancia, u)
-      let p = positionLocal
-      if (cartao) {
-        const vm = cameraViewMatrix
-        const dX = vec3(vm.element(0).x, vm.element(1).x, vm.element(2).x)
-        const dY = vec3(vm.element(0).y, vm.element(1).y, vm.element(2).y)
-        const canto = attribute('aCanto', 'vec3')
-        const lod = R('uArvLod')
-        const enc = float(1).sub(smoothstep(lod.x, lod.y, distance(cameraPosition, baseA)))
-        const bb = tA.mul(dX.mul(canto.x).add(dY.mul(canto.y))).div(sA).mul(enc)
-        p = mix(p, attribute('aCentro', 'vec3').add(bb), canto.z)
-      }
+      const { t, sA, tA, wL, faseA, forca, bal } = baseTsl(W, instancia, u)
+      const p = virado(W, instancia)
       const dir = R('uVentoDir')
       const av = attribute('aVento', 'vec4')
       const ladoL = tA.mul(vec3(dir.y.negate(), 0.0, dir.x)).div(sA)
@@ -206,8 +232,8 @@ function aplicarVento(mat, cartao) {
         .add(ladoL.mul(sin(t.mul(1.37).add(ph.mul(1.3))).mul(0.55)))
         .add(vec3(0.0, sin(t.mul(2.3).add(ph.mul(0.7))).mul(0.35), 0.0)).mul(g).mul(0.1))
       const f = av.w.mul(R('uVentoFolhas')).mul(forca)
-      const q = p.mul(3.1).add(ph)
-      des = des.add(vec3(sin(t.mul(8.3).add(q.y)), cos(t.mul(9.7).add(q.x)), sin(t.mul(7.1).add(q.z))).mul(f).mul(0.035))
+      const q = (cartao ? attribute('aCentro', 'vec3') : p).mul(3.1).add(ph)
+      des = des.add(vec3(sin(t.mul(5.3).add(q.y)), cos(t.mul(6.1).add(q.x)), sin(t.mul(4.6).add(q.z))).mul(f).mul(0.035))
       return p.add(des)
     },
     luz({ W, lumA, nMundo, albedo }) {
