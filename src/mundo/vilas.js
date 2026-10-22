@@ -409,6 +409,7 @@ export function criarVilas(cena) {
       const perto = d < dist
       if (p.perto.visible !== perto || p.unidade.visivelLonge === perto) { p.perto.visible = perto; mascara.mostrar(p.unidade, !perto) }
     }
+    mascara.aplicar()
   }
   if (varas.length) instanciarEmBlocos(cena, geometriaVara(), mat, varas, null, { nome: 'cercas', sombra: true })
   if (travessas.length) instanciarEmBlocos(cena, geometriaTravessa(), mat, travessas, null, { nome: 'cercas' })

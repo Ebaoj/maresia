@@ -161,16 +161,19 @@ export class MuitoLonge {
 // geometria) e poucas cópias espalhadas pelo mapa todo. A junção de blocos (blocos.js) já faz blocos de até 768 m
 // para elas, e a célula de muito longe não tinha o que juntar: sobrava um objeto por bloco e por forma (na Coluna da
 // Hora, ~260 copas simples de árvore e 36 palhoças por quadro). Aqui a versão de longe de cada forma vira UMA malha
-// para o mapa inteiro, com todas as cópias; a unidade que não está "longe" tem as cópias dela zeradas (escala 0) na
-// malha grande, e a malha de longe original dela nunca mais é desenhada. Mesmas cópias, geometria e material: o
-// desenho é o mesmo. Uma unidade que troca de estado regrava só o trecho dela (addUpdateRange).
-// Unidade: { longe: [malhas de longe] }; o sistema chama mostrar(u, sim) onde antes fazia u.longe[i].visible = sim.
+// para o mapa inteiro, e a malha de longe original de cada bloco nunca mais é desenhada. A malha grande guarda só as
+// cópias dos blocos que estão "longe", juntas no começo (count = quantas): quem está perto não passa nem pelo vértice.
+// Mesmas cópias, geometria e material: o desenho é o mesmo (a ordem das cópias não muda nada num material opaco).
+// Unidade: { longe: [malhas de longe] }; o sistema chama mostrar(u, sim) onde antes fazia u.longe[i].visible = sim,
+// e aplicar() depois do laço (refaz as famílias que mudaram).
 
 export class LongeMascarado {
   constructor({ nome = 'longe-mascarado' } = {}) {
     this.nome = nome
     this.unidades = []
     this.malhas = []
+    this.familias = []
+    this.sujas = new Set()
     this.montada = false
     this.ligadoAntes = null
   }
@@ -183,9 +186,11 @@ export class LongeMascarado {
       u.faixas = []
       for (const m of u.longe) {
         const chave = m.geometry.uuid + ':' + m.material.uuid + ':' + (m.parent?.uuid ?? '')
-        if (!familias.has(chave)) familias.set(chave, { lista: [], total: 0 })
+        if (!familias.has(chave)) familias.set(chave, { lista: [], faixas: [], total: 0 })
         const f = familias.get(chave)
-        u.faixas.push({ f, inicio: f.total, n: m.count, original: m })
+        const fx = { f, u, inicio: f.total, n: m.count }
+        u.faixas.push(fx)
+        f.faixas.push(fx)
         f.lista.push(m)
         f.total += m.count
       }
@@ -194,44 +199,56 @@ export class LongeMascarado {
       const j = juntarCopias(f.lista, `${f.lista[0].name}-mascarado`)
       j.computeBoundingSphere() // com todas as cópias: a esfera cobre o mapa
       j.frustumCulled = false
-      j.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
       f.malha = j
-      f.cheia = j.instanceMatrix.array.slice() // as matrizes de verdade
-      for (let k = 0; k < f.total; k++) j.instanceMatrix.array.fill(0, k * 16, k * 16 + 12) // tudo escondido até o sistema dizer quem está longe
+      f.matrizes = j.instanceMatrix.array.slice() // todas as cópias, na ordem das faixas
+      f.cores = j.instanceColor ? j.instanceColor.array.slice() : null
+      j.count = 0 // nada à vista até o sistema dizer quem está longe
       ;(f.lista[0].parent).add(congelar(j))
       if (j.castShadow) registrarEstatico(j)
       this.malhas.push(j)
+      this.familias.push(f)
     }
     this.montada = true
     return this
   }
 
-  // a unidade passa a mostrar (ou não) a versão de longe
+  // a unidade passa a mostrar (ou não) a versão de longe; vale no aplicar()
   mostrar(u, sim) {
-    if (u.visivelLonge === sim && this.montada) return
+    if (u.visivelLonge === sim) return
     u.visivelLonge = sim
     if (!this.montada || !ligado()) { for (const m of u.longe) m.visible = sim; return }
-    for (const fx of u.faixas) {
-      const a = fx.f.malha.instanceMatrix
-      const de = fx.inicio * 16
-      a.array.set(fx.f.cheia.subarray(de, de + fx.n * 16), de)
-      // escondida: escala 0 no lugar dela (a translação fica, sem w = 0 nem matriz nula no shader)
-      if (!sim) for (let k = 0; k < fx.n; k++) a.array.fill(0, de + k * 16, de + k * 16 + 12)
-      a.addUpdateRange(de, fx.n * 16)
-      a.needsUpdate = true
-    }
+    for (const fx of u.faixas) this.sujas.add(fx.f)
   }
 
-  // todo quadro: a chave do painel (cfg.desempenho.muitoLonge) troca ao vivo entre a malha grande e as de sempre
+  // junta no começo da malha grande as cópias das unidades à vista, nas famílias que mudaram
+  aplicar() {
+    for (const f of this.sujas) {
+      const a = f.malha.instanceMatrix.array
+      const c = f.cores ? f.malha.instanceColor.array : null
+      let k = 0
+      for (const fx of f.faixas) {
+        if (!fx.u.visivelLonge) continue
+        a.set(f.matrizes.subarray(fx.inicio * 16, (fx.inicio + fx.n) * 16), k * 16)
+        if (c) c.set(f.cores.subarray(fx.inicio * 3, (fx.inicio + fx.n) * 3), k * 3)
+        k += fx.n
+      }
+      f.malha.count = k
+      f.malha.instanceMatrix.needsUpdate = true
+      if (c) f.malha.instanceColor.needsUpdate = true
+    }
+    this.sujas.clear()
+  }
+
+  // todo quadro, antes do laço: a chave do painel (cfg.desempenho.muitoLonge) troca ao vivo entre a malha grande e as
+  // de sempre
   atualizar() {
     if (!this.montada) return
     const lig = ligado()
     if (lig === this.ligadoAntes) return
     this.ligadoAntes = lig
     for (const j of this.malhas) j.visible = lig
-    for (const u of this.unidades) {
-      for (const m of u.longe) m.visible = lig ? false : u.visivelLonge
-      if (lig) { const s = u.visivelLonge; u.visivelLonge = !s; this.mostrar(u, s) }
-    }
+    for (const u of this.unidades) for (const m of u.longe) m.visible = lig ? false : u.visivelLonge
+    if (lig) for (const f of this.familias) this.sujas.add(f)
+    this.aplicar()
   }
 }

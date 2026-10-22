@@ -147,23 +147,27 @@ describe('longe mascarado', () => {
     return { ml, unidades }
   }
 
-  it('uma malha por forma; mostra exatamente as cópias das unidades longe', () => {
+  it('uma malha por forma; mostra exatamente as cópias das unidades longe, e só elas passam pelo desenho', () => {
     const { ml, unidades } = cenario()
     expect(ml.malhas.length).toBe(3)
     expect(visiveis(ml.malhas)).toEqual([])
     const longe = unidades.filter((_, i) => i % 4 !== 1)
     for (const u of unidades) ml.mostrar(u, longe.includes(u))
+    ml.aplicar()
     expect(visiveis(ml.malhas)).toEqual(copias(longe.flatMap((u) => u.longe)))
+    expect(ml.malhas.reduce((n, m) => n + m.count, 0)).toBe(longe.length * 3)
     // as originais nunca mais aparecem
     expect(unidades.every((u) => u.longe.every((m) => !m.visible))).toBe(true)
     // volta uma para perto
     ml.mostrar(longe[0], false)
+    ml.aplicar()
     expect(visiveis(ml.malhas)).toEqual(copias(longe.slice(1).flatMap((u) => u.longe)))
   })
 
   it('desligada no painel, as malhas de sempre voltam no estado de cada unidade', () => {
     const { ml, unidades } = cenario()
     ml.mostrar(unidades[0], true)
+    ml.aplicar()
     const cfg = { desempenho: { muitoLonge: false } }
     definirMuitoLonge(cfg)
     ml.atualizar()

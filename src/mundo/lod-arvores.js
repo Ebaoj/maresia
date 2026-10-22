@@ -92,6 +92,7 @@ export function atualizarLodArvores(camera, cfg) {
     if (g.unidade) mascara.mostrar(g.unidade, nivel === 'longe')
     else { g.longe.visible = nivel === 'longe'; if (g.cartLonge) g.cartLonge.visible = nivel === 'longe' } // registrado depois da máscara
   }
+  mascara?.aplicar()
 }
 
 export function gruposLod() { return grupos }
