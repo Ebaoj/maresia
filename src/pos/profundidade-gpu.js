@@ -35,7 +35,7 @@ export class ProfundidadeGpu {
     this.matDilV = material(dilata(W, Q, de(r.dilA.texture), U.uDirVQ, uvGL))
     this.matPertoH = material(perto(W, Q, de(r.pertoA.texture), de(r.dilB.texture), U.uDirHQ, uvGL))
     this.matPertoV = material(perto(W, Q, de(r.pertoB.texture), de(r.dilB.texture), U.uDirVQ, uvGL))
-    this.matJunta = material(junta(W, U, C, fonte, de(r.longeA.texture), de(r.pertoA.texture), uvGL))
+    this.matJunta = material(junta(W, U, C, fonte, de(r.longeA.texture), de(r.pertoA.texture), de(r.dilB.texture), uvGL))
   }
 
   tamanho(w, h) {
@@ -72,7 +72,9 @@ function contas(W, U, prof) {
     const um = float(1.0).sub(t)
     return clamp(float(1.0).sub(um.mul(um)).mul(U.uLonge), 0.0, 1.0)
   }
-  const cocPerto = (d) => clamp(clamp(U.uPertoIni.sub(d).div(max(U.uPertoIni.mul(0.5), 0.05)), 0.0, 1.0).mul(U.uPerto), 0.0, 1.0)
+  // em dioptrias, como cocPerto de profundidade.js; faixa da frente vazia (foco muito perto) não desfoca
+  const cocPerto = (d) => clamp(clamp(float(1.0).div(max(d, 0.05)).sub(float(1.0).div(max(U.uPertoIni, 0.05))).mul(U.uPertoEscala), 0.0, 1.0)
+    .mul(U.uPerto).mul(W.step(0.05, U.uPertoIni)), 0.0, 1.0)
   return { distDof, cocLonge, cocPerto }
 }
 
@@ -160,7 +162,7 @@ function perto(W, U, amostra, dil, dir, uvGL) {
   })()
 }
 
-function junta(W, U, C, fonte, tLonge, tPerto, uvGL) {
+function junta(W, U, C, fonte, tLonge, tPerto, tDil, uvGL) {
   const { Fn, vec4, clamp, max, mix, smoothstep, step } = W
   return Fn(() => {
     const base = fonte(uvGL).toVar()
@@ -169,7 +171,9 @@ function junta(W, U, C, fonte, tLonge, tPerto, uvGL) {
     // até meio pixel de raio fica a imagem nítida; texel sem desfoque (L.a = 0) não conta
     const cor = mix(base.rgb, L.rgb.div(max(L.a, 1e-4)), smoothstep(0.5, 1.5, rL).mul(step(1e-4, L.a))).toVar()
     const P = tPerto(uvGL).toVar()
-    const aP = clamp(P.a.mul(2.0), 0.0, 1.0).mul(step(1e-4, P.a)).mul(U.uPertoLiga)
+    // só onde o raio da frente que chega aqui passa de meio pixel (o mesmo do GLSL)
+    const rP = tDil(uvGL).a.mul(U.uRaioCheio)
+    const aP = clamp(P.a.mul(2.0), 0.0, 1.0).mul(step(1e-4, P.a)).mul(smoothstep(0.5, 1.5, rP)).mul(U.uPertoLiga)
     return vec4(mix(cor, P.rgb.div(max(P.a, 1e-4)), aP), base.a)
   })()
 }

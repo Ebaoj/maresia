@@ -35,23 +35,37 @@ export function cocLonge(d, p) {
   const t = Math.min(1, Math.max(0, (d - p.longeIni) / Math.max(p.longeCheio - p.longeIni, 1)))
   return Math.min(1, Math.max(0, (1 - (1 - t) * (1 - t)) * p.longe))
 }
+// A frente em dioptrias (1/d, como numa lente: o desfoque de uma coisa perto cai com a distância do foco): com o
+// foco longe, a rua a meio caminho não borra (bug de 22/10: a faixa era proporcional ao foco e, com a câmera a
+// 45 m, tudo entre 22 e 43 m saía mole). pertoEscala (m) = quanto uma dioptria a mais desfoca.
 export function cocPerto(d, p) {
-  const t = Math.min(1, Math.max(0, (p.pertoIni - d) / Math.max(p.pertoIni * 0.5, 0.05)))
+  if (p.pertoIni < 0.05) return 0
+  const t = Math.min(1, Math.max(0, (1 / Math.max(d, 0.05) - 1 / p.pertoIni) * p.pertoEscala))
   return Math.min(1, Math.max(0, t * p.perto))
 }
 
-// Os números do shader a partir do cfg e do foco (m). altura = altura da imagem em pixels: o raio é dado em pixels
-// de uma imagem de 720 de altura, para o desenho sair igual em qualquer resolução.
-export function parametrosProfundidade(e, foco, altura) {
+// Os números do shader a partir do cfg, do foco (m) e da lente. altura = altura da imagem em pixels: o raio é dado
+// em pixels de uma imagem de 720 de altura com o fov de 50° (o padrão da câmera), para o desenho sair igual em
+// qualquer resolução; fov mais fechado aumenta a imagem e o desfoque junto (a corrida abre o fov).
+// A faixa nítida cresce com a distância do foco, como numa lente (bug de 22/10: o fundo começava 8 m fixos depois do
+// jogador e, com a câmera longe, a 2x a distância dele já amolecia): vai de foco x dofPertoFator a foco x
+// dofLongeFator, e nunca fica mais estreita que dofPertoMargem antes e dofLongeInicio depois (o corpo do jogador).
+export const FOV_PADRAO = 50
+export function parametrosProfundidade(e, foco, altura, fov = FOV_PADRAO) {
   const ab = Math.max(0, e.dofAbertura ?? 1)
-  const raioCheio = Math.max(0, e.dofRaio ?? 8) * altura / 720
+  const lente = Math.tan((FOV_PADRAO / 2) * Math.PI / 180) / Math.tan((Math.min(170, Math.max(5, fov)) / 2) * Math.PI / 180)
+  const raioCheio = Math.max(0, e.dofRaio ?? 8) * altura / 720 * lente
   const raioMeio = raioCheio / 2
+  const longeIni = Math.max(foco * Math.max(1, e.dofLongeFator ?? 2.6), foco + Math.max(0, e.dofLongeInicio ?? 2))
   return {
     foco,
-    longeIni: foco + Math.max(0, e.dofLongeInicio ?? 10),
-    longeCheio: Math.max(foco + Math.max(0, e.dofLongeInicio ?? 10) + 1, e.dofLongeCheio ?? 900),
+    longeIni,
+    longeCheio: Math.max(longeIni + 1, e.dofLongeCheio ?? 900),
     longe: Math.max(0, e.dofLonge ?? 0.8) * ab,
-    pertoIni: Math.max(0, foco - Math.max(0, e.dofPertoMargem ?? 1.5)),
+    pertoIni: Math.max(0, Math.min(foco * Math.min(1, Math.max(0, e.dofPertoFator ?? 0.65)), foco - Math.max(0, e.dofPertoMargem ?? 1))),
+    // plano aberto: com a câmera longe a frente para de desfocar (a lente "fecha"); sem isto o telhado logo abaixo
+    // da câmera a 45 m saía mole (zoom na praça, 22/10). Até dofPertoRef de foco vale a escala inteira
+    pertoEscala: Math.max(0, e.dofPertoEscala ?? 3.5) * Math.min(1, ((e.dofPertoRef ?? 6) / Math.max(foco, 0.01)) ** 2),
     perto: Math.max(0, e.dofPerto ?? 0.8) * ab,
     raioCheio,
     raioMeio,
@@ -76,15 +90,20 @@ export function focoSuave(atual, alvo, dt, tau) {
   return atual + (alvo - atual) * (1 - Math.exp(-dt / tau))
 }
 
-// Um passo do autofoco: suaviza, mas nunca deixa o jogador sair da faixa nítida. A câmera pula para perto quando
-// algo fica entre ela e o jogador (camera.js): com só a suavização, o jogador ficaria uns 0,3 s na zona da frente,
-// borrado. atual = null (primeiro quadro) ou dt fora de 0 a 0,5 s (teleporte, pausa longa) vão direto ao alvo.
+// Um passo do autofoco. Padrão (dofFocoSuave = 0, desde 22/10): o foco É a distância da câmera ao jogador neste
+// quadro. Ela já é suave (camera.js amacia o alvo e o afastar) e só pula quando tem de pular (a câmera chega na
+// hora no zoom de aproximar e quando algo fica entre ela e o jogador); com 0,35 s de atraso o foco ficava para trás
+// nesses pulos e a rua perto do jogador borrava. Com suavização, ela nunca deixa o jogador sair da faixa nítida
+// (de 0,85x a 1,3x o foco ele fica nítido em qualquer zoom). atual = null (primeiro quadro) ou dt fora de 0 a 0,5 s
+// (teleporte, pausa longa) vão direto ao alvo.
 export function focoAcompanha(atual, alvo, dt, e) {
   if (atual === null || !(dt >= 0) || dt > 0.5) return alvo
-  const f = focoSuave(atual, alvo, dt, e.dofFocoSuave ?? 0.35)
-  const antes = Math.max(0, e.dofPertoMargem ?? 1.5) * 0.8 // o foco pode ficar até isso atrás do jogador
-  const depois = Math.max(0, e.dofLongeInicio ?? 10) * 0.8 // e até isso na frente
-  return Math.min(alvo + antes, Math.max(alvo - depois, f))
+  const tau = e.dofFocoSuave ?? 0
+  if (!(tau > 0)) return alvo
+  const f = focoSuave(atual, alvo, dt, tau)
+  const pf = Math.min(1, Math.max(0.05, e.dofPertoFator ?? 0.65))
+  const lf = Math.max(1, e.dofLongeFator ?? 2.6)
+  return Math.min(alvo * 0.85 / pf, Math.max(alvo * 1.3 / lf, f))
 }
 
 // ---------- uniforms (os mesmos objetos nos dois renderizadores) ----------
@@ -94,7 +113,7 @@ export function uniformsProfundidade(THREE) {
   const v2 = () => ({ value: new THREE.Vector2(1, 1) })
   return {
     uNear: f(0.3), uFar: f(6000), uFoco: f(6),
-    uLongeIni: f(16), uLongeCheio: f(900), uLonge: f(0.8), uPertoIni: f(4.5), uPerto: f(0.8),
+    uLongeIni: f(16), uLongeCheio: f(900), uLonge: f(0.8), uPertoIni: f(4.5), uPerto: f(0.8), uPertoEscala: f(3.5),
     uRaioCheio: f(8), uRaioMeio: f(4), uPasso: f(1), uRaioQuarto: f(2), uPassoQuarto: f(1),
     uTexelCheio: v2(), uTexelMeio: v2(),
     // direções dos borrões, em uv (passo * texel): uma por passe, fixas (o WebGPU monta um shader por material);
@@ -114,6 +133,9 @@ export function criarEstadoFoco() {
 export function atualizarProfundidade(u, estado, e, camera, alvo, tempo, larg, alt) {
   const ligado = !!e.dof && (e.dofAbertura ?? 1) > 0
   let alvoFoco = e.dofFocoManual ?? 8
+  // a câmera não está na cena: a matriz dela só é refeita dentro do render; sem isto o foco e o eixo saíam do
+  // quadro anterior (girando rápido, o foco media o jogador pela câmera de antes)
+  camera.updateMatrixWorld()
   if (e.dofAutoFoco !== false && alvo) {
     const c = estado._a, fr = estado._b, a = estado._c
     c[0] = camera.position.x; c[1] = camera.position.y; c[2] = camera.position.z
@@ -127,7 +149,7 @@ export function atualizarProfundidade(u, estado, e, camera, alvo, tempo, larg, a
   alvoFoco = Math.max(camera.near + 0.1, alvoFoco + (e.dofFocoAjuste ?? 0))
   estado.foco = focoAcompanha(estado.foco, alvoFoco, estado.tempo === null ? 0 : tempo - estado.tempo, e)
   estado.tempo = tempo
-  const p = parametrosProfundidade(e, estado.foco, alt)
+  const p = parametrosProfundidade(e, estado.foco, alt, camera.fov)
   u.uNear.value = camera.near
   u.uFar.value = camera.far
   u.uFoco.value = p.foco
@@ -136,6 +158,7 @@ export function atualizarProfundidade(u, estado, e, camera, alvo, tempo, larg, a
   u.uLonge.value = p.longe
   u.uPertoIni.value = p.pertoIni
   u.uPerto.value = p.perto
+  u.uPertoEscala.value = p.pertoEscala
   u.uRaioCheio.value = p.raioCheio
   u.uRaioMeio.value = p.raioMeio
   u.uPasso.value = p.passo
@@ -161,7 +184,7 @@ void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`
 
 export const GLSL_COC = /* glsl */ `
 uniform float uNear; uniform float uFar; uniform float uLongeIni; uniform float uLongeCheio; uniform float uLonge;
-uniform float uPertoIni; uniform float uPerto;
+uniform float uPertoIni; uniform float uPerto; uniform float uPertoEscala;
 float distDof(sampler2D prof, vec2 q) {
   float d = texture2D(prof, q).x;
   return -(uNear * uFar) / ((uFar - uNear) * d - uFar);
@@ -171,7 +194,8 @@ float cocLonge(float d) {
   return clamp((1.0 - (1.0 - t) * (1.0 - t)) * uLonge, 0.0, 1.0);
 }
 float cocPerto(float d) {
-  return clamp(clamp((uPertoIni - d) / max(uPertoIni * 0.5, 0.05), 0.0, 1.0) * uPerto, 0.0, 1.0);
+  if (uPertoIni < 0.05) return 0.0;
+  return clamp(clamp((1.0 / max(d, 0.05) - 1.0 / uPertoIni) * uPertoEscala, 0.0, 1.0) * uPerto, 0.0, 1.0);
 }`
 
 // 1 e 4: prévia (meia resolução). frente = true: a frente, pré-multiplicada; false: o fundo, com o desfoque no alfa
@@ -261,7 +285,7 @@ void main() {
 
 // 9: junção em resolução cheia
 const fragJunta = /* glsl */ `
-uniform sampler2D tCor; uniform sampler2D tProf; uniform sampler2D tLonge; uniform sampler2D tPerto;
+uniform sampler2D tCor; uniform sampler2D tProf; uniform sampler2D tLonge; uniform sampler2D tPerto; uniform sampler2D tDil;
 uniform float uRaioCheio; uniform float uPertoLiga;
 varying vec2 vUv;
 ${GLSL_COC}
@@ -274,7 +298,10 @@ void main() {
   if (L.a > 1e-4) cor = mix(cor, L.rgb / L.a, smoothstep(0.5, 1.5, rL));
   if (uPertoLiga > 0.5) {
     vec4 P = texture2D(tPerto, vUv);
-    if (P.a > 1e-4) cor = mix(cor, P.rgb / P.a, clamp(P.a * 2.0, 0.0, 1.0));
+    // só onde o raio da frente que chega aqui passa de meio pixel (22/10: sem isto, a frente quase nítida, de
+    // cobertura baixa, misturava um pouco da imagem de um quarto da resolução e amolecia a rua com a câmera longe)
+    float rP = texture2D(tDil, vUv).a * uRaioCheio;
+    if (P.a > 1e-4) cor = mix(cor, P.rgb / P.a, clamp(P.a * 2.0, 0.0, 1.0) * smoothstep(0.5, 1.5, rP));
   }
   gl_FragColor = vec4(cor, base.a);
 }`
@@ -305,7 +332,7 @@ export class ProfundidadeWebgl {
     this.matDilV = mat(fragDilata, { ...q, tFonte: { value: r.dilA.texture }, uDir: u.uDirVQ })
     this.matPertoH = mat(fragPerto, { ...q, tFonte: { value: r.pertoA.texture }, tDil: { value: r.dilB.texture }, uDir: u.uDirHQ })
     this.matPertoV = mat(fragPerto, { ...q, tFonte: { value: r.pertoB.texture }, tDil: { value: r.dilB.texture }, uDir: u.uDirVQ })
-    this.matJunta = mat(fragJunta, { tCor: fonte, tProf: prof, tLonge: { value: r.longeA.texture }, tPerto: { value: r.pertoA.texture } })
+    this.matJunta = mat(fragJunta, { tCor: fonte, tProf: prof, tLonge: { value: r.longeA.texture }, tPerto: { value: r.pertoA.texture }, tDil: { value: r.dilB.texture } })
   }
 
   tamanho(w, h) {

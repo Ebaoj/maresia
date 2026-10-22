@@ -43,10 +43,20 @@ somem onde o fundo ou a frente já estão desfocados (linha nítida em forma mol
 ### Autofoco
 
 Foco = distância de vista (no eixo da câmera, que é o que a profundidade guarda) até `cam.alvo`, o ponto que a
-câmera segue (o jogador, na altura do peito), mais `dofFocoAjuste`. Suavizado por `dofFocoSuave` (exponencial: não
-passa do alvo, não bombeia, não depende do passo do quadro) e **preso à faixa nítida**: a câmera pula para perto
-quando algo fica entre ela e o jogador (`camera.js`), e só com a suavização o jogador ficaria uns 0,3 s borrado
-na zona da frente. Teleporte ou salto de tempo vai direto. `dofAutoFoco: false` usa `dofFocoManual`.
+câmera segue (o jogador, na altura do peito), mais `dofFocoAjuste`, medida com a matriz da câmera deste quadro.
+**Desde 22/10 (`docs/profundidade-camera.md`) o foco é essa distância em cada quadro, sem atraso** (`dofFocoSuave`
+= 0): ela já é suave (a câmera amacia o alvo e o afastar) e só pula quando tem de pular (aproximar e colisão).
+Com `dofFocoSuave` > 0 o foco é suavizado e preso à faixa nítida. Teleporte ou salto de tempo vai direto.
+`dofAutoFoco: false` usa `dofFocoManual`.
+
+### A faixa nítida acompanha o zoom (22/10)
+
+A frente e o fundo são relativos ao foco, como numa lente: o fundo começa em foco × `dofLongeFator` (2,6) e a
+frente em foco × `dofPertoFator` (0,65), com um mínimo de `dofLongeInicio` (2 m) e `dofPertoMargem` (1 m) para o
+corpo do jogador com a câmera colada. A frente desfoca em dioptrias (1/d − 1/começo, vezes `dofPertoEscala`):
+com o foco longe, a rua a meio caminho quase não borra. Além de `dofPertoRef` (6 m) de foco a frente ainda perde
+força com o quadrado (plano aberto: com a câmera a 45 m, o telhado logo abaixo dela fica nítido). O raio segue o
+fov da câmera (referência 50°).
 
 ## Parâmetros (`cfg.estilo`, painel Visual > Profundidade de campo)
 
@@ -55,18 +65,23 @@ na zona da frente. Teleporte ou salto de tempo vai direto. `dofAutoFoco: false` 
 | `dof` | true | liga |
 | `dofAutoFoco` / `dofFocoManual` | true / 8 m | foco no jogador ou fixo |
 | `dofFocoAjuste` | 0 m | soma no foco |
-| `dofFocoSuave` | 0,35 s | quanto o foco demora a acompanhar |
+| `dofFocoSuave` | 0 s | atraso do foco (0 = a distância do jogador em cada quadro) |
 | `dofAbertura` | 1,0 | força geral (frente e fundo) |
 | `dofPerto` | 1,0 | desfoque da frente |
-| `dofPertoMargem` | 1,5 m | nítido antes do jogador |
-| `dofLongeInicio` | 8 m | o fundo começa a amolecer isso depois do jogador |
+| `dofPertoFator` | 0,65 | a frente começa em foco × isso |
+| `dofPertoEscala` | 3,5 | quanto a frente desfoca por dioptria |
+| `dofPertoRef` | 6 m | plano aberto: com o foco além disso a frente desfoca menos (com o quadrado) |
+| `dofPertoMargem` | 1 m | mínimo nítido antes do jogador |
+| `dofLongeFator` | 2,6 | o fundo começa em foco × isso |
+| `dofLongeInicio` | 2 m | mínimo nítido depois do jogador |
 | `dofLongeCheio` | 900 m | distância do desfoque máximo do fundo |
 | `dofLonge` | 0,7 | desfoque máximo do fundo (fração do raio) |
 | `dofRaio` | 10 px | raio máximo, em pixels de uma imagem de 720 de altura (o desenho é o mesmo em qualquer resolução) |
 | `dofOrdem` | 'antes' | antes ou depois da pincelada |
 
-Com os padrões e o jogador a 5 m: até 13 m nítido; a 100 m o raio é ~1,3 px (720p), a 300 m ~3,8 px, o céu 7 px.
-A frente começa a 3,5 m da câmera e chega ao máximo (10 px) a 1,75 m. Os padrões saíram das vistas do "Ir para"
+Com os padrões e o jogador a 5 m: nítido de 3,25 a 13 m; a 100 m o raio é ~1,3 px (720p), a 300 m ~3,8 px, o céu
+7 px; a frente chega ao máximo (10 px) a ~1,7 m da câmera. Com a câmera a 45 m: nítido de 29 a 117 m, o fundo a
+400 m ~4 px. Os padrões saíram das vistas do "Ir para"
 (Coluna da Hora, Praça dos Leões, fila da cozinha do Urubu) e de uma rua do Centro, contra os conceitos: neles o
 fundo é só um pouco mais mole que o meio e a moldura da frente é bem desfocada.
 

@@ -43,7 +43,8 @@ describe('profundidade: quanto cada distância desfoca', () => {
   })
 
   it('o que está entre a câmera e o jogador desfoca mais quanto mais perto', () => {
-    expect(cocPerto(foco - e.dofPertoMargem - 0.5, p)).toBeGreaterThan(0)
+    // desde 22/10 (profundidade-camera) a frente começa em foco x dofPertoFator, não mais em foco - margem fixa
+    expect(cocPerto(p.pertoIni - 0.5, p)).toBeGreaterThan(0)
     expect(cocPerto(1, p)).toBeGreaterThan(cocPerto(3, p))
     expect(cocPerto(0.3, p)).toBeLessThanOrEqual(1)
   })
