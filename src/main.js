@@ -6,7 +6,9 @@ import * as THREE from 'three'
 import { carregarConfig } from './config.js'
 import { globais } from './globais.js'
 import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
-import { criarTerreno } from './mundo/terreno.js'
+import { criarTerreno, alturaTerreno } from './mundo/terreno.js'
+import { criarFerrovia } from './mundo/ferrovia1932.js'
+import { ocupacao as ocupacaoLivre } from './mundo/ocupacao.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
 import { criarRenderizador, prepararCenaWebgpu, preaquecerWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
@@ -128,6 +130,7 @@ async function iniciar() {
   const marcos1932 = criarMarcosCentro(cena, cfg)
   const marcosNorte = criarMarcosNorte(cena, cfg) // a velha Sé, a Estação Central e o Passeio Público de 1932
   const urubu = criarUrubu1932(cena, cfg) // o Campo do Urubu: galpões, redes, cozinha, portão, registro, cerca, trilho e a gente
+  const ferrovia = criarFerrovia(cena, alturaTerreno, ocupacaoLivre) // a via férrea de 1932 no traçado da planta (ferrovia1932.js)
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')
@@ -472,7 +475,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
+  window.maresia = { ferrovia: () => ferrovia, cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

@@ -10,6 +10,7 @@ import { alturaTerreno, inclinacao } from './terreno.js'
 import { materialPredio } from '../materiais.js'
 import { FACHADAS, RESERVADOS, USO } from './casario1932.js'
 import { marcoSob } from './lotes-marcos.js'
+import { casaNaFerrovia } from './ferrovia1932.js'
 import { FACHADAS as CORES_CASARIO, CASAS_SIMPLES, CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
@@ -113,6 +114,8 @@ export function lugarRecusado(f) {
   if (reservado(f.x, f.z)) return 'reservada'
   if (cantoNaPraca(f)) return 'reservada'
   if (casaNoMarco(f.x, f.z, f.w, f.d, f.rot)) return 'marco'
+  // o leito da via férrea de 1932 (ferrovia1932.js): a casa não nasce em cima do trilho
+  if (casaNaFerrovia(f.x, f.z, f.w, f.d, f.rot)) return 'ferrovia'
   return null
 }
 
@@ -214,7 +217,7 @@ function casaAjustada(item) {
 }
 
 // por que uma fachada da planta não virou casa (serve para acertar o mapa)
-export const RECUSA = { sobreposta: 0, rio: 0, praia: 0, lagoa: 0, pajeu: 0, ladeira: 0, reservada: 0, marco: 0 }
+export const RECUSA = { sobreposta: 0, rio: 0, praia: 0, lagoa: 0, pajeu: 0, ladeira: 0, reservada: 0, marco: 0, ferrovia: 0 }
 
 // Onde não pode morar: o rio, a praia, as lagoas, o riacho Pajeú e a ladeira.
 function recusaDe(item) {

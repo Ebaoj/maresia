@@ -9,6 +9,7 @@
 // Campo do Urubu lê deste arquivo, e os números vêm com a marca de confiança (D = com
 // fonte, H = hipótese) que está no documento docs/mapa-1932.md.
 
+import ferrovia from './ferrovia1932.json'
 import dados from './mapa1932-dados.json'
 import { ll, llInverso } from './fortaleza1932.js'
 
@@ -32,12 +33,29 @@ export const BONDES = dados.bondes.map((b) => ({
   traco: traco(b.tracado),
 }))
 
-// ferrovia: a linha do Baturité, o ramal do Urubu e a ligação ao trapiche do porto
-export const TRILHOS = dados.trilhos.map((t) => ({
-  nome: t.nome,
-  confianca: t.confianca,
-  traco: traco(t.tracado),
-}))
+// ferrovia: as linhas da RVC no traçado da Planta de 1931-1932 (src/mundo/ferrovia1932.json; desde 22/10/2026
+// no lugar do esquema de retas de mapa1932-dados.json "trilhos", que tinha o ramal do porto cruzando o Centro)
+// O caminho do trem dos operários (Estação Central -> Campo do Urubu) não é uma linha só na planta: é o tronco e
+// a Linha Norte, que passa junto da cerca do campo (o campo ficava "isolado da cidade pela linha do trem"); o
+// desvio do campo (urubu-linha.js, reconstituição) sai dela. Ele vem primeiro, com o nome de antes; corta onde a
+// Linha Norte chega mais perto da cerca.
+function caminhoAteOCampo() {
+  const tronco = ferrovia.linhas.find((x) => x.id === 'tronco').tracado
+  const norte = ferrovia.linhas.find((x) => x.id === 'norte').tracado
+  const cerca = dados.campoUrubu.poligono
+  const dCerca = ([lon, lat]) => Math.min(...cerca.map(([a, b]) => Math.hypot((lon - a) * 111100, (lat - b) * 110574)))
+  let fim = 0
+  for (let i = 1; i < norte.length; i++) if (dCerca(norte[i]) < dCerca(norte[fim])) fim = i
+  return [...tronco, ...norte.slice(1, fim + 1)]
+}
+export const TRILHOS = [
+  { nome: 'Ramal do Urubu: Central → Campo do Urubu (Trem dos Operários): o tronco e a Linha Norte', confianca: 'D', traco: traco(caminhoAteOCampo()) },
+  ...ferrovia.linhas.map((t) => ({
+    nome: t.nome,
+    confianca: t.confianca,
+    traco: traco(t.tracado),
+  })),
+]
 
 // o Campo do Urubu (H): 20 tarefas cercadas com arame, os galpões de zinco e as três
 // construções (cozinha, posto, capela). As posições são as mesmas do desenho v3.
