@@ -1,0 +1,23 @@
+Profundidade de campo: medidas de 22/10/2026 (Mac, Chrome sem janela, 2000 x 1125, mediana de 5 repetições)
+Load da máquina durante as medidas: 4 a 11 (outras sessões rodando). Ver docs/profundidade-de-campo.md.
+
+1. Passe a passe, primeira versão (tudo em meia resolução), WebGPU, Coluna da Hora. [total, cpu] ms por passe:
+{"previaLonge":[0.29,0.062],"longeH":[0.238,0.08],"longeV":[0.205,0.078],"previaPerto":[0.25,0.057],"dilH":[0.155,0.04],"dilV":[0.163,0.05],"pertoH":[0.185,0.068],"pertoV":[0.213,0.057],"junta":[0.435,0.118]}
+
+2. Passe a passe, versão final (frente em um quarto), WebGPU, Coluna da Hora:
+{"previaLonge":[0.235,0.028],"longeH":[0.2,0.023],"longeV":[0.187,0.027],"previaPerto":[0.207,0.023],"dilH":[0.073,0.025],"dilV":[0.073,0.025],"pertoH":[0.07,0.025],"pertoV":[0.073,0.032],"junta":[0.338,0.028]}
+
+3. Cadeia inteira (40 desenhos seguidos e leitura), versão final; e quadro inteiro por maresia.medir (variantes alternadas), WebGPU:
+{"cadeia":{"px":"2000x1125","webgpu":true,"res":{"coluna":{"dof":1.645,"semFrente":1.183,"vazio":0.015},"rua":{"dof":1.6,"semFrente":1.152,"vazio":0.015}}},"quadro":{"rua":[3157.638982679191,1466.9995821240466,1.2653637076958888],"r":{"pixels":"2000x1125","res":{"3372,1530":{"off":{"ms":65.62,"cpu":33.37},"on":{"ms":77.53,"cpu":31.27},"onSemFrente":{"ms":73.01,"cpu":27.1}},"3158,1467":{"off":{"ms":64.2,"cpu":22.5},"on":{"ms":69.58,"cpu":29.07},"onSemFrente":{"ms":67.74,"cpu":19.14}}}}}}
+
+4. O mesmo no WebGL (a cadeia sozinha não vale no WebGL do Mac: a leitura não espera a placa, ver CLAUDE.md):
+{"cadeia":{"px":"2000x1125","webgpu":false,"res":{"coluna":{"dof":0.108,"semFrente":0.05,"vazio":0.003},"rua":{"dof":0.092,"semFrente":0.045,"vazio":0.003}}},"quadro":{"rua":[3157.638982679191,1466.9995821240466,1.2653637076958888],"r":{"pixels":"2000x1125","res":{"3372,1530":{"off":{"ms":59.07,"cpu":7.47},"on":{"ms":59.99,"cpu":7.55},"onSemFrente":{"ms":62.53,"cpu":7.47}},"3158,1467":{"off":{"ms":58.29,"cpu":6.88},"on":{"ms":61.21,"cpu":6.87},"onSemFrente":{"ms":58.65,"cpu":7.01}}}}}}
+
+5. maresia.medir de novo, 7 repetições, WebGPU (mostra o ruído do quadro inteiro: ligado saiu mais barato):
+{"rua":[3157.638982679191,1466.9995821240466,1.2653637076958888],"r":{"pixels":"2000x1125","res":{"3372,1530":{"off":{"ms":77.22,"cpu":46.02},"on":{"ms":73,"cpu":24.12},"onSemFrente":{"ms":72.6,"cpu":24.01}},"3158,1467":{"off":{"ms":62.03,"cpu":20.6},"on":{"ms":61.04,"cpu":18.83},"onSemFrente":{"ms":60.98,"cpu":16.52}}}}}
+
+6. Cintilação no vídeo andando (andando.mp4; diferença média do quadro contra a média dos vizinhos, 0-255;
+   [andando 0-3,7 s, andando de novo 6,2-8 s]; o giro da câmera fica fora porque o giro domina a diferença):
+   fundo   ligada [6.41, 3.31]  desligada [6.09, 3.51]
+   jogador ligada [6.40, 5.12]  desligada [6.26, 5.39]
+   chão    ligada [7.65, 4.67]  desligada [8.97, 6.22]
