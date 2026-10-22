@@ -16,6 +16,7 @@ import { pintar, gradienteToon, luzFixa, texturizar } from '../materiais.js'
 import { globais } from '../globais.js'
 import { CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarDeck } from './colisao.js'
+import { MuitoLonge } from './muito-longe.js'
 import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { criarAleatorio } from '../utils.js'
@@ -623,8 +624,26 @@ export function criarCasas(cena, casario, morro) {
   const quente = new THREE.Color('#ffb860').multiplyScalar(2.2)
   // LOD por bloco: perto da câmera a casa detalhada; longe, a caixa com fachada pintada (Lote.criar)
   const PERTO = 70
+  // de muito longe, as caixas de fachada pintada dos blocos se juntam por célula grande (muito-longe.js)
+  const muitoLonge = new MuitoLonge(grupo, { nome: 'casas' })
   return {
     grupo,
+    muitoLonge,
+    // depois do registrarLonge do casario e do morro
+    montarMuitoLonge() {
+      for (const b of blocos.values()) {
+        b.unidade = {
+          x: b.x0 + TAM_BLOCO / 2, z: b.z0 + TAM_BLOCO / 2, r: TAM_BLOCO * Math.SQRT1_2,
+          longe: b.longe,
+          get todas() { return [...b.malhas, ...b.longe] },
+          distancia: (camera) => Math.hypot(Math.max(b.x0 - camera.position.x, 0, camera.position.x - (b.x0 + TAM_BLOCO)), Math.max(b.z0 - camera.position.z, 0, camera.position.z - (b.z0 + TAM_BLOCO))),
+          // volta ao estado de longe (a caixa à vista); o laço decide de novo neste quadro
+          retomar: () => { b.perto = false; for (const m of b.malhas) m.visible = false; for (const m of b.longe) m.visible = true },
+        }
+        muitoLonge.adicionar(b.unidade)
+      }
+      muitoLonge.montar()
+    },
     // malhas instanciadas das caixas de longe (instanciarEmBlocos usa os mesmos blocos de 96 m)
     registrarLonge(malhas, simples) {
       const v = new THREE.Vector3()
@@ -642,7 +661,9 @@ export function criarCasas(cena, casario, morro) {
       const cx = camera.position.x
       const cz = camera.position.z
       let montou = 0
+      muitoLonge.atualizar(camera, PERTO + 8)
       for (const b of blocos.values()) {
+        if (b.unidade?.suspenso) continue
         const dx = Math.max(b.x0 - cx, 0, cx - (b.x0 + TAM_BLOCO))
         const dz = Math.max(b.z0 - cz, 0, cz - (b.z0 + TAM_BLOCO))
         const d = Math.hypot(dx, dz)

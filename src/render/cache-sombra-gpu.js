@@ -61,7 +61,9 @@ export class CacheSombraGpu {
   // mapa que precise deles inteiros (o de perto) desenha dentro desta função.
   comParados(f) {
     const lista = this.aplicado ? estaticosRegistrados() : null
-    if (lista) for (const o of lista) o.castShadow = true
+    // as malhas juntas de muito longe (mundo/muito-longe.js) ficam fora: estão a mais de 90 m, e a esfera de uma célula
+    // de 768 m sempre cruzaria a janela de perto (seriam desenhadas inteiras todo quadro sem pôr sombra nela)
+    if (lista) for (const o of lista) if (!o.userData.muitoLonge) o.castShadow = true
     try { return f() } finally { if (lista) for (const o of lista) o.castShadow = false }
   }
 

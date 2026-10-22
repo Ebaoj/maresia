@@ -9,6 +9,7 @@ import * as THREE from 'three'
 import { instanciarEmBlocos } from './blocos.js'
 import { materiaisArvores } from './vento-arvores.js'
 import { formaArvores } from './especies.js'
+import { MuitoLonge } from './muito-longe.js'
 
 const grupos = []
 const c = new THREE.Color()
@@ -60,10 +61,32 @@ export function estadoDoBloco(d, distancia, ate, antes) {
   return nivelDoBloco(d, distancia, antes === 'perto') ? 'perto' : 'longe'
 }
 
+// de muito longe, as copas simples dos blocos se juntam por célula grande (muito-longe.js). Fica de fora quem some
+// por inteiro longe (ate: as árvores dos quintais), porque a célula junta mostraria o que já devia ter sumido
+let muitoLonge = null
+function montarMuitoLonge(cena) {
+  muitoLonge = new MuitoLonge(cena, { nome: 'arvores' })
+  for (const g of grupos) {
+    if (g.ate) continue
+    g.unidade = {
+      x: g.c.x, z: g.c.z, r: g.r,
+      longe: [g.longe, g.cartLonge].filter(Boolean), todas: [g.perto, g.longe, g.cart, g.cartLonge].filter(Boolean),
+      distancia: (camera) => camera.position.distanceTo(g.c) - g.r,
+      retomar: () => { g.estado = null }, // o laço decide de novo neste quadro
+    }
+    muitoLonge.adicionar(g.unidade)
+  }
+  muitoLonge.montar()
+}
+
 export function atualizarLodArvores(camera, cfg) {
   const D = cfg.arvores.lodBloco
   const cp = camera.position
+  // na primeira vez: todas as espécies já registraram os blocos
+  if (!muitoLonge && grupos.length) montarMuitoLonge(grupos[0].longe.parent)
+  muitoLonge?.atualizar(camera, D + 10)
   for (const g of grupos) {
+    if (g.unidade?.suspenso) continue
     const d = cp.distanceTo(g.c) - g.r
     const nivel = estadoDoBloco(d, D, g.ate ? g.ate() : null, g.estado)
     if (nivel === g.estado) continue
@@ -76,3 +99,4 @@ export function atualizarLodArvores(camera, cfg) {
 }
 
 export function gruposLod() { return grupos }
+export function muitoLongeArvores() { return muitoLonge }

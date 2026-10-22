@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { LIMITES, alturaBruta, distCosta, larguraPraia, mix, FIM_AVENIDA, densidadeGrama } from './mapa.js'
 import { gradienteToon, pintar, texturizar } from '../materiais.js'
 import { congelar } from './congelar.js'
+import { MuitoLonge } from './muito-longe.js'
 import { ref } from '../render/gpu/comum.js'
 import { GLSL_CALAMENTO, GLSL_CALAMENTO_PIXEL, GLSL_CALAMENTO_UNIFORM, sincronizarCalamento, tslCalamento, uCalamento } from './calamento.js'
 import { GLSL_RODEIRO, GLSL_RODEIRO_UNIFORM, sincronizarRodeiro, tslRodeiro, uRodeiro } from './rodeiro.js'
@@ -264,7 +265,19 @@ export function criarTerreno(cena, cfg) {
   window.__tTerreno = { alturas: Math.round(t1 - t0), coresEGrama: Math.round(t2 - t1), pedacos: Math.round(performance.now() - t2) }
 
   const LONGE = 230
+  // de muito longe, os pedaços simples se juntam por célula grande (muito-longe.js): eram 805 objetos de chão
+  const muitoLonge = new MuitoLonge(grupo, { nome: 'terreno' })
+  for (const p of pedacos) {
+    p.unidade = {
+      x: p.cx, z: p.cz, r: 0, longe: [p.longe], todas: [p.perto, p.longe],
+      distancia: (camera) => Math.hypot(p.cx - camera.position.x, p.cz - camera.position.z),
+      retomar: () => { p.ehPerto = undefined }, // o laço abaixo decide de novo neste quadro
+    }
+    muitoLonge.adicionar(p.unidade)
+  }
+  muitoLonge.montar()
   return {
+    muitoLonge,
     malha: grupo,
     mapaAltura: criarMapaAltura(),
     atualizar(camera) {
@@ -274,7 +287,9 @@ export function criarTerreno(cena, cfg) {
       sincronizarRuaTerra(cfg)
       const px = camera.position.x
       const pz = camera.position.z
+      muitoLonge.atualizar(camera, LONGE + 20)
       for (const p of pedacos) {
+        if (p.unidade.suspenso) continue
         const d = Math.hypot(p.cx - px, p.cz - pz)
         const perto = p.ehPerto ? d < LONGE + 20 : d < LONGE
         if (perto === p.ehPerto) continue

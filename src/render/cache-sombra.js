@@ -122,7 +122,9 @@ export class CacheSombra {
   passeOutras(outras, c, cam) {
     const r = this.r
     const lista = this.aplicado ? estaticosRegistrados() : null
-    if (lista) for (const o of lista) o.castShadow = true
+    // as malhas juntas de muito longe (mundo/muito-longe.js) ficam fora: estão a mais de 90 m, e a esfera de uma célula
+    // de 768 m sempre cruzaria a janela de perto (seriam desenhadas inteiras todo quadro sem pôr sombra nela)
+    if (lista) for (const o of lista) if (!o.userData.muitoLonge) o.castShadow = true
     r.shadowMap.needsUpdate = true
     const chamadas = r.info.render.calls
     try { this.original.call(r.shadowMap, outras, c, cam) } finally { if (lista) for (const o of lista) o.castShadow = false }

@@ -12,6 +12,7 @@ import { criarContadorFps } from './ui/contador-fps.js'
 import { criarRenderizador, prepararCenaWebgpu, preaquecerWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
 import { ligarMotorPlaca, prepararMotorPlaca } from './render/motor-placa.js'
 import { definirTamBloco } from './mundo/blocos.js'
+import { definirMuitoLonge } from './mundo/muito-longe.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
 import { CacheSombra } from './render/cache-sombra.js'
@@ -107,6 +108,7 @@ async function iniciar() {
   let tMarca = performance.now()
   const marcar = (nome) => { const t = performance.now(); tempos[nome] = Math.round(t - tMarca); tMarca = t }
   definirTamBloco(cfg.desempenho.tamBloco, cfg.desempenho.copiasMinBloco, cfg.desempenho.tamBlocoMax)
+  definirMuitoLonge(cfg) // a camada de muito longe dos blocos de LOD (mundo/muito-longe.js)
   await ocup1932.carregarOcupacao1932() // a planta de 1932: onde havia lote, onde era rua (o terreno pergunta isso)
   marcar('ocupacao')
   calcularChao1932() // o chão da cidade: rua, quintal e o rodeiro da carroça (depende da planta)
