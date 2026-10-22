@@ -144,9 +144,11 @@ LUGARES = [
     ("ponteIngleses", "Ponte dos Ingleses", -38.51681, -3.71805, "", "D", 70, 110, False),
     ("pocoDraga", "Poço da Draga", -38.52097, -3.71945, "", "H", -180, -190, False),
     ("colégioMilitar", "Colégio Militar", -38.51771, -3.73008, "fim da linha do Outeiro", "D", 70, -70, True),
-    ("oficinasUrubu", "Oficinas do Urubu (RVC)", -38.56460, -3.71560, "inauguradas em 4/out/1930", "H", 90, 120, True),
+    # o meio do recinto que a Planta de 1931-1932 desenha (src/mundo/ferrovia1932.json, "patios"; antes H, -38.5646 -3.7156)
+    ("oficinasUrubu", "Oficinas do Urubu (RVC)", -38.56886, -3.71483, "inauguradas em 4/out/1930", "D", 90, 120, True),
     ("vilaFerroviaria", "Vila Demósthenes Rockert", -38.56780, -3.71410, "vila operária", "H", -90, -70, True),
-    ("campoUrubu", "Campo do Urubu", -38.57000, -3.71760, "", "H", 0, 0, False),
+    # o meio do poligono do campo (CAMPO, depois de MOVER_CAMPO; antes -38.5700 -3.7176)
+    ("campoUrubu", "Campo do Urubu", -38.56131, -3.71497, "", "H", 0, 0, False),
     ("estacaoOtavio", "Estação Otávio Bonfim", -38.54370, -3.73138, "campo do Matadouro", "D", -80, -60, True),
     ("lagoaPorangabussu", "Lagoa de Porangabussu", -38.55076, -3.74416, "", "D", 80, -40, False),
     ("barraCeara", "Barra do Ceará", -38.59000, -3.69600, "foz do Rio Ceará", "H", 80, 60, True),
@@ -229,10 +231,29 @@ TRILHOS = [
 ]
 
 # Campo do Urubu: area de reconstrucao (a localizacao exata nao e sabida)
+# CAMPO_V3 e o poligono do desenho v3. Ele caia em cima do recinto das Oficinas da RVC, que a Planta de
+# 1931-1932 desenha (src/mundo/ferrovia1932.json, "patios"). Desde 22/10/2026 (docs/mapa-1932.md, v17) o mesmo
+# poligono, com a mesma forma e o mesmo tamanho, e girado e levado para o lado das oficinas, entre a Linha Norte e
+# o mar (o campo ficava "na praia nao muito proximo do mar", perto das oficinas, isolado da cidade pela linha):
+# MOVER_CAMPO leva o meio do lado do portao (P4-P3) de "de" para "para" e gira tudo "giro_graus" (anti-horario,
+# com o norte para cima). Tudo o que sai do poligono (as tarefas, os galpoes e as construcoes do desenho) vai junto.
+CAMPO_V3 = [(-38.5745, -3.7205), (-38.5705, -3.7218), (-38.5660, -3.7200),
+            (-38.5642, -3.7166), (-38.5672, -3.7142), (-38.5722, -3.7152),
+            (-38.5752, -3.7178)]
+MOVER_CAMPO = {"de": (-38.5657, -3.7154), "para": (-38.556355, -3.715663), "giro_graus": -39.28}
+
+
+def mover_campo(lon, lat):
+    """o ponto do desenho v3 no lugar do campo de 22/10/2026 (rigido: mesma forma, mesmo tamanho)"""
+    (lon0, lat0), (lon1, lat1) = MOVER_CAMPO["de"], MOVER_CAMPO["para"]
+    e, n = (lon - lon0) * MX, (lat - lat0) * MZ
+    t = math.radians(MOVER_CAMPO["giro_graus"])
+    e2, n2 = e * math.cos(t) - n * math.sin(t), e * math.sin(t) + n * math.cos(t)
+    return (lon1 + e2 / MX, lat1 + n2 / MZ)
+
+
 CAMPO = {
-    "poligono": [(-38.5745, -3.7205), (-38.5705, -3.7218), (-38.5660, -3.7200),
-                 (-38.5642, -3.7166), (-38.5672, -3.7142), (-38.5722, -3.7152),
-                 (-38.5752, -3.7178)],
+    "poligono": [mover_campo(*p) for p in CAMPO_V3],
     "tarefas": 20,
     "galpoes": 4,
 }
@@ -489,27 +510,26 @@ def montar(vista="geral"):
     pol = [para_m(a, b) for a, b in CAMPO["poligono"]]
     d.add(f'<path d="{caminho(pol)}" fill="url(#hachura)" fill-opacity="0.5" '
           f'stroke="#8c3b2f" stroke-width="12" stroke-dasharray="60 34"/>')
-    # as 20 tarefas (cercadas com arame)
+    # as 20 tarefas (cercadas com arame), os galpoes e as construcoes: os pontos de campo_lugares() (os mesmos do
+    # jogo, ja no lugar de MOVER_CAMPO); os retangulos ficam alinhados ao papel (o desenho e esquematico)
     cx = sum(p[0] for p in pol) / len(pol)
     cz = sum(p[1] for p in pol) / len(pol)
-    for i in range(CAMPO["tarefas"]):
-        a = i * 2 * math.pi / CAMPO["tarefas"]
-        rr = 210 + 120 * (0.5 + 0.5 * math.sin(i * 1.7))
-        px_ = cx + math.cos(a) * rr * 1.55
-        pz_ = cz + math.sin(a) * rr * 0.72
+    lug = campo_lugares()
+    for t in lug["tarefas"]:
+        px_, pz_ = para_m(t["lon"], t["lat"])
         d.add(f'<rect x="{px_-70:.0f}" y="{pz_-42:.0f}" width="140" height="84" '
               f'fill="none" stroke="#8c3b2f" stroke-width="6" stroke-dasharray="22 12"/>')
     # galpoes de folha de zinco
-    for i in range(CAMPO["galpoes"]):
-        gx = cx - 560 + i * 300
-        d.add(f'<rect x="{gx:.0f}" y="{cz - 340:.0f}" width="240" height="110" '
+    for gp in lug["galpoes"]:
+        gx, gz = para_m(gp["lon"], gp["lat"])
+        d.add(f'<rect x="{gx:.0f}" y="{gz:.0f}" width="240" height="110" '
               f'fill="#b9b6ad" stroke="#6f6a5e" stroke-width="6"/>')
     # cozinha, posto medico e capela
-    for dx, dz, nome, cor in ((-120, 150, "cozinha", "#7c6a3f"), (120, 150, "posto", "#7c6a3f"),
-                              (0, 260, "capela", "#8c3b2f")):
-        d.add(f'<circle cx="{cx+dx:.0f}" cy="{cz+dz:.0f}" r="34" fill="{cor}" '
+    for c, (nome, cor) in zip(lug["construcoes"], (("cozinha", "#7c6a3f"), ("posto", "#7c6a3f"), ("capela", "#8c3b2f"))):
+        ox, oz = para_m(c["lon"], c["lat"])
+        d.add(f'<circle cx="{ox:.0f}" cy="{oz:.0f}" r="34" fill="{cor}" '
               f'stroke="#3b3226" stroke-width="5"/>')
-        texto(d, cx + dx, cz + dz + 110, nome, 40, "#5c2a22", italico=True)
+        texto(d, ox, oz + 110, nome, 40, "#5c2a22", italico=True)
     texto(d, cx, cz - 640, "CAMPO DO URBU", 96, "#8c3b2f", peso="bold")
     texto(d, cx, cz - 520, "campo de concentração de retirantes - 1932 (reconstituição)", 50,
           "#8c3b2f", italico=True)
@@ -628,27 +648,31 @@ def campo_lugares():
 
     Mesma matematica do desenho: o desenho e o jogo leem os mesmos numeros.
     """
-    pol = [para_m(a, b) for a, b in CAMPO["poligono"]]
+    # a conta e a do desenho v3, no poligono de la; cada ponto vai para o lugar novo por mover_campo
+    pol = [para_m(a, b) for a, b in CAMPO_V3]
     cx = sum(p[0] for p in pol) / len(pol)
     cz = sum(p[1] for p in pol) / len(pol)
+
+    def ll_novo(x, z):
+        return mover_campo(*para_ll(x, z))
     tarefas = []
     for i in range(CAMPO["tarefas"]):
         a = i * 2 * math.pi / CAMPO["tarefas"]
         rr = 210 + 120 * (0.5 + 0.5 * math.sin(i * 1.7))
         x = cx + math.cos(a) * rr * 1.55
         z = cz + math.sin(a) * rr * 0.72
-        tarefas.append({"lon": para_ll(x, z)[0], "lat": para_ll(x, z)[1],
+        tarefas.append({"lon": ll_novo(x, z)[0], "lat": ll_novo(x, z)[1],
                         "largura_m": 140, "profundidade_m": 84})
     galpoes = []
     for i in range(CAMPO["galpoes"]):
         x = cx - 560 + i * 300
         z = cz - 340
-        galpoes.append({"lon": para_ll(x, z)[0], "lat": para_ll(x, z)[1],
+        galpoes.append({"lon": ll_novo(x, z)[0], "lat": ll_novo(x, z)[1],
                         "largura_m": 240, "profundidade_m": 110})
     construcoes = []
     for dx, dz, nome in ((-120, 150, "cozinha"), (120, 150, "posto medico"), (0, 260, "capela")):
         x, z = cx + dx, cz + dz
-        construcoes.append({"nome": nome, "lon": para_ll(x, z)[0], "lat": para_ll(x, z)[1],
+        construcoes.append({"nome": nome, "lon": ll_novo(x, z)[0], "lat": ll_novo(x, z)[1],
                             "raio_m": 34})
     return {"tarefas": tarefas, "galpoes": galpoes, "construcoes": construcoes}
 

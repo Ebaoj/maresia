@@ -1,6 +1,6 @@
 // Fotos de prova da escala do centro (v16, docs/mapa-1932.md): a mesma máquina de scripts/fotos-campo.mjs, com
 // mais três tipos de item no plano:
-//   { "nome": "v-colunaHora", "vista": "colunaHora" }            o ponto de vista do "Ir para" (marcos)
+//   { "nome": "v-colunaHora", "vista": "colunaHora" }            o ponto de vista do "Ir para" (marcos e Campo do Urubu)
 //   { "nome": "t-centro", "topo": { "lon": -38.5276, "lat": -3.7275, "largura": 1400 } }
 //        vista de cima, câmera reta para baixo a 900 m; grava também PASTA/nome.json com o recorte (o centro no
 //        jogo, a largura em unidades), para sobrepor a planta oficial (scripts/diagnostico/sobrepor-planta.mjs)
@@ -107,7 +107,8 @@ try {
       if (${JSON.stringify(l.vista || null)}) {
         const { VISTAS } = await import('/src/mundo/marcos1932/vistas.js')
         const { VISTAS_MARCOS } = await import('/src/mundo/vistas-marcos.js')
-        const v = VISTAS_MARCOS[${JSON.stringify(l.vista || '')}] || VISTAS[${JSON.stringify(l.vista || '')}]
+        const { VISTAS_URUBU } = await import('/src/mundo/urubu-lugares.js')
+        const v = VISTAS_MARCOS[${JSON.stringify(l.vista || '')}] || VISTAS[${JSON.stringify(l.vista || '')}] || VISTAS_URUBU[${JSON.stringify(l.vista || '')}]
         x = v.x; z = v.z; yaw = v.yaw
         if (v.hora != null && ${l.hora ?? 'null'} === null) hora = v.hora
         if (v.pitch != null && ${l.pitch ?? 'null'} === null) pitch = v.pitch

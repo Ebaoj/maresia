@@ -36,7 +36,11 @@ const det = ([[a, b], [c, d]]) => a * d - b * c
 // as zonas 1:1, no quadro da grade (as mesmas de docs/mapa-1932-escala.py): o "estádio" do centro (o círculo de
 // 1 km em volta da praça e a caixa do lado do mar, até a cabeça da Ponte Metálica) e o Campo do Urubu
 const naZonaCentro = (u, v) => Math.hypot(u, v) <= 1000 || (u >= -1000 && u <= 1000 && v >= 0 && v <= 1650)
-const naZonaCampo = (u, v) => u >= -5420 && u <= -4230 && v >= -910 && v <= 150
+// O campo mudou de lugar em 22/10/2026 (decisão do orquestrador, docs/mapa-1932.md v17: o polígono caía em cima do
+// recinto das Oficinas da RVC da planta de 1931-1932): a zona passou da caixa [-5420, -4230, -910, 150] para o campo
+// a leste das oficinas e o recinto delas (as mesmas caixas de docs/mapa-1932-escala.py). A afirmação é a mesma
+const CAIXAS_CAMPO = [[-4620, -3240, -260, 740], [-5100, -4350, -280, 120]]
+const naZonaCampo = (u, v) => CAIXAS_CAMPO.some(([a, b, c, d]) => u >= a && u <= b && v >= c && v <= d)
 const naZona = (lon, lat) => { const [u, v] = gradeDe(lon, lat); return naZonaCentro(u, v) || naZonaCampo(u, v) }
 
 // os marcos que a decisão pôs em 1:1 (LUGARES, src/mundo/fortaleza1932.js) e os lugares do campo
@@ -56,8 +60,9 @@ describe('a escala do centro histórico em 1:1', () => {
         n++
       }
     }
-    for (let u = -5420; u <= -4230; u += 50) {
-      for (let v = -910; v <= 150; v += 50) {
+    for (let u = -5100; u <= -3240; u += 50) {
+      for (let v = -280; v <= 740; v += 50) {
+        if (!naZonaCampo(u, v)) continue
         const [s1, s2] = escalas(jac(...geoDe(u, v)))
         expect(s1).toBeLessThan(1.05)
         expect(s2).toBeGreaterThan(0.95)
@@ -163,8 +168,9 @@ describe('a escala do centro histórico em 1:1', () => {
   it('(e) a caminhada do campo ao centro continua parecida com a de antes', () => {
     // do portão do campo à borda oeste do centro histórico (u = -1000, o Theatro e Moura Brasil): 1.014 un em
     // a764f60. O centro agora é de verdade (da borda à praça são 1.000 m), mas o caminho até ele não pode
-    // crescer mais que 15%
-    const portao = ll(-38.5657, -3.7154)
+    // crescer mais que 15%. O portão mudou de lugar com o campo em 22/10/2026 (docs/mapa-1932.md v17; antes
+    // -38.5657, -3.7154): é o meio do lado do portão do polígono (urubu-planta.js)
+    const portao = ll(-38.556355, -3.715663)
     const borda = ll(...geoDe(-1000, -20))
     const d = Math.hypot(portao[0] - borda[0], portao[1] - borda[1])
     expect(d).toBeLessThan(1014 * 1.15)

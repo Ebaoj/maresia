@@ -8,6 +8,7 @@ import { globais } from './globais.js'
 import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno, alturaTerreno } from './mundo/terreno.js'
 import { criarFerrovia } from './mundo/ferrovia1932.js'
+import { criarOficinas1932 } from './mundo/oficinas1932.js'
 import { ocupacao as ocupacaoLivre } from './mundo/ocupacao.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
@@ -131,6 +132,7 @@ async function iniciar() {
   const marcosNorte = criarMarcosNorte(cena, cfg) // a velha Sé, a Estação Central e o Passeio Público de 1932
   const urubu = criarUrubu1932(cena, cfg) // o Campo do Urubu: galpões, redes, cozinha, portão, registro, cerca, trilho e a gente
   const ferrovia = criarFerrovia(cena, alturaTerreno, ocupacaoLivre) // a via férrea de 1932 no traçado da planta (ferrovia1932.js)
+  criarOficinas1932(cena, alturaTerreno, cfg.mundo.oficinas) // os prédios das Oficinas da RVC, ao lado do campo (oficinas1932.js)
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')

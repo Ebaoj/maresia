@@ -6,8 +6,10 @@
 // oficinas da RVC, isolado da cidade pela linha do trem. Sobrevivente: "umas 20 tarefas de terra cercadas com
 // arame [...] batia a porteira e pronto".
 // HIPÓTESE (tudo o que é medida e lugar): não há planta nem foto livre. A reconstituição:
-//   - o núcleo habitado fica no canto do polígono que dá para as oficinas e para a linha (as famílias chegavam
-//     pela linha, a pé com os soldados: docs/conceito.md, ato 1); o portão e o registro ficam nesse lado;
+//   - o núcleo habitado fica no canto do polígono que dá para a linha (as famílias chegavam pela linha, a pé com
+//     os soldados: docs/conceito.md, ato 1); o portão e o registro ficam nesse lado. Desde 22/10/2026 o polígono
+//     fica a leste do recinto das Oficinas da RVC, entre a Linha Norte e o mar (docs/mapa-1932.md, v17): o portão
+//     dá para o leste (a cidade), o desvio sai da Linha Norte por fora dele, e as oficinas ficam atrás, a oeste;
 //   - "20 tarefas" (a tarefa cearense tem ~3.600 m²) dão ~7 ha: é o tamanho do núcleo (~320 x 260 m), dentro
 //     do polígono de cerca do mapa (H, docs/mapa-1932.md), que é bem maior;
 //   - galpão de 48 x 12 m, esteios a cada 4 m, três vãos de 4 m com as redes atravessadas a ~1,1 m uma da outra:
@@ -23,7 +25,9 @@
 import { CAMPO_URUBU, dentroDoCampo } from './mapa1932.js'
 import { PADRAO } from '../config.js'
 
-// o lado do polígono onde fica o portão: de P4 (canto norte) a P3 (canto leste), virado para as oficinas
+// o lado do polígono onde fica o portão: de P4 a P3. Até 22/10/2026 ele dava para as oficinas, que ficavam por baixo
+// do polígono; desde então (docs/mapa-1932.md, v17) é o lado leste do campo, virado para a cidade, com o desvio
+// saindo da Linha Norte por fora dele; as oficinas ficam a oeste, atrás do campo
 const LADO_PORTAO = [4, 3]
 
 export function quadroDoCampo () {

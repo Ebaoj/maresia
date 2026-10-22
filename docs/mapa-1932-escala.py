@@ -85,11 +85,13 @@ V0, V1 = -7500.0, 7500.0
 #   de cada lado: testes/unidade/ruas-reais-retas.test.js), com o Theatro, a Estacao e a Praca Castro Carreira,
 #   o Passeio, a Se, o Mercado de Ferro e a Praca dos Leoes dentro; e o porto: o Poco da Draga e a Ponte
 #   Metalica ate a cabeca dela no mar (v 1650).
-# - o Campo do Urubu: o poligono da cerca (mapa1932-dados.json) com a folga da cerca, a vila operaria, as
-#   oficinas da RVC e a linha por fora do portao.
+# - o Campo do Urubu: o poligono da cerca (mapa1932-dados.json) com a folga da cerca e a linha por fora do
+#   portao; e, ao lado, o recinto das Oficinas da RVC (ferrovia1932.json, "patios") com a vila operaria. Desde
+#   22/10/2026 (docs/mapa-1932.md, v17) o campo fica a leste das oficinas, entre a Linha Norte e o mar: antes a
+#   caixa era [-5420, -4230, -910, 150], com o poligono em cima do recinto das oficinas.
 ZONAS = [
     {"nome": "centro", "corpo": 1, "caixas": [[-1000, 1000, 0, 1650]], "circulos": [[0, 0, 1000]]},
-    {"nome": "campoUrubu", "corpo": 2, "caixas": [[-5420, -4230, -910, 150]], "circulos": []},
+    {"nome": "campoUrubu", "corpo": 2, "caixas": [[-4620, -3240, -260, 740], [-5100, -4350, -280, 120]], "circulos": []},
 ]
 
 # o alvo de escala (unidades de jogo por metro de verdade)
@@ -109,8 +111,9 @@ PARAM = {
     "iteracoes": 60,
 }
 
-# o caminho do campo ao centro: o areal entre a borda oeste de Jacarecanga e a borda leste do campo (u, v)
-CAMINHO = [[-1900.0, 100.0], [-4230.0, -50.0]]
+# o caminho do campo ao centro: o areal entre a borda oeste de Jacarecanga e a borda leste do campo (u, v; o
+# portao do campo fica no lado leste dele desde 22/10/2026, em (-3450, 260))
+CAMINHO = [[-1900.0, 100.0], [-3240.0, 150.0]]
 
 
 def densidade(us, vs):

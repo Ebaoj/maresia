@@ -431,6 +431,13 @@ export const PADRAO = {
       tarefas: true,        // as tarefas de terra cercadas de arame (as que não caem no núcleo construído)
       distanciaMiudos: 260, // m: além disso somem redes, trouxas, potes, latas e a gente (de longe o custo é de processador)
     },
+    // as Oficinas da RVC no Urubu, ao lado do campo (src/mundo/oficinas1932.js; onde e quantos: a Planta de 1931-1932)
+    oficinas: {
+      ligadas: true,
+      alturaGalpao: 8,      // m: a parede dos galpões de oficina (a cumeeira sobe mais um quinto da largura)
+      alturaCasa: 4.5,      // m: a parede das casas da administração
+      alturaArmazem: 5,     // m: a parede dos armazéns
+    },
   },
   // Os marcos do centro de 1932 (src/mundo/marcos1932/; fontes no dossiê ~/Projetos/marcos-1932-pesquisa).
   // Montados uma vez, quando o mundo nasce: o que não é cor só muda ao recarregar. As cores mudam ao vivo.

@@ -172,6 +172,13 @@ export function secaoMundo(gui, cfg) {
   urubu.add(u, 'ferrugem', 0, 1, 0.01).name(rec('zinco enferrujado'))
   urubu.add(u, 'tarefas').name(rec('tarefas de terra cercadas'))
   urubu.add(u, 'distanciaMiudos', 80, 1000, 10).name('miúdos somem além de (m)')
+  // as Oficinas da RVC, ao lado do campo (src/mundo/oficinas1932.js): montadas uma vez
+  const ofi = mundo.addFolder('Oficinas da RVC (Urubu)')
+  const of = cfg.mundo.oficinas
+  ofi.add(of, 'ligadas').name(rec('os prédios das oficinas'))
+  ofi.add(of, 'alturaGalpao', 5, 12, 0.5).name(rec('galpão: parede (m)'))
+  ofi.add(of, 'alturaCasa', 3, 7, 0.1).name(rec('casa: parede (m)'))
+  ofi.add(of, 'alturaArmazem', 3, 8, 0.1).name(rec('armazém: parede (m)'))
   // os marcos do centro de 1932 (src/mundo/marcos1932/): montados uma vez; só as cores mudam ao vivo
   const mc = mundo.addFolder('Marcos do centro (1932)')
   mc.add(cfg.marcos, 'ligados').name(rec('marcos do centro'))
