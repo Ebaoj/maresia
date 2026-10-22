@@ -10,7 +10,7 @@
 // fonte, H = hipótese) que está no documento docs/mapa-1932.md.
 
 import dados from './mapa1932-dados.json'
-import { ll, LON_POR_X, LAT_POR_Z } from './fortaleza1932.js'
+import { ll, llInverso } from './fortaleza1932.js'
 
 export const FONTE = dados.fonte
 export const JANELA = dados.janela
@@ -118,12 +118,9 @@ export function pesoCampoUrubu(x, z, margem = 25) {
   return 1 - t * t * (3 - 2 * t)
 }
 
-// ll() é uma compressão com sentido (x cresce para leste, z cresce para o sul), então
-// dá para inverter: é o que liga um ponto do jogo ao pixel do raster do uso dos lotes.
-// A longitude cresce com x; a latitude cresce com -z.
-export function llInverso(x, z) {
-  return [LON_POR_X(x), LAT_POR_Z(z)]
-}
+// llInverso() é a volta de ll() (src/mundo/escala1932.js): é o que liga um ponto
+// do jogo ao pixel do raster do uso dos lotes.
+export { llInverso }
 
 // ponto do jogo -> pixel do raster src/mundo/mapa1932-malha.png (origem no canto noroeste)
 export function pontoParaPixel(x, z) {

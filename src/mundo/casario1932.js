@@ -14,7 +14,8 @@
 // da mesma rua: e assim que a rua fica cheia, sem buraco no meio do quarteirao.
 
 import dados from './mapa1932-lotes.json'
-import { esticamentoNoVao, ll, LIMITES, LUGARES_RESERVADOS } from './fortaleza1932.js'
+import { ll, LIMITES, LUGARES_RESERVADOS } from './fortaleza1932.js'
+import { FRENTES, LARGURA_ALVO, FOLGA_PAREDE, emLonLat, fatiasDoCaminho } from './casarioPlanta1932.js'
 
 export const USOS = dados.usos
 export const USO_FAVELA = 99
@@ -55,34 +56,8 @@ const FOLGA_GRUPO = 2.5
 // mas um lote estreito (o quarto de criado) ainda se junta com o vizinho da
 // mesma rua, ate essa folga
 const FOLGA_JUNTA = 6
-
-const cruas = dados.fachadas.map((f) => {
-  const [ax, az] = ll(f[1], f[2])
-  const [bx, bz] = ll(f[3], f[4])
-  const [cx, cz] = ll(f[5], f[6])
-  const mx = (ax + bx) / 2
-  const mz = (az + bz) / 2
-  let ux = bx - ax
-  let uz = bz - az
-  const larg = Math.hypot(ux, uz)
-  ux /= larg || 1
-  uz /= larg || 1
-  // a normal aponta para a rua: a perpendicular que fica longe do fundo do lote
-  let nx = uz
-  let nz = -ux
-  if ((mx - cx) * nx + (mz - cz) * nz < 0) { nx = -nx; nz = -nz }
-  const prof = Math.abs((mx - cx) * nx + (mz - cz) * nz)
-  return {
-    uso: f[0],
-    a: [ax, az],
-    b: [bx, bz],
-    normal: [nx, nz],
-    larg,
-    prof,
-    x: mx - nx * (prof / 2),
-    z: mz - nz * (prof / 2),
-  }
-})
+// quanto o angulo da testada pode mudar antes de a casa virar outra casa
+const VIRADA = Math.cos((8 * Math.PI) / 180)
 
 // As cadeias de rua: a rede viaria da planta oficial. Cada cadeia e a sequencia
 // de fachadas que se encaram ao longo de uma mesma rua, na ordem. docs/mapa-1932-lotes.py
@@ -95,16 +70,19 @@ const livre = (ponta) => (ponta === 'a' ? 'b' : 'a')
 
 // As ruas de 1932: a linha da frente de cada lote, ligada de ponta a ponta. E a
 // rede viaria que a planta oficial mostra - nao a grade de Herbster.
-// Cada rua guarda os pontos e a normal de cada um (a normal aponta para a rua).
+// Cada rua guarda os pontos e a normal de cada um (a normal aponta para a rua),
+// ja em coordenadas de jogo.
 export const RUAS = CADEIAS.map((cadeia) => {
   const pontos = []
   const normais = []
   for (const [k, entrada] of cadeia) {
-    const f = cruas[k]
+    const f = FRENTES[k]
     const de = f[entrada]
     const para = f[livre(entrada)]
-    pontos.push(de)
-    pontos.push(para)
+    const [dx, dz] = ll(...emLonLat(de[0], de[1]))
+    const [px, pz] = ll(...emLonLat(para[0], para[1]))
+    pontos.push([dx, dz])
+    pontos.push([px, pz])
     normais.push(f.normal)
     normais.push(f.normal)
   }
@@ -144,23 +122,26 @@ export function pontoNaRua(rua, dist) {
   return [p0[0], p0[1], n0[0], n0[1]]
 }
 
+
 // as fachadas em coordenada de jogo, ja agrupadas em casas
+let vaosDaTestada = []
 export const FACHADAS = (() => {
   const grupos = []
+  const vaos = [] // os trechos da testada sem construcao (a rua segue vazia)
   for (const cadeia of CADEIAS) {
     let grupo = []
     let largura = 0
     let anterior = null
+    let anteriorF = null
     let grupoDoVizinho = -1
-    // o esticamento da ultima frente vista: a testada acumulada e comparada com
-    // um limite medido no mundo comprimido, entao o limite acompanha a escala
-    let esticaF = 1
     // fecha o grupo: as casas sao trechos de testada encostada. Um grupo curto
     // demais (um lote de 4 m sozinho) entra no grupo anterior da MESMA rua; se
     // nao ha, ele vira casa assim mesmo, do tamanho que a planta deu.
+    // Todas as medidas daqui sao em METROS DE VERDADE: a planta oficial e o
+    // que manda na largura da casa, e nao a escala comprimida do jogo.
     const fechar = () => {
       if (!grupo.length) return
-      if (largura < MIN_FRENTE * esticaF && grupoDoVizinho >= 0) {
+      if (largura < MIN_FRENTE && grupoDoVizinho >= 0) {
         grupos[grupoDoVizinho].push(...grupo)
       } else {
         grupos.push(grupo)
@@ -170,31 +151,36 @@ export const FACHADAS = (() => {
       largura = 0
     }
     for (const [k, entrada] of cadeia) {
-      const f = cruas[k]
+      const f = FRENTES[k]
       const de = f[entrada]
       const para = f[livre(entrada)]
       // a folga entre uma frente e a outra: um trecho sem construcao e um trecho
       // sem casa (e um vao na testada, nao uma casa gigante). Mas um lote
       // estreito sozinho (o quarto de criado) se junta com o vizinho da mesma
       // rua: e assim que a testada fica cheia.
-      // A folga, a testada acumulada e as larguras sao medidas em unidades de
-      // jogo e os limites foram medidos no mundo comprimido: perto da praca (que
-      // foi descomprimida para 1:1) o mesmo metro real ocupa mais unidades,
-      // entao os limites acompanham o esticamento local - que depende da
-      // direcao, porque no miolo o x e o z escalam diferente.
-      const dx = de[0] - (anterior ? anterior[0] : de[0])
-      const dz = de[1] - (anterior ? anterior[1] : de[1])
-      const estica = anterior ? esticamentoNoVao(dx, dz, de[0], de[1]) : 1
-      // a direcao da propria frente (a normal e a perpendicular dela)
-      esticaF = esticamentoNoVao(-f.normal[1], f.normal[0], de[0], de[1])
-      const folga = anterior ? Math.hypot(dx, dz) : 0
-      const curta = largura < MIN_FRENTE * esticaF
-      if (folga > FOLGA_GRUPO * estica && !(curta && folga <= FOLGA_JUNTA * estica)) fechar()
+      const folga = anterior ? Math.hypot(de[0] - anterior[0], de[1] - anterior[1]) : 0
+      const curta = largura < MIN_FRENTE
+      if (folga > FOLGA_GRUPO && !(curta && folga <= FOLGA_JUNTA)) {
+        // Um vao na testada: a planta oficial nao tem construcao aqui, mas a
+        // rua continua. No Centro esse trecho vira casa geminada; nos bairros,
+        // muro com portao (src/mundo/cidade.js).
+        vaos.push({
+          a: ll(...emLonLat(anterior[0], anterior[1])),
+          b: ll(...emLonLat(de[0], de[1])),
+          normal: f.normal,
+          largura: folga,
+          uso: f.uso,
+          prof: anteriorF ? anteriorF.prof : 0,
+        })
+        fechar()
+      }
       anterior = para
-      if (f.larg > MAX_FRENTE * esticaF) { grupo.push([k, entrada]); fechar(); continue } // fachada grande demais
+      anteriorF = f
       grupo.push([k, entrada])
       largura += f.larg
-      if (largura >= MIN_FRENTE * esticaF) fechar()
+      // a casa tem a largura que a planta deu (LARGURA_ALVO); um lote mais
+      // estreito que isso espera o vizinho da mesma rua
+      if (largura >= LARGURA_ALVO) fechar()
     }
     fechar()
   }
@@ -205,63 +191,119 @@ export const FACHADAS = (() => {
     // o caminho do grupo: as frentes em fila, uma depois da outra
     const caminho = []
     for (const [k, entrada] of grupo) {
-      const f = cruas[k]
-      caminho.push({ de: f[entrada], para: f[livre(entrada)], f })
+      const f = FRENTES[k]
+      caminho.push({ de: f[entrada], para: f[livre(entrada)], f, invertido: entrada === 'b' })
     }
     let total = 0
     for (const c of caminho) { c.inicio = total; total += Math.hypot(c.para[0] - c.de[0], c.para[1] - c.de[1]) }
-    // o mesmo vao de sempre, em unidades de jogo: perto da praca o grupo e maior
-    if (total < 0.8 * esticamentoNoVao(1, 0, caminho[0].de[0], caminho[0].de[1])) continue
-    // a fachada fica um pouco menor que o grupo: a parede entre as casas tem
-    // espessura, e nas ruas curvas o canto da casa nao entra no vizinho
-    const larg = Math.min(total, MAX_FRENTE) * 0.96
-    // o meio do caminho: onde a casa vai ficar
-    const meio = larg / 2
-    let achado = caminho[0]
-    for (const c of caminho) {
-      const fim = c.inicio + Math.hypot(c.para[0] - c.de[0], c.para[1] - c.de[1])
-      if (meio <= fim) { achado = c; break }
-    }
-    const comp = Math.hypot(achado.para[0] - achado.de[0], achado.para[1] - achado.de[1]) || 1
-    const t = Math.min(1, Math.max(0, (meio - achado.inicio) / comp))
-    const mx = achado.de[0] + (achado.para[0] - achado.de[0]) * t
-    const mz = achado.de[1] + (achado.para[1] - achado.de[1]) * t
-    // fora do mundo jogavel nao ha casa (o sul da planta passa da borda do mapa)
-    if (mx < LIMITES.x0 || mx > LIMITES.x1 || mz < LIMITES.z0 || mz > LIMITES.z1) continue
-    const ux = (achado.para[0] - achado.de[0]) / comp
-    const uz = (achado.para[1] - achado.de[1]) / comp
-    // a normal: a perpendicular que aponta para a rua
-    let nx = uz
-    let nz = -ux
-    let prof = Infinity
+    if (total < 0.8) continue // a testada e curta demais para ser casa
+    // o uso que domina o grupo (a frente mais longa manda)
     const usos = new Map()
-    for (const c of caminho) {
-      // a casa e tao funda quanto o lote mais raso do grupo: assim ela nao invade
-      // o lote de tras (a parede dos fundos)
-      prof = Math.min(prof, c.f.prof)
-      usos.set(c.f.uso, (usos.get(c.f.uso) || 0) + c.f.larg)
-      if (c.f.normal[0] * nx + c.f.normal[1] * nz < 0) { nx = -nx; nz = -nz }
-    }
-    let uso = achado.f.uso
+    for (const c of caminho) usos.set(c.f.uso, (usos.get(c.f.uso) || 0) + c.f.larg)
+    let uso = caminho[0].f.uso
     let melhor = -1
     for (const [u, peso] of usos) if (peso > melhor) { melhor = peso; uso = u }
-    if (prof < 1.2) continue // lote raso demais: e um canto de quadra, nao uma casa
-    if (prof > 40) prof = 40 // o resto do lote e quintal, nao casa
     const nome = uso === USO_FAVELA ? 'Favela' : USOS[uso - 1]
-    const centro = Math.hypot(mx - px, mz - pz)
-    saida.push({
-      uso,
-      nome,
-      tipo: TIPO_DO_USO[nome] === 'simples' ? 'simples' : (centro < RAIO_CASARIO ? 'casario' : (nome === 'Residencial' ? 'simples' : 'casario')),
-      x: mx - nx * (prof / 2),
-      z: mz - nz * (prof / 2),
-      w: larg,
-      d: prof,
-      rot: Math.atan2(nx, nz),
-    })
+
+    // A testada partida em casas: a frente da planta e longa demais para uma
+    // casa so (e um quarteirao), e e partida em casas encostadas. Cada fatia
+    // pega um pedaco da frente, entao a testada da rua fica cheia: antes, a
+    // casa maior que o limite deixava um buraco no meio da rua.
+    for (const fatia of fatiasDoCaminho(caminho)) {
+      const f = fatia.f
+      // a casa tem pelo menos um metro e meio de fundo: um canto de quadra
+      // (onde o lote fecha na ponta) nao da uma casa, mas nao deixa buraco
+      let prof = Math.max(1.5, fatia.prof)
+      if (prof > 40) prof = 40 // o resto do lote e quintal, nao casa
+      // a normal da fatia: a perpendicular da frente, virada para a rua
+      const comp = Math.hypot(fatia.para[0] - fatia.de[0], fatia.para[1] - fatia.de[1]) || 1
+      const ux = (fatia.para[0] - fatia.de[0]) / comp
+      const uz = (fatia.para[1] - fatia.de[1]) / comp
+      let nx = uz
+      let nz = -ux
+      const mx = (fatia.de[0] + fatia.para[0]) / 2
+      const mz = (fatia.de[1] + fatia.para[1]) / 2
+      if ((mx - f.fundo[0]) * nx + (mz - f.fundo[1]) * nz < 0) { nx = -nx; nz = -nz }
+      // a casa e um retangulo dentro do lote: a frente e a fatia da testada (sem
+      // a fresta da parede) e o fundo, prof metros para dentro, na direcao da
+      // normal de verdade. Os quatro cantos vao para o jogo pela mesma
+      // transformacao da planta, entao a casa cai dentro do lote que a planta
+      // desenhou - e nao num retangulo torto, que invadia a rua.
+      // a fresta da parede fica no meio da fatia: a casa e a fatia da testada
+      // menos a parede que a separa da vizinha
+      const ajuste = FOLGA_PAREDE / 2
+      const dentro = Math.max(0.1, comp - FOLGA_PAREDE)
+      const frenteA = [fatia.de[0] + ux * ajuste, fatia.de[1] + uz * ajuste]
+      const frenteB = [fatia.para[0] - ux * ajuste, fatia.para[1] - uz * ajuste]
+      const cantosReal = [
+        [frenteA[0] - nx * prof, frenteA[1] - nz * prof],
+        [frenteB[0] - nx * prof, frenteB[1] - nz * prof],
+        frenteB,
+        frenteA,
+      ]
+      const cantos = cantosReal.map((p) => ll(...emLonLat(p[0], p[1])))
+      // o jogo distorce a planta: a frente e o fundo chegam inclinados um para
+      // o outro. A casa e o retangulo que cabe entre os dois.
+      const larguraJogo = Math.hypot(cantos[3][0] - cantos[2][0], cantos[3][1] - cantos[2][1])
+      if (larguraJogo < 0.2) continue
+      const dirX = (cantos[2][0] - cantos[3][0]) / larguraJogo
+      const dirZ = (cantos[2][1] - cantos[3][1]) / larguraJogo
+      let jnx = dirZ
+      let jnz = -dirX
+      const meioFrente = [(cantos[3][0] + cantos[2][0]) / 2, (cantos[3][1] + cantos[2][1]) / 2]
+      const meioFundo = [(cantos[0][0] + cantos[1][0]) / 2, (cantos[0][1] + cantos[1][1]) / 2]
+      // a normal olha para a rua: para longe do fundo do lote
+      if ((meioFundo[0] - meioFrente[0]) * jnx + (meioFundo[1] - meioFrente[1]) * jnz > 0) { jnx = -jnx; jnz = -jnz }
+      // a profundidade que cabe: a menor distancia da frente ate a linha de
+      // fundo, medida na direcao da normal (e nao ate a linha de fundo, que
+      // chega inclinada no jogo)
+      const fundoX = cantos[1][0] - cantos[0][0]
+      const fundoZ = cantos[1][1] - cantos[0][1]
+      const compFundo = Math.hypot(fundoX, fundoZ) || 1
+      const fx = fundoX / compFundo
+      const fz = fundoZ / compFundo
+      const distFundo = (p) => Math.abs((p[0] - cantos[0][0]) * fz - (p[1] - cantos[0][1]) * fx)
+      const profJogo = Math.hypot(meioFundo[0] - meioFrente[0], meioFundo[1] - meioFrente[1])
+      const profCabem = Math.min(distFundo(cantos[3]), distFundo(cantos[2]))
+      const profFinal = Math.max(0.5, Math.min(profJogo, profCabem * 0.95))
+      // o centro da casa: no meio da frente, profFinal para dentro
+      const cxj = meioFrente[0] - jnx * (profFinal / 2)
+      const czj = meioFrente[1] - jnz * (profFinal / 2)
+      // fora do mundo jogavel nao ha casa (o sul da planta passa da borda do mapa)
+      if (cxj < LIMITES.x0 || cxj > LIMITES.x1 || czj < LIMITES.z0 || czj > LIMITES.z1) continue
+      const centro = Math.hypot(cxj - px, czj - pz)
+      saida.push({
+        uso,
+        nome,
+        tipo: TIPO_DO_USO[nome] === 'simples' ? 'simples' : (centro < RAIO_CASARIO ? 'casario' : (nome === 'Residencial' ? 'simples' : 'casario')),
+        x: cxj,
+        z: czj,
+        w: larguraJogo,
+        d: profFinal,
+        // a profundidade em metros de verdade (a do jogo depende da escala local)
+        prof,
+        // a largura da frente em metros de verdade
+        largura: dentro,
+        rot: Math.atan2(jnx, jnz),
+        // as testadas que formaram a casa (de, para), em coordenadas de jogo:
+        // e a linha da frente que a planta oficial desenhou para este lote
+        frentes: [[
+          ll(...emLonLat(fatia.de[0], fatia.de[1]))[0],
+          ll(...emLonLat(fatia.de[0], fatia.de[1]))[1],
+          ll(...emLonLat(fatia.para[0], fatia.para[1]))[0],
+          ll(...emLonLat(fatia.para[0], fatia.para[1]))[1],
+        ]],
+      })
+    }
   }
+  vaosDaTestada = vaos
   return saida
 })()
+
+// Os vaos da testada: os trechos da rua que a planta oficial deixa sem
+// construcao. No Centro eles viram casa geminada; nos bairros, muro com
+// portao (src/mundo/cidade.js).
+export const VAOS = vaosDaTestada
 
 // os lugares que a cidade nao pode cobrir: a reconstituicao de cada um entra por cima
 export const RESERVADOS = LUGARES_RESERVADOS

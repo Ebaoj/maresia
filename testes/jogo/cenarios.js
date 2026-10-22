@@ -128,6 +128,23 @@ async function comLuzDoDia(m, f) {
   }
 }
 
+// O lugar de referência dos cenários que medem o corpo do jogador: a fatia
+// vertical da Praia do Peixe. A âncora é lon/lat, e não um x do jogo: o
+// cenário usava o x fixo (340, 20), que era o x da fatia antes do mapa mudar de
+// escala (a compressão no quadro da grade, 06f9525). Com o mapa novo, esse x
+// saiu do mundo jogável, a física jogava o jogador para a borda (longe dos
+// bancos) e o cenário sentarLevantar reprovava com "não chegou a sentar" —
+// a mesma falha que a fatia teve e que foi corrigida em 715963c.
+let pontoDeReferencia = null
+async function referencia() {
+  if (!pontoDeReferencia) {
+    const { FATIA_LON, FATIA_LAT } = await import('/src/mundo/fatia.js')
+    const { ll } = await import('/src/mundo/fortaleza1932.js')
+    pontoDeReferencia = ll(FATIA_LON, FATIA_LAT)
+  }
+  return pontoDeReferencia
+}
+
 export const cenarios = {
   // Regressão d25888b (16/10/2026): frente e trás seguidos emendavam meia-volta em meia-volta, e o corpo
   // ficava girando de um lado para o outro. Cada troca tem de dar uma meia-volta só e assentar.
@@ -254,14 +271,15 @@ export const cenarios = {
     return { ok: ruins.length === 0, medidas, motivo: ruins.length ? 'meia-volta a mais depois da última tecla' : '' }
   },
 
-  // Regressão (17/10/2026, vídeo IMG_3554 do Joabe): parado, S rápido começa a meia-volta; soltar antes do
-  // fim e apertar S de novo (mesmo pedido) deixava a trava do giro presa. Ele andava a 30% da velocidade
-  // com a pose congelada no fim da volta ("anda parado sem animação") e ia afundando.
+// Regressão (17/10/2026, vídeo IMG_3554 do Joabe): parado, S rápido começa a meia-volta; soltar antes do
+// fim e apertar S de novo (mesmo pedido) deixava a trava do giro presa. Ele andava a 30% da velocidade
+// com a pose congelada no fim da volta ("anda parado sem animação") e ia afundando.
   async meiaVoltaInterrompida(m) {
     const t = m.teclas
     const j = m.jogador
     soltarTudo(t)
-    m.irPara(340, 20, 0)
+    const [px, pz] = await referencia()
+    m.irPara(px, pz, 0)
     await esperar(2000)
     t.tras = true
     await esperar(350)
@@ -290,7 +308,8 @@ export const cenarios = {
     const j = m.jogador
     const an = j.animador
     soltarTudo(m.teclas)
-    m.irPara(340, 20, 0)
+    const [px, pz] = await referencia()
+    m.irPara(px, pz, 0)
     await esperar(2000)
     const q = osso(m, 'Hips')
     if (!q) return { ok: false, motivo: 'sem osso do quadril' }

@@ -16,6 +16,13 @@ export function secaoMundo(gui, cfg) {
   chao.add(cfg.chao, 'rodeiroPos', 0, 0.5, 0.01).name('rodeiro: onde fica na rua')
   chao.add(cfg.chao, 'rodeiroLarg', 0.01, 0.3, 0.005).name('rodeiro: largura')
 
+  // o casario de 1932 (src/mundo/casarioPlanta1932.js e quintal1932.js): as casas nascem com o mundo
+  const casario = mundo.addFolder('Casario de 1932')
+  casario.add(cfg.casario, 'larguraAlvo', 4, 26, 0.5).name(rec('largura da casa (m)'))
+  casario.add(cfg.casario, 'folgaParede', 0, 0.6, 0.02).name(rec('fresta entre as casas (m)'))
+  casario.add(cfg.casario.quintal, 'densidade', 0, 1, 0.05).name(rec('quintal: árvore por lote'))
+  casario.add(cfg.casario.quintal, 'folga', 0, 8, 0.5).name(rec('quintal: distância atrás da casa (m)'))
+
   const rel = mundo.addFolder('Relevo do chão')
   rel.add(cfg.chao, 'relevo', 0, 2, 0.05).name('força geral')
   rel.add(cfg.chao, 'relevoAreia', 0, 2, 0.05).name('areia: ondulação e riscos')

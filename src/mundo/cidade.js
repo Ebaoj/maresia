@@ -8,7 +8,7 @@ import * as THREE from 'three' // eslint-disable-line no-unused-vars
 import { larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA } from './mapa.js'
 import { alturaTerreno, inclinacao } from './terreno.js'
 import { materialPredio } from '../materiais.js'
-import { FACHADAS, RESERVADOS, USO } from './casario1932.js'
+import { FACHADAS, RESERVADOS, USO, VAOS } from './casario1932.js'
 import { marcoSob } from './lotes-marcos.js'
 import { FACHADAS as CORES_CASARIO, CASAS_SIMPLES, CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarCaixa } from './colisao.js'
@@ -17,7 +17,9 @@ import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { criarCasas } from './quarteirao.js'
 import { casaNoMarco } from './marcos1932/pegadas.js'
 import { criarAleatorio } from '../utils.js'
-import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha, FATOR_PRACA } from './fortaleza1932.js'
+import { criarMuros1932, ALTURA_MURO, ESPESSURA_MURO } from './muro1932.js'
+import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha, FATOR_PRACA, metrosDoVao, direcaoJogo, comprimentoJogo, metrosPorUn } from './fortaleza1932.js'
+import { distRealDaPraca } from './chao1932.js'
 
 const rnd = criarAleatorio(42)
 
@@ -100,10 +102,21 @@ export function lugarRecusado(f) {
 }
 
 // Cruzamento entre casas: as da planta de 1932 são coladas de parede, e a grade de
-// ocupação (2 m) é grossa demais para separating vizinhas de 3 m. Aqui o teste é
+// ocupação (2 m) é grossa demais para separar vizinhas de 3 m. Aqui o teste é
 // exato: retângulos girados, eixo por eixo (SAT), com uma grade esparsa por célula.
+//
+// A folga entre duas casas é a parede que as separa: 5 cm de verdade. Ela é
+// convertida para a unidade do jogo local, porque uma unidade vale 1 m na praça
+// e quase 10 m na periferia comprimida - uma folga fixa de 0,3 un tirava 5 mil
+// casas da rua (elas se recusavam por "sobreposição" e a testada ficava com buraco).
 const CELO = 8
+const MARGEM_PAREDE = 0.05 // metros de verdade
 const vizinhos = new Map()
+
+// a folga de uma casa, em unidades de jogo
+function margemEm(x, z) {
+  return MARGEM_PAREDE / metrosPorUn(x, z)
+}
 
 function cruza(a, b) {
   const ca = Math.cos(a.rot)
@@ -121,7 +134,8 @@ function cruza(a, b) {
     const p = Math.abs(dx * ex + dz * ez)
     const ra = (a.w / 2) * Math.abs(ax[0] * ex + ax[1] * ez) + (a.d / 2) * Math.abs(az[0] * ex + az[1] * ez)
     const rb = (b.w / 2) * Math.abs(bx[0] * ex + bx[1] * ez) + (b.d / 2) * Math.abs(bz[0] * ex + bz[1] * ez)
-    if (p > ra + rb + 0.3) return false // a parede dos fundos tem espessura
+    const folga = Math.min(a.margem ?? 0, b.margem ?? 0)
+    if (p > ra + rb + folga) return false // a parede dos fundos tem espessura
   }
   return true
 }
@@ -173,12 +187,12 @@ function casaAjustada(item) {
   const fz = -Math.sin(item.rot)
   for (const f of FATORES) {
     const d = item.d * f
-    const t = { x: item.x + (nx * (item.d - d)) / 2, z: item.z + (nz * (item.d - d)) / 2, w: item.w, d, rot: item.rot }
+    const t = { x: item.x + (nx * (item.d - d)) / 2, z: item.z + (nz * (item.d - d)) / 2, w: item.w, d, rot: item.rot, margem: item.margem }
     if (casaLivre(t)) return t
   }
   for (const f of FATORES_LARGURA) {
     const w = item.w * f
-    const t = { x: item.x + (fx * (item.w - w)) / 2, z: item.z + (fz * (item.w - w)) / 2, w, d: item.d, rot: item.rot }
+    const t = { x: item.x + (fx * (item.w - w)) / 2, z: item.z + (fz * (item.w - w)) / 2, w, d: item.d, rot: item.rot, margem: item.margem }
     if (casaLivre(t)) return t
   }
   return null
@@ -187,17 +201,38 @@ function casaAjustada(item) {
 // por que uma fachada da planta não virou casa (serve para acertar o mapa)
 export const RECUSA = { sobreposta: 0, rio: 0, praia: 0, lagoa: 0, pajeu: 0, ladeira: 0, reservada: 0, marco: 0 }
 
-function casa(lote, x, z, w, d, rot, frente, alturaMin, alturaMax, cores) {
-  // casas geminadas: testa só o miolo do lote (a vizinha colada não pode ser recusada pela folga dela)
-  const item = casaAjustada({ x, z, w, d, rot })
-  if (!item) { RECUSA.sobreposta++; return null }
-  if (Math.abs(item.x - rioX(item.z)) < RIO_MEIA_LARGURA * 1.3 + item.d / 2) { RECUSA.rio++; return null }
-  if (distCosta(item.x, item.z) < larguraPraia(item.x) + FIM_AVENIDA + 2) { RECUSA.praia++; return null }
-  for (const l of lagoasJogo) if (Math.hypot((item.x - l.x) / (l.rx + 8), (item.z - l.z) / (l.rz + 8)) < 1.3) { RECUSA.lagoa++; return null }
+// Onde não pode morar: o rio, a praia, as lagoas, o riacho Pajeú e a ladeira.
+function recusaDe(item) {
+  if (Math.abs(item.x - rioX(item.z)) < RIO_MEIA_LARGURA * 1.3 + item.d / 2) return 'rio'
+  if (distCosta(item.x, item.z) < larguraPraia(item.x) + FIM_AVENIDA + 2) return 'praia'
+  for (const l of lagoasJogo) if (Math.hypot((item.x - l.x) / (l.rx + 8), (item.z - l.z) / (l.rz + 8)) < 1.3) return 'lagoa'
   // o riacho Pajeú corta o chão: casa em cima dele ficaria no fundo do vale
-  if (distPolilinha(item.x, item.z, pajeuJogo) < 5) { RECUSA.pajeu++; return null }
-  if (inclinacao(item.x, item.z) > 0.6) { RECUSA.ladeira++; return null }
-  lote.add(item.x, item.z, item.w, item.d, rnd.entre(alturaMin, alturaMax), rot, rnd.escolha(cores), { frente })
+  if (distPolilinha(item.x, item.z, pajeuJogo) < 5) return 'pajeu'
+  if (inclinacao(item.x, item.z) > 0.6) return 'ladeira'
+  return null
+}
+
+function casa(lote, x, z, w, d, rot, frente, alturaMin, alturaMax, cores, opcoes = {}) {
+  // casas geminadas: testa só o miolo do lote (a vizinha colada não pode ser recusada pela folga dela)
+  const item = casaAjustada({ x, z, w, d, rot, margem: margemEm(x, z) })
+  if (!item) { RECUSA.sobreposta++; return null }
+  const recusa = recusaDe(item)
+  if (recusa) { RECUSA[recusa]++; return null }
+  const altura = opcoes.altura ?? rnd.entre(alturaMin, alturaMax)
+  const cor = opcoes.cor ?? rnd.escolha(cores)
+  lote.add(item.x, item.z, item.w, item.d, altura, rot, cor, { frente })
+  marcarCasa(item)
+  return item
+}
+
+// Casa nova numa folha de testada já escolhida: ela entra no lugar, sem
+// ajuste (a folha foi medida na linha da fachada).
+function casaNaFolga(lote, item, altura, cor) {
+  item.margem = margemEm(item.x, item.z)
+  if (!casaLivre(item)) { RECUSA.sobreposta++; return null }
+  const recusa = recusaDe(item)
+  if (recusa) { RECUSA[recusa]++; return null }
+  lote.add(item.x, item.z, item.w, item.d, altura, item.rot, cor, { frente: [0, 1] })
   marcarCasa(item)
   return item
 }
@@ -223,15 +258,123 @@ function cidade(cas, sim) {
   return quadras
 }
 
-export function criarCidade(cena) {
+// ---------------------------------------------------------------- item 2
+// A frente contínua: a planta oficial de 1932 é esparsa (26% das frentes têm
+// vizinho; a folga mediana entre duas frentes é de 22 m), e a cidade parecia
+// um deserto de areia com as casas soltas. Estes trechos da testada são
+// preenchidos: no Centro, casa geminada na mesma linha de fachada, com
+// alturas e cores variadas da paleta cal e sal; nos bairros, muro caiado com
+// portão de madeira.
+//
+// A semente é fixa (1932): a cidade sai sempre igual.
+export const FRENTE = { vaos: 0, casas: 0, muros: 0, recusadas: 0, passagens: 0 }
+
+function preencheVaus(cas, cfg) {
+  const rnd = criarAleatorio(1932)
+  const muros = []
+  const raio = cfg.chao.centroRaio
+  for (const vao of VAOS) {
+    const ax = vao.a[0]
+    const az = vao.a[1]
+    const bx = vao.b[0]
+    const bz = vao.b[1]
+    const dx = bx - ax
+    const dz = bz - az
+    const comp = Math.hypot(dx, dz)
+    if (comp < 0.6) continue
+    const ux = dx / comp
+    const uz = dz / comp
+    const mx = (ax + bx) / 2
+    const mz = (az + bz) / 2
+    // a normal do vão: a perpendicular à linha do vão, virada para a rua. A
+    // perpendicular é a da linha do JOGO (a casa tem de encostar na testada
+    // como ela aparece na tela); o lado da rua vem da normal de verdade, levada
+    // para o quadro do jogo.
+    const [ngx, ngz] = direcaoJogo(vao.normal[0], vao.normal[1], mx, mz)
+    let nx = uz
+    let nz = -ux
+    if (nx * ngx + nz * ngz < 0) { nx = -nx; nz = -nz }
+    // quantos metros de verdade o vão tem: a escala do mapa muda de um ponto
+    // para outro (a praça está em 1:1, o resto é comprimido)
+    const metros = metrosDoVao(dx, dz, mx, mz)
+    if (metros < 7) { FRENTE.passagens++; continue } // uma passagem de pedestre, não uma casa
+    FRENTE.vaos++
+    if (distRealDaPraca(mx, mz) < raio) {
+      // Centro: a fileira de casas continua a linha da fachada. Cada casa
+      // fica 0,45 un menor que o trecho que cabe: a parede entre as
+      // vizinhas tem espessura, e a casa não invade o vizinho (o teste de
+      // sobreposição da cidade conta a parede como sobreposição).
+      const quantas = Math.max(1, Math.min(Math.round(metros / 11), Math.floor((comp - 0.45) / 5)))
+      const larg = comp / quantas - 0.45
+      // a profundidade do lote vem da planta em metros de verdade: aqui ela
+      // vira unidade de jogo, que e o que o corpo da casa mede
+      const prof = Math.min(40, Math.max(2, vao.prof * comprimentoJogo(vao.normal[0], vao.normal[1], mx, mz)))
+      const rot = Math.atan2(nx, nz)
+      for (let i = 0; i < quantas; i++) {
+        // Onde a casa cabe: a casa da esquina é uma caixa reta e o quarteirão
+        // é curvo, então ela avança sobre o vão. A casa nova procura o
+        // trecho livre da linha, em vez de brigar com a esquina.
+        let item = null
+        for (let t = (i + 0.12) / quantas; t <= 1 && !item; t += 0.02) {
+          const cx = ax + dx * t
+          const cz = az + dz * t
+          const teste = { x: cx - nx * (prof / 2), z: cz - nz * (prof / 2), w: larg, d: prof, rot }
+          if (casaLivre(teste)) item = teste
+        }
+        if (!item) { FRENTE.recusadas++; continue }
+        const altura = rnd.chance(0.45) ? rnd.entre(7.2, 8.6) : rnd.entre(4.8, 5.8)
+        const cor = rnd.escolha(CORES_CASARIO)
+        const feita = casaNaFolga(cas, item, altura, cor)
+        if (feita) FRENTE.casas++
+        else FRENTE.recusadas++
+      }
+    } else {
+      // bairros: muro caiado, com portão de madeira. O muro também procura o
+      // trecho livre: a casa da esquina avança sobre o vão da mesma rua.
+      const rotMuro = Math.atan2(-uz, ux)
+      const livre = (t) => {
+        const cx = ax + dx * t
+        const cz = az + dz * t
+        return casaLivre({ x: cx - nx * (ESPESSURA_MURO / 2), z: cz - nz * (ESPESSURA_MURO / 2), w: 1.2, d: ESPESSURA_MURO, rot: rotMuro })
+      }
+      let t0 = 0
+      let t1 = 1
+      while (t0 < 1 && !livre(t0)) t0 += 0.02
+      while (t1 > t0 && !livre(t1)) t1 -= 0.02
+      if (t1 - t0 < 0.05) { FRENTE.recusadas++; continue }
+      const c0x = ax + dx * t0
+      const c0z = az + dz * t0
+      const c1x = ax + dx * t1
+      const c1z = az + dz * t1
+      const yBase = Math.min(alturaTerreno(c0x, c0z), alturaTerreno(c1x, c1z))
+      muros.push({
+        x: (c0x + c1x) / 2 - nx * (ESPESSURA_MURO / 2),
+        z: (c0z + c1z) / 2 - nz * (ESPESSURA_MURO / 2),
+        y: yBase,
+        comprimento: Math.hypot(c1x - c0x, c1z - c0z),
+        rot: rotMuro,
+        cor: rnd.escolha(['#efe6d2', '#e4d6bb', '#d9cbb0', '#e9dfc8', '#f2ebdc']),
+        portao: rnd.entre(0.18, 0.82),
+      })
+      FRENTE.muros++
+    }
+  }
+  return muros
+}
+
+export function criarCidade(cena, cfg) {
   const cas = new Lote(materialPredio({ celula: [2.3, 3.3], margem: [0.3, 0.2], loja: 3.4, vidro: '#3b2c26', telhado: CAL.telha, faixa: '#f4eee2', faixaAltura: 0.09, chanceAcesa: 0.55, moldura: '#f3ede0', cornija: 1, torto: 1, interior: '#33261f', madeira: 1, veneziana1: ESQUADRIAS[0], veneziana2: ESQUADRIAS[1], veneziana3: ESQUADRIAS[2], barra: 0.4, desgaste: 0.6, taipa: CAL.taipa }), 'casario')
   const sim = new Lote(materialPredio({ celula: [2.6, 2.8], margem: [0.36, 0.33], terreo: 0, vidro: '#3b2c26', telhado: '#a3836a', faixa: '#efe6d2', faixaAltura: 0, luz: '#ffb85c', chanceAcesa: 0.6, moldura: '#e4d6bb', torto: 1.6, madeira: 1, veneziana2: ESQUADRIAS[2], veneziana3: ESQUADRIAS[3], veneziana1: ESQUADRIAS[1], barra: 0.55, desgaste: 0.9, taipa: CAL.taipa }), 'favela')
   const quadras = cidade(cas, sim)
+  // a frente contínua: as folgas da testada viram casa (Centro) ou muro (bairros)
+  const muros = preencheVaus(cas, cfg)
 
   // casas com geometria de verdade (src/mundo/quarteirao.js); de longe, a caixa com fachada pintada
   const casas = criarCasas(cena, cas.itens, sim.itens)
   casas.registrarLonge(cas.criar(cena, 'casario-longe', false), false)
   casas.registrarLonge(sim.criar(cena, 'favela-longe', false), true)
+  // os muros dos bairros, com o portão de madeira
+  criarMuros1932(cena, muros)
 
-  return { predios: [...cas.itens, ...sim.itens], casas, quadras, grade: GRADE }
+  return { predios: [...cas.itens, ...sim.itens], casas, quadras, grade: GRADE, frente: FRENTE }
 }

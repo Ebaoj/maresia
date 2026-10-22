@@ -265,6 +265,14 @@ export const PADRAO = {
     soltoRaio: 40,        // até quantos metros da câmera ele aparece
     soltoDensidade: 1.0,  // quantas peças (1 = o padrão); vale ao recarregar
   },
+  casario: {
+    larguraAlvo: 10,     // a largura de verdade que a casa deve ter (m): a testada longa da planta e partida em casas
+    folgaParede: 0.12,   // a fresta entre duas casas geminadas (m)
+    quintal: {
+      densidade: 0.25,   // a chance de uma arvore nascer no quintal de um lote
+      folga: 2.5,        // quantos metros atras da casa a arvore fica (m)
+    },
+  },
   mundo: {
     // 21/10/2026: 0 (era 4). Com 4, o mapa de longe pulava ~1° a cada 4 s (1 min de jogo por segundo) e a sombra
     // inteira dava um tranco visível. Com 0 o cache dos parados refaz a cada 0,05° (~5 vezes por segundo, cada vez

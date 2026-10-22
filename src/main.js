@@ -35,6 +35,7 @@ import { criarHorizonte } from './mundo/horizonte.js'
 import { criarMarcos } from './mundo/marcos.js'
 import { criarPraia } from './mundo/praia.js'
 import { criarCoqueiros } from './mundo/vegetacao.js'
+import { criarQuintal1932 } from './mundo/quintal1932.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
 import { criarUrubu1932 } from './mundo/urubu1932.js'
@@ -114,7 +115,7 @@ async function iniciar() {
   const mar = criarMar(cena, mapaAltura, cfg, toque.publico)
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
   void criarFaixas
-  const { predios, casas, grade, quadras } = criarCidade(cena)
+  const { predios, casas, grade, quadras, frente } = criarCidade(cena, cfg)
   // os marcos do centro (Coluna da Hora, cinemas, Excelsior, Leões, Mercado de Ferro): src/mundo/marcos1932/
   const marcos1932 = criarMarcosCentro(cena, cfg)
   const marcosNorte = criarMarcosNorte(cena, cfg) // a velha Sé, a Estação Central e o Passeio Público de 1932
@@ -137,8 +138,10 @@ async function iniciar() {
   criarBondes(cena) // os trilhos das linhas de bonde da Light sobre a rede viária de 1932
   criarArvores(cena, predios, grade)
   marcar('arvores')
-  const { coqueiros } = criarCoqueiros(cena, cfg)
+  const { coqueiros, pecas } = criarCoqueiros(cena, cfg)
   marcar('coqueiros')
+  criarQuintal1932(cena, cfg, pecas) // as árvores dos quintais de 1932, atrás das casas
+  marcar('quintal')
   const pessoas = criarPessoas(cena, grade)
   const horizonte = criarHorizonte(cena)
   const grama = criarGrama(cena, mapaAltura, cfg, toque.publico)
@@ -450,7 +453,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, ocupacao1932: ocup1932, urubu, marcos1932,
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, ocupacao1932: ocup1932, urubu, marcos1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
