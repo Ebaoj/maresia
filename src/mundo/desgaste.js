@@ -37,27 +37,49 @@ vec3 envelhecer(vec3 rgb, float hq, float uq, float desg, float k, vec3 taipa, o
   // 4. sujeira rente ao chão
   rgb *= mix(1.0, mix(0.68, 1.0, smoothstep(0.0, 2.4, hq)), k);
   // 5. reboco caído: placas grandes, mais perto do chão e mais nas casas gastas
+#ifdef CASCA_MARCO
+  // nos marcos, em metros e presa à forma do prédio (desgaste-marcos.js)
+  float uqC = cascaUM();
+  float n = ruidoCascaM(uqC, hq);
+  float lim = limCascaM(hq, cascaQuinaM());
+#else
+  float uqC = uq;
   float n = ruidoQ(vec2(uq * 0.22, hq * 0.3) + 31.0) * 0.72 + ruidoQ(vec2(uq * 1.4, hq * 1.6) + 41.0) * 0.28;
   float lim = mix(0.68, 0.6, desg) + 0.1 * smoothstep(0.6, 4.5, hq);
+#endif
   casca = smoothstep(lim, lim + 0.012, n) * k;
   // pedra e taipa por baixo: fiadas irregulares, cada pedra com o seu tom, junta escura
   float fila = floor(hq * 3.1);
-  float xs = uq * 2.3 + fila * 0.53 + ruidoQ(vec2(fila, 2.0)) * 0.8;
+  float xs = uqC * 2.3 + fila * 0.53 + ruidoQ(vec2(fila, 2.0)) * 0.8;
   float id = floor(xs);
   float tom = ruidoQ(vec2(id * 1.7, fila * 3.1) + 0.5);
   float junta = max(smoothstep(0.88, 0.97, fract(xs)), smoothstep(0.84, 0.95, fract(hq * 3.1)));
   vec3 pedra = mix(taipa, vec3(0.6, 0.55, 0.47), 0.4 + 0.4 * tom) * (1.0 - 0.3 * junta);
   float aro = smoothstep(lim - 0.04, lim - 0.004, n) * (1.0 - smoothstep(lim, lim + 0.012, n)) * k;
+#ifdef CASCA_MARCO
+  float nb = ruidoCascaM(uqC, hq + 0.08);
+#else
   float nb = ruidoQ(vec2(uq * 0.22, (hq + 0.08) * 0.3) + 31.0) * 0.72 + ruidoQ(vec2(uq * 1.4, (hq + 0.08) * 1.6) + 41.0) * 0.28;
+#endif
   float sombraAro = casca * (1.0 - smoothstep(lim, lim + 0.012, nb));
+#ifdef CASCA_MARCO
+  // duas camadas: sem a cal, o reboco grosso (cal velha); a pedra só no miolo das placas maiores. As duas com a cor
+  // do material (o escurecer da noite dos marcos, obra1932.js)
+  float fundo = smoothstep(lim + uCascaFundo, lim + uCascaFundo + 0.012, n) * k;
+  rgb = mix(rgb, uCascaOcre * diffuse * (0.92 + 0.12 * ruidoQ(vec2(uqC, hq) * 3.0 + 7.0)), casca);
+  rgb = mix(rgb, pedra * diffuse, fundo);
+#else
   rgb = mix(rgb, pedra, casca);
+#endif
   rgb = mix(rgb, rgb * 1.12 + 0.035, aro);
   rgb *= 1.0 - 0.45 * sombraAro;
   return rgb;
 }`
 
 // A mesma conta em TSL. ruidoQ: (vec2) => float, o mesmo ruído do material; devolve { rgb, casca }
-export function envelhecerTsl(W, ruidoQ, rgb0, hq, uq, desg, k, taipa) {
+// marco: a cal caída dos marcos (desgaste-marcos.js, cascaMarcoTsl), o CASCA_MARCO do GLSL; sem ele, a das casas
+// cor: a cor do material (só com marco)
+export function envelhecerTsl(W, ruidoQ, rgb0, hq, uq, desg, k, taipa, marco = null, cor = null) {
   const { vec2, vec3, float, mix, smoothstep, floor, fract, max } = W
   const um = float(1.0)
   let rgb = vec3(rgb0)
@@ -75,20 +97,26 @@ export function envelhecerTsl(W, ruidoQ, rgb0, hq, uq, desg, k, taipa) {
   const mare = smoothstep(alt.mul(0.82), alt, hq).mul(um.sub(smoothstep(alt, alt.mul(1.1), hq)))
   rgb = rgb.mul(um.sub(mare.mul(0.2).mul(k)))
   rgb = rgb.mul(mix(um, mix(0.68, 1.0, smoothstep(0.0, 2.4, hq)), k))
-  const n = ruidoQ(vec2(uq.mul(0.22), hq.mul(0.3)).add(31.0)).mul(0.72).add(ruidoQ(vec2(uq.mul(1.4), hq.mul(1.6)).add(41.0)).mul(0.28))
-  const lim = mix(float(0.68), float(0.6), desg).add(smoothstep(0.6, 4.5, hq).mul(0.1))
+  const uqC = marco ? marco.uM : uq
+  const n = marco ? marco.ruido(hq) : ruidoQ(vec2(uq.mul(0.22), hq.mul(0.3)).add(31.0)).mul(0.72).add(ruidoQ(vec2(uq.mul(1.4), hq.mul(1.6)).add(41.0)).mul(0.28))
+  const lim = marco ? marco.lim : mix(float(0.68), float(0.6), desg).add(smoothstep(0.6, 4.5, hq).mul(0.1))
   const casca = smoothstep(lim, lim.add(0.012), n).mul(k)
   const fila = floor(hq.mul(3.1))
-  const xs = uq.mul(2.3).add(fila.mul(0.53)).add(ruidoQ(vec2(fila, 2.0)).mul(0.8))
+  const xs = uqC.mul(2.3).add(fila.mul(0.53)).add(ruidoQ(vec2(fila, 2.0)).mul(0.8))
   const id = floor(xs)
   const tom = ruidoQ(vec2(id.mul(1.7), fila.mul(3.1)).add(0.5))
   const junta = max(smoothstep(0.88, 0.97, fract(xs)), smoothstep(0.84, 0.95, fract(hq.mul(3.1))))
   const pedra = mix(vec3(taipa), vec3(0.6, 0.55, 0.47), tom.mul(0.4).add(0.4)).mul(um.sub(junta.mul(0.3)))
   const aro = smoothstep(lim.sub(0.04), lim.sub(0.004), n).mul(um.sub(smoothstep(lim, lim.add(0.012), n))).mul(k)
   const hb = hq.add(0.08)
-  const nb = ruidoQ(vec2(uq.mul(0.22), hb.mul(0.3)).add(31.0)).mul(0.72).add(ruidoQ(vec2(uq.mul(1.4), hb.mul(1.6)).add(41.0)).mul(0.28))
+  const nb = marco ? marco.ruido(hb) : ruidoQ(vec2(uq.mul(0.22), hb.mul(0.3)).add(31.0)).mul(0.72).add(ruidoQ(vec2(uq.mul(1.4), hb.mul(1.6)).add(41.0)).mul(0.28))
   const sombraAro = casca.mul(um.sub(smoothstep(lim, lim.add(0.012), nb)))
-  rgb = mix(rgb, pedra, casca)
+  if (marco) {
+    // duas camadas: sem a cal, o reboco grosso; a pedra só no miolo das placas maiores (o GLSL)
+    const fundo = smoothstep(lim.add(marco.fundo), lim.add(marco.fundo).add(0.012), n).mul(k)
+    rgb = mix(rgb, marco.ocre.mul(cor).mul(ruidoQ(vec2(uqC, hq).mul(3.0).add(7.0)).mul(0.12).add(0.92)), casca)
+    rgb = mix(rgb, pedra.mul(cor), fundo)
+  } else rgb = mix(rgb, pedra, casca)
   rgb = mix(rgb, rgb.mul(1.12).add(0.035), aro)
   rgb = rgb.mul(um.sub(sombraAro.mul(0.45)))
   return { rgb, casca }

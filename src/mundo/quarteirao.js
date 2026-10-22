@@ -22,6 +22,7 @@ import { registrarEstatico } from '../render/sombra-estatica.js'
 import { criarAleatorio } from '../utils.js'
 import { ref } from '../render/gpu/comum.js'
 import { GLSL_DESGASTE, envelhecerTsl } from './desgaste.js'
+import { GLSL_CASCA_MARCO, ligarCascaGlsl, cascaMarcoTsl } from './desgaste-marcos.js'
 
 // rua de referência da fatia vertical (z ≈ 152, x -72 a -36): bom lugar para comparar com os filmes
 export const FATIA = { x0: -73, x1: -35, z0: 134, z1: 170 }
@@ -348,15 +349,19 @@ export function planejarCasa(it, rnd, simples) {
 
 // Material de reboco: cor por vértice, pincelada (pintar) e desgaste preso ao mundo:
 // salitre subindo da base e cal descascada mostrando a taipa.
-function materialReboco(desgaste) {
+// marco = true: o reboco dos marcos de 1932, com a cal caída em metros e presa à forma (desgaste-marcos.js); a
+// geometria traz aCaixa. As casas ficam com o programa de sempre.
+function materialReboco(desgaste, marco = false) {
   const mat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() })
+  const chave = marco ? 'reboco-marcos' : 'reboco-casas'
   mat.onBeforeCompile = (sh) => {
+    if (marco) ligarCascaGlsl(sh)
     sh.uniforms.uDesgQ = { value: desgaste }
     sh.uniforms.uTaipa = { value: new THREE.Color(CAL.taipa) }
     sh.uniforms.uArcDesgaste = globais.uArcDesgaste
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aChao; varying float vChaoQ; varying vec3 vMundoQ; varying vec3 vNormalQ;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMundoQ = (modelMatrix * vec4(transformed, 1.0)).xyz; vNormalQ = normal; vChaoQ = aChao;')
+      .replace('#include <common>', '#include <common>\nattribute float aChao; varying float vChaoQ; varying vec3 vMundoQ; varying vec3 vNormalQ;' + (marco ? '\nattribute vec4 aCaixa; varying vec3 vLocalQ; varying vec4 vCaixaQ;' : ''))
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMundoQ = (modelMatrix * vec4(transformed, 1.0)).xyz; vNormalQ = normal; vChaoQ = aChao;' + (marco ? '\nvLocalQ = transformed; vCaixaQ = aCaixa;' : ''))
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         varying vec3 vMundoQ; varying vec3 vNormalQ; varying float vChaoQ; uniform float uDesgQ; uniform vec3 uTaipa; uniform float uArcDesgaste;
@@ -365,6 +370,7 @@ function materialReboco(desgaste) {
           vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
           return mix(mix(hashQ(vec3(i, 1.0)), hashQ(vec3(i + vec2(1, 0), 1.0)), f.x), mix(hashQ(vec3(i + vec2(0, 1), 1.0)), hashQ(vec3(i + vec2(1, 1), 1.0)), f.x), f.y);
         }
+        ${marco ? 'varying vec3 vLocalQ; varying vec4 vCaixaQ;' + GLSL_CASCA_MARCO : ''}
         ${GLSL_DESGASTE}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         if (abs(vNormalQ.y) < 0.5) {
@@ -399,16 +405,17 @@ function materialReboco(desgaste) {
           diffuseColor.rgb = envelhecer(diffuseColor.rgb, hq, uq, uDesgQ, uArcDesgaste, uTaipa, cascaE);
         }`)
   }
-  mat.customProgramCacheKey = () => 'reboco-casas'
-  mat.userData.tsl = rebocoTsl(desgaste)
-  return texturizar(pintar(mat, 'reboco-casas'), { topo: 'cal', lado: 'cal', tam: 2.5, contraste: 2.5 }) // reboco caiado pintado (visual Arcane)
+  mat.customProgramCacheKey = () => chave
+  mat.userData.tsl = rebocoTsl(desgaste, marco)
+  return texturizar(pintar(mat, chave), { topo: 'cal', lado: 'cal', tam: 2.5, contraste: 2.5 }) // reboco caiado pintado (visual Arcane)
 }
 
 // Reboco e telhas em TSL, para o modo webgpu (motor F2, KAN-68): as mesmas contas, com a posição no mundo
 // tirada como no GLSL (modelMatrix * posição crua, sem a matriz da cópia)
-function rebocoTsl(desgaste) {
+function rebocoTsl(desgaste, marco = false) {
   let V = null
-  const vars = (W) => V || (V = { mundo: W.varyingProperty('vec3', 'vMundoQ'), normal: W.varyingProperty('vec3', 'vNormalQ'), chao: W.varyingProperty('float', 'vChaoQ') })
+  const vars = (W) => V || (V = { mundo: W.varyingProperty('vec3', 'vMundoQ'), normal: W.varyingProperty('vec3', 'vNormalQ'), chao: W.varyingProperty('float', 'vChaoQ'),
+    ...(marco ? { local: W.varyingProperty('vec3', 'vLocalQ'), caixa: W.varyingProperty('vec4', 'vCaixaQ') } : {}) })
   const uTaipa = { value: new THREE.Color(CAL.taipa) }
   return {
     nome: 'reboco',
@@ -417,6 +424,7 @@ function rebocoTsl(desgaste) {
       v.mundo.assign(W.modelWorldMatrix.mul(W.vec4(W.positionLocal, 1.0)).xyz)
       v.normal.assign(W.attribute('normal', 'vec3'))
       v.chao.assign(W.attribute('aChao', 'float'))
+      if (marco) { v.local.assign(W.positionLocal); v.caixa.assign(W.attribute('aCaixa', 'vec4')) }
       return W.positionLocal
     },
     // peças do kit na three-virtual-geometry (KAN-73): posição e normal já no mundo; o chão da casa ainda não vai
@@ -467,7 +475,8 @@ function rebocoTsl(desgaste) {
           // escorrido vertical de chuva
           rgb.mulAssign(float(1.0).sub(smoothstep(0.6, 0.9, ruidoQ(vec2(uq.mul(3.0), hq.mul(0.25)))).mul(0.07)))
           // reboco envelhecido que se lê de longe (desgaste.js)
-          rgb.assign(envelhecerTsl(W, ruidoQ, rgb, hq, uq, float(desgaste), ref(globais.uArcDesgaste), taipa).rgb)
+          const cascaM = marco ? cascaMarcoTsl(W, ruidoQ, v, hq) : null
+          rgb.assign(envelhecerTsl(W, ruidoQ, rgb, hq, uq, float(desgaste), ref(globais.uArcDesgaste), taipa, cascaM, cascaM ? W.materialColor : null).rgb)
         })
         return rgb
       })()
@@ -553,6 +562,9 @@ function materialTelhas() {
   mat.userData.tsl = telhasTsl()
   return texturizar(pintar(mat, 'telhas-1932'), { topo: 'telha', lado: 'telha', tam: 1.5 }) // telha canal pintada (visual Arcane)
 }
+
+// o reboco dos marcos de 1932 (obra1932.js): o das casas com a cal caída medida em metros (desgaste-marcos.js)
+export function materialRebocoMarco(desgaste) { return materialReboco(desgaste, true) }
 
 // os materiais das casas (o kit de 1932 usa os mesmos, KAN-73)
 export function materiaisDasCasas() {
