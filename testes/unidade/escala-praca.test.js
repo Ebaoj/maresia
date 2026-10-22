@@ -110,15 +110,18 @@ describe('escala: a Praça do Ferreira em tamanho real', () => {
     }
   });
 
-  it('o Campo do Urubu continua no mesmo lugar de verdade', () => {
-    // O campo e a oeste e ao norte da praca, fora da regiao descomprimida: a
-    // compressao de sempre, no mesmo lugar de verdade. A ancoragem e por
-    // lon/lat (o dado vem em lon/lat e passa pela transformacao), e nao por
-    // coordenada de jogo: com a compressao no quadro da grade, o x do jogo do
-    // campo mudou, mas o campo continua no mesmo ponto da cidade de verdade.
-    // Cada ponto e medido pela volta: o ponto do jogo, mapeado de volta para
-    // lon/lat, tem de dar o lugar de verdade (a transformada e uma volta
-    // exata: o erro medido e de milimetros).
+  it('o Campo do Urubu continua no mesmo lugar de verdade, e agora em tamanho real', () => {
+    // A ancoragem e por lon/lat (o dado vem em lon/lat e passa pela
+    // transformacao): cada ponto, mapeado e mapeado de volta, da o lugar de
+    // verdade (a transformada e uma volta exata: o erro medido e de milimetros).
+    //
+    // A afirmacao mudou em 21/10/2026 por decisao do Joabe, e nao para o teste
+    // passar: o campo virou o coracao da historia (docs/conceito.md) e passou a
+    // ser a segunda zona em tamanho real do mapa, como a Praca do Ferreira. Antes
+    // este teste pedia o esticamento 1 (a compressao de sempre, ~9 vezes); agora
+    // pede 1 metro por unidade nos DOIS eixos da grade, sem torcer (o campo cai
+    // sobre a reta da rua que passa pela praca, e uma descompressao num eixo so
+    // esticava o campo 1,65 vez de um lado e nao do outro).
     const real = dadosMapa.campoUrubu;
     const media = (i) => real.poligono.reduce((s, p) => s + p[i], 0) / real.poligono.length;
     const pontos = [
@@ -126,25 +129,35 @@ describe('escala: a Praça do Ferreira em tamanho real', () => {
       ['a primeira tarefa', real.lugares.tarefas[0].lon, real.lugares.tarefas[0].lat],
       ['o primeiro galpao', real.lugares.galpoes[0].lon, real.lugares.galpoes[0].lat],
       ['a primeira construcao', real.lugares.construcoes[0].lon, real.lugares.construcoes[0].lat],
+      ...real.poligono.map(([lon, lat], i) => [`o canto ${i} da cerca`, lon, lat]),
     ];
     for (const [nome, lon, lat] of pontos) {
       const [x, z] = ll(lon, lat);
       const [voltaLon, voltaLat] = llInverso(x, z);
       expect(voltaLon, nome).toBeCloseTo(lon, 4);
       expect(voltaLat, nome).toBeCloseTo(lat, 4);
+      // 1 unidade = 1 metro ao longo da rua e de travessia (2% de folga), e o
+      // campo nao torce: os dois eixos com a mesma escala (1% de diferenca)
+      const e = escalaJogo(x, z);
+      expect(Math.abs(e.u), `escala ao longo da rua em ${nome}`).toBeGreaterThan(0.98);
+      expect(Math.abs(e.u), `escala ao longo da rua em ${nome}`).toBeLessThan(1.02);
+      expect(Math.abs(e.v), `escala de travessia em ${nome}`).toBeGreaterThan(0.98);
+      expect(Math.abs(e.v), `escala de travessia em ${nome}`).toBeLessThan(1.02);
+      expect(Math.abs(Math.abs(e.u) / Math.abs(e.v) - 1), `distorcao em ${nome}`).toBeLessThan(0.01);
     }
-    // e o esticamento ali e 1: fora da praca, a compressao e a de sempre
-    expect(esticamento(-38.57, -3.7176)).toBeCloseTo(1, 6);
   });
 
   it('a descompressão é local: a compressão do resto do mapa continua', () => {
-    // No oeste e no norte (o Urubu, a barra), a escala e a de sempre: o mapa
-    // esta 5 a 14 vezes mais comprimido que a praca. (metrosPorUn e quantos
-    // metros de verdade vale uma unidade do jogo: 1 na praca, 9,3 no Urubu -
-    // ou seja, o mapa esta 9,3 vezes mais comprimido la.)
-    const longe = metrosPorUn(...ll(-38.57, -3.7176));
+    // Longe das duas zonas em tamanho real (a praca e o Campo do Urubu), a escala
+    // e a de sempre: na Barra do Ceara o mapa esta 5 a 14 vezes mais comprimido
+    // que a praca (metrosPorUn: quantos metros de verdade vale uma unidade).
+    // O lugar medido era o Urubu ate 21/10/2026, quando o campo virou zona em
+    // tamanho real (decisao do Joabe); a afirmacao e a mesma, num lugar que
+    // continua fora das zonas.
+    const longe = metrosPorUn(...ll(-38.598, -3.695));
     expect(longe).toBeLessThan(14);
     expect(longe).toBeGreaterThan(5);
+    expect(esticamento(-38.598, -3.695)).toBeCloseTo(1, 6);
   });
 
   it('a rampa é suave: a escala muda sem degrau', () => {

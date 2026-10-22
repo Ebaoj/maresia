@@ -96,6 +96,20 @@ describe('dados do mapa de 1932', () => {
     const [ex, ez] = ll(-38.5302, -3.7219);
     expect(Math.hypot(ramal.traco[0][0] - ex, ramal.traco[0][1] - ez)).toBeLessThan(60);
     const fim = ramal.traco[ramal.traco.length - 1];
-    expect(Math.hypot(fim[0] - CAMPO_URUBU.poligono[0][0], fim[1] - CAMPO_URUBU.poligono[0][1])).toBeLessThan(700);
+    // O fim do ramal chega à cerca do campo. Até 21/10/2026 a medida era "a menos de 700 unidades do
+    // primeiro canto da cerca", num campo comprimido ~9 vezes; com o campo em tamanho real (decisão do
+    // Joabe) o canto ficou a 1,2 km e a medida passa a ser a distância até a cerca, em metros de
+    // verdade (medida: 59 m), que é mais exigente.
+    const p = CAMPO_URUBU.poligono;
+    let perto = Infinity;
+    for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+      const [x1, z1] = p[j];
+      const [x2, z2] = p[i];
+      const dx = x2 - x1;
+      const dz = z2 - z1;
+      const t = Math.max(0, Math.min(1, ((fim[0] - x1) * dx + (fim[1] - z1) * dz) / (dx * dx + dz * dz)));
+      perto = Math.min(perto, Math.hypot(fim[0] - (x1 + t * dx), fim[1] - (z1 + t * dz)));
+    }
+    expect(perto).toBeLessThan(100);
   });
 });

@@ -19,6 +19,7 @@
 // src/mundo/escala1932.js.
 
 import { pchip } from './pchip1932.js'
+import dadosMapa from './mapa1932-dados.json'
 
 // A grade de Herbster: as ruas do Centro correm a 107,8 graus de azimute
 // (lés-sudeste) e a 17,8 (nor-nordeste). O número sai da planta oficial: a
@@ -109,23 +110,38 @@ const dominio = (() => {
   return { u: [u0, u1], v: [v0, v1] }
 })()
 
-// ---------- a praça em 1:1 ----------
+// ---------- as zonas em 1:1: a praça e o Campo do Urubu ----------
 // O miolo da praça fica em tamanho real (decisão do Joabe, 21/10/2026) e o
-// resto do mapa segue comprimido. A descompressão é local e suave: um perfil
-// que vale o fator inteiro no miolo e vai a 1 na compressão de sempre, com a
-// tangente zero nas duas pontas da rampa (a transição não dá um pulo). Como o
-// perfil multiplica a derivada da compressão, a transformação continua
-// estritamente crescente: nenhuma dobra, nenhum vinco.
+// resto do mapa segue comprimido. A descompressão é local e suave: um peso
+// que vale 1 no miolo e vai a 0 na compressão de sempre, com a tangente zero
+// nas duas pontas da rampa (a transição não dá um pulo). Onde o peso é 1 o
+// fator de esticar é o inverso exato da escala da base naquele ponto (1 metro
+// vira 1 unidade); na rampa ele cai para 1. Como o fator multiplica a derivada
+// da compressão, a transformação continua estritamente crescente: nenhuma
+// dobra, nenhum vinco.
 //
-// As rampas agora são faixas ao longo de u e de v (a praça vira um retângulo
-// girado com a grade). O miolo precisa caber inteiro: a mancha da praça tem
-// 117 m de u e 160 m de v, e o miolo tem 200 m x 244 m.
+// As rampas são faixas ao longo de u e de v (a praça vira um retângulo girado
+// com a grade). O miolo precisa caber inteiro: a mancha da praça tem 117 m de u
+// e 160 m de v, e o miolo tem 200 m x 244 m.
 const NUCLEO_U = 0.0009 * M_LON
 const RAMPA_U = 0.004 * M_LON
 const NUCLEO_V = 0.0011 * M_LAT
 const RAMPA_V = 0.0038 * M_LAT
 
-// o perfil da descompressão: 1 no miolo, 0 fora da rampa, suave nas pontas
+// O Campo do Urubu em 1:1 (decisão do Joabe, 21/10/2026): o campo virou o
+// coração da história do jogo (docs/conceito.md), então ele também fica em
+// tamanho real, nos dois eixos, sem torcer. A zona é a caixa do polígono do
+// campo no quadro da grade (src/mundo/mapa1932-dados.json), com uma folga; a
+// rampa de volta para a compressão de sempre é longa porque lá a compressão é
+// de ~10 vezes ao longo da rua.
+// A faixa de v do campo (de -0,8 km a +0,1 km) cruza a da praça: o campo fica
+// sobre a reta da rua lés-sudeste que passa pela praça. Ao norte, a borda do
+// campo cai dentro do miolo da praça e a rampa de lá é a da praça (a do campo
+// não chega ao norte, para não mexer na Estação, na Sé e no Passeio).
+const FOLGA_CAMPO = 40
+const RAMPA_CAMPO = 600
+
+// o peso da descompressão: 1 no miolo, 0 fora da rampa, suave nas pontas
 function perfil(u, nucleo, rampa) {
   const a = Math.abs(u)
   if (a <= nucleo) return 1
@@ -134,20 +150,56 @@ function perfil(u, nucleo, rampa) {
   return 0.5 * (1 + Math.cos(Math.PI * t))
 }
 
+// o mesmo, para uma faixa [a, b] com uma rampa de cada lado (0 = sem rampa)
+function perfilFaixa(t, a, b, rampaAntes, rampaDepois) {
+  if (t >= a && t <= b) return 1
+  const d = t < a ? a - t : t - b
+  const r = t < a ? rampaAntes : rampaDepois
+  if (r <= 0 || d >= r) return 0
+  return 0.5 * (1 + Math.cos((Math.PI * d) / r))
+}
+
 function derivadaBase(f, u) {
   const dh = 1e-4
   return (f(u + dh) - f(u - dh)) / (2 * dh)
 }
 
-// o fator 1:1: a escala da base no miolo é o inverso do que a praça quer
+// o fator 1:1 no centro da praça: a escala da base ali é o inverso do que a praça quer
 export const K_U = 1 / Math.abs(derivadaBase(baseU, 0))
 export const K_V = 1 / Math.abs(derivadaBase(baseV, 0))
 
-// a compressão nova: X(u) = f(a) + ∫ f'(t)·s(t) dt, com s o fator de esticar
-// (1 fora da praça, K no miolo). A integral sai de f'(t) numérica (o pchip é
-// C1, então a derivada central acerta).
-function descomprimir(base, dom, perfilS, k) {
-  const passos = 8000
+// a caixa do campo no quadro da grade (metros de verdade, relativos à praça)
+export const CAIXA_CAMPO = (() => {
+  const pts = dadosMapa.campoUrubu.poligono.map(([lon, lat]) => gradeDe(lon, lat))
+  return {
+    u: [Math.min(...pts.map((p) => p[0])) - FOLGA_CAMPO, Math.max(...pts.map((p) => p[0])) + FOLGA_CAMPO],
+    v: [Math.min(...pts.map((p) => p[1])) - FOLGA_CAMPO, Math.max(...pts.map((p) => p[1])) + FOLGA_CAMPO],
+  }
+})()
+
+// o peso de 1:1 em cada eixo (o maior entre a praça e o campo)
+function pesoU(u) {
+  return Math.max(perfil(u, NUCLEO_U, RAMPA_U), perfilFaixa(u, CAIXA_CAMPO.u[0], CAIXA_CAMPO.u[1], RAMPA_CAMPO, RAMPA_CAMPO))
+}
+function pesoV(v) {
+  // o v cresce para o norte: a rampa do campo só vai para o sul (antes de v0)
+  const norte = CAIXA_CAMPO.v[1] < NUCLEO_V ? 0 : RAMPA_CAMPO
+  return Math.max(perfil(v, NUCLEO_V, RAMPA_V), perfilFaixa(v, CAIXA_CAMPO.v[0], CAIXA_CAMPO.v[1], RAMPA_CAMPO, norte))
+}
+
+// o fator de esticar num ponto do eixo: 1 fora das zonas, o inverso da escala da base dentro
+function estica(base, peso, t) {
+  const w = peso(t)
+  if (w <= 0) return 1
+  return 1 + (1 / Math.abs(derivadaBase(base, t)) - 1) * w
+}
+const esticaU = (u) => estica(baseU, pesoU, u)
+const esticaV = (v) => estica(baseV, pesoV, v)
+
+// a compressão nova: X(u) = f(a) + ∫ f'(t)·s(t) dt, com s o fator de esticar.
+// A integral sai de f'(t) numérica (o pchip é C1, então a derivada central acerta).
+function descomprimir(base, dom, esticaS) {
+  const passos = 16000
   const h = (dom[1] - dom[0]) / passos
   const dh = 1e-6
   const derivada = (u) => (base(u + dh) - base(u - dh)) / (2 * dh)
@@ -158,7 +210,7 @@ function descomprimir(base, dom, perfilS, k) {
   ys[0] = acc
   for (let i = 1; i <= passos; i++) {
     const meio = dom[0] + (i - 0.5) * h
-    acc += derivada(meio) * (1 + (k - 1) * perfilS(meio)) * h
+    acc += derivada(meio) * esticaS(meio) * h
     xs[i] = dom[0] + i * h
     ys[i] = acc
   }
@@ -170,8 +222,8 @@ function descomprimir(base, dom, perfilS, k) {
   return { f: pchip(xs, ys), fim: acc }
 }
 
-const descU = descomprimir(baseU, dominio.u, (u) => perfil(u, NUCLEO_U, RAMPA_U), K_U)
-const descV = descomprimir(baseV, dominio.v, (v) => perfil(v, NUCLEO_V, RAMPA_V), K_V)
+const descU = descomprimir(baseU, dominio.u, esticaU)
+const descV = descomprimir(baseV, dominio.v, esticaV)
 
 // ---------- o jogo ----------
 // (lon, lat) -> (x, z) do jogo, sem a deslocação do mundo
@@ -235,8 +287,8 @@ export function jogoGrade(x, z) {
 // grade. O eixo v é decrescente: um metro para o norte vale -dv do jogo.
 export function escalaGrade(lon, lat) {
   const [u, v] = gradeDe(lon, lat)
-  const du = derivadaBase(baseU, u) * (1 + (K_U - 1) * perfil(u, NUCLEO_U, RAMPA_U))
-  const dv = derivadaBase(baseV, v) * (1 + (K_V - 1) * perfil(v, NUCLEO_V, RAMPA_V))
+  const du = derivadaBase(baseU, u) * esticaU(u)
+  const dv = derivadaBase(baseV, v) * esticaV(v)
   return { u: du, v: dv }
 }
 
@@ -250,8 +302,8 @@ export function escalaBaseGrade(lon, lat) {
 // descomprimida, o valor máximo é o próprio fator da praça)
 export function esticamentoGrade(lon, lat) {
   const [u, v] = gradeDe(lon, lat)
-  const su = 1 + (K_U - 1) * perfil(u, NUCLEO_U, RAMPA_U)
-  const sv = 1 + (K_V - 1) * perfil(v, NUCLEO_V, RAMPA_V)
+  const su = esticaU(u)
+  const sv = esticaV(v)
   return Math.sqrt(su * sv)
 }
 

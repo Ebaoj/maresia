@@ -24,18 +24,19 @@ describe('o Campo do Urubu', () => {
     const cx = CAMPO_URUBU.tarefas.reduce((s, t) => s + t.ponto[0], 0) / CAMPO_URUBU.tarefas.length
     const cz = CAMPO_URUBU.tarefas.reduce((s, t) => s + t.ponto[1], 0) / CAMPO_URUBU.tarefas.length
     const escala = escalaNoCampo(cx, cz)
-    // o mapa é comprimido: uma unidade vale alguns metros, nunca menos de 2 nem mais de 30
-    expect(escala.x).toBeGreaterThan(2)
-    expect(escala.x).toBeLessThan(30)
-    expect(escala.z).toBeGreaterThan(2)
-    expect(escala.z).toBeLessThan(30)
-    // e o galpão de 240 m por 110 m tem que dar uma medida de casa na tela, não zero
+    // Desde 21/10/2026 o campo está em tamanho real (decisão do Joabe: o campo virou o coração da
+    // história), então uma unidade vale um metro nos dois eixos. Antes o mapa ali era comprimido e
+    // o teste pedia de 2 a 30 m por unidade; o que ele guarda continua o mesmo: a escala não pode sair
+    // invertida (unidade por metro) nem zerar o galpão.
+    expect(escala.x).toBeGreaterThan(0.98)
+    expect(escala.x).toBeLessThan(1.02)
+    expect(escala.z).toBeGreaterThan(0.98)
+    expect(escala.z).toBeLessThan(1.02)
+    // e o galpão de 240 m por 110 m tem a medida de verdade na tela
     const l = CAMPO_URUBU.galpoes[0].largura / escala.x
     const p = CAMPO_URUBU.galpoes[0].profundidade / escala.z
-    expect(l).toBeGreaterThan(8)
-    expect(l).toBeLessThan(60)
-    expect(p).toBeGreaterThan(5)
-    expect(p).toBeLessThan(60)
+    expect(Math.abs(l / CAMPO_URUBU.galpoes[0].largura - 1)).toBeLessThan(0.02)
+    expect(Math.abs(p / CAMPO_URUBU.galpoes[0].profundidade - 1)).toBeLessThan(0.02)
   })
 
 })
