@@ -90,8 +90,10 @@ export function galho(est, origem, dir, comp, r0, r1, { sobe = 0.2, cai = 0, tor
 }
 
 // galho por uma lista de pontos dada (raiz-escora do mangue, estipe da carnaúba)
-export function galhoPts(est, pts, r0, r1, { peso0 = 0, peso1 = 1, fase = 0, raiz = false, casca = null } = {}) {
-  est.galhos.push({ pts: pts.map((p) => p.clone()), r0, r1, peso0, peso1, fase, raiz, casca })
+// escamas = { ate, passo }: as bases das folhas velhas em espiral no pé do estipe (carnaúba), em relevo baixo no
+// próprio tubo até a fração "ate" do comprimento, uma volta a cada "passo" metros
+export function galhoPts(est, pts, r0, r1, { peso0 = 0, peso1 = 1, fase = 0, raiz = false, casca = null, escamas = null } = {}) {
+  est.galhos.push({ pts: pts.map((p) => p.clone()), r0, r1, peso0, peso1, fase, raiz, casca, escamas })
   return pts
 }
 
@@ -156,7 +158,8 @@ function tubos(est, m, longe) {
   for (const g of est.galhos) {
     const curva = new THREE.CatmullRomCurve3(g.pts)
     const comp = curva.getLength()
-    const seg = Math.max(2, Math.ceil(comp / (longe ? 1.3 : 0.45)))
+    const esc = !longe && g.escamas
+    const seg = Math.max(2, Math.ceil(comp / (longe ? 1.3 : 0.45)) + (esc ? Math.ceil((comp * esc.ate) / (esc.passo / 5)) : 0))
     const rm = (g.r0 + g.r1) / 2
     const lados = longe ? (rm > 0.2 ? 5 : rm > 0.08 ? 4 : 3) : (rm > 0.25 ? 10 : rm > 0.1 ? 7 : 5)
     const quadros = curva.computeFrenetFrames(seg, false)
@@ -173,11 +176,18 @@ function tubos(est, m, longe) {
         const n = N.clone().multiplyScalar(Math.cos(a)).addScaledVector(B, Math.sin(a))
         let rr = r
         if (g.raiz && t < 0.14) rr *= 1 + 0.7 * Math.pow(1 - t / 0.14, 2) * (0.45 + 0.55 * Math.max(0, Math.cos(a * 5 + 0.7)))
+        // escama em espiral: anel inclinado que sobe com o ângulo, mais alto embaixo e sumindo em cima
+        let sulco = 0
+        if (esc && t < esc.ate) {
+          const fase = ((t * comp) / esc.passo + a / (Math.PI * 2)) % 1
+          sulco = (1 - t / esc.ate) * Math.pow(Math.sin(fase * Math.PI), 2)
+          rr *= 1 + 0.16 * sulco
+        }
         const v = p.clone().addScaledVector(n, rr)
         // veios: listras ao longo do tronco, manchas grandes e o lado de cima mais claro
         const veio = ruido(Math.cos(a) * 2.2 + g.r0 * 9, v.y * 0.35, Math.sin(a) * 2.2)
         const mancha = ruido(v.x * 0.9, v.y * 0.7, v.z * 0.9)
-        cor.copy(casca).multiplyScalar((0.86 + 0.22 * veio + 0.12 * mancha) * (1 + 0.1 * n.y) * (v.y < 0.5 ? 0.82 + 0.36 * v.y : 1))
+        cor.copy(casca).multiplyScalar((0.86 + 0.22 * veio + 0.12 * mancha) * (1 + 0.1 * n.y) * (v.y < 0.5 ? 0.82 + 0.36 * v.y : 1) * (esc ? 0.86 + 0.2 * sulco : 1))
         m.vert({ position: [v.x, v.y, v.z], normal: [n.x, n.y, n.z], color: [cor.r, cor.g, cor.b], aVento: [flex(est, v.y), g.peso0 + (g.peso1 - g.peso0) * t, g.fase, 0], aTexAlt: [0] })
       }
     }

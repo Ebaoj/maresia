@@ -6,7 +6,7 @@
 // nas praças, cajueiro de tronco baixo e torto e copa larga, carnaúba em leque, mangue nas raízes-escora.
 
 import * as THREE from 'three'
-import { V, novaEstrutura, galho, galhoPts, cacho, fecharCopa, montar, anexar, normalCopa, flex } from './arvore-forma.js'
+import { V, novaEstrutura, galho, galhoPts, cacho, fecharCopa, montar, normalCopa, flex } from './arvore-forma.js'
 import { QUADRANTE as Q, cantoQuadrante } from './folha-textura.js'
 import { FOLHAGEM } from '../paleta.js'
 
@@ -156,7 +156,9 @@ export function carnauba(rnd) {
   const topo = pts[3]
   est.copa = { c: topo.clone().add(V(0, 0.4, 0)), r: V(2.4, 1.9, 2.4) }
   est.H = H + 1.5
-  galhoPts(est, pts, 0.22, 0.16, { raiz: true, peso1: 0 })
+  // as bases das folhas velhas em espiral no terço de baixo, em relevo baixo no próprio estipe (eram caixas que
+  // saíam do tronco e, na sombra, liam como espetos pretos em zigue-zague)
+  galhoPts(est, pts, 0.22, 0.16, { raiz: true, peso1: 0, escamas: { ate: 0.5, passo: 0.36 } })
   const folhas = []
   const nF = 22 + Math.floor(rnd.entre(0, 8))
   for (let i = 0; i < nF; i++) {
@@ -172,22 +174,6 @@ export function carnauba(rnd) {
   }
   cacho(est, topo.clone().add(V(0, 0.2, 0)), 0.55, { achatar: 1.2, peso: 0.6 })
   return montar(est, {
-    // bainhas cruzadas no terço de baixo: anéis de escamas (no corpo, em geometria)
-    extraCorpo: (m, longe) => {
-      for (let k = 0; k < (longe ? 7 : 14); k++) {
-        const t = 0.05 + (k / (longe ? 7 : 14)) * 0.45
-        const c = V(cv.x * t * t, H * t, cv.z * t * t)
-        for (let j = 0; j < 4; j++) {
-          const a = (j / 4) * Math.PI * 2 + (k % 2) * (Math.PI / 4)
-          const esc = new THREE.BoxGeometry(0.16, 0.34, 0.06)
-          esc.deleteAttribute('uv')
-          esc.rotateZ((k % 2 ? 1 : -1) * 0.6)
-          esc.rotateY(-a)
-          esc.translate(c.x + Math.cos(a) * 0.21, c.y, c.z + Math.sin(a) * 0.21)
-          anexar(est, m, esc, k % 3 === 0 ? '#5e5046' : '#6e5e50')
-        }
-      }
-    },
     extraCartoes: (m) => { for (const l of folhas) lequeNaMalha(est, m, l.raio, l.q, l.fim, l.f) },
     // longe: os leques são a copa inteira e não podem sumir; vão 2 em cada 3, maiores, com 6 gomos e sem prega
     // (de 64 para 6 triângulos por lado: a carnaúba era a espécie mais cara de longe, cidade-cheia 21/10/2026)

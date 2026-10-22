@@ -104,6 +104,26 @@ describe('carnaúba de longe', () => {
   })
 })
 
+describe('estipe da carnaúba', () => {
+  // Bug (22/10/2026, rua-centro da cidade-cheia): as bases das folhas velhas eram caixas que saíam ~0,38 m do eixo
+  // do estipe e, na sombra, liam como espetos pretos em zigue-zague. Agora são relevo baixo no próprio tubo.
+  // Correção: o commit "Carnaúba: as escamas do estipe em relevo baixo, sem espetos".
+  it('nada sai mais de 0,3 m do eixo no pé do estipe', () => {
+    for (const s of [3, 9, 21]) {
+      const g = carnauba(criarAleatorio(s)).corpo
+      const pos = g.attributes.position
+      for (let y0 = 1; y0 < 4; y0 += 0.5) {
+        const fatia = []
+        for (let i = 0; i < pos.count; i++) if (pos.getY(i) >= y0 && pos.getY(i) < y0 + 0.5) fatia.push([pos.getX(i), pos.getZ(i)])
+        const cx = fatia.reduce((a, p) => a + p[0], 0) / fatia.length
+        const cz = fatia.reduce((a, p) => a + p[1], 0) / fatia.length
+        const maior = Math.max(...fatia.map(([x, z]) => Math.hypot(x - cx, z - cz)))
+        expect(maior).toBeLessThan(0.3)
+      }
+    }
+  })
+})
+
 describe('vento e distância', () => {
   it('o alísio de lés-sudeste sopra para oeste e um pouco para o norte (x leste, z sul)', () => {
     const d = direcaoVento(110)
