@@ -25,6 +25,7 @@ const GLSL_VERTICE = /* glsl */ `
 uniform sampler2D tAltura; uniform vec4 uMapa; uniform vec2 uMapaTam;
 uniform vec2 uCentro; uniform float uLado; uniform float uTempoG;
 uniform float uAltura; uniform float uLargura; uniform float uVentoForca; uniform float uVentoVel; uniform float uVentoEscala;
+uniform vec2 uVentoDirG; uniform float uVentoForcaG; uniform float uVentoRajG; uniform float uVentoRajVelG;
 uniform sampler2D tToque; uniform vec2 uToqueCentro; uniform float uToqueArea; uniform float uLodPerto; uniform float uFracaoLonge; uniform float uLargLonge; uniform float uVirarCamera;
 attribute vec2 aOffset; attribute float aRand;
 varying float vAltG; varying float vTomG;
@@ -66,8 +67,13 @@ const GLSL_POSICAO = /* glsl */ `
   vec2 lat = dirLat * position.x * larg;
 
   float h = position.y;
-  float n = ruidoG(xz * uVentoEscala + vec2(uTempoG * uVentoVel, uTempoG * uVentoVel * 0.6));
-  vec2 curva = normalize(vec2(1.0, 0.45)) * (n * 0.9 + 0.15) * uVentoForca;
+  // o vento das árvores (cfg.vento, vento-arvores.js): a mesma direção, a mesma força e as mesmas rajadas, que andam
+  // pelo chão na direção dele; o ruído do campo anda junto com o vento
+  vec2 dirV = normalize(uVentoDirG + vec2(1e-5));
+  float n = ruidoG(xz * uVentoEscala - dirV * (uTempoG * uVentoVel * 1.2));
+  float ondaG = 0.5 + 0.5 * sin(dot(xz, dirV) * 0.045 - uTempoG * uVentoRajVelG);
+  float rajG = 1.0 + uVentoRajG * (ondaG * ondaG * ondaG * 1.8 - 0.35);
+  vec2 curva = dirV * (n * 0.9 + 0.15) * uVentoForca * uVentoForcaG * rajG;
   // mapa de toque: quem passou por aqui deitou a grama nessa direção (e ela volta devagar)
   vec2 uvT = (xz - uToqueCentro) / uToqueArea + 0.5;
   vec4 tq = vec4(0.0);
@@ -122,8 +128,11 @@ function gramaTsl(u) {
         const dirLat = normalize(mix(dirAleat, perpCam, R.uVirarCamera).add(vec2(1e-4)))
         const lat = dirLat.mul(positionLocal.x).mul(larg)
         const h = positionLocal.y
-        const n = ruido(xz.mul(R.uVentoEscala).add(vec2(R.uTempoG.mul(R.uVentoVel), R.uTempoG.mul(R.uVentoVel).mul(0.6))))
-        const curva = normalize(vec2(1.0, 0.45)).mul(n.mul(0.9).add(0.15)).mul(R.uVentoForca).toVar()
+        const dirV = normalize(R.uVentoDirG.add(vec2(1e-5)))
+        const n = ruido(xz.mul(R.uVentoEscala).sub(dirV.mul(R.uTempoG.mul(R.uVentoVel).mul(1.2))))
+        const ondaG = sin(dot(xz, dirV).mul(0.045).sub(R.uTempoG.mul(R.uVentoRajVelG))).mul(0.5).add(0.5)
+        const rajG = float(1.0).add(R.uVentoRajG.mul(ondaG.mul(ondaG).mul(ondaG).mul(1.8).sub(0.35)))
+        const curva = dirV.mul(n.mul(0.9).add(0.15)).mul(R.uVentoForca).mul(R.uVentoForcaG).mul(rajG).toVar()
         // mapa de toque: quem passou por aqui deitou a grama nessa direção
         const uvT = xz.sub(R.uToqueCentro).div(R.uToqueArea).add(0.5)
         const dentro = uvT.x.greaterThan(0.0).and(uvT.x.lessThan(1.0)).and(uvT.y.greaterThan(0.0)).and(uvT.y.lessThan(1.0))
@@ -182,6 +191,7 @@ export function criarGrama(cena, mapaAltura, cfg, toque) {
     uVentoForca: { value: cfg.grama.ventoForca },
     uVentoVel: { value: cfg.grama.ventoVelocidade },
     uVentoEscala: { value: cfg.grama.ventoEscala },
+    uVentoDirG: globais.uVentoDir, uVentoForcaG: globais.uVentoForca, uVentoRajG: globais.uVentoRaj, uVentoRajVelG: globais.uVentoRajVel,
     tToque: toque.tToque, uToqueCentro: toque.uToqueCentro, uToqueArea: toque.uToqueArea,
     uLodPerto: { value: cfg.grama.lodPerto },
     uFracaoLonge: { value: cfg.grama.fracaoLonge },
