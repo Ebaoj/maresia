@@ -8,7 +8,7 @@ import {
   linhaCosta, larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA, LARG_CALCADAO,
   NIVEL_CIDADE, pesos,
 } from './mapa.js'
-import { esticamentoJogo, trechosJogo } from './fortaleza1932.js'
+import { metrosPorUn, trechosJogo } from './fortaleza1932.js'
 import { dentroDaPraca } from './praca1932.js'
 import { RUAS, comprimentoRua, pontoNaRua } from './casario1932.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
@@ -131,11 +131,14 @@ function lampioesDasRuas(cena, predios, grade) {
   for (const rua of RUAS) {
     const comp = comprimentoRua(rua)
     const [mx, mz] = pontoNaRua(rua, Math.min(comp / 2, 40))
-    const estica = esticamentoJogo(mx, mz)
-    if (comp < 14 * estica) continue
+    // em metros de verdade (22/10/2026): um lampião a cada 30 m de rua (a medida de João Nogueira), a 2,6 m da
+    // testada. Eram 10 e 0,9 un do mundo comprimido vezes o esticamento; com o mapa sem faixas a conta passa a
+    // ser direto em metros, e vale igual no Centro em 1:1 e nos bairros comprimidos
+    const unPorM = 1 / metrosPorUn(mx, mz)
+    if (comp < 40 * unPorM) continue
     const atual = []
-    const passo = 10 * estica
-    const recuo = 0.9 * estica
+    const passo = 30 * unPorM
+    const recuo = 2.6 * unPorM
     let ultimoD = -passo // a distancia do ultimo poste aceito: um poste novo so entra
     // depois de um passo inteiro, senao a linha que se quebra deixa dois postes
     // colados na retomada
