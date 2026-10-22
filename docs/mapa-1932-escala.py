@@ -105,6 +105,7 @@ PARAM = {
     "raio_caminho": 700.0,  # m: a largura do caminho (uma capsula em volta do segmento, no vazio)
     "rampa_vazio": 400.0,  # m: perto de uma zona o vazio tambem desce devagar de 1 (sem degrau na borda do porto e do campo)
     "peso_cheio": 3.0,  # o peso de um triangulo de cidade cheia (o vazio cede para ela)
+    "peso_giro": 0.0,  # na cidade, o quanto o triangulo e preso ao norte (J perto da identidade, sem girar)
     "iteracoes": 60,
 }
 
@@ -231,11 +232,16 @@ def main():
     def jac(y):
         return (JP @ y + Jc).reshape(nt, 2, 2)
 
+    # o giro preso: na cidade, alem da forma do alvo, o triangulo nao gira (a rua mantem o rumo de verdade)
+    giro = PARAM["peso_giro"] * cheio
+    giro[na_zona] = 0
+
     def energia(J):
         if (np.linalg.det(J) <= 0).any():
             return np.inf
         inv = np.linalg.inv(J)
-        return float((peso * area * ((J ** 2).sum((1, 2)) + (inv ** 2).sum((1, 2)))).sum())
+        sd = (peso * area * ((J ** 2).sum((1, 2)) + (inv ** 2).sum((1, 2)))).sum()
+        return float(sd + (giro * area * ((J - np.eye(2)) ** 2).sum((1, 2))).sum())
 
     # comeca da identidade (1:1 em toda parte: nenhum triangulo virado)
     y = np.zeros(ny)
@@ -263,6 +269,11 @@ def main():
         Wm = sp.csr_matrix((np.concatenate(vv), (np.concatenate(rr), np.concatenate(cc))), shape=(4 * nt, 4 * nt))
         A = Wm @ JP
         b = (raiz_pa[:, None] * np.einsum("tac,tcb->tab", W, Rt).reshape(nt, 4)).ravel() - Wm @ Jc
+        if PARAM["peso_giro"] > 0:
+            rg = np.repeat(np.sqrt(giro * area), 4)
+            Gm = sp.diags(rg)
+            A = sp.vstack([A, Gm @ JP]).tocsr()
+            b = np.concatenate([b, rg * (np.tile(np.eye(2).ravel(), nt) - Jc)])
         novo = sla.spsolve((A.T @ A).tocsc() + sp.identity(ny) * 1e-9, A.T @ b)
         dy = novo - y
         # o maior passo sem virar triangulo: det(J0 + t dJ) = 0

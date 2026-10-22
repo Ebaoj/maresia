@@ -135,8 +135,13 @@ try {
         cam.updateProjectionMatrix()
         cam.updateMatrixWorld()
         m.cena.updateMatrixWorld()
+        // o horizonte (serras, céu, telhados ao longe: renderOrder negativo) é um anel em volta da câmera; visto
+        // de 900 m ele vira uma faixa por cima do mapa. Sai da foto de cima
+        const escondidos = []
+        m.cena.traverse((o) => { if ((o.isMesh || o.isSprite) && o.visible && o.renderOrder < 0) { o.visible = false; escondidos.push(o) } })
         m.pos.render(1, 0)
         m.pos.render(1, 0)
+        for (const o of escondidos) o.visible = true
         recorte = { x, z, largura: topo.largura, altura: topo.largura / aspecto, lon: topo.lon, lat: topo.lat }
         cam.up.set(0, 1, 0)
         cam.fov = fovAntes
