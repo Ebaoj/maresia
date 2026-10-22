@@ -245,7 +245,7 @@ function cartoes(est, m) {
       const nn = u.clone().lerp(normalCopa(est, c, tmp), est.esfera).normalize()
       corFolha(est, c, k, cor)
       // manchas de sol dentro da copa: alguns ramos do lado de fora e de cima pegam luz direta e acendem quente
-      if (normalCopa(est, c, tmp).y > -0.15 && rnd.chance(0.2)) cor.lerp(est.pal.luz, 0.55).multiplyScalar(1.12)
+      if (normalCopa(est, c, tmp).y > -0.15 && rnd.chance(0.2)) cor.lerp(est.pal.luz, 0.55)
       const s = tam * rnd.entre(0.75, 1.25) / 2
       const giro = rnd.entre(0, Math.PI * 2)
       const cs = Math.cos(giro) * s

@@ -46,7 +46,7 @@ export const globais = {
   uVentoGalhos: { value: 1 },
   uVentoFolhas: { value: 1 },
   uArvLod: { value: new THREE.Vector2(70, 90) },
-  uArvBorda: { value: 0.18 },
+  uArvBorda: { value: 0.12 },
   uArvBordaCor: { value: new THREE.Color('#cfe3ee') },
   uArvTransluz: { value: 0.6 }, // a folha acende quente na contraluz
   uArvPreenche: { value: 0.45 }, // luz de céu e de chão no lado da sombra da copa

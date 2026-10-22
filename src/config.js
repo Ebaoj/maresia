@@ -242,7 +242,7 @@ export const PADRAO = {
     lodPerto: 65,          // m: até aqui os cartões de folha em tamanho cheio
     lodLonge: 85,          // m: aqui eles já sumiram (encolhem no meio)
     lodBloco: 90,          // m: bloco de árvores mais longe que isso troca para a copa simples
-    borda: 0.18,           // luz do céu na borda de cima da copa
+    borda: 0.12,           // luz do céu na borda de cima da copa
     bordaCor: '#cfe3ee',   // a cor dessa luz
     transluz: 0.6,         // contraluz: com o sol atrás, a folha deixa a luz passar e acende quente
     preenche: 0.45,        // luz de céu e de chão no lado da sombra da copa (a sombra fica verde-azulada, nunca preta)
