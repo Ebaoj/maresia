@@ -241,7 +241,9 @@ export function criarVida1932(cena, cfg, predios) {
 
   // montar: uma lista de cópias por peça, em blocos
   const mat = toonVertice()
-  const montar = (geo, lista, nome) => { if (lista.length) instanciarEmBlocos(cena, geo, mat, lista, null, { nome }) }
+  // blocos grandes (384 m): as peças são pequenas e espalhadas, e cada bloco é uma chamada de desenho
+  // (no bloco de 96 m elas somavam ~1.000 chamadas a mais na vista da Coluna da Hora)
+  const montar = (geo, lista, nome) => { if (lista.length) instanciarEmBlocos(cena, geo, mat, lista, null, { nome, tam: 384 }) }
   montar(geometriaCarroca(), L.carroca, 'vida-carrocas')
   montar(geometriaCargaSacos(), L.carga, 'vida-carga')
   montar(geometriaJumento(false), L.jumento, 'vida-jumentos')
