@@ -244,6 +244,7 @@ export const PADRAO = {
     lodBloco: 90,          // m: bloco de árvores mais longe que isso troca para a copa simples
     borda: 0.18,           // luz do céu na borda de cima da copa
     bordaCor: '#cfe3ee',   // a cor dessa luz
+    transluz: 0.6,         // contraluz: com o sol atrás, a folha deixa a luz passar e acende quente
     esfera: 0.72,          // quanto a luz lê a copa inteira como um volume só (0 = cada cacho uma bola); recarregar
     oclusao: 0.75,         // miolo da copa mais escuro (1 = sem); recarregar
     cartaoTam: 1.0,        // tamanho dos cartões de folha; recarregar

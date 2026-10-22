@@ -48,6 +48,7 @@ export const globais = {
   uArvLod: { value: new THREE.Vector2(70, 90) },
   uArvBorda: { value: 0.18 },
   uArvBordaCor: { value: new THREE.Color('#cfe3ee') },
+  uArvTransluz: { value: 0.6 }, // a folha acende quente na contraluz
 }
 globais.tLampioes.value.needsUpdate = true
 

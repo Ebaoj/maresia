@@ -80,6 +80,7 @@ export function secaoMundo(gui, cfg) {
   ar.add(cfg.arvores, 'lodBloco', 10, 300, 1).name('copa simples depois de (m)')
   ar.add(cfg.arvores, 'borda', 0, 1.5, 0.01).name('luz do céu na borda da copa')
   ar.addColor(cfg.arvores, 'bordaCor').name('cor da luz do céu')
+  ar.add(cfg.arvores, 'transluz', 0, 2, 0.01).name('folha acesa na contraluz')
   ar.add(cfg.arvores, 'esfera', 0, 1, 0.01).name(rec('copa lida como um volume só'))
   ar.add(cfg.arvores, 'oclusao', 0.2, 1, 0.01).name(rec('miolo da copa (1 = sem escurecer)'))
   ar.add(cfg.arvores, 'cartaoTam', 0.3, 2.5, 0.01).name(rec('tamanho das folhas'))

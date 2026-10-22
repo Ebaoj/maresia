@@ -35,9 +35,10 @@ export function atualizarVento(cfg) {
   globais.uArvLod.value.set(a.lodPerto, Math.max(a.lodLonge, a.lodPerto + 1))
   globais.uArvBorda.value = a.borda
   globais.uArvBordaCor.value.set(a.bordaCor)
+  globais.uArvTransluz.value = a.transluz
 }
 
-const U = ['uVentoDir', 'uVentoForca', 'uVentoRaj', 'uVentoRajVel', 'uVentoTronco', 'uVentoGalhos', 'uVentoFolhas', 'uArvLod', 'uArvBorda', 'uArvBordaCor']
+const U = ['uVentoDir', 'uVentoForca', 'uVentoRaj', 'uVentoRajVel', 'uVentoTronco', 'uVentoGalhos', 'uVentoFolhas', 'uArvLod', 'uArvBorda', 'uArvBordaCor', 'uArvTransluz']
 
 // a parte comum: onde está a cópia, a matriz dela, o vento no espaço da forma, a rajada e o balanço lento
 const GLSL_BASE = /* glsl */ `
@@ -86,6 +87,10 @@ const GLSL_BORDA = /* glsl */ `
   vec3 vR = normalize(cameraPosition - vPMundo);
   float bR = pow(1.0 - clamp(abs(dot(nR, vR)), 0.0, 1.0), 2.5) * smoothstep(-0.2, 0.7, nR.y);
   diffuseColor.rgb += uArvBordaCor * bR * uArvBorda;
+  // contraluz: com o sol atrás da copa, a folha deixa a luz passar e acende quente (o Passeio do conceito às 16h)
+  vec3 sT = normalize(uSolDirA);
+  float cT = smoothstep(0.2, 0.95, dot(-vR, sT)) * smoothstep(0.0, 0.15, sT.y) * (0.35 + 0.65 * pow(1.0 - clamp(abs(dot(nR, vR)), 0.0, 1.0), 1.5));
+  diffuseColor.rgb *= 1.0 + uArvTransluz * cT * vec3(1.5, 1.25, 0.45);
 }`
 
 // a mesma parte comum em TSL
@@ -155,7 +160,7 @@ function aplicarVento(mat, cartao) {
       .replace('#include <common>', `#include <common>\n${decl}\nattribute vec4 aVento;\n#ifdef ARV_CARTAO\nattribute vec3 aCentro; attribute vec3 aCanto;\n#endif`)
       .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + GLSL_VERTICE)
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uArvBorda; uniform vec3 uArvBordaCor;')
+      .replace('#include <common>', '#include <common>\nuniform float uArvBorda; uniform vec3 uArvBordaCor; uniform float uArvTransluz;')
       .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_BORDA)
   }
   mat.userData.tsl = {
@@ -193,8 +198,11 @@ function aplicarVento(mat, cartao) {
       const { normalize, normalWorld, positionWorld, cameraPosition, pow, clamp, abs, dot, smoothstep, float } = W
       const n = normalize(normalWorld)
       const v = normalize(cameraPosition.sub(positionWorld))
-      const b = pow(float(1).sub(clamp(abs(dot(n, v)), 0.0, 1.0)), 2.5).mul(smoothstep(-0.2, 0.7, n.y))
-      return rgb.add(ref(u.uArvBordaCor).mul(b).mul(ref(u.uArvBorda)))
+      const raso = float(1).sub(clamp(abs(dot(n, v)), 0.0, 1.0))
+      const b = pow(raso, 2.5).mul(smoothstep(-0.2, 0.7, n.y))
+      const s = normalize(ref(globais.uSolDir))
+      const cT = smoothstep(0.2, 0.95, dot(v.negate(), s)).mul(smoothstep(0.0, 0.15, s.y)).mul(pow(raso, 1.5).mul(0.65).add(0.35))
+      return rgb.add(ref(u.uArvBordaCor).mul(b).mul(ref(u.uArvBorda))).mul(W.vec3(1.5, 1.25, 0.45).mul(cT).mul(ref(u.uArvTransluz)).add(1.0))
     },
   }
   return mat
