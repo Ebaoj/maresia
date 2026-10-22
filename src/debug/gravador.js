@@ -13,6 +13,12 @@ export function instalar(m) {
     try {
       for (let i = 0; i < total; i++) {
         roteiro(i * dt, m)
+        // quadro novo para o WebGPU a cada passo (pisca, 22/10/2026; o mesmo do medidor e da foto justa): o three só
+        // refaz o que é "por quadro" (mapas de sombra, ossos) quando o contador de quadros dele anda, e ele só anda no
+        // quadro do navegador. Nos passos seguidos daqui ele andava só de vez em quando (quando a espera do envio
+        // deixava o navegador desenhar): a sombra e o boneco ficavam velhos num quadro e certos no seguinte, e o vídeo
+        // piscava sem o jogo piscar
+        if (m.webgpu) m.renderer._nodes.nodeFrame.update()
         m.passo(dt)
         // logo depois de desenhar, antes do navegador limpar o quadro
         const dados = m.canvas.toDataURL('image/jpeg', 0.88)

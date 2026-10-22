@@ -15,6 +15,8 @@
 //   gravar  passos seguidos, como o maresia.gravar de 4195ad2: o quadro do three (nodeFrame) não anda entre eles
 //   quadro  como o maresia.medir: nodeFrame.update() antes de cada passo
 //   raf     um passo por quadro do navegador (requestAnimationFrame), como o jogo de verdade
+//   gravarReal  chama o próprio maresia.gravar (JPEG, em docs/capturas/video/pisca-<situacao>-<variante>/ do worktree
+//           que o servidor serve); "parado" ali tem o relógio parado, mas a animação anda
 // Sai PASTA/<situacao>-<modo>-<variante>/q0000.png ...
 // Variáveis: RENDERIZADOR ('webgpu' padrão ou 'webgl'), PORTA_EXTRA (soma na porta do CDP).
 import { spawn } from 'node:child_process'
@@ -124,6 +126,14 @@ try {
             m.cfg.tempo.pausado = sit === 'parado'
             const dt = sit === 'parado' ? 1e-6 : 1 / ${fps}
             window.__q = []
+            if (modo === 'gravarReal') {
+              // o próprio maresia.gravar (JPEG para docs/capturas/video/<nome>/ do worktree servido): o caminho que fez
+              // o vídeo que o Joabe viu
+              const r = await m.gravar({ nome: ${JSON.stringify(`pisca-${sit}-${nv}`)}, segundos: ${quadros} / ${fps}, fps: ${fps},
+                roteiro: (t, mm) => { if (sit === 'giro') mm.cam.yaw += 0.2 / ${fps}; mm.teclas.frente = sit === 'andando' } })
+              m.controle.pausado = false
+              return -r.quadros
+            }
             for (let i = 0; i < ${quadros}; i++) {
               if (sit === 'giro') m.cam.yaw += 0.2 / ${fps}
               m.teclas.frente = sit === 'andando'
@@ -138,6 +148,7 @@ try {
           })()`
           const r = await avaliar(expr)
           if (r.erro) { console.log(sit, modo, nv, 'ERRO', r.erro); codigo = 1; continue }
+          if (r.valor < 0) { console.log(`${sit}-${modo}-${nv}: ${-r.valor} quadros em docs/capturas/video/pisca-${sit}-${nv}/ (do worktree servido)`); continue }
           for (let i = 0; i < r.valor; i += 2) {
             const lote = (await avaliar(`window.__q.slice(${i}, ${i + 2})`)).valor || []
             lote.forEach((d, k) => writeFileSync(join(pasta, `q${String(i + k).padStart(4, '0')}.png`), Buffer.from(d.split(',')[1], 'base64')))
