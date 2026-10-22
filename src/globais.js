@@ -37,6 +37,18 @@ export const globais = {
   uSertao: { value: 0 }, // sol alto do sertão (ceu.js): sombra dura e escura ao meio-dia, vezes cfg.estilo.arcSertao
   uDourada: { value: 0 }, // hora dourada (ceu.js): 0 com o sol alto ou de noite, 1 com o sol baixo de dia, vezes cfg.estilo.arcDourada
   uArCor: { value: new THREE.Color('#9cc9e0') }, // a cor do ar: a distância se tinge com o céu da hora
+  // o vento das árvores e o detalhe delas por distância (mundo/vento-arvores.js lê de cfg.vento e cfg.arvores)
+  uVentoDir: { value: new THREE.Vector2(-0.94, -0.34) }, // para onde o vento sopra, no chão (x, z)
+  uVentoForca: { value: 1 },
+  uVentoRaj: { value: 0.6 },
+  uVentoRajVel: { value: 1.1 },
+  uVentoTronco: { value: 1 },
+  uVentoGalhos: { value: 1 },
+  uVentoFolhas: { value: 1 },
+  uArvLod: { value: new THREE.Vector2(70, 90) },
+  uArvBorda: { value: 0.18 },
+  uArvBordaCor: { value: new THREE.Color('#cfe3ee') },
+  uArvTransluz: { value: 0.6 }, // a folha acende quente na contraluz
 }
 globais.tLampioes.value.needsUpdate = true
 

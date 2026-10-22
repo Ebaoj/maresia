@@ -17,9 +17,9 @@ import { alturaTerreno } from '../terreno.js'
 import { ocupacao } from '../ocupacao.js'
 import { instanciarEmBlocos } from '../blocos.js'
 import { criarAleatorio } from '../../utils.js'
-import { oiti } from '../especies.js'
+import { ficus } from '../especies.js'
+import { instanciarArvores } from '../lod-arvores.js'
 import { pecasDoCoqueiro } from '../vegetacao.js'
-import { toonVertice } from '../../materiais.js'
 import { adicionarCirculo } from '../colisao.js'
 import { Obra, naGrade, paraGrade, EX, EZ } from './obra.js'
 import { criarColunaHora } from './coluna-hora.js'
@@ -131,7 +131,7 @@ export function criarPracaReforma(cena, cfg, mats, mobilia) {
     ocupacao.marcar(x, z, 1.0, 1.0)
   }
 
-  // as árvores: fícus (a copa redonda do oiti, maior) e palmeiras (o coqueiro do jogo, mais baixo)
+  // as árvores: fícus (especies.js, a copa larga em guarda-chuva) e palmeiras (o coqueiro do jogo, mais baixo)
   const fic = []
   const pal = []
   const q = new THREE.Quaternion()
@@ -144,7 +144,7 @@ export function criarPracaReforma(cena, cfg, mats, mobilia) {
     adicionarCirculo(x, z, a.tipo === 'ficus' ? 0.45 * e : 0.3 * e)
     ocupacao.marcar(x, z, 2.5, 2.5)
   }
-  if (fic.length) instanciarEmBlocos(cena, oiti(criarAleatorio(77)), toonVertice(), fic, null, { nome: 'praca-ficus', placa: true })
+  instanciarArvores(cena, ficus(criarAleatorio(77)), fic, { nome: 'praca-ficus' })
   if (pal.length) {
     const { geoTronco, geoCopa, matTronco, matCopa } = pecasDoCoqueiro(cfg)
     instanciarEmBlocos(cena, geoTronco, matTronco, pal, null, { nome: 'praca-palmeiras', placa: true })

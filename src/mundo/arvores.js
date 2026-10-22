@@ -14,6 +14,7 @@ import { instanciarEmBlocos } from './blocos.js'
 import { FATOR_PRACA, lugaresJogo } from './fortaleza1932.js'
 import { LIMITES, pesoCidade1932, linhaCosta } from './mapa.js'
 import { cajueiro, carnauba, mangueVermelho, murici, guajiru, oiti } from './especies.js'
+import { instanciarArvores } from './lod-arvores.js'
 
 const rnd = criarAleatorio(555)
 
@@ -60,7 +61,7 @@ function geometriaVaso() {
 export function criarArvores(cena, predios, grade) {
   // espécies nativas (src/mundo/especies.js), 3 ou 4 variações de cada, com semente própria
   const rndE = criarAleatorio(1932)
-  const variantes = (fn, n) => Array.from({ length: n }, () => ({ geo: fn(rndE), mats: [] }))
+  const variantes = (fn, n) => Array.from({ length: n }, () => ({ pecas: fn(rndE), mats: [] }))
   const ESP = {
     oiti: variantes(oiti, 3),
     cajueiro: variantes(cajueiro, 4),
@@ -152,13 +153,9 @@ export function criarArvores(cena, predios, grade) {
       for (let k = 0; k < n; k++) plantar('carnauba', x + rnd.entre(-5, 5), z + rnd.entre(-5, 5), rnd.entre(0.85, 1.15))
     } else plantar(esp, x, z, rnd.entre(0.85, 1.2))
   }
+  // corpo, copa simples de longe e cartões de folha, com vento (lod-arvores.js)
+  for (const [esp, lista] of Object.entries(ESP)) for (const v of lista) instanciarArvores(cena, v.pecas, v.mats, { nome: esp })
   const mat = toonVertice()
-  for (const [esp, lista] of Object.entries(ESP)) {
-    for (const v of lista) {
-      if (!v.mats.length) continue
-      instanciarEmBlocos(cena, v.geo, mat, v.mats, null, { nome: esp, placa: true })
-    }
-  }
 
   // buganvília no alto das paredes do casario e da favela
   const bug = []

@@ -27,9 +27,8 @@ import { alturaBruta } from './mapa.js'
 import { Obra, materiaisObra } from './obra1932.js'
 import { gradil, lampiaoColuna, bancoFerro, tramoComVao, urna, balaustrada } from './ornatos1932.js'
 import { estatua, esfinge, tanque, coreto, botequim, caixaDagua, figura } from './passeio-estatuas.js'
-import { oiti, cajueiro, murici } from './especies.js'
-import { instanciarEmBlocos } from './blocos.js'
-import { toonVertice } from '../materiais.js'
+import { ficus, oiti, cajueiro, murici } from './especies.js'
+import { instanciarArvores } from './lod-arvores.js'
 import { criarAleatorio } from '../utils.js'
 
 const TABELA = (c) => ({
@@ -308,7 +307,7 @@ function estatuas(o) {
 function plantar(cena, o, lista) {
   const rnd = criarAleatorio(1888)
   const rndG = criarAleatorio(1879)
-  const geos = { renque: oiti(rndG), quadra: cajueiro(rndG), quadra2: oiti(rndG), arbusto: murici(rndG) }
+  const geos = { renque: ficus(rndG), quadra: cajueiro(rndG), quadra2: oiti(rndG), arbusto: murici(rndG) }
   const mats = { renque: [], quadra: [], quadra2: [], arbusto: [] }
   const Y = new THREE.Vector3(0, 1, 0)
   const por = (chave, lx, lz, esc, y = 0.2) => {
@@ -326,8 +325,7 @@ function plantar(cena, o, lista) {
     const nArb = rnd.chance(0.5) ? 2 : 1
     for (let k = 0; k < nArb; k++) por('arbusto', rnd.entre(a, b), rnd.entre(c, d), rnd.entre(0.7, 1.1))
   }
-  const mat = toonVertice()
-  for (const [k, l] of Object.entries(mats)) if (l.length) instanciarEmBlocos(cena, geos[k], mat, l, null, { nome: `passeio-${k}`, placa: true })
+  for (const [k, l] of Object.entries(mats)) instanciarArvores(cena, geos[k], l, { nome: `passeio-${k}` })
 }
 
 export function criarPasseio(cena, cfg) {

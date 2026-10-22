@@ -81,7 +81,8 @@ async function iniciar() {
   const matPlanta = toonVertice()
   const rndE = criarAleatorio(1932)
   const NOMES_ESP = ['oiti', 'cajueiro', 'carnauba', 'mangue', 'murici', 'guajiru']
-  const especies = [oiti, cajueiro, carnauba, mangueVermelho, murici, guajiru].flatMap((fn) => [fn(rndE), fn(rndE), fn(rndE)])
+  // a copa simples das árvores pintadas (a de longe, sem cartões nem vento): a vg não roda o código de vértice delas
+  const especies = [oiti, cajueiro, carnauba, mangueVermelho, murici, guajiru].flatMap((fn) => [fn(rndE).longe, fn(rndE).longe, fn(rndE).longe])
   const m = new THREE.Matrix4(), qq = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0)
   const porEspecie = especies.map(() => [])
   for (const [x, z, e, r] of arvores) porEspecie[Math.floor(r * especies.length)].push(m.compose(p.set(x, altura(x, z), z), qq.setFromAxisAngle(Y, r * 40), s.setScalar(e)).clone())

@@ -1,301 +1,250 @@
-// Espécies nativas (docs/direcao-de-arte.md, lacuna 6: silhueta). Primeira leva:
-// cajueiro, carnaúba, mangue-vermelho, arbustos de restinga (murici, guajiru) e o coqueiro.
-// Nada de "bolha lisa": cada árvore tem galhos à mostra e a folhagem em muitos cachos menores,
-// com céu aparecendo entre eles, como massa pintada (referência: Gato de Botas 2).
-// Cada função devolve uma geometria com cor por vértice, com a base do tronco em (0, 0, 0).
+// Espécies nativas de Fortaleza (docs/direcao-de-arte.md, "Vegetação: o que a pesquisa confirmou"), como árvores
+// pintadas (21/10/2026): galhos com afinamento e forquilhas à mostra, folhagem em cachos que a luz lê como uma
+// massa só e cartões de folha quebrando a silhueta (a técnica está em arvore-forma.js; o vento em vento-arvores.js).
+// Cada função recebe o sorteio com semente e devolve { corpo, longe, cartoes }, com a base do tronco em (0, 0, 0).
+// A identidade de cada uma continua a da pesquisa: oiti de copa redonda e escura nas calçadas, fícus de copa larga
+// nas praças, cajueiro de tronco baixo e torto e copa larga, carnaúba em leque, mangue nas raízes-escora.
 
 import * as THREE from 'three'
-import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { ruido } from './mapa.js'
+import { V, novaEstrutura, galho, galhoPts, cacho, fecharCopa, montar, anexar, normalCopa, flex } from './arvore-forma.js'
+import { QUADRANTE as Q, cantoQuadrante } from './folha-textura.js'
+import { FOLHAGEM } from '../paleta.js'
 
-const cor = new THREE.Color()
-const cor2 = new THREE.Color()
+// ajustes do painel que valem ao montar (cfg.arvores; recarregar): definidos uma vez, antes de criar o mundo
+let F = { esfera: 0.72, oclusao: 0.75, cartaoTam: 1, cartaoDens: 1, variacao: 1 }
+export function definirFormaArvores(o = {}) { F = { ...F, ...o } }
+export function formaArvores() { return F }
+const op = (pal, cartao, extra = {}) => ({ pal, esfera: F.esfera, oclusao: F.oclusao, cartao: { ...cartao, tam: cartao.tam * F.cartaoTam, dens: cartao.dens * F.cartaoDens }, ...extra })
+const volta = (rnd, i, n, j = 0.4) => (i / n) * Math.PI * 2 + rnd.entre(-j, j)
+const fase = (rnd) => rnd.entre(0, Math.PI * 2)
 
-function pintarGeo(g, hex) {
-  g = g.index ? g.toNonIndexed() : g
-  g.deleteAttribute('uv')
-  cor.set(hex)
-  const n = g.attributes.position.count
-  const c = new Float32Array(n * 3)
-  for (let i = 0; i < n; i++) { c[i * 3] = cor.r; c[i * 3 + 1] = cor.g; c[i * 3 + 2] = cor.b }
-  g.setAttribute('color', new THREE.BufferAttribute(c, 3))
-  return g
+// OITI: árvore de rua nativa, tronco reto, quatro ou cinco pernadas subindo, copa densa e redonda, verde escuro
+export function oiti(rnd) {
+  const est = novaEstrutura(rnd, op(FOLHAGEM.oiti, { tam: 1.0, quadrantes: [Q.miuda], dens: 0.5 }))
+  const H = rnd.entre(2.0, 2.6)
+  const topo = V(rnd.entre(-0.2, 0.2), H, rnd.entre(-0.2, 0.2))
+  galhoPts(est, [V(0, 0, 0), V(topo.x * 0.3, H * 0.5, topo.z * 0.3), topo], 0.26, 0.19, { raiz: true, peso1: 0 })
+  const n = 4 + (rnd.chance(0.5) ? 1 : 0)
+  for (let i = 0; i < n; i++) {
+    const a = volta(rnd, i, n)
+    const f = fase(rnd)
+    const pts = galho(est, topo, V(Math.cos(a) * 0.8, 1, Math.sin(a) * 0.8), rnd.entre(1.6, 2.2), 0.15, 0.07, { sobe: 0.1, peso1: 0.7, fase: f })
+    for (let j = 0; j < 2; j++) {
+      const b = a + (j ? 0.7 : -0.7) + rnd.entre(-0.3, 0.3)
+      const p2 = galho(est, pts[2], V(Math.cos(b), 0.9, Math.sin(b)), rnd.entre(1.0, 1.4), 0.07, 0.03, { peso0: 0.45, fase: f })
+      cacho(est, p2[p2.length - 1].clone().add(V(0, 0.3, 0)), rnd.entre(1.0, 1.3), { fase: f })
+    }
+    cacho(est, pts[pts.length - 1].clone().add(V(0, 0.4, 0)), rnd.entre(1.1, 1.4), { fase: f })
+  }
+  for (let i = 0; i < 3; i++) {
+    const a = volta(rnd, i, 3, 1)
+    cacho(est, topo.clone().add(V(Math.cos(a) * 0.7, rnd.entre(2.7, 3.2), Math.sin(a) * 0.7)), rnd.entre(1.2, 1.45), { fase: fase(rnd), peso: 0.8 })
+  }
+  return montar(est)
 }
 
-// cilindro de a até b, afinando de ra para rb
-function galho(a, b, ra, rb, hex, lados = 6) {
-  const d = new THREE.Vector3().subVectors(b, a)
-  const comp = d.length()
-  const g = new THREE.CylinderGeometry(rb, ra, comp, lados, 1, false)
-  g.translate(0, comp / 2, 0)
-  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()))
-  g.translate(a.x, a.y, a.z)
-  return pintarGeo(g, hex)
-}
-
-// galho curvo: segue uma lista de pontos, afinando do primeiro ao último
-function galhoCurvo(pts, r0, r1, hex) {
-  const partes = []
-  for (let i = 0; i < pts.length - 1; i++) {
-    const t0 = i / (pts.length - 1)
-    const t1 = (i + 1) / (pts.length - 1)
-    partes.push(galho(pts[i], pts[i + 1], r0 + (r1 - r0) * t0, r0 + (r1 - r0) * t1, hex))
-    // junta arredondada para não abrir fresta na dobra
-    if (i > 0) {
-      const j = new THREE.SphereGeometry(r0 + (r1 - r0) * t0, 6, 4)
-      j.translate(pts[i].x, pts[i].y, pts[i].z)
-      partes.push(pintarGeo(j, hex))
+// FÍCUS das praças (Praça do Ferreira, Passeio Público): tronco grosso e liso, cinza, com sapopemas; pernadas
+// baixas que se abrem quase na horizontal; copa em guarda-chuva, mais larga que alta, de folha miúda e densa,
+// com o baixo escuro e frio bem à mostra; algumas raízes aéreas caindo das pernadas
+export function ficus(rnd) {
+  const est = novaEstrutura(rnd, op(FOLHAGEM.ficus, { tam: 0.95, quadrantes: [Q.miuda], dens: 0.55 }, { esfera: Math.min(1, F.esfera + 0.08) }))
+  const H = rnd.entre(1.3, 1.6)
+  const topo = V(rnd.entre(-0.15, 0.15), H, rnd.entre(-0.15, 0.15))
+  galhoPts(est, [V(0, 0, 0), V(0, H * 0.5, 0), topo], 0.4, 0.32, { raiz: true, peso1: 0 })
+  const n = 5 + (rnd.chance(0.5) ? 1 : 0)
+  for (let i = 0; i < n; i++) {
+    const a = volta(rnd, i, n, 0.3)
+    const f = fase(rnd)
+    const pts = galho(est, topo, V(Math.cos(a), rnd.entre(0.55, 0.85), Math.sin(a)), rnd.entre(2.0, 2.5), 0.2, 0.08, { sobe: 0.05, cai: 0.15, torce: 0.15, peso1: 0.6, fase: f })
+    for (let j = 0; j < 2; j++) {
+      const b = a + (j ? 0.6 : -0.6) + rnd.entre(-0.25, 0.25)
+      const p2 = galho(est, pts[2 + j], V(Math.cos(b), 0.6, Math.sin(b)), rnd.entre(1.0, 1.4), 0.08, 0.03, { peso0: 0.4, fase: f })
+      cacho(est, p2[p2.length - 1].clone().add(V(0, 0.35, 0)), rnd.entre(1.0, 1.25), { fase: f, achatar: 0.7 })
+    }
+    cacho(est, pts[pts.length - 1].clone().add(V(0, 0.45, 0)), rnd.entre(1.1, 1.35), { fase: f, achatar: 0.7 })
+    // raiz aérea: fio quase reto até o chão
+    if (rnd.chance(0.45)) {
+      const p = pts[2]
+      galhoPts(est, [p, V(p.x * 1.02, p.y * 0.5, p.z * 1.02), V(p.x * 1.03, -0.1, p.z * 1.03)], 0.035, 0.028, { peso0: 0.3, peso1: 0.05, fase: f })
     }
   }
-  return partes
-}
-
-// cacho de folhagem: icosaedro amassado por ruído, base achatada, mais claro em cima.
-// "topo" tinge a parte de cima (folha nova acobreada do cajueiro, flor do murici).
-function cacho(raio, centro, escura, clara, semente, { achatar = 0.75, topo = null, forca = 0.45 } = {}) {
-  // cacho grande com mais vértices: com poucos, as faixas do toon desenham os polígonos
-  const g = new THREE.IcosahedronGeometry(raio, raio > 0.9 ? 2 : 1)
-  const p = g.attributes.position
-  const v = new THREE.Vector3()
-  const cores = []
-  const ce = new THREE.Color(escura)
-  const cc = new THREE.Color(clara)
-  const ct = topo ? new THREE.Color(topo) : null
-  for (let i = 0; i < p.count; i++) {
-    v.fromBufferAttribute(p, i)
-    const k = 1 + ruido(v.x * 1.1 + semente, v.y * 1.1 + semente * 0.3, v.z * 1.1) * forca * 1.3 // ruído de -1 a 1
-    v.multiplyScalar(k)
-    v.y *= achatar
-    if (v.y < -raio * 0.25) v.y = -raio * 0.25 + (v.y + raio * 0.25) * 0.35 // base mais reta
-    const alto = THREE.MathUtils.smoothstep(v.y / raio, -0.5, 0.7)
-    cor2.copy(ce).lerp(cc, alto)
-    if (ct && v.y > raio * 0.45 && ruido(v.x * 2 + semente, v.z * 2, semente) > 0.25) cor2.lerp(ct, 0.55)
-    cores.push(cor2.r, cor2.g, cor2.b)
-    p.setXYZ(i, v.x + centro.x, v.y + centro.y, v.z + centro.z)
+  for (let i = 0; i < 4; i++) {
+    const a = volta(rnd, i, 4, 0.8)
+    cacho(est, topo.clone().add(V(Math.cos(a) * 1.2, rnd.entre(2.3, 2.7), Math.sin(a) * 1.2)), rnd.entre(1.25, 1.5), { fase: fase(rnd), peso: 0.8, achatar: 0.7 })
   }
-  g.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3))
-  g.deleteAttribute('uv')
-  // normais suaves (na malha indexada): massa pintada, não pedra facetada
-  g.deleteAttribute('normal') // as normais por face impediam juntar os vértices
-  const gi = mergeVertices(g)
-  gi.computeVertexNormals()
-  return gi.toNonIndexed()
+  return montar(est)
 }
 
-const V = (x, y, z) => new THREE.Vector3(x, y, z)
-
-// CAJUEIRO: tronco curto e torto que logo se abre em galhos grossos quase horizontais; alguns
-// descem até perto do chão. Copa baixa e larga (até ~12 m), verde escuro brilhante, com folha
-// nova acobreada no topo.
+// CAJUEIRO: tronco curto e torto que logo se abre em galhos grossos quase horizontais, caindo na ponta; copa baixa
+// e larga, verde escuro brilhante, folha grande, com folha nova acobreada no topo
 export function cajueiro(rnd) {
-  const casca = '#5e4636'
-  const partes = []
+  const est = novaEstrutura(rnd, op(FOLHAGEM.cajueiro, { tam: 1.3, quadrantes: [Q.larga], dens: 0.42 }))
   const altT = rnd.entre(0.9, 1.5)
-  const inclina = V(rnd.entre(-0.35, 0.35), altT, rnd.entre(-0.35, 0.35))
-  partes.push(...galhoCurvo([V(0, 0, 0), V(inclina.x * 0.4, altT * 0.55, inclina.z * 0.4), inclina], 0.42, 0.32, casca))
-  const nGalhos = 4 + Math.floor(rnd.entre(0, 2.99))
-  const pontas = []
-  for (let i = 0; i < nGalhos; i++) {
-    const a = (i / nGalhos) * Math.PI * 2 + rnd.entre(-0.4, 0.4)
-    const dir = V(Math.cos(a), 0, Math.sin(a))
-    const L = rnd.entre(3.2, 5.6)
-    const desce = rnd.chance(0.08) // galho encostando na areia: raro (é anomalia, não regra)
-    const p1 = inclina.clone().addScaledVector(dir, L * 0.35).add(V(0, rnd.entre(0.8, 1.4), 0))
-    const p2 = inclina.clone().addScaledVector(dir, L * 0.7).add(V(0, desce ? 0.3 : rnd.entre(1.0, 1.8), 0))
-    const p3 = inclina.clone().addScaledVector(dir, L).add(V(0, desce ? -inclina.y + 0.45 : rnd.entre(0.4, 1.4), 0))
-    partes.push(...galhoCurvo([inclina, p1, p2, p3], 0.24, 0.07, casca))
-    // galhinho secundário saindo do meio
-    const lado = V(-dir.z, 0, dir.x).multiplyScalar(rnd.chance(0.5) ? 1 : -1)
-    const s1 = p1.clone().addScaledVector(lado, rnd.entre(1.0, 1.8)).add(V(0, rnd.entre(0.6, 1.2), 0))
-    partes.push(...galhoCurvo([p1, s1], 0.12, 0.05, casca))
-    pontas.push(p2, p3, s1)
-  }
-  // cachos: nas pontas e por cima dos galhos, deixando vãos
-  const folhaEsc = '#22492c'
-  const folhaCla = '#5b8a3c'
-  const cobre = '#a8623a'
-  let s = rnd.entre(0, 100)
-  for (const p of pontas) {
-    const r = rnd.entre(1.2, 1.9)
-    partes.push(cacho(r, p.clone().add(V(rnd.entre(-0.3, 0.3), r * 0.45, rnd.entre(-0.3, 0.3))), folhaEsc, folhaCla, s++, { topo: rnd.chance(0.4) ? cobre : null }))
-  }
-  // miolo da copa, mais alto, segurando a silhueta em domo baixo
-  for (let i = 0; i < 4; i++) {
-    const a = rnd.entre(0, Math.PI * 2)
-    const r = rnd.entre(1.5, 2.2)
-    partes.push(cacho(r, inclina.clone().add(V(Math.cos(a) * rnd.entre(0.5, 1.8), rnd.entre(2.2, 3.0), Math.sin(a) * rnd.entre(0.5, 1.8))), folhaEsc, folhaCla, s++, { topo: cobre }))
-  }
-  return mergeGeometries(partes)
-}
-
-// folha em leque (carnaúba): setor de ~250° com pregas alternadas, levemente em concha.
-// Feita com os dois lados (triângulos duplicados), para não sumir vista por baixo.
-function leque(raio, hex, hexBorda, semente) {
-  const N = 16
-  const pos = []
-  const cores = []
-  const c0 = new THREE.Color(hex)
-  const c1 = new THREE.Color(hexBorda)
-  const aberto = 2.2
-  const ponto = (t, f) => {
-    const a = -aberto + (2 * aberto * t)
-    const prega = (Math.round(t * N) % 2 === 0 ? 1 : -1) * 0.07 * raio * f
-    return [Math.cos(a) * raio * f, prega - f * f * raio * 0.18, Math.sin(a) * raio * f]
-  }
-  const tri = (a, b, c, ca, cb, cc) => {
-    pos.push(...a, ...b, ...c, ...a, ...c, ...b)
-    cores.push(...ca, ...cb, ...cc, ...ca, ...cc, ...cb)
-  }
-  const cc = (f) => { const k = c0.clone().lerp(c1, f); return [k.r, k.g, k.b] }
-  for (let i = 0; i < N; i++) {
-    const t0 = i / N
-    const t1 = (i + 1) / N
-    const meio0 = ponto(t0, 0.4)
-    const meio1 = ponto(t1, 0.4)
-    const fora0 = ponto(t0, 1.0)
-    const fora1 = ponto(t1, 1.0)
-    tri([0, 0, 0], meio0, meio1, cc(0), cc(0.3), cc(0.3))
-    tri(meio0, fora0, fora1, cc(0.3), cc(1), cc(1))
-    tri(meio0, fora1, meio1, cc(0.3), cc(1), cc(0.3))
-  }
-  const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
-  g.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3))
-  g.computeVertexNormals()
-  void semente
-  return g
-}
-
-// CARNAÚBA: estipe reto e fino (9 a 12 m), com os pecíolos velhos em espiral na base; coroa
-// globosa de folhas em leque verde-acinzentado (a cera). Planta social: em grupo, na várzea.
-export function carnauba(rnd) {
-  const partes = []
-  const H = rnd.entre(9, 12.5)
-  const curva = V(rnd.entre(-0.6, 0.6), 0, rnd.entre(-0.6, 0.6))
-  const pts = [V(0, 0, 0), V(curva.x * 0.2, H * 0.35, curva.z * 0.2), V(curva.x * 0.6, H * 0.7, curva.z * 0.6), V(curva.x, H, curva.z)]
-  partes.push(...galhoCurvo(pts, 0.22, 0.16, '#7a6a5c'))
-  // bainhas cruzadas no terço de baixo: anéis de escamas
-  for (let k = 0; k < 14; k++) {
-    const t = 0.05 + (k / 14) * 0.45
-    const centro = V(curva.x * t * t, H * t, curva.z * t * t)
-    for (let j = 0; j < 4; j++) {
-      const a = (j / 4) * Math.PI * 2 + (k % 2) * (Math.PI / 4)
-      const esc = new THREE.BoxGeometry(0.16, 0.34, 0.06)
-      esc.rotateZ((k % 2 ? 1 : -1) * 0.6)
-      esc.rotateY(-a)
-      esc.translate(centro.x + Math.cos(a) * 0.21, centro.y, centro.z + Math.sin(a) * 0.21)
-      partes.push(pintarGeo(esc, k % 3 === 0 ? '#5e5046' : '#6e5e50'))
-    }
-  }
-  // coroa: pecíolos irradiando e o leque na ponta
-  const topo = pts[3]
-  const verde = rnd.chance(0.5) ? '#6f8f72' : '#7d9a6e'
-  const nFolhas = 22 + Math.floor(rnd.entre(0, 8))
-  for (let i = 0; i < nFolhas; i++) {
-    const a = rnd.entre(0, Math.PI * 2)
-    const el = rnd.entre(-0.25, 1.3) // elevação do pecíolo: coroa esférica, nada descendo pelo tronco
-    const dir = V(Math.cos(a) * Math.cos(el), Math.sin(el), Math.sin(a) * Math.cos(el))
-    const L = rnd.entre(1.3, 1.9)
-    const fim = topo.clone().addScaledVector(dir, L)
-    partes.push(galho(topo, fim, 0.035, 0.025, '#6e7a52', 4))
-    const f = leque(rnd.entre(0.95, 1.25), verde, '#a7b8a0', i)
-    // o leque abre para fora, na direção do pecíolo, caindo um pouco
-    const q = new THREE.Quaternion().setFromUnitVectors(V(1, 0, 0), V(dir.x, dir.y * 0.6 - 0.15, dir.z).normalize())
-    f.applyQuaternion(q)
-    f.translate(fim.x, fim.y, fim.z)
-    partes.push(f)
-  }
-  // sem saia de folhas secas: na carnaúba adulta as folhas inteiras caem (ESALQ)
-  // miolo da coroa (as folhas novas fechadas)
-  partes.push(cacho(0.55, topo.clone().add(V(0, 0.2, 0)), '#55704f', '#8aa080', rnd.entre(0, 50), { achatar: 1.2 }))
-  return mergeGeometries(partes)
-}
-
-// MANGUE-VERMELHO: raízes-escora em arco saindo do tronco para a lama, algumas raízes aéreas
-// caindo dos galhos; copa densa e arredondada, verde médio brilhante. Base no nível da água.
-export function mangueVermelho(rnd) {
-  const partes = []
-  const casca = '#6b5544'
-  const H = rnd.entre(1.8, 2.6) // altura onde as escoras saem
-  const topo = V(rnd.entre(-0.3, 0.3), H + rnd.entre(1.2, 2.0), rnd.entre(-0.3, 0.3))
-  partes.push(...galhoCurvo([V(0, H * 0.6, 0), V(0, H, 0), topo], 0.2, 0.13, casca))
-  const nRaiz = 9 + Math.floor(rnd.entre(0, 5))
-  for (let i = 0; i < nRaiz; i++) {
-    const a = (i / nRaiz) * Math.PI * 2 + rnd.entre(-0.2, 0.2)
-    const r = rnd.entre(1.2, 2.3)
-    const saida = V(0, H * rnd.entre(0.55, 1.0), 0)
-    const meio = V(Math.cos(a) * r * 0.55, saida.y + rnd.entre(0.2, 0.5), Math.sin(a) * r * 0.55)
-    const chao = V(Math.cos(a) * r, -0.3, Math.sin(a) * r)
-    partes.push(...galhoCurvo([saida, meio, V(Math.cos(a) * r * 0.9, saida.y * 0.45, Math.sin(a) * r * 0.9), chao], 0.075, 0.05, casca))
-  }
-  // galhos e copa
-  const pontas = []
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2 + rnd.entre(-0.4, 0.4)
-    const p = topo.clone().add(V(Math.cos(a) * rnd.entre(1.2, 2.0), rnd.entre(0.4, 1.0), Math.sin(a) * rnd.entre(1.2, 2.0)))
-    partes.push(galho(topo, p, 0.1, 0.05, casca))
-    pontas.push(p)
-    if (rnd.chance(0.6)) partes.push(galho(p, V(p.x * 1.05, -0.2, p.z * 1.05), 0.03, 0.025, casca, 4)) // raiz aérea
-  }
-  let s = rnd.entre(0, 100)
-  for (const p of pontas) partes.push(cacho(rnd.entre(1.1, 1.5), p.clone().add(V(0, 0.5, 0)), '#244a2c', '#5f8f44', s++))
-  partes.push(cacho(rnd.entre(1.4, 1.8), topo.clone().add(V(0, 1.3, 0)), '#244a2c', '#5f8f44', s++))
-  return mergeGeometries(partes)
-}
-
-// MURICI: arbusto de restinga (1,5 a 2,5 m), poucos caules finos, cachos arredondados e
-// espigas de flor amarela no topo. A casca dele tinge a roupa dos jangadeiros.
-export function murici(rnd) {
-  const partes = []
-  const casca = '#6b5240'
-  let s = rnd.entre(0, 100)
-  // vários caules curtos e a folhagem começando perto do chão, em camadas
+  const inc = V(rnd.entre(-0.35, 0.35), altT, rnd.entre(-0.35, 0.35))
+  galhoPts(est, [V(0, 0, 0), V(inc.x * 0.4, altT * 0.55, inc.z * 0.4), inc], 0.42, 0.33, { raiz: true, peso1: 0 })
+  const cobre = est.pal.acento
   const n = 4 + Math.floor(rnd.entre(0, 2.99))
   for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2 + rnd.entre(-0.4, 0.4)
-    const topo = V(Math.cos(a) * rnd.entre(0.3, 0.8), rnd.entre(1.0, 1.7), Math.sin(a) * rnd.entre(0.3, 0.8))
-    partes.push(...galhoCurvo([V(0, 0, 0), V(topo.x * 0.6, topo.y * 0.45, topo.z * 0.6), topo], 0.06, 0.03, casca))
-    partes.push(cacho(rnd.entre(0.55, 0.75), topo.clone().add(V(0, 0.15, 0)), '#3a5a30', '#7f9c4a', s++, { topo: '#e2b53a' }))
-    partes.push(cacho(rnd.entre(0.5, 0.7), V(topo.x * 0.9, rnd.entre(0.45, 0.75), topo.z * 0.9), '#33522c', '#6f8e44', s++))
+    const a = volta(rnd, i, n)
+    const f = fase(rnd)
+    const L = rnd.entre(3.2, 5.2)
+    const pts = galho(est, inc, V(Math.cos(a), 0.55, Math.sin(a)), L, 0.24, 0.07, { sobe: 0.15, cai: 0.55, torce: 0.3, peso1: 0.85, fase: f, n: 5 })
+    const lado = V(-Math.sin(a), 0, Math.cos(a)).multiplyScalar(rnd.chance(0.5) ? 1 : -1)
+    const s1 = galho(est, pts[2], lado.clone().add(V(Math.cos(a) * 0.5, 0.8, Math.sin(a) * 0.5)), rnd.entre(1.1, 1.8), 0.11, 0.04, { peso0: 0.4, fase: f })
+    for (const p of [pts[3], pts[5], s1[s1.length - 1]]) {
+      const r = rnd.entre(1.15, 1.7)
+      cacho(est, p.clone().add(V(rnd.entre(-0.3, 0.3), r * 0.4, rnd.entre(-0.3, 0.3))), r, { fase: f, topo: rnd.chance(0.4) ? cobre : null, achatar: 0.72 })
+    }
   }
-  return mergeGeometries(partes)
+  for (let i = 0; i < 4; i++) {
+    const a = rnd.entre(0, Math.PI * 2)
+    cacho(est, inc.clone().add(V(Math.cos(a) * rnd.entre(0.5, 1.8), rnd.entre(2.2, 2.9), Math.sin(a) * rnd.entre(0.5, 1.8))), rnd.entre(1.45, 2.0), { fase: fase(rnd), peso: 0.75, topo: cobre, achatar: 0.72 })
+  }
+  return montar(est)
 }
 
-// GUAJIRU: moita baixa e densa de restinga, mais larga que alta (2 a 3 m por 1 m), folha
-// arredondada verde-clara, alguns frutos arroxeados.
+// o leque da carnaúba no material dos cartões (sem virar para a câmera): setor de ~250 graus com pregas, a textura
+// rasga as pontas em tiras (folha-textura.js, quadrante "leque"). Feito com os dois lados.
+function lequeNaMalha(est, m, raio, q, pos, f) {
+  const N = 16
+  const aberto = 2.2
+  const [u0, v0] = cantoQuadrante(Q.leque)
+  const k = { semente: f * 10, tom: est.rnd.entre(0.94, 1.06), topo: null }
+  const nC = new THREE.Vector3()
+  const cor = new THREE.Color()
+  const ponto = (t, fr) => {
+    const a = -aberto + 2 * aberto * t
+    const prega = (Math.round(t * N) % 2 === 0 ? 1 : -1) * 0.07 * raio * fr
+    return V(Math.cos(a) * raio * fr, prega - fr * fr * raio * 0.22, Math.sin(a) * raio * fr).applyQuaternion(q).add(pos)
+  }
+  const anel = []
+  for (const fr of [0, 0.4, 1]) {
+    const linha = []
+    for (let i = 0; i <= N; i++) {
+      const t = i / N
+      const p = ponto(t, fr)
+      normalCopa(est, p, nC)
+      // cor do leque: o verde de cera por cima, a sombra fria embaixo e no miolo da coroa
+      const ny = nC.y
+      cor.copy(est.pal.sombra).lerp(est.pal.meio, THREE.MathUtils.smoothstep(ny, -0.8, 0.1)).lerp(est.pal.luz, THREE.MathUtils.smoothstep(ny, 0.0, 0.9) * (0.4 + 0.6 * fr)).multiplyScalar(k.tom * (0.8 + 0.2 * fr))
+      const nn = nC.clone()
+      linha.push({ p, n: nn, c: [cor.r, cor.g, cor.b], uv: [u0 + t * 0.5, v0 + fr * 0.5], w: fr })
+    }
+    anel.push(linha)
+  }
+  for (const lado of [0, 1]) {
+    const ids = anel.map((linha) => linha.map((v) => m.vert({ position: [v.p.x, v.p.y, v.p.z], normal: [v.n.x, v.n.y, v.n.z], color: v.c, uv: v.uv,
+      aVento: [flex(est, v.p.y), 1, f, v.w], aCentro: [v.p.x, v.p.y, v.p.z], aCanto: [0, 0, 0] })))
+    for (let r = 0; r < 2; r++) {
+      for (let i = 0; i < N; i++) {
+        const a = ids[r][i], b = ids[r][i + 1], c = ids[r + 1][i], d = ids[r + 1][i + 1]
+        if (lado) { m.tri(a, c, b); m.tri(b, c, d) } else { m.tri(a, b, c); m.tri(b, d, c) }
+      }
+    }
+  }
+}
+
+// CARNAÚBA: estipe reto e fino (9 a 12 m), com os pecíolos velhos em espiral no terço de baixo; coroa globosa de
+// folhas em leque verde-acinzentado (a cera); sem saia de folhas secas (ESALQ). Planta social: em grupo, na várzea
+export function carnauba(rnd) {
+  const est = novaEstrutura(rnd, op(FOLHAGEM.carnauba, { tam: 1, quadrantes: [Q.leque], dens: 0 }, { esfera: 0.55 }))
+  const H = rnd.entre(9, 12.5)
+  const cv = V(rnd.entre(-0.6, 0.6), 0, rnd.entre(-0.6, 0.6))
+  const pts = [V(0, 0, 0), V(cv.x * 0.2, H * 0.35, cv.z * 0.2), V(cv.x * 0.6, H * 0.7, cv.z * 0.6), V(cv.x, H, cv.z)]
+  const topo = pts[3]
+  est.copa = { c: topo.clone().add(V(0, 0.4, 0)), r: V(2.4, 1.9, 2.4) }
+  est.H = H + 1.5
+  galhoPts(est, pts, 0.22, 0.16, { raiz: true, peso1: 0 })
+  const folhas = []
+  const nF = 22 + Math.floor(rnd.entre(0, 8))
+  for (let i = 0; i < nF; i++) {
+    const a = rnd.entre(0, Math.PI * 2)
+    const el = rnd.entre(-0.25, 1.3)
+    const dir = V(Math.cos(a) * Math.cos(el), Math.sin(el), Math.sin(a) * Math.cos(el))
+    const L = rnd.entre(1.3, 1.9)
+    const f = fase(rnd)
+    const fim = topo.clone().addScaledVector(dir, L)
+    galhoPts(est, [topo, topo.clone().addScaledVector(dir, L * 0.5).add(V(0, 0.08, 0)), fim], 0.04, 0.025, { peso0: 0.5, peso1: 1, fase: f, casca: '#6e7a52' })
+    const q = new THREE.Quaternion().setFromUnitVectors(V(1, 0, 0), V(dir.x, dir.y * 0.6 - 0.15, dir.z).normalize())
+    folhas.push({ raio: rnd.entre(0.95, 1.25), q, fim, f })
+  }
+  cacho(est, topo.clone().add(V(0, 0.2, 0)), 0.55, { achatar: 1.2, peso: 0.6 })
+  const pecas = montar(est, {
+    // bainhas cruzadas no terço de baixo: anéis de escamas (no corpo, em geometria)
+    extraCorpo: (m, longe) => {
+      for (let k = 0; k < (longe ? 7 : 14); k++) {
+        const t = 0.05 + (k / (longe ? 7 : 14)) * 0.45
+        const c = V(cv.x * t * t, H * t, cv.z * t * t)
+        for (let j = 0; j < 4; j++) {
+          const a = (j / 4) * Math.PI * 2 + (k % 2) * (Math.PI / 4)
+          const esc = new THREE.BoxGeometry(0.16, 0.34, 0.06)
+          esc.deleteAttribute('uv')
+          esc.rotateZ((k % 2 ? 1 : -1) * 0.6)
+          esc.rotateY(-a)
+          esc.translate(c.x + Math.cos(a) * 0.21, c.y, c.z + Math.sin(a) * 0.21)
+          anexar(est, m, esc, k % 3 === 0 ? '#5e5046' : '#6e5e50')
+        }
+      }
+    },
+    extraCartoes: (m) => { for (const l of folhas) lequeNaMalha(est, m, l.raio, l.q, l.fim, l.f) },
+  })
+  // os leques são a copa inteira (não detalhe): ficam de perto e de longe
+  pecas.cartoesSempre = true
+  return pecas
+}
+
+// MANGUE-VERMELHO: raízes-escora em arco saindo do tronco para a lama, raízes aéreas caindo dos galhos; copa densa e
+// arredondada, verde médio brilhante. Base no nível da água
+export function mangueVermelho(rnd) {
+  const est = novaEstrutura(rnd, op(FOLHAGEM.mangue, { tam: 0.95, quadrantes: [Q.miuda], dens: 0.5 }))
+  const H = rnd.entre(1.8, 2.6)
+  const topo = V(rnd.entre(-0.3, 0.3), H + rnd.entre(1.2, 2.0), rnd.entre(-0.3, 0.3))
+  galhoPts(est, [V(0, H * 0.6, 0), V(0, H, 0), topo], 0.2, 0.13, { peso1: 0.1 })
+  const nR = 9 + Math.floor(rnd.entre(0, 5))
+  for (let i = 0; i < nR; i++) {
+    const a = volta(rnd, i, nR, 0.2)
+    const r = rnd.entre(1.2, 2.3)
+    const sy = H * rnd.entre(0.55, 1.0)
+    galhoPts(est, [V(0, sy, 0), V(Math.cos(a) * r * 0.55, sy + rnd.entre(0.2, 0.5), Math.sin(a) * r * 0.55), V(Math.cos(a) * r * 0.9, sy * 0.45, Math.sin(a) * r * 0.9), V(Math.cos(a) * r, -0.3, Math.sin(a) * r)], 0.075, 0.05, { peso1: 0 })
+  }
+  for (let i = 0; i < 4; i++) {
+    const a = volta(rnd, i, 4)
+    const f = fase(rnd)
+    const pts = galho(est, topo, V(Math.cos(a), 0.6, Math.sin(a)), rnd.entre(1.4, 2.1), 0.1, 0.045, { peso0: 0.1, peso1: 0.8, fase: f })
+    const p = pts[pts.length - 1]
+    if (rnd.chance(0.6)) galhoPts(est, [pts[2], V(pts[2].x * 1.05, pts[2].y * 0.5, pts[2].z * 1.05), V(pts[2].x * 1.06, -0.2, pts[2].z * 1.06)], 0.03, 0.025, { peso0: 0.3, peso1: 0.05, fase: f })
+    cacho(est, p.clone().add(V(0, 0.45, 0)), rnd.entre(1.1, 1.45), { fase: f })
+  }
+  cacho(est, topo.clone().add(V(0, 1.3, 0)), rnd.entre(1.4, 1.75), { fase: fase(rnd), peso: 0.8 })
+  return montar(est)
+}
+
+// MURICI: arbusto de restinga (1,5 a 2,5 m), poucos caules finos, cachos arredondados e espigas de flor amarela
+export function murici(rnd) {
+  const est = novaEstrutura(rnd, op(FOLHAGEM.murici, { tam: 0.55, quadrantes: [Q.media], dens: 0.6 }))
+  const n = 4 + Math.floor(rnd.entre(0, 2.99))
+  for (let i = 0; i < n; i++) {
+    const a = volta(rnd, i, n)
+    const f = fase(rnd)
+    const t = V(Math.cos(a) * rnd.entre(0.3, 0.8), rnd.entre(1.0, 1.7), Math.sin(a) * rnd.entre(0.3, 0.8))
+    galhoPts(est, [V(0, 0, 0), V(t.x * 0.6, t.y * 0.45, t.z * 0.6), t], 0.06, 0.03, { peso1: 0.7, fase: f })
+    cacho(est, t.clone().add(V(0, 0.15, 0)), rnd.entre(0.55, 0.75), { fase: f, topo: est.pal.acento })
+    cacho(est, V(t.x * 0.9, rnd.entre(0.45, 0.75), t.z * 0.9), rnd.entre(0.5, 0.7), { fase: f, peso: 0.6 })
+  }
+  return montar(est)
+}
+
+// GUAJIRU: moita baixa e densa de restinga, mais larga que alta (2 a 3 m por 1 m), folha arredondada verde-clara,
+// alguns frutos arroxeados
 export function guajiru(rnd) {
-  const partes = []
-  let s = rnd.entre(0, 100)
+  const est = novaEstrutura(rnd, op(FOLHAGEM.guajiru, { tam: 0.5, quadrantes: [Q.larga], dens: 0.6 }))
   const n = 5 + Math.floor(rnd.entre(0, 3.99))
   for (let i = 0; i < n; i++) {
     const a = rnd.entre(0, Math.PI * 2)
     const d = rnd.entre(0, 1.1)
     const r = rnd.entre(0.55, 0.85)
-    partes.push(cacho(r, V(Math.cos(a) * d, r * 0.55, Math.sin(a) * d), '#41623a', '#8fae5a', s++, { achatar: 0.7, topo: rnd.chance(0.3) ? '#6a3a5a' : null }))
+    cacho(est, V(Math.cos(a) * d, r * 0.55, Math.sin(a) * d), r, { fase: fase(rnd), achatar: 0.7, topo: rnd.chance(0.3) ? est.pal.acento : null })
   }
-  return mergeGeometries(partes)
-}
-
-// OITI (segunda leva, adiantado para as ruas): árvore de rua nativa da Mata Atlântica, tronco
-// reto, copa densa e arredondada, verde escuro. Substitui a "árvore genérica" das calçadas.
-export function oiti(rnd) {
-  const partes = []
-  const casca = '#5a4a3c'
-  const H = rnd.entre(2.2, 2.9)
-  const topo = V(rnd.entre(-0.2, 0.2), H, rnd.entre(-0.2, 0.2))
-  partes.push(...galhoCurvo([V(0, 0, 0), V(topo.x * 0.4, H * 0.6, topo.z * 0.4), topo], 0.24, 0.17, casca))
-  const pontas = []
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2 + rnd.entre(-0.4, 0.4)
-    const p = topo.clone().add(V(Math.cos(a) * rnd.entre(1.0, 1.6), rnd.entre(0.9, 1.5), Math.sin(a) * rnd.entre(1.0, 1.6)))
-    partes.push(...galhoCurvo([topo, p], 0.13, 0.06, casca))
-    pontas.push(p)
-  }
-  let s = rnd.entre(0, 100)
-  for (const p of pontas) partes.push(cacho(rnd.entre(1.1, 1.5), p.clone().add(V(0, 0.45, 0)), '#21452b', '#55823f', s++))
-  for (let i = 0; i < 3; i++) {
-    const a = rnd.entre(0, Math.PI * 2)
-    partes.push(cacho(rnd.entre(1.2, 1.6), topo.clone().add(V(Math.cos(a) * 0.6, rnd.entre(2.0, 2.6), Math.sin(a) * 0.6)), '#21452b', '#5f8f44', s++))
-  }
-  return mergeGeometries(partes)
+  fecharCopa(est)
+  return montar(est)
 }

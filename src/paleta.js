@@ -78,3 +78,17 @@ export const MARCOS = {
   mosaicoClaro: '#c9b38c',
   mosaicoEscuro: '#45413b',
 }
+
+// Folhagem e casca das árvores pintadas (21/10/2026; especies.js). Três valores por copa, como na pintura de
+// cenário dos conceitos aprovados (praca-ferreira, passeio-caio-prado): luz (topo ao sol, verde-oliva quente),
+// meio e sombra (o baixo da copa, verde frio puxado para o azul, nunca preto). Acento só onde a planta tem:
+// folha nova acobreada do cajueiro, flor do murici, fruto do guajiru.
+export const FOLHAGEM = {
+  oiti: { luz: '#8c9a48', meio: '#4c6e38', sombra: '#3e625c', casca: '#5c4b3d' },
+  ficus: { luz: '#94a050', meio: '#53743e', sombra: '#41625d', casca: '#8a8170' },
+  cajueiro: { luz: '#92a34a', meio: '#4a7236', sombra: '#3c5f56', casca: '#5e4636', acento: '#a8653c' },
+  mangue: { luz: '#8ca94e', meio: '#48793e', sombra: '#3a6159', casca: '#6b5544' },
+  carnauba: { luz: '#aab896', meio: '#7a956f', sombra: '#5f7a6e', casca: '#7a6a5c' },
+  murici: { luz: '#9aa955', meio: '#668843', sombra: '#4a6c55', casca: '#6b5240', acento: '#d9b04a' },
+  guajiru: { luz: '#a3b462', meio: '#76984f', sombra: '#527254', casca: '#6b5240', acento: '#6a3a5a' },
+}

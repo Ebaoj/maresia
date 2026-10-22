@@ -227,6 +227,30 @@ export const PADRAO = {
     duracaoPegada: 25,     // segundos até a pegada sumir na areia seca
     ventoCoqueiros: 1.0,   // quanto as folhas dos coqueiros e as roupas balançam
   },
+  // o vento das árvores (mundo/vento-arvores.js): um só, o alísio de leste, para todas as espécies e o coqueiro
+  vento: {
+    de: 110,               // de onde vem, em graus (0 norte, 90 leste, 180 sul): o alísio de lés-sudeste
+    forca: 1.0,            // força geral
+    rajada: 0.6,           // quanto as rajadas reforçam o vento (frentes que andam pelo chão)
+    rajadaVel: 1.1,        // velocidade com que as rajadas passam
+    tronco: 1.0,           // a árvore inteira inclinando e balançando devagar
+    galhos: 1.0,           // galhos e cachos, cada um na sua fase
+    folhas: 1.0,           // as folhas dos cartões tremulando
+  },
+  // as árvores pintadas (mundo/arvore-forma.js, especies.js, lod-arvores.js)
+  arvores: {
+    lodPerto: 65,          // m: até aqui os cartões de folha em tamanho cheio
+    lodLonge: 85,          // m: aqui eles já sumiram (encolhem no meio)
+    lodBloco: 90,          // m: bloco de árvores mais longe que isso troca para a copa simples
+    borda: 0.18,           // luz do céu na borda de cima da copa
+    bordaCor: '#cfe3ee',   // a cor dessa luz
+    transluz: 0.6,         // contraluz: com o sol atrás, a folha deixa a luz passar e acende quente
+    esfera: 0.72,          // quanto a luz lê a copa inteira como um volume só (0 = cada cacho uma bola); recarregar
+    oclusao: 0.75,         // miolo da copa mais escuro (1 = sem); recarregar
+    cartaoTam: 1.0,        // tamanho dos cartões de folha; recarregar
+    cartaoDens: 1.0,       // quantidade de cartões; recarregar
+    variacao: 1.0,         // cada árvore um pouco diferente na cor; recarregar
+  },
   mar: {
     corFundo: '#0b4a8c',
     corRaso: '#25d0c4',
