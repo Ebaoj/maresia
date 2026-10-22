@@ -16,7 +16,8 @@ import { BONDES, LUGARES } from './mapa1932.js'
 import { RUAS } from './casario1932.js'
 import { dentroDaPraca, distanciaDaBorda } from './praca1932.js'
 import { ocupacao1932 } from './ocupacao1932.js'
-import { esticamentoJogo, FATOR_PRACA } from './fortaleza1932.js'
+import { esticamentoJogo, FATOR_PRACA, ll } from './fortaleza1932.js'
+import linhasReais from './bondes1932.json'
 
 // Ligacao entre ruas: a ponta de uma rua se liga a ponta de outra quando estao perto
 // (22 unidades de jogo ~= 60 m) e a rua continua quase em linha reta (a direcao de
@@ -258,65 +259,94 @@ function comprimento(pontos) {
 
 // ---------- as rotas das linhas ----------
 
-// As rotas: cada linha da Light sai da borda da praca e segue as ruas de verdade.
-// O trilho nunca entra na praca (ela era o jardim e o coreto): se a rota cutting
-// atravessar, o pedaco de dentro e descartado.
-export function rotasDosBondes() {
-  const nos = construirGrafo()
-  // as origens: as pontas de rua na borda da praca
-  const origens = []
-  for (let k = 0; k < nos.length; k++) {
-    const borda = Math.abs(distanciaDaBorda(nos[k].x, nos[k].z))
-    if (borda < NA_BORDA) origens.push({ no: k, custo: borda })
-  }
-  const { dist, ant } = dijkstra(nos, origens)
+// As linhas de verdade (22/10/2026): o traçado das linhas da Light na Planta da cidade de 1936, que desenha a
+// rede com o símbolo "Linhas de Bond" (a de 1931-1932 não mostra o trilho legível no scan), georreferenciado contra
+// os lotes de 1932 e posto no meio da rua, entre as testadas (src/mundo/bondes1932.json; as distâncias de 1918
+// batem: Benfica 2.630 m na fonte, 2.653 m no traçado). Até aqui a rota era o caminho mais curto no grafo das
+// testadas: ia e voltava entre as duas faces da rua, passava por onde não havia bonde e punha poste e fio por
+// toda parte. Entram só as linhas lidas na planta (confiança "D"); as inferidas (a volta do laço Joaquim Távora,
+// o Matadouro, o Mororó, o acesso à usina) ficam no dado e fora do desenho.
 
+const M_LON = 111320 * Math.cos((-3.7275 * Math.PI) / 180)
+const M_LAT = 110574
+const PASSO_M = 3 // a linha adensada a cada 3 m de verdade
+const JUNTO = 2.5 // dois trilhos a menos disto um do outro são o mesmo trilho (unidades; o centro está em 1:1)
+
+function adensar(tracado) {
+  const out = []
+  for (let i = 0; i < tracado.length - 1; i++) {
+    const [a, b] = [tracado[i], tracado[i + 1]]
+    const m = Math.hypot((b[0] - a[0]) * M_LON, (b[1] - a[1]) * M_LAT)
+    const n = Math.max(1, Math.ceil(m / PASSO_M))
+    for (let k = 0; k < n; k++) out.push([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n])
+  }
+  out.push(tracado[tracado.length - 1])
+  return out.map(([lon, lat]) => ll(lon, lat))
+}
+
+// As rotas: cada linha da planta, com o trecho que ela divide com uma linha já desenhada tirado (o tronco da
+// Floriano Peixoto e da Guilherme Rocha serve várias linhas: um trilho só). O trilho nunca entra na praça (ela era
+// o jardim): o pedaço de dentro é descartado.
+export function rotasDosBondes() {
   const linhas = []
   const paradas = []
   const relatorio = []
-  for (const b of BONDES) {
-    const fim = b.traco[b.traco.length - 1]
-    // o no mais proximo do destino (a rede nao sempre chega ate a ponta: a linha
-    // da Praia, por exemplo, morre na orla, onde a planta de 1932 nao tem testada)
-    const raioFim = 40 * esticamentoJogo(fim[0], fim[1])
-    let melhor = -1
-    let melhorDist = Infinity
-    for (let k = 0; k < nos.length; k++) {
-      if (!Number.isFinite(dist[k])) continue
-      const d = Math.hypot(nos[k].x - fim[0], nos[k].z - fim[1])
-      if (d < raioFim && d < melhorDist) { melhorDist = d; melhor = k }
-    }
-    if (melhor < 0) {
-      // sem no perto: fica com o alcancavel mais proximo da ponta
-      for (let k = 0; k < nos.length; k++) {
-        if (!Number.isFinite(dist[k])) continue
-        const d = Math.hypot(nos[k].x - fim[0], nos[k].z - fim[1])
-        if (d < melhorDist) { melhorDist = d; melhor = k }
+  const feitos = [] // os trechos já desenhados (para não dobrar o trilho)
+  const CEL = 16
+  const grade = new Map()
+  const perto = (x, z) => {
+    const ci = Math.floor(x / CEL)
+    const cj = Math.floor(z / CEL)
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        for (const [ax, az, bx, bz] of grade.get(`${ci + i},${cj + j}`) || []) {
+          const vx = bx - ax
+          const vz = bz - az
+          const t = Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / (vx * vx + vz * vz || 1)))
+          if (Math.hypot(x - ax - vx * t, z - az - vz * t) < JUNTO) return true
+        }
       }
     }
-    if (melhor < 0) { relatorio.push({ nome: b.nome, erro: 'sem caminho' }); continue }
-    const crua = rotaDoCaminho(nos, ant, melhor)
-    if (crua.length < 2) { relatorio.push({ nome: b.nome, erro: 'caminho vazio' }); continue }
-    // o trilho no meio da pista
-    const pontos = crua.map(([x, z, nx, nz]) => paraOMeioDaPista(x, z, nx, nz))
-    // o trilho nao entra na praca: o pedaco de dentro e descartado
-    const pecas = foraDaPraca(pontos)
-    if (!pecas.length) { relatorio.push({ nome: b.nome, erro: 'rota dentro da praca' }); continue }
-    for (const peca of pecas) linhas.push(peca)
-    const primeira = pecas[0]
-    const ultima = pecas[pecas.length - 1]
-    paradas.push({ ponto: primeira[0], direcao: direcaoDoTrecho(primeira, 0), nome: 'Praça do Ferreira' })
-    paradas.push({ ponto: ultima[ultima.length - 1], direcao: direcaoDoTrecho(ultima, ultima.length - 1), nome: b.nome })
-    relatorio.push({
-      nome: b.nome,
-      pontos: pecas.reduce((t, p) => t + p.length, 0),
-      pedacos: pecas.length,
-      comprimento: Math.round(comprimento(primeira)),
-      sobra: Math.round(melhorDist), // quanto falta para a ponta nominal do dado
-      comeca: primeira[0].map((v) => Math.round(v)),
-      termina: ultima[ultima.length - 1].map((v) => Math.round(v)),
-    })
+    return false
   }
+  const guardar = (pts) => {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const seg = [pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]]
+      feitos.push(seg)
+      const k = `${Math.floor(pts[i][0] / CEL)},${Math.floor(pts[i][1] / CEL)}`
+      if (!grade.has(k)) grade.set(k, [])
+      grade.get(k).push(seg)
+    }
+  }
+  for (const l of linhasReais.linhas) {
+    if (l.confianca !== 'D') { relatorio.push({ nome: l.nome, fora: 'inferida (H): no dado, fora do desenho' }); continue }
+    const todos = adensar(l.tracado)
+    // os pedaços que ainda não têm trilho (com um ponto de emenda no trilho que já existe)
+    const pedacos = []
+    let atual = []
+    for (let i = 0; i < todos.length; i++) {
+      const p = todos[i]
+      if (perto(p[0], p[1])) {
+        if (atual.length) { atual.push(p); if (atual.length > 2) pedacos.push(atual); atual = [] }
+        continue
+      }
+      if (!atual.length && i > 0) atual.push(todos[i - 1])
+      atual.push(p)
+    }
+    if (atual.length > 2) pedacos.push(atual)
+    let n = 0
+    for (const pedaco of pedacos) {
+      // a linha da planta já vem adensada e lisa: sem o canto arredondado da rota do grafo
+      for (const peca of foraDaPraca(pedaco, false)) { linhas.push(peca); n++ }
+    }
+    for (const pedaco of pedacos) guardar(pedaco)
+    const fim = todos[todos.length - 1]
+    paradas.push({ ponto: fim, direcao: direcaoDoTrecho(todos, todos.length - 1), nome: l.nome.split(' (')[0] })
+    relatorio.push({ nome: l.nome, pedacos: n, comprimento: Math.round(comprimento(todos)), termina: fim.map((v) => Math.round(v)) })
+  }
+  // a parada da Praça do Ferreira: na borda da praça, onde as linhas saem
+  const saida = linhas.find((p) => p.length > 1)
+  if (saida) paradas.push({ ponto: saida[0], direcao: direcaoDoTrecho(saida, 0), nome: 'Praça do Ferreira' })
 
   // as paradas nos lugares com nome que o trilho passa perto
   for (const [chave, lugar] of Object.entries(LUGARES)) {
@@ -338,20 +368,48 @@ export function rotasDosBondes() {
   return { linhas, paradas, relatorio }
 }
 
+// A rota antiga (o caminho mais curto no grafo das testadas, até 22/10/2026), para comparação e diagnóstico
+export function rotasDoGrafo() {
+  const nos = construirGrafo()
+  const origens = []
+  for (let k = 0; k < nos.length; k++) {
+    const borda = Math.abs(distanciaDaBorda(nos[k].x, nos[k].z))
+    if (borda < NA_BORDA) origens.push({ no: k, custo: borda })
+  }
+  const { dist, ant } = dijkstra(nos, origens)
+  const linhas = []
+  for (const b of BONDES) {
+    const fim = b.traco[b.traco.length - 1]
+    let melhor = -1
+    let melhorDist = Infinity
+    for (let k = 0; k < nos.length; k++) {
+      if (!Number.isFinite(dist[k])) continue
+      const d = Math.hypot(nos[k].x - fim[0], nos[k].z - fim[1])
+      if (d < melhorDist) { melhorDist = d; melhor = k }
+    }
+    if (melhor < 0) continue
+    const crua = rotaDoCaminho(nos, ant, melhor)
+    if (crua.length < 2) continue
+    for (const peca of foraDaPraca(crua.map(([x, z, nx, nz]) => paraOMeioDaPista(x, z, nx, nz)))) linhas.push(peca)
+  }
+  return { linhas }
+}
+
 // a parte da rota que fica fora da praca (a praca e o jardim e o coreto: o bonde
 // passava pelas ruas do entorno). Se a rota atravessar a praca, ela quebra em
 // pedacos: o trilho nao existe dentro da praca.
-function foraDaPraca(pontos) {
+function foraDaPraca(pontos, arredonda = true) {
+  const f = arredonda ? arredondar : (x) => x
   const pecas = []
   let atual = []
   for (const p of pontos) {
     if (dentroDaPraca(p[0], p[1])) {
-      if (atual.length > 1) pecas.push(arredondar(atual))
+      if (atual.length > 1) pecas.push(f(atual))
       atual = []
       continue
     }
     atual.push(p)
   }
-  if (atual.length > 1) pecas.push(arredondar(atual))
+  if (atual.length > 1) pecas.push(f(atual))
   return pecas
 }

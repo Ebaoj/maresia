@@ -1,0 +1,2712 @@
+{
+ "fonte": "Planta da cidade de Fortaleza, levantada na administração revolucionária 1931-1932 (1:5000; scan Wikimedia Commons 1624x918, CC0) e Planta da cidade de Fortaleza de 1936 (1:10000, scan 983x856), cuja legenda tem \"Linhas de Bond\" em vermelho fino. Eixos de rua do OpenStreetMap (Overpass, 22/10/2026) e lotes oficiais de 1932 (Prefeitura de Fortaleza, camada Evolução Urbana 1932, via src/mundo/mapa1932-lotes.json e mapa1932-malha.png) para assentar o traçado no meio da rua. Distâncias de 1916-1918 do Almanach.",
+ "aviso_planta_1931_1932": "Na planta de 1931-1932 o símbolo \"Linha de Bondes\" (traço preto contínuo) não é legível nesta resolução (4,9 m por pixel): as ruas são desenhadas com traço fino duplo e o traço do bonde se confunde com elas e com os prédios. Teste objetivo: no eixo das ruas que têm bonde na planta de 1936 a planta 1931-32 tem mais tinta que no eixo das outras ruas (mediana 12.9 contra 6.9, n=57 e 608, Mann-Whitney p=0,0002), mas o perfil transversal não mostra um traço central resolvido. Por isso o traçado foi lido na planta de 1936 (mesma rede da Light, 4 anos depois) e conferido com as distâncias de 1916-1918.",
+ "georreferencia": {
+  "metodo": "Refeita do zero para as duas plantas. 1931-32: afim inicial por busca exaustiva de escala/rotação/translação maximizando a correlação (filtro DoG) entre a tinta escura do scan e os lotes de 1932 rasterizados (3 m), seguida de 4 passadas de casamento por janelas (160 a 96 px de 3 m, busca de ±20 a ±8 px, filtro de vizinhança) e thin-plate spline suavizada sobre os pontos de controle resultantes (cerca de 570) mais pontos do afim fora da área dos lotes. 1936: afim inicial por 5 feições (Lagoas Porangabuçu e Tauape, lago do Parque da Liberdade) transportadas pela transformação de 1931-32, depois o mesmo refinamento contra os lotes (cerca de 640 pontos), com o vermelho excluído da tinta. O traço vermelho do bonde nunca entrou no ajuste.",
+  "residuo_m": {
+   "planta_1931_1932": {
+    "janelas": 244,
+    "mediana": 3.0,
+    "RMS": 20.6
+   },
+   "planta_1936": {
+    "janelas": 253,
+    "mediana": 3.0,
+    "RMS": 19.3
+   },
+   "conferencia_independente": {
+    "vermelho_1936_vs_eixo_da_rua": "distância mediana entre o traçado final e o traço vermelho de 1936: 3 a 12 m por linha (ver verificacao de cada linha)",
+    "ferrovia1932_json_vs_planta_1931_32": {
+     "tronco": 36.0,
+     "sul": 19.0,
+     "norte": 10.8,
+     "oficinas": 13.4,
+     "desvio_oficinas": 46.9,
+     "porto": 37.1,
+     "ponte": 50.9,
+     "alfandega": 46.9,
+     "quebramar": 27.2
+    },
+    "nota": "Mediana de 3 m é o limite do pixel de 3 m; o RMS de cerca de 20 m vem das janelas piores. A ferrovia do outro agente cai a 11-19 m da tinta nas linhas longas do interior (Norte, Sul, Oficinas) e a 27-51 m nas da costa e do pátio (Ponte, Alfândega, desvio), onde a busca pela tinta é ambígua; vale só para a imagem bondes-sobre-planta.png. Incerteza honesta do traço do bonde: o traçado final está no vão entre as frentes dos lotes de 1932 (erro de 2 a 5 m na rua certa); o risco é de rua errada, não de posição, e ele está nas notas de cada linha."
+   }
+  }
+ },
+ "confianca_legenda": {
+  "D": "lido diretamente no símbolo de bonde de uma planta (aqui a de 1936, ver aviso)",
+  "H": "inferido dos fatos (nomes de rua, distâncias de 1916-1918)"
+ },
+ "nao_localizadas": {
+  "Estação (2.450 m)": "linha de 1916 distinta da Via-Férrea; nenhum traço vermelho a mais na área da estação e nenhum fato de percurso. Não desenhada.",
+  "Praça dos Coelhos": "local da praça não achado nas fontes; o ramal major_facundo_sul é candidato, sem prova."
+ },
+ "linhas": [
+  {
+   "id": "praia",
+   "nome": "Praia (Alfândega e Ponte Metálica)",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Floriano Peixoto",
+    "Travessa Crato",
+    "Rua Conde D'Eu",
+    "Avenida Alberto Nepomuceno",
+    "Rua Pessoa Anta",
+    "Avenida Almirante Tamandaré"
+   ],
+   "comprimento_m": 1356,
+   "distancia_1918_m": 1530,
+   "nota": "Lido no símbolo de bonde da planta de 1936: sai da Praça do Ferreira pela Floriano Peixoto para o norte, Travessa Crato, Conde D'Eu, desce o vale do Pajeú pela atual Alberto Nepomuceno, segue a Pessoa Anta para leste passando a Alfândega (Pessoa Anta 287) e sobe a Almirante Tamandaré rumo à Ponte Metálica. No trecho do Pajeú (Conde D'Eu a Pessoa Anta) o vermelho do bonde se mistura às curvas de nível: o traçado ali segue a única rua contínua que o vermelho acompanha. Há vermelho ambíguo continuando pela Almirante Jaceguai e José Avelino para leste (não incluído).",
+   "verificacao": {
+    "frac_em_lotes": 0.0007,
+    "m_em_lotes": 1,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.83,
+    "dist_mediana_ao_vermelho_1936_m": 6.0
+   },
+   "tracado": [
+    [
+     -38.527101,
+     -3.727031
+    ],
+    [
+     -38.527025,
+     -3.726857
+    ],
+    [
+     -38.526805,
+     -3.72656
+    ],
+    [
+     -38.526722,
+     -3.726388
+    ],
+    [
+     -38.526563,
+     -3.725839
+    ],
+    [
+     -38.526439,
+     -3.72548
+    ],
+    [
+     -38.5264,
+     -3.725178
+    ],
+    [
+     -38.526253,
+     -3.724884
+    ],
+    [
+     -38.526253,
+     -3.724776
+    ],
+    [
+     -38.526169,
+     -3.724793
+    ],
+    [
+     -38.52597,
+     -3.72488
+    ],
+    [
+     -38.525753,
+     -3.724909
+    ],
+    [
+     -38.525319,
+     -3.725067
+    ],
+    [
+     -38.525195,
+     -3.72496
+    ],
+    [
+     -38.525106,
+     -3.724761
+    ],
+    [
+     -38.525042,
+     -3.724524
+    ],
+    [
+     -38.524926,
+     -3.724221
+    ],
+    [
+     -38.524833,
+     -3.724087
+    ],
+    [
+     -38.524578,
+     -3.723609
+    ],
+    [
+     -38.523706,
+     -3.722078
+    ],
+    [
+     -38.523538,
+     -3.721799
+    ],
+    [
+     -38.523417,
+     -3.721649
+    ],
+    [
+     -38.523362,
+     -3.721494
+    ],
+    [
+     -38.523308,
+     -3.721403
+    ],
+    [
+     -38.522753,
+     -3.721189
+    ],
+    [
+     -38.522484,
+     -3.721162
+    ],
+    [
+     -38.522219,
+     -3.721103
+    ],
+    [
+     -38.521898,
+     -3.72106
+    ],
+    [
+     -38.521597,
+     -3.72107
+    ],
+    [
+     -38.521382,
+     -3.721046
+    ],
+    [
+     -38.520907,
+     -3.720931
+    ],
+    [
+     -38.519997,
+     -3.720806
+    ],
+    [
+     -38.519898,
+     -3.720646
+    ],
+    [
+     -38.519918,
+     -3.720052
+    ],
+    [
+     -38.519884,
+     -3.719617
+    ]
+   ]
+  },
+  {
+   "id": "outeiro",
+   "nome": "Outeiro (Santos Dumont)",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Floriano Peixoto",
+    "Travessa Crato",
+    "Rua Sobral",
+    "Rua São José",
+    "Rua Visconde de Saboia",
+    "Rua Coronel Ferraz",
+    "Avenida Santos Dumont"
+   ],
+   "comprimento_m": 2622,
+   "distancia_1918_m": 2500,
+   "nota": "Lido na planta de 1936: Floriano Peixoto norte, Travessa Crato, Sobral, desce a São José, Visconde de Saboia e Coronel Ferraz, e segue toda a Avenida Santos Dumont para leste até perto da atual Praça Luíza Távora, onde o vermelho acaba. O comprimento bate com os 2.500 m de 1918.",
+   "verificacao": {
+    "frac_em_lotes": 0.0004,
+    "m_em_lotes": 1,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.71,
+    "dist_mediana_ao_vermelho_1936_m": 6.7
+   },
+   "tracado": [
+    [
+     -38.527101,
+     -3.727031
+    ],
+    [
+     -38.527024,
+     -3.726857
+    ],
+    [
+     -38.526806,
+     -3.72656
+    ],
+    [
+     -38.526723,
+     -3.726387
+    ],
+    [
+     -38.52644,
+     -3.725479
+    ],
+    [
+     -38.526397,
+     -3.725179
+    ],
+    [
+     -38.526255,
+     -3.724883
+    ],
+    [
+     -38.526253,
+     -3.724776
+    ],
+    [
+     -38.52597,
+     -3.724878
+    ],
+    [
+     -38.525753,
+     -3.72491
+    ],
+    [
+     -38.525293,
+     -3.725067
+    ],
+    [
+     -38.524992,
+     -3.725074
+    ],
+    [
+     -38.524681,
+     -3.725168
+    ],
+    [
+     -38.524378,
+     -3.725156
+    ],
+    [
+     -38.523775,
+     -3.725265
+    ],
+    [
+     -38.523744,
+     -3.725276
+    ],
+    [
+     -38.523656,
+     -3.725397
+    ],
+    [
+     -38.523643,
+     -3.725604
+    ],
+    [
+     -38.52368,
+     -3.725905
+    ],
+    [
+     -38.523613,
+     -3.726228
+    ],
+    [
+     -38.523634,
+     -3.726338
+    ],
+    [
+     -38.523737,
+     -3.72656
+    ],
+    [
+     -38.52365,
+     -3.726855
+    ],
+    [
+     -38.523583,
+     -3.727252
+    ],
+    [
+     -38.523589,
+     -3.727297
+    ],
+    [
+     -38.523582,
+     -3.727313
+    ],
+    [
+     -38.523395,
+     -3.727388
+    ],
+    [
+     -38.523227,
+     -3.7274
+    ],
+    [
+     -38.523144,
+     -3.727424
+    ],
+    [
+     -38.523041,
+     -3.727478
+    ],
+    [
+     -38.523032,
+     -3.727511
+    ],
+    [
+     -38.523203,
+     -3.727978
+    ],
+    [
+     -38.523276,
+     -3.728112
+    ],
+    [
+     -38.523087,
+     -3.728182
+    ],
+    [
+     -38.522073,
+     -3.728472
+    ],
+    [
+     -38.521659,
+     -3.728514
+    ],
+    [
+     -38.521553,
+     -3.728539
+    ],
+    [
+     -38.521408,
+     -3.728616
+    ],
+    [
+     -38.521216,
+     -3.72881
+    ],
+    [
+     -38.521102,
+     -3.728894
+    ],
+    [
+     -38.520861,
+     -3.728942
+    ],
+    [
+     -38.520607,
+     -3.729033
+    ],
+    [
+     -38.520406,
+     -3.729026
+    ],
+    [
+     -38.5203,
+     -3.729049
+    ],
+    [
+     -38.520017,
+     -3.729227
+    ],
+    [
+     -38.519647,
+     -3.729315
+    ],
+    [
+     -38.519034,
+     -3.729525
+    ],
+    [
+     -38.517873,
+     -3.730045
+    ],
+    [
+     -38.517634,
+     -3.730105
+    ],
+    [
+     -38.517128,
+     -3.73018
+    ],
+    [
+     -38.516411,
+     -3.730416
+    ],
+    [
+     -38.51592,
+     -3.730469
+    ],
+    [
+     -38.515674,
+     -3.730591
+    ],
+    [
+     -38.515402,
+     -3.730628
+    ],
+    [
+     -38.515077,
+     -3.730764
+    ],
+    [
+     -38.508883,
+     -3.732776
+    ]
+   ]
+  },
+  {
+   "id": "leoes",
+   "nome": "Ligação pela Praça dos Leões (General Bezerril)",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Guilherme Rocha",
+    "Rua General Bezerril",
+    "Travessa Crato"
+   ],
+   "comprimento_m": 414,
+   "distancia_1918_m": null,
+   "nota": "Lido na planta de 1936: Guilherme Rocha a leste da Praça do Ferreira, General Bezerril para o norte passando a Praça dos Leões (General Tibúrcio), até a Travessa Crato, onde encontra o tronco das linhas Praia e Outeiro. Paralela à Floriano Peixoto: provavelmente o outro sentido do mesmo laço (ida por uma rua, volta pela outra), o que a planta não diz.",
+   "verificacao": {
+    "frac_em_lotes": 0.0,
+    "m_em_lotes": 0,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.96,
+    "dist_mediana_ao_vermelho_1936_m": 3.0
+   },
+   "tracado": [
+    [
+     -38.527048,
+     -3.727233
+    ],
+    [
+     -38.52679,
+     -3.727314
+    ],
+    [
+     -38.526743,
+     -3.727344
+    ],
+    [
+     -38.526675,
+     -3.727431
+    ],
+    [
+     -38.526642,
+     -3.727414
+    ],
+    [
+     -38.526577,
+     -3.72732
+    ],
+    [
+     -38.526534,
+     -3.727078
+    ],
+    [
+     -38.52643,
+     -3.726712
+    ],
+    [
+     -38.526389,
+     -3.726413
+    ],
+    [
+     -38.526327,
+     -3.726145
+    ],
+    [
+     -38.526277,
+     -3.726018
+    ],
+    [
+     -38.526156,
+     -3.72586
+    ],
+    [
+     -38.526111,
+     -3.725761
+    ],
+    [
+     -38.525936,
+     -3.725247
+    ],
+    [
+     -38.525916,
+     -3.724996
+    ],
+    [
+     -38.525851,
+     -3.724878
+    ],
+    [
+     -38.525829,
+     -3.724853
+    ],
+    [
+     -38.525794,
+     -3.724864
+    ],
+    [
+     -38.525633,
+     -3.724948
+    ],
+    [
+     -38.525329,
+     -3.725059
+    ]
+   ]
+  },
+  {
+   "id": "via_ferrea",
+   "nome": "Via-Férrea (Estação Central)",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Guilherme Rocha",
+    "Rua Barão do Rio Branco",
+    "Rua Doutor João Moreira"
+   ],
+   "comprimento_m": 1006,
+   "distancia_1918_m": 930,
+   "nota": "Lido na planta de 1936: Guilherme Rocha uma quadra a oeste, Barão do Rio Branco (Rua Formosa) para o norte, Dr. João Moreira (Rua da Misericórdia) para oeste passando a Cadeia Pública, e um laço na Praça Castro Carreira em frente à Estação. O vermelho é forte na Barão do Rio Branco e no laço; fraco na Dr. João Moreira entre a Barão e a Senador Pompeu. Comprimento bate com os 930 m de 1918.",
+   "verificacao": {
+    "frac_em_lotes": 0.0,
+    "m_em_lotes": 0,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.72,
+    "dist_mediana_ao_vermelho_1936_m": 6.7
+   },
+   "tracado": [
+    [
+     -38.527718,
+     -3.727004
+    ],
+    [
+     -38.527897,
+     -3.726942
+    ],
+    [
+     -38.528327,
+     -3.726883
+    ],
+    [
+     -38.528385,
+     -3.726838
+    ],
+    [
+     -38.528322,
+     -3.726634
+    ],
+    [
+     -38.528183,
+     -3.726365
+    ],
+    [
+     -38.528199,
+     -3.726075
+    ],
+    [
+     -38.528167,
+     -3.725914
+    ],
+    [
+     -38.528129,
+     -3.725812
+    ],
+    [
+     -38.528066,
+     -3.725718
+    ],
+    [
+     -38.527952,
+     -3.725413
+    ],
+    [
+     -38.527859,
+     -3.725273
+    ],
+    [
+     -38.527489,
+     -3.723995
+    ],
+    [
+     -38.527443,
+     -3.723753
+    ],
+    [
+     -38.527327,
+     -3.723506
+    ],
+    [
+     -38.527116,
+     -3.722862
+    ],
+    [
+     -38.527151,
+     -3.722788
+    ],
+    [
+     -38.527167,
+     -3.722768
+    ],
+    [
+     -38.527319,
+     -3.722711
+    ],
+    [
+     -38.527732,
+     -3.722581
+    ],
+    [
+     -38.52805,
+     -3.722423
+    ],
+    [
+     -38.528396,
+     -3.72235
+    ],
+    [
+     -38.528641,
+     -3.722233
+    ],
+    [
+     -38.528851,
+     -3.722179
+    ],
+    [
+     -38.529076,
+     -3.722086
+    ],
+    [
+     -38.529347,
+     -3.722044
+    ],
+    [
+     -38.529813,
+     -3.721903
+    ],
+    [
+     -38.53019,
+     -3.721904
+    ],
+    [
+     -38.530445,
+     -3.722058
+    ],
+    [
+     -38.530564,
+     -3.722386
+    ],
+    [
+     -38.530592,
+     -3.722629
+    ]
+   ]
+  },
+  {
+   "id": "jacarecanga",
+   "nome": "Jacarecanga (Guilherme Rocha e Filomeno Gomes), provável linha Fernandes Vieira",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Guilherme Rocha",
+    "Avenida Filomeno Gomes"
+   ],
+   "comprimento_m": 1960,
+   "distancia_1918_m": 1800,
+   "nota": "Traçado lido na planta de 1936: toda a Guilherme Rocha para oeste até a atual Avenida Filomeno Gomes, e por ela para o norte até perto da Rua Aprendizes Marinheiro, onde o vermelho acaba. O nome é H: o comprimento (cerca de 1.960 m) é o que mais se aproxima dos 1.800 m da linha Fernandes Vieira de 1918; não achei fonte que diga que a Filomeno Gomes se chamava Fernandes Vieira.",
+   "verificacao": {
+    "frac_em_lotes": 0.0,
+    "m_em_lotes": 0,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.69,
+    "dist_mediana_ao_vermelho_1936_m": 9.0
+   },
+   "tracado": [
+    [
+     -38.527718,
+     -3.727004
+    ],
+    [
+     -38.527897,
+     -3.726942
+    ],
+    [
+     -38.528145,
+     -3.726919
+    ],
+    [
+     -38.528463,
+     -3.72685
+    ],
+    [
+     -38.529354,
+     -3.726531
+    ],
+    [
+     -38.529722,
+     -3.726437
+    ],
+    [
+     -38.529872,
+     -3.726376
+    ],
+    [
+     -38.530081,
+     -3.72623
+    ],
+    [
+     -38.530337,
+     -3.726142
+    ],
+    [
+     -38.530516,
+     -3.726115
+    ],
+    [
+     -38.530591,
+     -3.726172
+    ],
+    [
+     -38.530668,
+     -3.72618
+    ],
+    [
+     -38.530957,
+     -3.726108
+    ],
+    [
+     -38.531234,
+     -3.725999
+    ],
+    [
+     -38.531546,
+     -3.725904
+    ],
+    [
+     -38.531668,
+     -3.725801
+    ],
+    [
+     -38.532761,
+     -3.725496
+    ],
+    [
+     -38.533376,
+     -3.725291
+    ],
+    [
+     -38.533591,
+     -3.725166
+    ],
+    [
+     -38.533943,
+     -3.725023
+    ],
+    [
+     -38.534333,
+     -3.724913
+    ],
+    [
+     -38.534548,
+     -3.724787
+    ],
+    [
+     -38.534961,
+     -3.724745
+    ],
+    [
+     -38.535349,
+     -3.724541
+    ],
+    [
+     -38.535591,
+     -3.724497
+    ],
+    [
+     -38.536186,
+     -3.72432
+    ],
+    [
+     -38.53627,
+     -3.724315
+    ],
+    [
+     -38.536478,
+     -3.724345
+    ],
+    [
+     -38.536584,
+     -3.724323
+    ],
+    [
+     -38.537214,
+     -3.723985
+    ],
+    [
+     -38.537498,
+     -3.723898
+    ],
+    [
+     -38.537727,
+     -3.723902
+    ],
+    [
+     -38.537861,
+     -3.723875
+    ],
+    [
+     -38.538039,
+     -3.72381
+    ],
+    [
+     -38.538196,
+     -3.723683
+    ],
+    [
+     -38.538293,
+     -3.723632
+    ],
+    [
+     -38.538449,
+     -3.723587
+    ],
+    [
+     -38.538797,
+     -3.723524
+    ],
+    [
+     -38.538865,
+     -3.723472
+    ],
+    [
+     -38.53898,
+     -3.723293
+    ],
+    [
+     -38.539074,
+     -3.723234
+    ],
+    [
+     -38.539323,
+     -3.723217
+    ],
+    [
+     -38.540315,
+     -3.723037
+    ],
+    [
+     -38.540826,
+     -3.722848
+    ],
+    [
+     -38.541098,
+     -3.722621
+    ],
+    [
+     -38.541156,
+     -3.722163
+    ],
+    [
+     -38.541172,
+     -3.721754
+    ],
+    [
+     -38.541213,
+     -3.721568
+    ],
+    [
+     -38.541166,
+     -3.721315
+    ],
+    [
+     -38.541258,
+     -3.721081
+    ],
+    [
+     -38.541286,
+     -3.720893
+    ],
+    [
+     -38.541358,
+     -3.720656
+    ],
+    [
+     -38.541373,
+     -3.720357
+    ],
+    [
+     -38.5415,
+     -3.719361
+    ]
+   ]
+  },
+  {
+   "id": "benfica",
+   "nome": "Benfica",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Guilherme Rocha",
+    "Rua General Sampaio",
+    "Avenida da Universidade",
+    "Avenida 13 de Maio"
+   ],
+   "comprimento_m": 2653,
+   "distancia_1918_m": 2630,
+   "nota": "Lido na planta de 1936: Guilherme Rocha para oeste até a General Sampaio, General Sampaio para o sul (passa a Praça José de Alencar e a Praça da Bandeira), Avenida da Universidade (então Visconde de Cauípe) para sudoeste até Benfica e, no fim, vira para sudeste pela Avenida 13 de Maio até perto da Gentilândia. Na General Sampaio entre a Liberato Barroso e a Duque de Caxias o vermelho é fraco. Comprimento bate com os 2.630 m de 1918. A linha vermelha grossa que segue a sudoeste é a estrada de rodagem de Parangaba, não bonde.",
+   "verificacao": {
+    "frac_em_lotes": 0.0,
+    "m_em_lotes": 0,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.74,
+    "dist_mediana_ao_vermelho_1936_m": 4.2
+   },
+   "tracado": [
+    [
+     -38.527718,
+     -3.727006
+    ],
+    [
+     -38.527896,
+     -3.726941
+    ],
+    [
+     -38.528118,
+     -3.726925
+    ],
+    [
+     -38.528438,
+     -3.726858
+    ],
+    [
+     -38.529354,
+     -3.72653
+    ],
+    [
+     -38.529747,
+     -3.726429
+    ],
+    [
+     -38.529873,
+     -3.726379
+    ],
+    [
+     -38.53008,
+     -3.726228
+    ],
+    [
+     -38.530311,
+     -3.72615
+    ],
+    [
+     -38.530524,
+     -3.726107
+    ],
+    [
+     -38.530626,
+     -3.72616
+    ],
+    [
+     -38.530846,
+     -3.726832
+    ],
+    [
+     -38.53102,
+     -3.727545
+    ],
+    [
+     -38.531136,
+     -3.727819
+    ],
+    [
+     -38.53122,
+     -3.728077
+    ],
+    [
+     -38.531245,
+     -3.728381
+    ],
+    [
+     -38.531357,
+     -3.728631
+    ],
+    [
+     -38.531367,
+     -3.728826
+    ],
+    [
+     -38.531428,
+     -3.729062
+    ],
+    [
+     -38.531526,
+     -3.729599
+    ],
+    [
+     -38.531629,
+     -3.72988
+    ],
+    [
+     -38.531758,
+     -3.730039
+    ],
+    [
+     -38.531797,
+     -3.730112
+    ],
+    [
+     -38.531791,
+     -3.730341
+    ],
+    [
+     -38.531945,
+     -3.730635
+    ],
+    [
+     -38.531963,
+     -3.730828
+    ],
+    [
+     -38.531996,
+     -3.73096
+    ],
+    [
+     -38.532314,
+     -3.731828
+    ],
+    [
+     -38.532325,
+     -3.731938
+    ],
+    [
+     -38.532297,
+     -3.732115
+    ],
+    [
+     -38.532312,
+     -3.732223
+    ],
+    [
+     -38.532448,
+     -3.732524
+    ],
+    [
+     -38.532563,
+     -3.732886
+    ],
+    [
+     -38.532647,
+     -3.733313
+    ],
+    [
+     -38.532849,
+     -3.734018
+    ],
+    [
+     -38.532917,
+     -3.734174
+    ],
+    [
+     -38.533021,
+     -3.734269
+    ],
+    [
+     -38.533136,
+     -3.73442
+    ],
+    [
+     -38.533285,
+     -3.734541
+    ],
+    [
+     -38.533449,
+     -3.734721
+    ],
+    [
+     -38.533622,
+     -3.734858
+    ],
+    [
+     -38.534357,
+     -3.735799
+    ],
+    [
+     -38.534571,
+     -3.73597
+    ],
+    [
+     -38.534709,
+     -3.736176
+    ],
+    [
+     -38.5348,
+     -3.736276
+    ],
+    [
+     -38.53502,
+     -3.736403
+    ],
+    [
+     -38.535081,
+     -3.736457
+    ],
+    [
+     -38.535223,
+     -3.736658
+    ],
+    [
+     -38.535465,
+     -3.736952
+    ],
+    [
+     -38.535582,
+     -3.737138
+    ],
+    [
+     -38.535782,
+     -3.737285
+    ],
+    [
+     -38.535959,
+     -3.737527
+    ],
+    [
+     -38.536326,
+     -3.737852
+    ],
+    [
+     -38.536465,
+     -3.738091
+    ],
+    [
+     -38.536633,
+     -3.738232
+    ],
+    [
+     -38.536985,
+     -3.738608
+    ],
+    [
+     -38.537171,
+     -3.738767
+    ],
+    [
+     -38.537327,
+     -3.739029
+    ],
+    [
+     -38.537462,
+     -3.739199
+    ],
+    [
+     -38.537614,
+     -3.739353
+    ],
+    [
+     -38.537847,
+     -3.739506
+    ],
+    [
+     -38.53801,
+     -3.739799
+    ],
+    [
+     -38.538378,
+     -3.740123
+    ],
+    [
+     -38.539049,
+     -3.740871
+    ],
+    [
+     -38.539026,
+     -3.741095
+    ],
+    [
+     -38.539011,
+     -3.741116
+    ],
+    [
+     -38.537882,
+     -3.742052
+    ],
+    [
+     -38.537254,
+     -3.742607
+    ],
+    [
+     -38.537162,
+     -3.742667
+    ],
+    [
+     -38.536972,
+     -3.742736
+    ],
+    [
+     -38.536859,
+     -3.742937
+    ],
+    [
+     -38.536721,
+     -3.743068
+    ]
+   ]
+  },
+  {
+   "id": "alagadico",
+   "nome": "Alagadiço (Bezerra de Menezes)",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Major Facundo",
+    "Rua General Clarindo de Queiroz",
+    "Rua Teresa Cristina",
+    "Rua Meton de Alencar",
+    "Avenida Bezerra de Menezes"
+   ],
+   "comprimento_m": 5172,
+   "distancia_1918_m": 5440,
+   "nota": "Lido na planta de 1936: Major Facundo para o sul, General Clarindo de Queiroz para oeste, um degrau pela Teresa Cristina e pela Meton de Alencar, e toda a estrada do Alagadiço (atual Bezerra de Menezes) para oeste, passando Otávio Bonfim, até onde a linha fina acaba (depois dela começa a linha grossa da estrada de rodagem do Soure). Trecho da Major Facundo entre a Pedro Borges e a Clarindo com vermelho fraco. No oeste o vermelho corre 15 a 30 m ao sul do eixo da avenida (erro da georreferência na ponta da planta); o traçado ficou no vão entre as frentes dos lotes de 1932. Comprimento (cerca de 5.170 m) perto dos 5.440 m de 1918.",
+   "verificacao": {
+    "frac_em_lotes": 0.0002,
+    "m_em_lotes": 1,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.54,
+    "dist_mediana_ao_vermelho_1936_m": 12.4
+   },
+   "tracado": [
+    [
+     -38.527644,
+     -3.727124
+    ],
+    [
+     -38.527726,
+     -3.72744
+    ],
+    [
+     -38.527907,
+     -3.727952
+    ],
+    [
+     -38.528089,
+     -3.728234
+    ],
+    [
+     -38.528143,
+     -3.728474
+    ],
+    [
+     -38.528311,
+     -3.728989
+    ],
+    [
+     -38.528408,
+     -3.729358
+    ],
+    [
+     -38.528431,
+     -3.729407
+    ],
+    [
+     -38.528543,
+     -3.729512
+    ],
+    [
+     -38.528566,
+     -3.729562
+    ],
+    [
+     -38.528597,
+     -3.730066
+    ],
+    [
+     -38.52875,
+     -3.730359
+    ],
+    [
+     -38.52893,
+     -3.730899
+    ],
+    [
+     -38.529041,
+     -3.731092
+    ],
+    [
+     -38.529109,
+     -3.731412
+    ],
+    [
+     -38.529277,
+     -3.731757
+    ],
+    [
+     -38.529435,
+     -3.732418
+    ],
+    [
+     -38.529529,
+     -3.732616
+    ],
+    [
+     -38.52958,
+     -3.732791
+    ],
+    [
+     -38.529633,
+     -3.732877
+    ],
+    [
+     -38.529942,
+     -3.732708
+    ],
+    [
+     -38.530376,
+     -3.732646
+    ],
+    [
+     -38.53071,
+     -3.73254
+    ],
+    [
+     -38.531008,
+     -3.732404
+    ],
+    [
+     -38.531264,
+     -3.732319
+    ],
+    [
+     -38.531792,
+     -3.732195
+    ],
+    [
+     -38.532168,
+     -3.732131
+    ],
+    [
+     -38.532241,
+     -3.732093
+    ],
+    [
+     -38.532443,
+     -3.731926
+    ],
+    [
+     -38.532791,
+     -3.731861
+    ],
+    [
+     -38.533122,
+     -3.731742
+    ],
+    [
+     -38.533388,
+     -3.731685
+    ],
+    [
+     -38.533668,
+     -3.731585
+    ],
+    [
+     -38.533936,
+     -3.731536
+    ],
+    [
+     -38.534359,
+     -3.73135
+    ],
+    [
+     -38.534626,
+     -3.73121
+    ],
+    [
+     -38.534842,
+     -3.731176
+    ],
+    [
+     -38.535021,
+     -3.731114
+    ],
+    [
+     -38.535251,
+     -3.731123
+    ],
+    [
+     -38.535383,
+     -3.731093
+    ],
+    [
+     -38.535827,
+     -3.730883
+    ],
+    [
+     -38.536546,
+     -3.730651
+    ],
+    [
+     -38.536813,
+     -3.730598
+    ],
+    [
+     -38.537045,
+     -3.730432
+    ],
+    [
+     -38.53717,
+     -3.730381
+    ],
+    [
+     -38.537416,
+     -3.730352
+    ],
+    [
+     -38.53768,
+     -3.730293
+    ],
+    [
+     -38.537751,
+     -3.730331
+    ],
+    [
+     -38.538,
+     -3.731163
+    ],
+    [
+     -38.538111,
+     -3.731232
+    ],
+    [
+     -38.538417,
+     -3.731131
+    ],
+    [
+     -38.538756,
+     -3.730948
+    ],
+    [
+     -38.539451,
+     -3.730751
+    ],
+    [
+     -38.539558,
+     -3.730676
+    ],
+    [
+     -38.540134,
+     -3.730504
+    ],
+    [
+     -38.542145,
+     -3.730924
+    ],
+    [
+     -38.54264,
+     -3.731062
+    ],
+    [
+     -38.542992,
+     -3.731098
+    ],
+    [
+     -38.543352,
+     -3.731212
+    ],
+    [
+     -38.544276,
+     -3.731413
+    ],
+    [
+     -38.545161,
+     -3.731536
+    ],
+    [
+     -38.545823,
+     -3.731669
+    ],
+    [
+     -38.546667,
+     -3.731854
+    ],
+    [
+     -38.546975,
+     -3.731965
+    ],
+    [
+     -38.547185,
+     -3.732016
+    ],
+    [
+     -38.547346,
+     -3.732041
+    ],
+    [
+     -38.547565,
+     -3.732047
+    ],
+    [
+     -38.547751,
+     -3.732081
+    ],
+    [
+     -38.547907,
+     -3.732127
+    ],
+    [
+     -38.54813,
+     -3.73225
+    ],
+    [
+     -38.548888,
+     -3.732322
+    ],
+    [
+     -38.549248,
+     -3.732451
+    ],
+    [
+     -38.549536,
+     -3.732522
+    ],
+    [
+     -38.549888,
+     -3.732555
+    ],
+    [
+     -38.550284,
+     -3.732643
+    ],
+    [
+     -38.550687,
+     -3.732696
+    ],
+    [
+     -38.550977,
+     -3.732759
+    ],
+    [
+     -38.551287,
+     -3.732863
+    ],
+    [
+     -38.551584,
+     -3.732891
+    ],
+    [
+     -38.551842,
+     -3.732977
+    ],
+    [
+     -38.552082,
+     -3.733019
+    ],
+    [
+     -38.552354,
+     -3.733037
+    ],
+    [
+     -38.552725,
+     -3.733111
+    ],
+    [
+     -38.552855,
+     -3.733149
+    ],
+    [
+     -38.55308,
+     -3.733262
+    ],
+    [
+     -38.553305,
+     -3.733241
+    ],
+    [
+     -38.553466,
+     -3.733262
+    ],
+    [
+     -38.554418,
+     -3.73346
+    ],
+    [
+     -38.554724,
+     -3.733583
+    ],
+    [
+     -38.554973,
+     -3.733581
+    ],
+    [
+     -38.555397,
+     -3.733663
+    ],
+    [
+     -38.556508,
+     -3.733892
+    ],
+    [
+     -38.55711,
+     -3.734051
+    ],
+    [
+     -38.557487,
+     -3.734094
+    ],
+    [
+     -38.558891,
+     -3.734376
+    ],
+    [
+     -38.568123,
+     -3.736293
+    ]
+   ]
+  },
+  {
+   "id": "joaquim_tavora",
+   "nome": "Joaquim Távora (Pedro I e Visconde do Rio Branco)",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Major Facundo",
+    "Rua Pedro I",
+    "Avenida Visconde do Rio Branco"
+   ],
+   "comprimento_m": 2594,
+   "distancia_1918_m": null,
+   "nota": "Lido na planta de 1936: Major Facundo para o sul, Pedro I para leste ao lado do Parque da Liberdade, e toda a Visconde do Rio Branco para o sul até o bairro Joaquim Távora, onde a linha fina acaba (mais ao sul a linha grossa é estrada de rodagem). É a linha do primeiro laço elétrico; a planta de 1936 mostra a linha estendida para o sul.",
+   "verificacao": {
+    "frac_em_lotes": 0.0,
+    "m_em_lotes": 0,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.65,
+    "dist_mediana_ao_vermelho_1936_m": 6.7
+   },
+   "tracado": [
+    [
+     -38.527644,
+     -3.727124
+    ],
+    [
+     -38.527726,
+     -3.72744
+    ],
+    [
+     -38.527907,
+     -3.727952
+    ],
+    [
+     -38.528089,
+     -3.728234
+    ],
+    [
+     -38.528143,
+     -3.728474
+    ],
+    [
+     -38.528311,
+     -3.728989
+    ],
+    [
+     -38.528408,
+     -3.729358
+    ],
+    [
+     -38.528431,
+     -3.729407
+    ],
+    [
+     -38.528543,
+     -3.729512
+    ],
+    [
+     -38.528566,
+     -3.729562
+    ],
+    [
+     -38.528597,
+     -3.730066
+    ],
+    [
+     -38.528768,
+     -3.73041
+    ],
+    [
+     -38.528882,
+     -3.730772
+    ],
+    [
+     -38.528936,
+     -3.731047
+    ],
+    [
+     -38.528896,
+     -3.731082
+    ],
+    [
+     -38.528788,
+     -3.731101
+    ],
+    [
+     -38.528625,
+     -3.731213
+    ],
+    [
+     -38.528501,
+     -3.731266
+    ],
+    [
+     -38.528292,
+     -3.731324
+    ],
+    [
+     -38.527941,
+     -3.731379
+    ],
+    [
+     -38.527814,
+     -3.731425
+    ],
+    [
+     -38.527621,
+     -3.731533
+    ],
+    [
+     -38.527354,
+     -3.731583
+    ],
+    [
+     -38.527164,
+     -3.731699
+    ],
+    [
+     -38.526839,
+     -3.731835
+    ],
+    [
+     -38.526697,
+     -3.731927
+    ],
+    [
+     -38.525315,
+     -3.732219
+    ],
+    [
+     -38.524856,
+     -3.732365
+    ],
+    [
+     -38.524777,
+     -3.73248
+    ],
+    [
+     -38.524761,
+     -3.73254
+    ],
+    [
+     -38.524782,
+     -3.732721
+    ],
+    [
+     -38.524761,
+     -3.732993
+    ],
+    [
+     -38.524704,
+     -3.733176
+    ],
+    [
+     -38.524687,
+     -3.733394
+    ],
+    [
+     -38.524614,
+     -3.733793
+    ],
+    [
+     -38.524519,
+     -3.734107
+    ],
+    [
+     -38.524488,
+     -3.734432
+    ],
+    [
+     -38.524457,
+     -3.734509
+    ],
+    [
+     -38.524329,
+     -3.734677
+    ],
+    [
+     -38.524296,
+     -3.734753
+    ],
+    [
+     -38.524208,
+     -3.73529
+    ],
+    [
+     -38.524223,
+     -3.735597
+    ],
+    [
+     -38.524147,
+     -3.735831
+    ],
+    [
+     -38.524071,
+     -3.736203
+    ],
+    [
+     -38.523942,
+     -3.736515
+    ],
+    [
+     -38.523945,
+     -3.736637
+    ],
+    [
+     -38.524078,
+     -3.736858
+    ],
+    [
+     -38.524072,
+     -3.736919
+    ],
+    [
+     -38.524064,
+     -3.736954
+    ],
+    [
+     -38.524042,
+     -3.736962
+    ],
+    [
+     -38.523966,
+     -3.736952
+    ],
+    [
+     -38.523973,
+     -3.737048
+    ],
+    [
+     -38.523952,
+     -3.737148
+    ],
+    [
+     -38.523801,
+     -3.737395
+    ],
+    [
+     -38.523751,
+     -3.737551
+    ],
+    [
+     -38.523704,
+     -3.738123
+    ],
+    [
+     -38.523607,
+     -3.738657
+    ],
+    [
+     -38.523585,
+     -3.738928
+    ],
+    [
+     -38.523543,
+     -3.739169
+    ],
+    [
+     -38.523366,
+     -3.739715
+    ],
+    [
+     -38.523325,
+     -3.740042
+    ],
+    [
+     -38.52317,
+     -3.740505
+    ],
+    [
+     -38.523155,
+     -3.740752
+    ],
+    [
+     -38.523076,
+     -3.740985
+    ],
+    [
+     -38.522987,
+     -3.741465
+    ],
+    [
+     -38.522858,
+     -3.741826
+    ],
+    [
+     -38.522828,
+     -3.742208
+    ],
+    [
+     -38.522736,
+     -3.742716
+    ],
+    [
+     -38.52272,
+     -3.743045
+    ],
+    [
+     -38.522585,
+     -3.743405
+    ],
+    [
+     -38.522487,
+     -3.743856
+    ],
+    [
+     -38.52237,
+     -3.744163
+    ],
+    [
+     -38.522328,
+     -3.74446
+    ],
+    [
+     -38.522333,
+     -3.744655
+    ],
+    [
+     -38.522305,
+     -3.7449
+    ],
+    [
+     -38.522273,
+     -3.745004
+    ],
+    [
+     -38.522146,
+     -3.745225
+    ],
+    [
+     -38.522106,
+     -3.745356
+    ],
+    [
+     -38.522069,
+     -3.745598
+    ],
+    [
+     -38.522058,
+     -3.74604
+    ],
+    [
+     -38.521942,
+     -3.746403
+    ],
+    [
+     -38.521916,
+     -3.746675
+    ]
+   ]
+  },
+  {
+   "id": "jt_retorno",
+   "nome": "Volta do laço Joaquim Távora (Pedro I e Floriano Peixoto)",
+   "confianca": "H",
+   "lido_em": "inferido dos fatos (linhas de 1916-1918, laço de 1913)",
+   "ruas": [
+    "Rua Pedro I",
+    "Rua Floriano Peixoto"
+   ],
+   "comprimento_m": 874,
+   "distancia_1918_m": null,
+   "nota": "H, pelos fatos do laço de 1913 (Visconde do Rio Branco, Pedro I, Floriano Peixoto, Praça do Ferreira). Na planta de 1936 a Floriano Peixoto ao sul da praça tem vermelho fraco e descontínuo.",
+   "verificacao": {
+    "frac_em_lotes": 0.0,
+    "m_em_lotes": 0,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.58,
+    "dist_mediana_ao_vermelho_1936_m": 9.0
+   },
+   "tracado": [
+    [
+     -38.524874,
+     -3.732369
+    ],
+    [
+     -38.525258,
+     -3.732241
+    ],
+    [
+     -38.525537,
+     -3.732222
+    ],
+    [
+     -38.526693,
+     -3.731936
+    ],
+    [
+     -38.526957,
+     -3.731783
+    ],
+    [
+     -38.527182,
+     -3.731688
+    ],
+    [
+     -38.527371,
+     -3.731571
+    ],
+    [
+     -38.527584,
+     -3.731524
+    ],
+    [
+     -38.527857,
+     -3.731406
+    ],
+    [
+     -38.528089,
+     -3.731332
+    ],
+    [
+     -38.528369,
+     -3.731282
+    ],
+    [
+     -38.52838,
+     -3.731202
+    ],
+    [
+     -38.528296,
+     -3.73104
+    ],
+    [
+     -38.528231,
+     -3.730747
+    ],
+    [
+     -38.528118,
+     -3.73047
+    ],
+    [
+     -38.528087,
+     -3.730165
+    ],
+    [
+     -38.527993,
+     -3.729939
+    ],
+    [
+     -38.527808,
+     -3.729372
+    ],
+    [
+     -38.527583,
+     -3.728761
+    ],
+    [
+     -38.527493,
+     -3.728419
+    ],
+    [
+     -38.52747,
+     -3.728227
+    ],
+    [
+     -38.527364,
+     -3.728004
+    ],
+    [
+     -38.527343,
+     -3.727754
+    ],
+    [
+     -38.527199,
+     -3.727287
+    ]
+   ]
+  },
+  {
+   "id": "major_facundo_sul",
+   "nome": "Ramal da Major Facundo ao sul (até a Praça José Bonifácio)",
+   "confianca": "D",
+   "lido_em": "planta de 1936 (símbolo \"Linhas de Bond\", traço vermelho fino)",
+   "ruas": [
+    "Rua Major Facundo"
+   ],
+   "comprimento_m": 223,
+   "distancia_1918_m": null,
+   "nota": "Lido na planta de 1936: a Major Facundo continua com vermelho forte ao sul da Clarindo de Queiroz por cerca de 230 m e para junto ao canto da Praça José Bonifácio. Nome da linha desconhecido; pode ser a linha Praça dos Coelhos de 1916, mas isso é só hipótese (não achei onde ficava a Praça dos Coelhos).",
+   "verificacao": {
+    "frac_em_lotes": 0.0135,
+    "m_em_lotes": 3,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 1.0,
+    "dist_mediana_ao_vermelho_1936_m": 3.0
+   },
+   "tracado": [
+    [
+     -38.529594,
+     -3.732955
+    ],
+    [
+     -38.529671,
+     -3.733101
+    ],
+    [
+     -38.529704,
+     -3.733205
+    ],
+    [
+     -38.529753,
+     -3.733446
+    ],
+    [
+     -38.52983,
+     -3.733706
+    ],
+    [
+     -38.529862,
+     -3.733952
+    ],
+    [
+     -38.52986,
+     -3.734095
+    ],
+    [
+     -38.530041,
+     -3.734322
+    ],
+    [
+     -38.530189,
+     -3.734844
+    ]
+   ]
+  },
+  {
+   "id": "matadouro",
+   "nome": "Matadouro (até Otávio Bonfim)",
+   "confianca": "H",
+   "lido_em": "inferido dos fatos (linhas de 1916-1918, laço de 1913)",
+   "ruas": [
+    "Rua Major Facundo",
+    "Rua General Clarindo de Queiroz",
+    "Rua Teresa Cristina",
+    "Rua Meton de Alencar",
+    "Avenida Bezerra de Menezes"
+   ],
+   "comprimento_m": 2314,
+   "distancia_1918_m": 4200,
+   "nota": "H: os fatos dão o fim em Otávio Bonfim; a planta de 1936 não separa esta linha da do Alagadiço, então ela usa o mesmo tronco (Major Facundo, Clarindo de Queiroz, Bezerra de Menezes) até a Praça Otávio Bonfim. O comprimento resultante (cerca de 2.310 m) não bate com os 4.200 m de 1918: a linha devia ir além, por um caminho que a planta não mostra.",
+   "verificacao": {
+    "frac_em_lotes": 0.0004,
+    "m_em_lotes": 1,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.79,
+    "dist_mediana_ao_vermelho_1936_m": 6.0
+   },
+   "tracado": [
+    [
+     -38.527644,
+     -3.727124
+    ],
+    [
+     -38.527726,
+     -3.72744
+    ],
+    [
+     -38.527907,
+     -3.727952
+    ],
+    [
+     -38.528089,
+     -3.728234
+    ],
+    [
+     -38.528143,
+     -3.728474
+    ],
+    [
+     -38.528311,
+     -3.728989
+    ],
+    [
+     -38.528408,
+     -3.729358
+    ],
+    [
+     -38.528431,
+     -3.729407
+    ],
+    [
+     -38.528543,
+     -3.729512
+    ],
+    [
+     -38.528566,
+     -3.729562
+    ],
+    [
+     -38.528597,
+     -3.730066
+    ],
+    [
+     -38.52875,
+     -3.730359
+    ],
+    [
+     -38.52893,
+     -3.730899
+    ],
+    [
+     -38.529041,
+     -3.731092
+    ],
+    [
+     -38.529109,
+     -3.731412
+    ],
+    [
+     -38.529277,
+     -3.731757
+    ],
+    [
+     -38.529435,
+     -3.732418
+    ],
+    [
+     -38.529529,
+     -3.732616
+    ],
+    [
+     -38.52958,
+     -3.732791
+    ],
+    [
+     -38.529633,
+     -3.732877
+    ],
+    [
+     -38.529942,
+     -3.732708
+    ],
+    [
+     -38.530376,
+     -3.732646
+    ],
+    [
+     -38.53071,
+     -3.73254
+    ],
+    [
+     -38.531008,
+     -3.732404
+    ],
+    [
+     -38.531264,
+     -3.732319
+    ],
+    [
+     -38.531792,
+     -3.732195
+    ],
+    [
+     -38.532168,
+     -3.732131
+    ],
+    [
+     -38.532241,
+     -3.732093
+    ],
+    [
+     -38.532443,
+     -3.731926
+    ],
+    [
+     -38.532791,
+     -3.731861
+    ],
+    [
+     -38.533122,
+     -3.731742
+    ],
+    [
+     -38.533388,
+     -3.731685
+    ],
+    [
+     -38.533668,
+     -3.731585
+    ],
+    [
+     -38.533936,
+     -3.731536
+    ],
+    [
+     -38.534359,
+     -3.73135
+    ],
+    [
+     -38.534626,
+     -3.73121
+    ],
+    [
+     -38.534842,
+     -3.731176
+    ],
+    [
+     -38.535021,
+     -3.731114
+    ],
+    [
+     -38.535251,
+     -3.731123
+    ],
+    [
+     -38.535383,
+     -3.731093
+    ],
+    [
+     -38.535827,
+     -3.730883
+    ],
+    [
+     -38.536546,
+     -3.730651
+    ],
+    [
+     -38.536813,
+     -3.730598
+    ],
+    [
+     -38.537045,
+     -3.730432
+    ],
+    [
+     -38.537144,
+     -3.730387
+    ],
+    [
+     -38.537416,
+     -3.730352
+    ],
+    [
+     -38.537654,
+     -3.730295
+    ],
+    [
+     -38.53768,
+     -3.730293
+    ],
+    [
+     -38.537751,
+     -3.730331
+    ],
+    [
+     -38.538,
+     -3.731163
+    ],
+    [
+     -38.538111,
+     -3.731232
+    ],
+    [
+     -38.538417,
+     -3.731131
+    ],
+    [
+     -38.538756,
+     -3.730948
+    ],
+    [
+     -38.539451,
+     -3.730751
+    ],
+    [
+     -38.539558,
+     -3.730676
+    ],
+    [
+     -38.540134,
+     -3.730504
+    ],
+    [
+     -38.542145,
+     -3.730924
+    ],
+    [
+     -38.542614,
+     -3.731056
+    ],
+    [
+     -38.542994,
+     -3.731077
+    ]
+   ]
+  },
+  {
+   "id": "mororo",
+   "nome": "Mororó (Cemitério São João Batista)",
+   "confianca": "H",
+   "lido_em": "inferido dos fatos (linhas de 1916-1918, laço de 1913)",
+   "ruas": [
+    "Rua Guilherme Rocha",
+    "Rua Padre Mororó"
+   ],
+   "comprimento_m": 1536,
+   "distancia_1918_m": 1100,
+   "nota": "H: pelos fatos (fim no Cemitério São João Batista, Rua Padre Mororó), Guilherme Rocha para oeste e Padre Mororó para o norte até a altura do cemitério. A planta de 1936 não tem vermelho na Padre Mororó. O comprimento (cerca de 1.540 m) passa dos 1.100 m de 1918: o percurso real era outro ou o marco de 1918 é diferente (o dossiê diz que a alameda central do Passeio Público se chamava Avenida Mororó).",
+   "verificacao": {
+    "frac_em_lotes": 0.0013,
+    "m_em_lotes": 2,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.6,
+    "dist_mediana_ao_vermelho_1936_m": 9.0
+   },
+   "tracado": [
+    [
+     -38.527718,
+     -3.727004
+    ],
+    [
+     -38.527897,
+     -3.726942
+    ],
+    [
+     -38.528145,
+     -3.726919
+    ],
+    [
+     -38.528463,
+     -3.72685
+    ],
+    [
+     -38.529354,
+     -3.726531
+    ],
+    [
+     -38.529722,
+     -3.726437
+    ],
+    [
+     -38.529872,
+     -3.726376
+    ],
+    [
+     -38.530081,
+     -3.72623
+    ],
+    [
+     -38.530337,
+     -3.726142
+    ],
+    [
+     -38.530516,
+     -3.726115
+    ],
+    [
+     -38.530591,
+     -3.726172
+    ],
+    [
+     -38.530668,
+     -3.72618
+    ],
+    [
+     -38.530957,
+     -3.726108
+    ],
+    [
+     -38.531234,
+     -3.725999
+    ],
+    [
+     -38.531546,
+     -3.725904
+    ],
+    [
+     -38.531668,
+     -3.725801
+    ],
+    [
+     -38.532761,
+     -3.725496
+    ],
+    [
+     -38.533376,
+     -3.725291
+    ],
+    [
+     -38.533591,
+     -3.725166
+    ],
+    [
+     -38.533943,
+     -3.725023
+    ],
+    [
+     -38.534333,
+     -3.724913
+    ],
+    [
+     -38.534548,
+     -3.724787
+    ],
+    [
+     -38.534935,
+     -3.724752
+    ],
+    [
+     -38.535061,
+     -3.724703
+    ],
+    [
+     -38.535349,
+     -3.724541
+    ],
+    [
+     -38.535591,
+     -3.724497
+    ],
+    [
+     -38.53616,
+     -3.724326
+    ],
+    [
+     -38.53627,
+     -3.724315
+    ],
+    [
+     -38.536478,
+     -3.724345
+    ],
+    [
+     -38.536559,
+     -3.724332
+    ],
+    [
+     -38.5368,
+     -3.724197
+    ],
+    [
+     -38.536939,
+     -3.724145
+    ],
+    [
+     -38.537021,
+     -3.724088
+    ],
+    [
+     -38.537108,
+     -3.724005
+    ],
+    [
+     -38.537093,
+     -3.72389
+    ],
+    [
+     -38.537034,
+     -3.723724
+    ],
+    [
+     -38.536922,
+     -3.723504
+    ],
+    [
+     -38.536917,
+     -3.723308
+    ],
+    [
+     -38.536897,
+     -3.723229
+    ],
+    [
+     -38.536642,
+     -3.722909
+    ],
+    [
+     -38.536632,
+     -3.722827
+    ],
+    [
+     -38.536662,
+     -3.722647
+    ],
+    [
+     -38.536648,
+     -3.722538
+    ],
+    [
+     -38.536501,
+     -3.722214
+    ],
+    [
+     -38.536323,
+     -3.721558
+    ],
+    [
+     -38.536136,
+     -3.720963
+    ],
+    [
+     -38.535991,
+     -3.720668
+    ],
+    [
+     -38.535957,
+     -3.720424
+    ]
+   ]
+  },
+  {
+   "id": "acesso_usina",
+   "nome": "Acesso à usina e garagem (Passeio Público)",
+   "confianca": "H",
+   "lido_em": "inferido dos fatos (linhas de 1916-1918, laço de 1913)",
+   "ruas": [
+    "Rua Floriano Peixoto"
+   ],
+   "comprimento_m": 167,
+   "distancia_1918_m": null,
+   "nota": "H: a usina e a garagem dos bondes ficavam junto do Passeio Público; o acesso mais curto pela rede lida é a Floriano Peixoto para o norte até a Dr. João Moreira. Sem vermelho na planta de 1936.",
+   "verificacao": {
+    "frac_em_lotes": 0.0,
+    "m_em_lotes": 0,
+    "trechos_em_lote_maiores_15m": [],
+    "frac_a_ate_15m_do_vermelho_1936": 0.25,
+    "dist_mediana_ao_vermelho_1936_m": 21.8
+   },
+   "tracado": [
+    [
+     -38.52621,
+     -3.724762
+    ],
+    [
+     -38.526063,
+     -3.723953
+    ],
+    [
+     -38.525951,
+     -3.723762
+    ],
+    [
+     -38.52586,
+     -3.723506
+    ],
+    [
+     -38.525775,
+     -3.723334
+    ]
+   ]
+  }
+ ]
+}
