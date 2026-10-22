@@ -127,7 +127,7 @@ async function iniciar() {
   // os marcos do centro (Coluna da Hora, cinemas, Excelsior, Leões, Mercado de Ferro): src/mundo/marcos1932/
   const marcos1932 = criarMarcosCentro(cena, cfg)
   const marcosNorte = criarMarcosNorte(cena, cfg) // a velha Sé, a Estação Central e o Passeio Público de 1932
-  const urubu = criarUrubu1932(cena, cfg) // o Campo do Urubu: galpões, tarefas, cozinha e o portão
+  const urubu = criarUrubu1932(cena, cfg) // o Campo do Urubu: galpões, redes, cozinha, portão, registro, cerca, trilho e a gente
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')
@@ -327,6 +327,7 @@ async function iniciar() {
     quintal1932.atualizar(camera)
     casasPalha.atualizarLonge?.(camera, cfg.mundo.palhaPerto)
     pessoas.atualizar(dt, t, cfg.tempo.hora)
+    urubu.atualizar(cfg.tempo.hora, camera) // o Campo do Urubu: a gente do dia, a da noite, os miúdos de longe somem
     atores?.atualizar(dt, jogador.pos)
     const fpsAvo = cfg.estilo.visual === 'arcane' ? cfg.personagem.fpsAcao : cfg.personagem.fpsPose // Arcane: 24 poses
     avo?.atualizar(dt, fpsAvo)

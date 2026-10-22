@@ -4,6 +4,7 @@
 import { lugaresJogo } from '../../mundo/fortaleza1932.js'
 import { VISTAS } from '../../mundo/marcos1932/vistas.js'
 import { VISTAS_MARCOS } from '../../mundo/vistas-marcos.js'
+import { VISTAS_URUBU } from '../../mundo/urubu-lugares.js'
 
 // "Ir para": atalhos para os lugares mais conhecidos de Fortaleza em 1932 (pedido do Joabe, 21/10/2026),
 // para conferir cada um. A chave é a de LUGARES em src/mundo/fortaleza1932.js; quem é prédio vai para a praça
@@ -25,6 +26,10 @@ export const DESTINOS = [
   ['Poço da Draga', 'pocoDraga'],
   ['Farol do Mucuripe', 'farol'],
   ['Campo do Urubu', 'campoUrubu'],
+  // o campo por dentro, na altura das pessoas (src/mundo/urubu-lugares.js): o registro, a fila, um galpão
+  ['Campo do Urubu: o portão e o registro', 'campoUrubu', 'urubuRegistro'],
+  ['Campo do Urubu: a fila da cozinha', 'campoUrubu', 'urubuCozinha'],
+  ['Campo do Urubu: dentro de um galpão', 'campoUrubu', 'urubuGalpao'],
   ['Oficinas do Urubu', 'oficinasUrubu'],
   ['Barra do Ceará', 'barraCeara'],
   // os marcos do centro, do ponto de vista do conceito aprovado (o 3º item é a vista, marcos1932/vistas.js)
@@ -35,13 +40,13 @@ export const DESTINOS = [
 ]
 
 // leva o jogador ao lugar: solta a fatia (senão ele bate na borda dela) e usa o teleporte do jogo
-// com vista (marcos1932/vistas.js do centro ou vistas-marcos.js do norte), o jogador fica no ponto do
+// com vista (marcos1932/vistas.js do centro, vistas-marcos.js do norte ou urubu-lugares.js do campo), o jogador fica no ponto do
 // conceito e a câmera olha para o marco
 export function irParaLugar(cfg, chave, maresia = globalThis.window?.maresia, vista = null) {
   const p = lugaresJogo[chave]
   if (!p || !maresia?.irPara) return false
   cfg.fatia.travar = false
-  const v = vista && (VISTAS_MARCOS[vista] || VISTAS[vista])
+  const v = vista && (VISTAS_MARCOS[vista] || VISTAS[vista] || VISTAS_URUBU[vista])
   if (v) {
     if (v.hora != null) maresia.irPara(v.x, v.z, v.yaw, v.hora)
     else maresia.irPara(v.x, v.z, v.yaw)

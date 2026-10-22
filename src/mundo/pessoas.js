@@ -40,30 +40,40 @@ function parte(geo, cor) {
   return g
 }
 
-function figura(sentada, mulher = false) {
-  const pele = rnd.escolha(PELES)
-  const roupa = mulher ? rnd.escolha(VESTIDOS) : rnd.escolha(ROUPAS)
-  const baixo = mulher ? roupa : rnd.escolha(BAIXO)
+// Uma figura de gente. Sem opções, é a da cidade (mesma sequência de sorteio de sempre: a cidade sai igual).
+// Opções (o Campo do Urubu, urubu-gente.js): rnd próprio, paleta própria (roupa de saco de mantimento, lenço),
+// simples = menos triângulos (o campo põe centenas)
+export function figura(sentada, mulher = false, o = {}) {
+  const r = o.rnd || rnd
+  const P = o.paleta || {}
+  const seg = o.simples ? { aba: 10, copa: 7, corpo: [3, 7], cabeca: [9, 6], cabelo: [7, 5], membro: [2, 5], vestido: 8 } : { aba: 12, copa: 10, corpo: [3, 8], cabeca: [10, 8], cabelo: [8, 6], membro: [3, 6], vestido: 10 }
+  const pele = r.escolha(P.peles || PELES)
+  const roupa = mulher ? r.escolha(P.vestidos || VESTIDOS) : r.escolha(P.roupas || ROUPAS)
+  const baixo = mulher ? roupa : r.escolha(P.baixos || BAIXO)
   const partes = []
   const quadril = sentada ? 0.32 : 0.9
   // chapéu de palha (ou de feltro escuro) na maioria; mulheres às vezes com lenço
-  if (!mulher || rnd.chance(0.35)) {
-    const cor = rnd.escolha(CHAPEUS)
-    partes.push(parte(new THREE.CylinderGeometry(0.27, 0.29, 0.03, 12).translate(0, quadril + 1.0, 0), cor))
-    partes.push(parte(new THREE.CylinderGeometry(0.14, 0.16, 0.13, 10).translate(0, quadril + 1.07, 0), cor))
+  let chapeu = false
+  if (!mulher || r.chance(0.35)) {
+    chapeu = true
+    const cor = r.escolha(P.chapeus || CHAPEUS)
+    partes.push(parte(new THREE.CylinderGeometry(0.27, 0.29, 0.03, seg.aba).translate(0, quadril + 1.0, 0), cor))
+    partes.push(parte(new THREE.CylinderGeometry(0.14, 0.16, 0.13, seg.copa).translate(0, quadril + 1.07, 0), cor))
   }
   // vestido comprido até a canela
-  if (mulher && !sentada) partes.push(parte(new THREE.CylinderGeometry(0.2, 0.34, 0.75, 10).translate(0, 0.52, 0), roupa))
-  partes.push(parte(new THREE.CapsuleGeometry(0.2, 0.32, 3, 8).scale(1.1, 1, 0.8).translate(0, quadril + 0.38, 0), roupa))
-  partes.push(parte(new THREE.SphereGeometry(0.17, 10, 8).translate(0, quadril + 0.83, 0), pele))
-  partes.push(parte(new THREE.SphereGeometry(0.18, 8, 6).scale(1, 0.75, 1).translate(0, quadril + 0.93, -0.03), rnd.escolha(CABELO)))
+  if (mulher && !sentada) partes.push(parte(new THREE.CylinderGeometry(0.2, 0.34, 0.75, seg.vestido).translate(0, 0.52, 0), roupa))
+  partes.push(parte(new THREE.CapsuleGeometry(0.2, 0.32, ...seg.corpo).scale(1.1, 1, 0.8).translate(0, quadril + 0.38, 0), roupa))
+  partes.push(parte(new THREE.SphereGeometry(0.17, ...seg.cabeca).translate(0, quadril + 0.83, 0), pele))
+  partes.push(parte(new THREE.SphereGeometry(0.18, ...seg.cabelo).scale(1, 0.75, 1).translate(0, quadril + 0.93, -0.03), r.escolha(CABELO)))
+  // o lenço amarrado na cabeça (só quem passa a paleta com lenços: o campo)
+  if (P.lencos && mulher && !chapeu) partes.push(parte(new THREE.SphereGeometry(0.19, ...seg.cabelo).scale(1.02, 0.72, 1.06).translate(0, quadril + 0.95, -0.02), r.escolha(P.lencos)))
   for (const lado of [-1, 1]) {
-    partes.push(parte(new THREE.CapsuleGeometry(0.06, 0.42, 3, 6).translate(lado * 0.28, quadril + 0.3, 0).rotateZ(lado * 0.06), pele))
+    partes.push(parte(new THREE.CapsuleGeometry(0.06, 0.42, ...seg.membro).translate(lado * 0.28, quadril + 0.3, 0).rotateZ(lado * 0.06), pele))
     if (sentada) {
-      partes.push(parte(new THREE.CapsuleGeometry(0.08, 0.5, 3, 6).rotateX(Math.PI / 2).translate(lado * 0.11, 0.2, 0.35), baixo))
+      partes.push(parte(new THREE.CapsuleGeometry(0.08, 0.5, ...seg.membro).rotateX(Math.PI / 2).translate(lado * 0.11, 0.2, 0.35), baixo))
     } else {
-      partes.push(parte(new THREE.CapsuleGeometry(0.08, 0.6, 3, 6).translate(lado * 0.11, 0.45, 0), lado < 0 ? baixo : baixo))
-      partes.push(parte(new THREE.BoxGeometry(0.12, 0.05, 0.24).translate(lado * 0.11, 0.03, 0.04), '#1a1a22'))
+      partes.push(parte(new THREE.CapsuleGeometry(0.08, 0.6, ...seg.membro).translate(lado * 0.11, 0.45, 0), lado < 0 ? baixo : baixo))
+      partes.push(parte(new THREE.BoxGeometry(0.12, 0.05, 0.24).translate(lado * 0.11, 0.03, 0.04), o.descalco ? pele : '#1a1a22'))
     }
   }
   return mergeGeometries(partes)
