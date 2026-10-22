@@ -144,10 +144,11 @@ export const PADRAO = {
     fpsPose: 12,           // animação "em 2": 12 poses por segundo
     posicaoEm2: false,     // ligado: o corpo inteiro anda em 2 (mais Aranhaverso, mais travado)
     corpoNovo: true,       // esqueleto padrão com os movimentos do Mixamo (jogador/corpo.js); desligado = boneco antigo
-    // corpo do jogador: 'neto-tripo' (o menino do Tripo, escolha do Joabe em 17/10/2026), 'neto' (MakeHuman,
+    // corpo do jogador: 'neto-v6' (o corpo novo, de 19/10/2026: tronco e mãos novos, corpo inteiro, roupa
+    // como superfície), 'neto-vestido' (o de 17/10), 'neto-tripo' (o menino do Tripo), 'neto' (MakeHuman,
     // arte/finais/neto-mpfb.glb) ou 'boneco' (cápsulas, para testes); recarregar. Nome novo para o valor salvo
     // no navegador de antes não passar por cima
-    modeloJogador: 'neto-vestido',
+    modeloJogador: 'neto-v6',
     chapeu: false,         // chapéu de palha no neto (o Joabe tirou em 16/10/2026); recarregar
     ombros: 0.9,           // largura dos ombros do neto (1 = como veio do modelo, largo de adulto); recarregar
     folgaCamisa: 0.012,    // folga máxima da camisa sobre a pele no ombro e na manga, em metros (0 = como veio); recarregar

@@ -100,7 +100,7 @@
 {"ligacao":"personagem.fpsPose","extra":"[4,60,1]","ouvindo":false,"aoMudar":false},
 {"ligacao":"personagem.posicaoEm2","extra":"[]","ouvindo":false,"aoMudar":false},
 {"ligacao":"personagem.corpoNovo","extra":"[]","ouvindo":false,"aoMudar":false},
-{"ligacao":"personagem.modeloJogador","extra":"[[\"neto-tripo\",\"neto-tripo-partes\",\"neto-tripo-p2\",\"neto-vestido\",\"neto\",\"boneco\"]]","ouvindo":false,"aoMudar":false},
+{"ligacao":"personagem.modeloJogador","extra":"[[\"neto-v6\",\"neto-tripo\",\"neto-tripo-partes\",\"neto-tripo-p2\",\"neto-vestido\",\"neto\",\"boneco\"]]","ouvindo":false,"aoMudar":false},
 {"ligacao":"personagem.chapeu","extra":"[]","ouvindo":false,"aoMudar":false},
 {"ligacao":"personagem.ombros","extra":"[0.6,1.1,0.01]","ouvindo":false,"aoMudar":false},
 {"ligacao":"personagem.folgaCamisa","extra":"[0,0.05,0.002]","ouvindo":false,"aoMudar":false},

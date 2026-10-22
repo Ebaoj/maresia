@@ -1,0 +1,883 @@
+{
+ "modelo": "neto-vestido",
+ "diagnostico": {
+  "modelo": "neto-vestido",
+  "renderizador": "webgpu",
+  "webgpu": true,
+  "temAnimador": true,
+  "temRosto": false,
+  "temMolas": true,
+  "temDobras": true,
+  "temBanco": true,
+  "raizesMultiplos": 2,
+  "clipes": [
+   "parado",
+   "olhando",
+   "andar",
+   "correr",
+   "disparada",
+   "pulo-subida",
+   "pulo-queda",
+   "pulo-pouso",
+   "sentar",
+   "sentado",
+   "levantar",
+   "carregar-andando",
+   "carregar-parado",
+   "boiar",
+   "nadar",
+   "empurrar",
+   "mm:mm-parado:A",
+   "mm:mm-parado:B",
+   "mm:mm-andar:A",
+   "mm:mm-andar:B",
+   "mm:mm-andar-padrao:A",
+   "mm:mm-andar-padrao:B",
+   "mm:mm-correr:A",
+   "mm:mm-correr:B",
+   "mm:mm-trote:A",
+   "mm:mm-trote:B",
+   "mm:mm-disparada:A",
+   "mm:mm-disparada:B",
+   "mm:mm-arrancar:A",
+   "mm:mm-arrancar:B",
+   "mm:mm-arrancar-esp:A",
+   "mm:mm-arrancar-esp:B",
+   "mm:mm-parar-andando:A",
+   "mm:mm-parar-andando:B",
+   "mm:mm-parar-andando-esp:A",
+   "mm:mm-parar-andando-esp:B",
+   "mm:mm-parar-correndo:A",
+   "mm:mm-parar-correndo:B",
+   "mm:mm-parar-correndo-esp:A",
+   "mm:mm-parar-correndo-esp:B",
+   "mm:mm-curva-andando:A",
+   "mm:mm-curva-andando:B",
+   "mm:mm-curva-andando-esp:A",
+   "mm:mm-curva-andando-esp:B",
+   "mm:mm-volta-andando:A",
+   "mm:mm-volta-andando:B",
+   "mm:mm-volta-andando-esp:A",
+   "mm:mm-volta-andando-esp:B",
+   "mm:mm-volta-correndo:A",
+   "mm:mm-volta-correndo:B",
+   "mm:mm-volta-correndo-esp:A",
+   "mm:mm-volta-correndo-esp:B",
+   "mm:mm-virar-esq:A",
+   "mm:mm-virar-esq:B",
+   "mm:mm-virar-dir:A",
+   "mm:mm-virar-dir:B"
+  ],
+  "ossos": 65,
+  "dedos": 40,
+  "cameraDistancia": 3.2,
+  "malhas": [
+   {
+    "nome": "neto",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": false,
+    "lado": 0,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 4054,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-calca",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": false,
+    "lado": 0,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 3196,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-camisa",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": false,
+    "lado": 0,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 3303,
+    "ossos": 65
+   }
+  ]
+ },
+ "medidas": [
+  {
+   "movimento": "andar",
+   "angulo": "frente",
+   "rotulo": 2.6,
+   "minimo": -0.067,
+   "penetracaoCm": 6.7,
+   "dentro": 102,
+   "total": 1255,
+   "folgaMediana": 0.0396,
+   "peleAmostrada": 2027,
+   "semVizinho": 46,
+   "pior": {
+    "sinal": -0.067,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     680.651,
+     0.983,
+     -19.09
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "frente",
+   "rotulo": 3.6,
+   "minimo": -0.0358,
+   "penetracaoCm": 3.6,
+   "dentro": 102,
+   "total": 1280,
+   "folgaMediana": 0.0404,
+   "peleAmostrada": 2027,
+   "semVizinho": 21,
+   "pior": {
+    "sinal": -0.0358,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     681.934,
+     1.05,
+     -18.063
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "frente",
+   "rotulo": 4.4,
+   "minimo": -0.0356,
+   "penetracaoCm": 3.6,
+   "dentro": 87,
+   "total": 1246,
+   "folgaMediana": 0.0391,
+   "peleAmostrada": 2027,
+   "semVizinho": 55,
+   "pior": {
+    "sinal": -0.0356,
+    "regiao": "bracos",
+    "osso": "RightArm",
+    "peca": "neto-camisa",
+    "pos": [
+     682.804,
+     1.725,
+     -17.344
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "lado",
+   "rotulo": 2.6,
+   "minimo": -0.0511,
+   "penetracaoCm": 5.1,
+   "dentro": 115,
+   "total": 1269,
+   "folgaMediana": 0.0399,
+   "peleAmostrada": 2027,
+   "semVizinho": 32,
+   "pior": {
+    "sinal": -0.0511,
+    "regiao": "bracos",
+    "osso": "RightArm",
+    "peca": "neto-camisa",
+    "pos": [
+     679.91,
+     1.655,
+     -18.596
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "lado",
+   "rotulo": 3.6,
+   "minimo": -0.056,
+   "penetracaoCm": 5.6,
+   "dentro": 83,
+   "total": 1245,
+   "folgaMediana": 0.0391,
+   "peleAmostrada": 2027,
+   "semVizinho": 56,
+   "pior": {
+    "sinal": -0.056,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     680.288,
+     1.159,
+     -17.045
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "lado",
+   "rotulo": 4.4,
+   "minimo": -0.0399,
+   "penetracaoCm": 4,
+   "dentro": 106,
+   "total": 1236,
+   "folgaMediana": 0.0386,
+   "peleAmostrada": 2027,
+   "semVizinho": 65,
+   "pior": {
+    "sinal": -0.0399,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     680.445,
+     1.161,
+     -16.129
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "frente",
+   "rotulo": 2.6,
+   "minimo": -0.0348,
+   "penetracaoCm": 3.5,
+   "dentro": 146,
+   "total": 1274,
+   "folgaMediana": 0.0365,
+   "peleAmostrada": 2027,
+   "semVizinho": 27,
+   "pior": {
+    "sinal": -0.0348,
+    "regiao": "pernas",
+    "osso": "LeftLeg",
+    "peca": "neto-calca",
+    "pos": [
+     681.772,
+     1.183,
+     -18.329
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "frente",
+   "rotulo": 3.6,
+   "minimo": -0.0199,
+   "penetracaoCm": 2,
+   "dentro": 93,
+   "total": 1259,
+   "folgaMediana": 0.0372,
+   "peleAmostrada": 2027,
+   "semVizinho": 42,
+   "pior": {
+    "sinal": -0.0199,
+    "regiao": "bracos",
+    "osso": "LeftArm",
+    "peca": "neto-camisa",
+    "pos": [
+     685.002,
+     1.972,
+     -16.074
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "frente",
+   "rotulo": 4.4,
+   "minimo": -0.0257,
+   "penetracaoCm": 2.6,
+   "dentro": 84,
+   "total": 1260,
+   "folgaMediana": 0.0378,
+   "peleAmostrada": 2027,
+   "semVizinho": 41,
+   "pior": {
+    "sinal": -0.0257,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     687.257,
+     1.513,
+     -13.996
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "lado",
+   "rotulo": 2.6,
+   "minimo": -0.0401,
+   "penetracaoCm": 4,
+   "dentro": 139,
+   "total": 1249,
+   "folgaMediana": 0.0367,
+   "peleAmostrada": 2027,
+   "semVizinho": 52,
+   "pior": {
+    "sinal": -0.0401,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     680.336,
+     1.105,
+     -17.224
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "lado",
+   "rotulo": 3.6,
+   "minimo": -0.0358,
+   "penetracaoCm": 3.6,
+   "dentro": 89,
+   "total": 1268,
+   "folgaMediana": 0.0383,
+   "peleAmostrada": 2027,
+   "semVizinho": 33,
+   "pior": {
+    "sinal": -0.0358,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     680.794,
+     1.517,
+     -13.15
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "lado",
+   "rotulo": 4.4,
+   "minimo": -0.0723,
+   "penetracaoCm": 7.2,
+   "dentro": 125,
+   "total": 1266,
+   "folgaMediana": 0.0364,
+   "peleAmostrada": 2027,
+   "semVizinho": 35,
+   "pior": {
+    "sinal": -0.0723,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     681.35,
+     1.506,
+     -10.481
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 2.4,
+   "minimo": -0.0352,
+   "penetracaoCm": 3.5,
+   "dentro": 90,
+   "total": 1256,
+   "folgaMediana": 0.0401,
+   "peleAmostrada": 2027,
+   "semVizinho": 45,
+   "pior": {
+    "sinal": -0.0352,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     679.373,
+     0.97,
+     -19.495
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 3.2,
+   "minimo": -0.0546,
+   "penetracaoCm": 5.5,
+   "dentro": 90,
+   "total": 1264,
+   "folgaMediana": 0.0399,
+   "peleAmostrada": 2027,
+   "semVizinho": 37,
+   "pior": {
+    "sinal": -0.0546,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     679.406,
+     0.949,
+     -19.633
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 4,
+   "minimo": -0.072,
+   "penetracaoCm": 7.2,
+   "dentro": 116,
+   "total": 1260,
+   "folgaMediana": 0.0396,
+   "peleAmostrada": 2027,
+   "semVizinho": 41,
+   "pior": {
+    "sinal": -0.072,
+    "regiao": "bracos",
+    "osso": "RightArm",
+    "peca": "neto-camisa",
+    "pos": [
+     679.399,
+     1.511,
+     -19.809
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 4.8,
+   "minimo": -0.027,
+   "penetracaoCm": 2.7,
+   "dentro": 90,
+   "total": 1235,
+   "folgaMediana": 0.0388,
+   "peleAmostrada": 2027,
+   "semVizinho": 66,
+   "pior": {
+    "sinal": -0.027,
+    "regiao": "bracos",
+    "osso": "LeftArm",
+    "peca": "neto-camisa",
+    "pos": [
+     679.242,
+     1.634,
+     -19.377
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 5.6,
+   "minimo": -0.0566,
+   "penetracaoCm": 5.7,
+   "dentro": 86,
+   "total": 1257,
+   "folgaMediana": 0.04,
+   "peleAmostrada": 2027,
+   "semVizinho": 44,
+   "pior": {
+    "sinal": -0.0566,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     679.487,
+     0.961,
+     -19.598
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 2.4,
+   "minimo": -0.0307,
+   "penetracaoCm": 3.1,
+   "dentro": 87,
+   "total": 1225,
+   "folgaMediana": 0.0386,
+   "peleAmostrada": 2027,
+   "semVizinho": 76,
+   "pior": {
+    "sinal": -0.0307,
+    "regiao": "pernas",
+    "osso": "LeftLeg",
+    "peca": "neto-calca",
+    "pos": [
+     680.221,
+     0.971,
+     -18.989
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 3.2,
+   "minimo": -0.0563,
+   "penetracaoCm": 5.6,
+   "dentro": 86,
+   "total": 1250,
+   "folgaMediana": 0.0391,
+   "peleAmostrada": 2027,
+   "semVizinho": 51,
+   "pior": {
+    "sinal": -0.0563,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     680.053,
+     0.969,
+     -19.111
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 4,
+   "minimo": -0.0213,
+   "penetracaoCm": 2.1,
+   "dentro": 92,
+   "total": 1253,
+   "folgaMediana": 0.0396,
+   "peleAmostrada": 2027,
+   "semVizinho": 48,
+   "pior": {
+    "sinal": -0.0213,
+    "regiao": "bracos",
+    "osso": "LeftForeArm",
+    "peca": "neto-camisa",
+    "pos": [
+     680.307,
+     1.516,
+     -19.227
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 4.8,
+   "minimo": -0.0441,
+   "penetracaoCm": 4.4,
+   "dentro": 96,
+   "total": 1255,
+   "folgaMediana": 0.0402,
+   "peleAmostrada": 2027,
+   "semVizinho": 46,
+   "pior": {
+    "sinal": -0.0441,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     679.913,
+     1.061,
+     -18.948
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 5.6,
+   "minimo": -0.0241,
+   "penetracaoCm": 2.4,
+   "dentro": 65,
+   "total": 1248,
+   "folgaMediana": 0.0392,
+   "peleAmostrada": 2027,
+   "semVizinho": 53,
+   "pior": {
+    "sinal": -0.0241,
+    "regiao": "bracos",
+    "osso": "LeftArm",
+    "peca": "neto-camisa",
+    "pos": [
+     680.285,
+     1.705,
+     -18.995
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "frente",
+   "rotulo": 2.6,
+   "minimo": -0.0466,
+   "penetracaoCm": 4.7,
+   "dentro": 237,
+   "total": 1232,
+   "folgaMediana": 0.0397,
+   "peleAmostrada": 2027,
+   "semVizinho": 69,
+   "pior": {
+    "sinal": -0.0466,
+    "regiao": "pernas",
+    "osso": "LeftUpLeg",
+    "peca": "neto-calca",
+    "pos": [
+     692.109,
+     -0.349,
+     -54.567
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "frente",
+   "rotulo": 3.8,
+   "minimo": -0.0399,
+   "penetracaoCm": 4,
+   "dentro": 244,
+   "total": 1247,
+   "folgaMediana": 0.0397,
+   "peleAmostrada": 2027,
+   "semVizinho": 54,
+   "pior": {
+    "sinal": -0.0399,
+    "regiao": "pernas",
+    "osso": "LeftLeg",
+    "peca": "neto-calca",
+    "pos": [
+     690.186,
+     -0.23,
+     -52.763
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "frente",
+   "rotulo": 5,
+   "minimo": -0.0459,
+   "penetracaoCm": 4.6,
+   "dentro": 285,
+   "total": 1264,
+   "folgaMediana": 0.0401,
+   "peleAmostrada": 2027,
+   "semVizinho": 37,
+   "pior": {
+    "sinal": -0.0459,
+    "regiao": "pernas",
+    "osso": "LeftUpLeg",
+    "peca": "neto-calca",
+    "pos": [
+     687.699,
+     -0.297,
+     -50.177
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "lado",
+   "rotulo": 2.6,
+   "minimo": -0.0461,
+   "penetracaoCm": 4.6,
+   "dentro": 242,
+   "total": 1239,
+   "folgaMediana": 0.0392,
+   "peleAmostrada": 2027,
+   "semVizinho": 62,
+   "pior": {
+    "sinal": -0.0461,
+    "regiao": "pernas",
+    "osso": "LeftUpLeg",
+    "peca": "neto-calca",
+    "pos": [
+     694.152,
+     -0.366,
+     -53.806
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "lado",
+   "rotulo": 3.8,
+   "minimo": -0.0458,
+   "penetracaoCm": 4.6,
+   "dentro": 279,
+   "total": 1258,
+   "folgaMediana": 0.0402,
+   "peleAmostrada": 2027,
+   "semVizinho": 43,
+   "pior": {
+    "sinal": -0.0458,
+    "regiao": "pernas",
+    "osso": "LeftUpLeg",
+    "peca": "neto-calca",
+    "pos": [
+     694.126,
+     -0.219,
+     -50.73
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "lado",
+   "rotulo": 5,
+   "minimo": -0.0234,
+   "penetracaoCm": 2.3,
+   "dentro": 90,
+   "total": 1243,
+   "folgaMediana": 0.0389,
+   "peleAmostrada": 2027,
+   "semVizinho": 58,
+   "pior": {
+    "sinal": -0.0234,
+    "regiao": "pernas",
+    "osso": "LeftLeg",
+    "peca": "neto-calca",
+    "pos": [
+     694.068,
+     -0.808,
+     -47.758
+    ]
+   }
+  },
+  {
+   "movimento": "sentar",
+   "angulo": "frente",
+   "rotulo": 4,
+   "minimo": -0.0538,
+   "penetracaoCm": 5.4,
+   "dentro": 195,
+   "total": 1258,
+   "folgaMediana": 0.0366,
+   "peleAmostrada": 2027,
+   "semVizinho": 43,
+   "pior": {
+    "sinal": -0.0538,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     690.049,
+     2.116,
+     -1.157
+    ]
+   }
+  },
+  {
+   "movimento": "sentar",
+   "angulo": "frente",
+   "rotulo": 7,
+   "minimo": -0.0799,
+   "penetracaoCm": 8,
+   "dentro": 122,
+   "total": 1256,
+   "folgaMediana": 0.0404,
+   "peleAmostrada": 2027,
+   "semVizinho": 45,
+   "pior": {
+    "sinal": -0.0799,
+    "regiao": "bracos",
+    "osso": "LeftArm",
+    "peca": "neto-camisa",
+    "pos": [
+     689.736,
+     2.651,
+     -1.605
+    ]
+   }
+  },
+  {
+   "movimento": "sentar",
+   "angulo": "lado",
+   "rotulo": 4,
+   "minimo": -0.0539,
+   "penetracaoCm": 5.4,
+   "dentro": 194,
+   "total": 1258,
+   "folgaMediana": 0.0366,
+   "peleAmostrada": 2027,
+   "semVizinho": 43,
+   "pior": {
+    "sinal": -0.0539,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca",
+    "pos": [
+     690.049,
+     2.116,
+     -1.157
+    ]
+   }
+  },
+  {
+   "movimento": "sentar",
+   "angulo": "lado",
+   "rotulo": 7,
+   "minimo": -0.0799,
+   "penetracaoCm": 8,
+   "dentro": 122,
+   "total": 1256,
+   "folgaMediana": 0.0404,
+   "peleAmostrada": 2027,
+   "semVizinho": 45,
+   "pior": {
+    "sinal": -0.0799,
+    "regiao": "bracos",
+    "osso": "LeftArm",
+    "peca": "neto-camisa",
+    "pos": [
+     689.736,
+     2.651,
+     -1.605
+    ]
+   }
+  }
+ ],
+ "lugares": {
+  "passeio": {
+   "x": 680,
+   "z": -19.646770740180997,
+   "yaw": 1.7014219677028484,
+   "altura": 0.73
+  },
+  "mar": {
+   "x": 694,
+   "z": -56.646770740181,
+   "fundo": -2.28
+  },
+  "banco": {
+   "x": 690,
+   "y": 1.85,
+   "z": -0.8787299491130214,
+   "yaw": 3.272739181772022
+  },
+  "fatia": {
+   "x0": 643.6789650472899,
+   "x1": 743.6789650472899,
+   "z0": -61.60438397692146,
+   "z1": 47.322684832177714,
+   "centro": [
+    693.6789650472899,
+    -21.140849572371874
+   ]
+  }
+ }
+}
