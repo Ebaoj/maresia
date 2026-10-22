@@ -111,6 +111,9 @@ while (Date.now() - t0 < espera * 1000) {
     if (o.pronto) { pronto = true; break }
   }
 }
+// espera também os modelos (o corpo do jogador e os GLB carregam em segundo plano): sem isso a foto saía
+// com o boneco de cápsulas no lugar do Neto (22/10/2026); a suíte de cenários já esperava maresia.pronto
+if (pronto) await avaliar('Promise.race([window.maresia?.pronto, new Promise((r) => setTimeout(r, 180000))]).then(() => true)')
 
 const estado = await avaliar(`JSON.stringify({
   tempos: window.__tempos || null,
