@@ -106,6 +106,7 @@ export function secaoMundo(gui, cfg) {
   it.add(cfg.interacao, 'duracaoPegada', 2, 120, 1).name('pegada dura (s)')
   it.add(cfg.interacao, 'recuperaGrama', 0.05, 3, 0.01).name('grama levanta (por s)')
   it.add(cfg.interacao, 'amorteceOnda', 0.9, 0.999, 0.001).name('ondinhas duram')
+  it.add(cfg.interacao, 'velocidadeOnda', 0.5, 4, 0.1).name('ondinhas se abrem (m/s)')
   it.add(cfg.interacao, 'ventoCoqueiros', 0, 3, 0.01).name('vento nas folhas e roupas')
 
   // o vento e as árvores pintadas (mundo/vento-arvores.js, arvore-forma.js): o vento muda ao vivo; a forma, ao recarregar

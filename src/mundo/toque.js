@@ -6,15 +6,31 @@
 // levanta em alguns segundos. Fica presa ao mundo: quando o jogador anda, a imagem é
 // reamostrada com o deslocamento, então o rastro não "anda junto".
 //
-// Água que ondula: na mesma área, uma simulação simples de onda (equação da onda numa
-// grade). Quem entra, nada ou cai na água solta uma gota; o anel se espalha e some.
+// Água que ondula: uma simulação simples de onda (equação da onda numa grade) numa área menor e
+// mais fina (32 m, 12,5 cm por texel), também presa ao mundo. Quem entra, nada ou cai na água solta
+// uma gota; o anel se espalha devagar (cfg.interacao.velocidadeOnda) e some em um ou dois segundos
+// (cfg.interacao.amorteceOnda). Até 22/10/2026 a onda andava a ~10 m/s numa grade de 25 cm e uma
+// braçada abria um anel branco de 7 m (testes/unidade/ondinhas.test.js).
 
 import * as THREE from 'three'
 import { modulo, ref, amostraAlvo, uvTela, criarAlvo, criarPasse } from '../render/gpu/comum.js'
 
 const TAM = 256
 export const AREA_TOQUE = 64
+// a onda tem a sua própria grade: anel pequeno precisa de texel pequeno
+export const AREA_ONDA = 32
 const MAX = 32
+// a crista clara do anel (mar.js): a faixa de altura da onda que vira traço de espuma (fina: até 22/10/2026
+// ia de 0,04 a 0,4 e a onda lenta virava mancha branca larga)
+export const CRISTA = { de: 0.05, cheia: 0.08, some: 0.13, fim: 0.18 }
+
+// Coeficientes do passe de onda (um passo de 1/60 s): k = (velocidade · dt / texel)², no limite estável
+// da grade (0,5); amortece = quanto da onda sobra a cada passo. O gêmeo da CPU dos testes usa os mesmos.
+export function parametrosOnda(cfg) {
+  const texel = AREA_ONDA / TAM
+  const k = Math.min(0.5, ((cfg.interacao.velocidadeOnda / 60) / texel) ** 2)
+  return { tam: TAM, area: AREA_ONDA, k, amortece: cfg.interacao.amorteceOnda, crista: CRISTA }
+}
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -52,7 +68,7 @@ void main() {
 
 const fragOnda = /* glsl */ `
 uniform sampler2D tAnterior; uniform vec2 uDesloc; uniform vec2 uCentro; uniform float uArea; uniform vec2 uTexel;
-uniform vec4 uGotas[${MAX}]; uniform int uNG; uniform float uAmortece;
+uniform vec4 uGotas[${MAX}]; uniform int uNG; uniform float uAmortece; uniform float uK;
 varying vec2 vUv;
 vec2 ler(vec2 uv) {
   uv += uDesloc;
@@ -64,7 +80,7 @@ void main() {
   vec2 c = ler(vUv);
   float viz = ler(vUv + vec2(uTexel.x, 0.0)).r + ler(vUv - vec2(uTexel.x, 0.0)).r
             + ler(vUv + vec2(0.0, uTexel.y)).r + ler(vUv - vec2(0.0, uTexel.y)).r;
-  float h = (viz * 0.5 - c.g) * uAmortece;
+  float h = (2.0 * c.r - c.g + uK * (viz - 4.0 * c.r)) * uAmortece;
   vec2 xz = uCentro + (vUv - 0.5) * uArea;
   for (int i = 0; i < ${MAX}; i++) {
     if (i >= uNG) break;
@@ -123,7 +139,7 @@ function ondaTsl(uO) {
     const c = ler(vUv)
     const viz = ler(vUv.add(vec2(texel.x, 0.0))).x.add(ler(vUv.sub(vec2(texel.x, 0.0))).x)
       .add(ler(vUv.add(vec2(0.0, texel.y))).x).add(ler(vUv.sub(vec2(0.0, texel.y))).x)
-    const h = viz.mul(0.5).sub(c.y).mul(ref(uO.uAmortece)).toVar()
+    const h = c.x.mul(2.0).sub(c.y).add(ref(uO.uK).mul(viz.sub(c.x.mul(4.0)))).mul(ref(uO.uAmortece)).toVar()
     const xz = ref(uO.uCentro).add(vUv.sub(0.5).mul(ref(uO.uArea)))
     Loop(MAX, ({ i }) => {
       If(i.toFloat().greaterThanEqual(ref(uO.uNG)), () => { Break() })
@@ -151,8 +167,8 @@ export function criarToque(renderer, mapaAltura, cfg) {
     uDt: { value: 0 }, uRecupera: { value: 0.5 }, uPts: { value: pts }, uVel: { value: vel }, uN: { value: 0 },
   }
   const uO = {
-    tAnterior: { value: null }, uDesloc: { value: new THREE.Vector2() }, uCentro: { value: new THREE.Vector2() }, uArea: { value: AREA_TOQUE },
-    uTexel: { value: new THREE.Vector2(1 / TAM, 1 / TAM) }, uGotas: { value: gotas }, uNG: { value: 0 }, uAmortece: { value: 0.985 },
+    tAnterior: { value: null }, uDesloc: { value: new THREE.Vector2() }, uCentro: { value: new THREE.Vector2() }, uArea: { value: AREA_ONDA },
+    uTexel: { value: new THREE.Vector2(1 / TAM, 1 / TAM) }, uGotas: { value: gotas }, uNG: { value: 0 }, uAmortece: { value: 0.96 }, uK: { value: 0.04 },
   }
   const passeToque = criarPasse(THREE, { uniforms: uT, vertexShader: vert, fragmentShader: fragToque, tsl: () => toqueTsl(uT) })
   const passeOnda = criarPasse(THREE, { uniforms: uO, vertexShader: vert, fragmentShader: fragOnda, tsl: () => ondaTsl(uO) })
@@ -163,10 +179,14 @@ export function criarToque(renderer, mapaAltura, cfg) {
     tOnda: { value: onda[0].texture },
     uToqueCentro: { value: new THREE.Vector2() },
     uToqueArea: { value: AREA_TOQUE },
+    uOndaCentro: { value: new THREE.Vector2() },
+    uOndaArea: { value: AREA_ONDA },
   }
 
   const centro = new THREE.Vector2()
+  const centroOnda = new THREE.Vector2()
   const texel = AREA_TOQUE / TAM
+  const texelOnda = AREA_ONDA / TAM
   let fila = []
   let filaGotas = []
   let acOnda = 0
@@ -212,17 +232,29 @@ export function criarToque(renderer, mapaAltura, cfg) {
       publico.tToque.value = toque[it].texture
       fila = []
 
-      // água: passo fixo de 1/60 s para a onda andar sempre na mesma velocidade
+      // água: passo fixo de 1/60 s para a onda andar sempre na mesma velocidade. A grade dela anda em
+      // passos de 1 texel dela, e só quando um passo roda (o centro é sempre o da imagem atual)
+      const po = parametrosOnda(cfg)
       acOnda += dt
       let primeiro = true
       while (acOnda >= 1 / 60) {
         acOnda -= 1 / 60
+        let odx = 0
+        let odz = 0
+        if (primeiro) {
+          const ondaX = Math.round(jogador.x / texelOnda) * texelOnda
+          const ondaZ = Math.round(jogador.z / texelOnda) * texelOnda
+          odx = (ondaX - centroOnda.x) / AREA_ONDA
+          odz = (ondaZ - centroOnda.y) / AREA_ONDA
+          centroOnda.set(ondaX, ondaZ)
+        }
         const ng = primeiro ? Math.min(MAX, filaGotas.length) : 0
         for (let i = 0; i < ng; i++) gotas[i].set(...filaGotas[i])
         uO.uNG.value = ng
-        uO.uDesloc.value.set(primeiro ? dx : 0, primeiro ? dz : 0)
-        uO.uCentro.value.copy(centro)
-        uO.uAmortece.value = cfg.interacao.amorteceOnda
+        uO.uDesloc.value.set(odx, odz)
+        uO.uCentro.value.copy(centroOnda)
+        uO.uAmortece.value = po.amortece
+        uO.uK.value = po.k
         uO.tAnterior.value = onda[io].texture
         passeOnda.desenhar(r, onda[1 - io])
         io = 1 - io
@@ -231,6 +263,7 @@ export function criarToque(renderer, mapaAltura, cfg) {
       if (!primeiro) filaGotas = []
       publico.tOnda.value = onda[io].texture
       publico.uToqueCentro.value.copy(centro)
+      publico.uOndaCentro.value.copy(centroOnda)
       r.setRenderTarget(alvoAnterior)
     },
   }

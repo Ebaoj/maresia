@@ -223,7 +223,8 @@ export const PADRAO = {
   },
   interacao: {
     recuperaGrama: 0.5,    // quão rápido a grama amassada volta a ficar de pé (por segundo)
-    amorteceOnda: 0.985,   // quanto as ondinhas da água duram (mais perto de 1 = mais tempo)
+    amorteceOnda: 0.96,    // quanto das ondinhas sobra a cada 1/60 s (mais perto de 1 = duram mais; 0,96 some em ~2 s)
+    velocidadeOnda: 1.8,   // a que velocidade o anel da água se abre (m/s); até 22/10/2026 eram ~10 m/s e o anel ia a 7 m
     pegadas: true,
     duracaoPegada: 25,     // segundos até a pegada sumir na areia seca
     ventoCoqueiros: 1.0,   // quanto as folhas dos coqueiros e as roupas balançam
@@ -472,6 +473,7 @@ export const PADRAO_MUDOU = [
   ['mundo.marcosNorte.corSe', '#cddbd6', '#bccfc6'], // 21/10/2026: reboco dos marcos, cores refeitas pelos conceitos
   ['mundo.marcosNorte.corSe', '#b7cbc1', '#bccfc6'],
   ['mundo.marcosNorte.corEstacao', '#efe6d2', '#ebdcba'],
+  ['interacao.amorteceOnda', 0.985, 0.96], // 22/10/2026: anéis brancos enormes em volta de quem nada
 ]
 
 export function migrarPadroes(salvo) {
