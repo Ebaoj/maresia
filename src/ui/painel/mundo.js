@@ -33,6 +33,14 @@ export function secaoMundo(gui, cfg) {
   gente.add(cfg.pessoas, 'diaDe', 0, 12, 0.25).name('o movimento começa (h)')
   gente.add(cfg.pessoas, 'diaAte', 12, 24, 0.25).name('e acaba (h)')
 
+  const tl = mundo.addFolder('Telhados ao longe')
+  tl.add(cfg.mundo.telhadosLonge, 'ligado').name(rec('ligados'))
+  tl.add(cfg.mundo.telhadosLonge, 'distancia', 300, 3000, 10).name('distância da câmera (un)')
+  tl.add(cfg.mundo.telhadosLonge, 'alturaMin', 1, 30, 0.5).name(rec('altura mínima (un)'))
+  tl.add(cfg.mundo.telhadosLonge, 'alturaMax', 1, 40, 0.5).name(rec('altura máxima (un)'))
+  tl.add(cfg.mundo.telhadosLonge, 'mistura', 0, 1, 0.01).name('cor do ar ao longe (mistura)')
+  tl.add(cfg.mundo.telhadosLonge, 'refazer', 10, 300, 5).name('refaz a cada (un)')
+
   const vida = mundo.addFolder('Vida de rua de 1932')
   vida.add(cfg.vida, 'ligada').name(rec('ligada'))
   vida.add(cfg.vida, 'feiraCarrocas', 0, 20, 1).name(rec('feira: carroças'))

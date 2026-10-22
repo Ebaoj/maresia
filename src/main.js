@@ -32,6 +32,7 @@ import { criarArvores } from './mundo/arvores.js'
 import { criarPessoas } from './mundo/pessoas.js'
 import { criarAtores } from './mundo/atores.js'
 import { criarHorizonte } from './mundo/horizonte.js'
+import { criarTelhadosLonge } from './mundo/telhados-longe.js'
 import { criarMarcos } from './mundo/marcos.js'
 import { criarPraia } from './mundo/praia.js'
 import { criarCoqueiros } from './mundo/vegetacao.js'
@@ -147,6 +148,7 @@ async function iniciar() {
   marcar('quintal')
   const pessoas = criarPessoas(cena, grade, cfg)
   const horizonte = criarHorizonte(cena)
+  const telhadosLonge = criarTelhadosLonge(cena, cfg) // a silhueta dos telhados de 1932 até o horizonte
   const grama = criarGrama(cena, mapaAltura, cfg, toque.publico)
   marcar('grama')
   const areia = criarAreia(cena, renderer, mapaAltura, cfg)
@@ -314,6 +316,7 @@ async function iniciar() {
     centroPerto.copy(jogador.pos).addScaledVector(frenteCam, cfg.mundo.sombraPertoAFrente ?? 8)
     sombraPerto.atualizar(ceu.dirContinua, centroPerto)
     horizonte.atualizar(paleta)
+    telhadosLonge.atualizar(camera, paleta)
     pessoas.atualizar(dt, t, cfg.tempo.hora)
     atores?.atualizar(dt, jogador.pos)
     const fpsAvo = cfg.estilo.visual === 'arcane' ? cfg.personagem.fpsAcao : cfg.personagem.fpsPose // Arcane: 24 poses

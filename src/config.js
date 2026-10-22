@@ -322,6 +322,15 @@ export const PADRAO = {
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
+    // os telhados ao longe (src/mundo/telhados-longe.js): faixa de silhueta que acompanha a câmera e só sobe onde a planta tem cidade
+    telhadosLonge: {
+      ligado: true,
+      distancia: 900,    // un da câmera até a faixa
+      alturaMin: 7,      // altura do telhado (un)
+      alturaMax: 13,
+      mistura: 0.38,     // quanto da névoa entra na cor (0 = barro, 1 = céu)
+      refazer: 60,       // a câmera anda isso (un) e a faixa se refaz
+    },
     // Os marcos do norte do centro em 1932 (Sé velha, Estação Central, Passeio Público): src/mundo/marcos-norte.js
     marcosNorte: {
       se: true,             // a velha Sé de 1854 (demolida em 1938)
