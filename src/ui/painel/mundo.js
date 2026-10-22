@@ -34,6 +34,7 @@ export function secaoMundo(gui, cfg) {
   gente.add(cfg.pessoas, 'diaDe', 0, 12, 0.25).name('o movimento começa (h)')
   gente.add(cfg.pessoas, 'diaAte', 12, 24, 0.25).name('e acaba (h)')
 
+  mundo.add(cfg.mundo, 'palhaPerto', 30, 2000, 10).name('palhoça detalhada até (un)')
   const tl = mundo.addFolder('Telhados ao longe')
   tl.add(cfg.mundo.telhadosLonge, 'ligado').name(rec('ligados'))
   tl.add(cfg.mundo.telhadosLonge, 'distancia', 300, 3000, 10).name('distância da câmera (un)')

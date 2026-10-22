@@ -16,7 +16,7 @@ import { alturaTerreno } from './terreno.js'
 import { texturizar, toonVertice } from '../materiais.js'
 import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
-import { instanciarEmBlocos } from './blocos.js'
+import { instanciarEmBlocos, TAM_LOD } from './blocos.js'
 import { trechosJogo, VILAS } from './fortaleza1932.js'
 import { criarAleatorio } from '../utils.js'
 import { CAL } from '../paleta.js'
@@ -232,6 +232,33 @@ function geometriaTravessa() {
   return pintarGeo(new THREE.CylinderGeometry(0.022, 0.022, 1, 4).rotateZ(Math.PI / 2), '#6e5d48')
 }
 
+// a palhoça de longe: a caixa da parede e a cobertura de duas águas, do tamanho da de perto
+function palhocaDeLonge(geo) {
+  geo.computeBoundingBox()
+  const b = geo.boundingBox
+  const w = b.max.x - b.min.x
+  const d = b.max.z - b.min.z
+  const h = b.max.y - Math.max(0, b.min.y)
+  const cx = (b.max.x + b.min.x) / 2
+  const cz = (b.max.z + b.min.z) / 2
+  const parede = h * 0.55
+  const pinta = (g, hex) => {
+    const n = g.attributes.position.count
+    const c = new THREE.Color(hex)
+    const a = new Float32Array(n * 3)
+    for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b }
+    g.setAttribute('color', new THREE.BufferAttribute(a, 3))
+    return g
+  }
+  const caixa = new THREE.BoxGeometry(w * 0.9, parede, d * 0.9).translate(cx, parede / 2, cz).toNonIndexed()
+  // a cobertura: um prisma de três lados deitado ao longo de x
+  const telhado = new THREE.CylinderGeometry(1, 1, w, 3, 1).rotateZ(Math.PI / 2).rotateX(Math.PI / 6)
+  telhado.scale(1, (h - parede) / 1.5, d / 1.73).translate(cx, parede + (h - parede) / 3, cz)
+  const t = telhado.toNonIndexed()
+  for (const g of [caixa, t]) { for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k) }
+  return mergeGeometries([pinta(caixa, '#a08a68'), pinta(t, '#c8a86a')])
+}
+
 export function criarVilas(cena) {
   const tipos = sortearTipos()
   const casas = [] // para o mapa (tecla M)
@@ -349,9 +376,31 @@ export function criarVilas(cena) {
 
   // textura pintada (visual Arcane): palha no que olha para cima (cobertura), tábua nas paredes e varas
   const mat = texturizar(toonVertice({ side: THREE.DoubleSide }), { topo: 'palha', lado: 'madeira', tam: 1.6 })
+  // Longe, a palhoça vira caixa de taipa com a cobertura de palha (21/10/2026, orçamento da cidade
+  // cheia): cada palhoça de perto tem ~3.500 triângulos, e da Coluna da Hora o casario de palha das
+  // vilas custava ~3 ms. Os dois desenhos usam a mesma grade de blocos de 96 m (TAM_LOD), e o bloco
+  // troca de um para o outro pela distância da câmera (cfg.mundo.palhaPerto, em main.js).
+  const pares = []
   for (const t of tipos) {
     if (!t.mats.length) continue
-    instanciarEmBlocos(cena, t.geo, mat, t.mats, null, { nome: 'casas-de-palha', solido: true })
+    const perto = instanciarEmBlocos(cena, t.geo, mat, t.mats, null, { nome: 'casas-de-palha', solido: true, tam: TAM_LOD })
+    const longe = instanciarEmBlocos(cena, palhocaDeLonge(t.geo), mat, t.mats, null, { nome: 'casas-de-palha-longe', tam: TAM_LOD })
+    for (let i = 0; i < perto.length; i++) {
+      perto[i].updateMatrixWorld(true)
+      pares.push({ perto: perto[i], longe: longe[i], esfera: perto[i].boundingSphere.clone().applyMatrix4(perto[i].matrixWorld) })
+      longe[i].visible = false
+    }
+  }
+  let ultimoLod = 0
+  casas.atualizarLonge = (camera, dist) => {
+    const agora = performance.now()
+    if (!camera || agora - ultimoLod < 400) return
+    ultimoLod = agora
+    for (const p of pares) {
+      const d = Math.max(0, Math.hypot(camera.position.x - p.esfera.center.x, camera.position.z - p.esfera.center.z) - p.esfera.radius)
+      const perto = d < dist
+      if (p.perto.visible !== perto) { p.perto.visible = perto; p.longe.visible = !perto }
+    }
   }
   if (varas.length) instanciarEmBlocos(cena, geometriaVara(), mat, varas, null, { nome: 'cercas', sombra: true })
   if (travessas.length) instanciarEmBlocos(cena, geometriaTravessa(), mat, travessas, null, { nome: 'cercas' })

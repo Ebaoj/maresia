@@ -318,6 +318,7 @@ async function iniciar() {
     horizonte.atualizar(paleta)
     telhadosLonge.atualizar(camera, paleta)
     quintal1932.atualizar(camera)
+    casasPalha.atualizarLonge?.(camera, cfg.mundo.palhaPerto)
     pessoas.atualizar(dt, t, cfg.tempo.hora)
     atores?.atualizar(dt, jogador.pos)
     const fpsAvo = cfg.estilo.visual === 'arcane' ? cfg.personagem.fpsAcao : cfg.personagem.fpsPose // Arcane: 24 poses

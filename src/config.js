@@ -323,6 +323,7 @@ export const PADRAO = {
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
+    palhaPerto: 220,     // até essa distância (un) a palhoça das vilas é a de perto; depois, a caixa de taipa e palha (vilas.js)
     // os telhados ao longe (src/mundo/telhados-longe.js): faixa de silhueta que acompanha a câmera e só sobe onde a planta tem cidade
     telhadosLonge: {
       ligado: true,
