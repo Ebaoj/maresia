@@ -127,6 +127,10 @@ function alturaNatural(x, z) {
     // fundo do mar: raso perto da praia, fundo longe
     const p = -s
     h = -Math.min(14, p * 0.12 + Math.pow(p, 1.5) * 0.004)
+    // o mar fundo (a mais de 260 un da costa) é liso: o ruído do fundo só perto da praia. O mapa de 22/10/2026
+    // tem 1,6 vez mais chão e boa parte é mar; o ruído lá fora não aparece na tela e era o grosso do tempo de
+    // montar o terreno (calcularAlturas, no Node: 14,0 s -> 2,9 s)
+    if (p > 260) return h
     h += fbm(x * 0.03, z * 0.03, 2, 5) * 0.4 * smooth(0, 20, p)
     // linha de recifes ao largo do centro (a que fechava a enseada de 1881)
     const recife = Math.exp(-(((p - 34) / 6) ** 2)) * smooth(-260, -200, x) * (1 - smooth(60, 140, x))
