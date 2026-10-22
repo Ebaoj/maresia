@@ -14,8 +14,9 @@
 // Este arquivo é o dado no jogo (as linhas em coordenada de jogo, a pergunta "aqui é leito da linha?" para o
 // casario não construir em cima) e o desenho (lastro, dormentes, trilhos e os postes de telégrafo).
 // O que fica de fora: o trecho dentro da Estação (a gare de estacao.js tem os trilhos dela), o que cai no mar (a
-// Ponte Metálica não está modelada) e o que entra na cerca do Campo do Urubu (o campo é reconstituição em cima do
-// recinto das oficinas: o conflito está em docs/mapa-1932.md, v16).
+// Ponte Metálica não está modelada) e o que entra na cerca do Campo do Urubu. Até 22/10/2026 o campo cobria o
+// recinto das Oficinas da RVC e o ramal e o desvio delas não eram desenhados; desde então (docs/mapa-1932.md, v17)
+// o campo fica a leste do recinto, e nenhuma linha da planta entra na cerca.
 
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'

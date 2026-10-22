@@ -19,7 +19,8 @@ export function lugaresDoCampo (planta) {
   const galpao = planta.galpoes.find((g) => g.quadra === 'frente' && g.fila === 1 && g.u < 0 && g.u > -planta.opcoes.galpaoComprimento * 1.5) || planta.galpoes[0]
   const passo = planta.opcoes.redePasso
   const redes = [0, 1, 2].map((i) => ponto(q, galpao.u - 6 + i * passo, galpao.w))
-  // a cerca onde o Zé vem: o lado leste (P3 a P2), virado para a cidade, longe do soldado do portão
+  // a cerca onde o Zé vem: o lado de P3 a P2, o do sul desde 22/10/2026 (ao longo da Linha Norte, virado para a
+  // linha e para a cidade), longe do soldado do portão
   const p = planta.cerca.poligono
   const [ax, az] = p[3]
   const [bx, bz] = p[2]

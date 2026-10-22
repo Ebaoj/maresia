@@ -78,9 +78,11 @@ export const LUGARES = {
   vilaMorena: [-38.5185, -3.7192],
   seminario: [-38.5205, -3.724],
   farol: [-38.4775, -3.716],
-  oficinasUrubu: [-38.5646, -3.7156],
+  // o meio do recinto das Oficinas da RVC na Planta de 1931-1932 (ferrovia1932.json, "patios"; até 22/10/2026 -38.5646, -3.7156)
+  oficinasUrubu: [-38.56886, -3.71483],
   vilaFerroviaria: [-38.5678, -3.7141],
-  campoUrubu: [-38.57, -3.7176],
+  // o meio do polígono do campo, movido em 22/10/2026 para o lado das oficinas (docs/mapa-1932.md, v17)
+  campoUrubu: [-38.56131, -3.71497],
   campoOtavioBonfim: [-38.5485, -3.7345],
   estacaoOtavio: [-38.5437, -3.7314],
   pracaMestres: [-38.5257, -3.7215],
