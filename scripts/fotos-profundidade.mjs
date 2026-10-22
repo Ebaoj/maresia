@@ -32,6 +32,80 @@ const chrome = spawn(CHROME, [
 ], { stdio: 'ignore', detached: true })
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// roda na página: grava os pares ligado/desligado em docs/capturas/video/<nome>-on e -off (gravador do modo dev)
+const PARES = `async (nome, segundos, fps, roteiro) => {
+  const m = window.maresia
+  const V3 = m.cam.alvo.constructor // o Vector3 do jogo (importar o three de novo daria uma segunda cópia)
+  const { alturaChao } = await import('/src/mundo/colisao.js')
+  const cv = m.canvas
+  cv.setPointerCapture = () => {} // o evento sintético não tem ponteiro ativo para capturar
+  let px = 0, py = 0, arr = false
+  const ev = {
+    tecla: (code, baixo) => dispatchEvent(new KeyboardEvent(baixo ? 'keydown' : 'keyup', { code, key: code })),
+    arrasta: (dx, dy) => {
+      if (!arr) { arr = true; px = 640; py = 360; cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: px, clientY: py, pointerId: 1, bubbles: true })) }
+      px += dx; py += dy
+      cv.dispatchEvent(new PointerEvent('pointermove', { clientX: px, clientY: py, pointerId: 1, bubbles: true }))
+    },
+    solta: () => { if (arr) { arr = false; cv.dispatchEvent(new PointerEvent('pointerup', { clientX: px, clientY: py, pointerId: 1, bubbles: true })) } },
+    roda: (dy) => cv.dispatchEvent(new WheelEvent('wheel', { deltaY: dy, bubbles: true, cancelable: true })),
+  }
+  const e = m.cfg.estilo
+  const base = m.pos.base || m.pos
+  m.controle.pausado = true
+  const dt = 1 / fps, total = Math.round(segundos * fps)
+  const envios = [], quadros = []
+  const v = new V3(), fr = new V3(), w = new V3()
+  const ossos = []
+  m.jogador.p.raiz.traverse((o) => { if (o.isBone) ossos.push(o) })
+  const naTela = (p) => { v.copy(p).project(m.cam.camera); return [(v.x + 1) / 2 * cv.width, (1 - v.y) / 2 * cv.height, v.z] }
+  const mandar = (sufixo, i) => {
+    envios.push(fetch('/__quadro?nome=' + encodeURIComponent(nome + '-' + sufixo) + '&n=' + i, { method: 'POST', body: cv.toDataURL('image/jpeg', 0.95) }))
+  }
+  try {
+    for (let i = 0; i < total; i++) {
+      roteiro(i * dt, m, ev)
+      e.dof = true
+      m.passo(dt)
+      mandar('on', i)
+      // regiões, com a câmera deste quadro
+      const cam = m.cam.camera
+      // a caixa do jogador na tela: os ossos do corpo visível projetados
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9
+      for (const o of ossos) {
+        const [sx, sy] = naTela(o.getWorldPosition(w))
+        x0 = Math.min(x0, sx); y0 = Math.min(y0, sy); x1 = Math.max(x1, sx); y1 = Math.max(y1, sy)
+      }
+      cam.getWorldDirection(fr)
+      const foco = fr.dot(v.copy(m.cam.alvo).sub(cam.position))
+      const fh = new V3(fr.x, 0, fr.z).normalize()
+      const distH = Math.hypot(m.cam.alvo.x - cam.position.x, m.cam.alvo.z - cam.position.z)
+      const chao = {}
+      for (const [k, fator] of [['meio', 0.5], ['dobro', 2], ['quadruplo', 4]]) {
+        const p = cam.position.clone().addScaledVector(fh, distH * fator)
+        p.y = alturaChao(p.x, p.z) + 0.05
+        const [sx, sy, sz] = naTela(p)
+        chao[k] = { x: sx, y: sy, z: sz, d: fr.dot(p.clone().sub(cam.position)) }
+      }
+      if (i === 0) { const c = document.createElement('canvas'); c.width = 8; c.height = 8; const g = c.getContext('2d'); g.drawImage(cv, 0, 0, 8, 8); console.warn('primeiro quadro, brilho:', [...g.getImageData(0, 0, 8, 8).data].reduce((a, b) => a + b, 0)) }
+      quadros.push({ i, jogador: [x0, y0, x1, y1], foco, focoDof: base.estadoFoco.foco, dist: m.cam.dist, pitch: m.cam.pitch, fov: cam.fov, chao, w: cv.width, h: cv.height })
+      // o mesmo quadro desligado: só o filtro de novo, sem andar o jogo
+      e.dof = false
+      m.pos.render(base.estadoFoco.tempo, 0)
+      mandar('off', i)
+      e.dof = true
+      if (envios.length > 16) await envios.shift()
+    }
+    await Promise.all(envios)
+  } finally {
+    ev.solta()
+    for (const k in m.teclas) m.teclas[k] = false
+    e.dof = true
+    m.controle.pausado = false
+  }
+  return JSON.stringify({ nome, fps, quadros })
+}`
 let ws = null
 let codigo = 0
 const logs = []
@@ -129,6 +203,16 @@ try {
       if (v.cfg) await avaliar(variante(v.cfg))
       const r = await avaliar(`window.maresia.gravar({ nome: ${JSON.stringify(v.nome)}, segundos: ${v.segundos ?? 6}, fps: ${v.fps ?? 30}, roteiro: ${v.roteiro || '() => {}'} }).then((x) => JSON.stringify(x))`)
       console.log('video:', r.valor || r.erro)
+      await avaliar(`Object.assign(window.maresia.cfg.estilo, ${padrao}), 'ok'`)
+    }
+    // pares: o mesmo quadro desenhado ligado e desligado (sem andar o jogo entre os dois), com entrada de verdade
+    // (teclado, arrastar e roda do mouse pelos mesmos ouvintes do jogo) e as regiões medidas: a caixa do jogador na
+    // tela e manchas do chão a 0,5x e 2x a distância do jogador, na direção da câmera
+    for (const v of plano.pares || []) {
+      if (v.lugar) console.log('par lugar:', (await avaliar(posicionar(v.lugar))).valor)
+      const r = await avaliar(`(${PARES})(${JSON.stringify(v.nome)}, ${v.segundos ?? 6}, ${v.fps ?? 30}, ${v.roteiro || '() => {}'})`)
+      if (r.erro) console.log('par', v.nome, r.erro)
+      else { writeFileSync(join(PASTA, `${v.nome}.json`), r.valor); console.log('par', v.nome, 'quadros:', JSON.parse(r.valor).quadros.length) }
       await avaliar(`Object.assign(window.maresia.cfg.estilo, ${padrao}), 'ok'`)
     }
     console.log('quebrados no fim:', (await avaliar('JSON.stringify(window.__shadersQuebrados || [])')).valor)

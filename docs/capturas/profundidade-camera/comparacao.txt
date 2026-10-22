@@ -1,0 +1,53 @@
+zoom: câmera 2.5 a 45.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 6.40 m, depois 0.00 m
+  todos           jogador   antes: min 0.99 média 1.00 <0,85: 0/311     depois: min 0.99 média 1.00 <0,85: 0/312
+  todos           meio      antes: min 0.01 média 0.29 <0,85: 213/235   depois: min 0.92 média 0.98 <0,85: 0/235
+  todos           dobro     antes: min 0.82 média 0.97 <0,85: 7/360     depois: min 0.82 média 0.98 <0,85: 5/360
+  todos           quadruplo antes: min 0.43 média 0.83 <0,85: 116/360   depois: min 0.80 média 0.94 <0,85: 31/360
+  câmera >= 15 m  jogador   antes: min 0.99 média 1.00 <0,85: 0/75      depois: min 0.99 média 1.00 <0,85: 0/76
+  câmera >= 15 m  meio      antes: min 0.01 média 0.07 <0,85: 124/124   depois: min 0.92 média 0.97 <0,85: 0/124
+  câmera >= 15 m  dobro     antes: min 0.82 média 0.93 <0,85: 7/124     depois: min 0.82 média 0.94 <0,85: 5/124
+  câmera >= 15 m  quadruplo antes: min 0.43 média 0.56 <0,85: 116/124   depois: min 0.80 média 0.87 <0,85: 31/124
+zoom-praca: câmera 2.5 a 45.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 6.40 m, depois 0.00 m
+  todos           jogador   antes: min 0.98 média 1.00 <0,85: 0/310     depois: min 0.98 média 1.00 <0,85: 0/310
+  todos           meio      antes: min 0.04 média 0.13 <0,85: 236/238   depois: min 0.66 média 0.97 <0,85: 12/238
+  todos           dobro     antes: min 0.94 média 0.99 <0,85: 0/360     depois: min 0.94 média 0.99 <0,85: 0/360
+  todos           quadruplo antes: min 0.80 média 0.96 <0,85: 12/360    depois: min 0.94 média 0.98 <0,85: 0/360
+  câmera >= 15 m  jogador   antes: min 0.99 média 1.00 <0,85: 0/74      depois: min 0.99 média 1.00 <0,85: 0/74
+  câmera >= 15 m  meio      antes: min 0.04 média 0.12 <0,85: 124/124   depois: min 0.88 média 0.99 <0,85: 0/124
+  câmera >= 15 m  dobro     antes: min 0.94 média 0.98 <0,85: 0/124     depois: min 0.94 média 0.98 <0,85: 0/124
+  câmera >= 15 m  quadruplo antes: min 0.80 média 0.90 <0,85: 12/124    depois: min 0.96 média 0.98 <0,85: 0/124
+orbita: câmera 5.0 a 5.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 0.12 m, depois 0.00 m
+  todos           jogador   antes: min 0.99 média 1.00 <0,85: 0/240     depois: min 0.99 média 1.00 <0,85: 0/240
+  todos           meio      antes: min 0.44 média 0.84 <0,85: 58/120    depois: min 0.54 média 0.87 <0,85: 47/120
+  todos           dobro     antes: min 0.93 média 0.99 <0,85: 0/240     depois: min 0.93 média 0.99 <0,85: 0/240
+  todos           quadruplo antes: min 0.88 média 0.97 <0,85: 0/197     depois: min 0.88 média 0.97 <0,85: 0/197
+giro-corrida-pulo: câmera 5.0 a 5.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 0.00 m, depois 0.00 m
+  todos           jogador   antes: min 0.98 média 1.00 <0,85: 0/240     depois: min 0.98 média 1.00 <0,85: 0/240
+  todos           dobro     antes: min 0.97 média 1.00 <0,85: 0/240     depois: min 0.97 média 1.00 <0,85: 0/240
+  todos           quadruplo antes: min 0.90 média 0.97 <0,85: 0/240     depois: min 0.88 média 0.97 <0,85: 0/240
+colisao-rua: câmera 5.0 a 7.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 0.98 m, depois 0.00 m
+  todos           jogador   antes: min 0.99 média 1.00 <0,85: 0/300     depois: min 0.99 média 1.00 <0,85: 0/300
+  todos           meio      antes: min 0.08 média 0.59 <0,85: 219/295   depois: min 0.84 média 0.98 <0,85: 2/295
+  todos           dobro     antes: min 0.96 média 1.00 <0,85: 0/300     depois: min 0.94 média 1.00 <0,85: 0/300
+  todos           quadruplo antes: min 0.72 média 0.94 <0,85: 29/300    depois: min 0.69 média 0.94 <0,85: 30/300
+parede: câmera 2.4 a 5.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 1.12 m, depois 0.00 m
+  todos           jogador   antes: min 0.98 média 0.99 <0,85: 0/240     depois: min 0.98 média 0.99 <0,85: 0/240
+  todos           dobro     antes: min 0.96 média 0.99 <0,85: 0/240     depois: min 0.96 média 0.99 <0,85: 0/240
+  todos           quadruplo antes: min 0.94 média 0.99 <0,85: 0/240     depois: min 0.94 média 0.99 <0,85: 0/240
+rua-estreita: câmera 2.9 a 8.9 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 2.46 m, depois 0.00 m
+  todos           jogador   antes: min 1.00 média 1.00 <0,85: 0/240     depois: min 1.00 média 1.00 <0,85: 0/240
+  todos           meio      antes: min 0.23 média 0.72 <0,85: 135/180   depois: min 0.94 média 0.99 <0,85: 0/180
+  todos           dobro     antes: min 0.89 média 0.99 <0,85: 0/240     depois: min 0.89 média 0.99 <0,85: 0/240
+  todos           quadruplo antes: min 0.89 média 0.97 <0,85: 0/222     depois: min 0.89 média 0.99 <0,85: 0/222
+sentar: câmera 5.0 a 5.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 0.00 m, depois 0.00 m
+  todos           jogador   antes: min 0.98 média 0.99 <0,85: 0/180     depois: min 0.98 média 0.99 <0,85: 0/180
+  todos           dobro     antes: min 0.98 média 0.99 <0,85: 0/180     depois: min 0.98 média 1.00 <0,85: 0/180
+  todos           quadruplo antes: min 0.97 média 1.00 <0,85: 0/180     depois: min 0.97 média 1.00 <0,85: 0/180
+nadar: câmera 5.0 a 5.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 0.03 m, depois 0.00 m
+  todos           jogador   antes: min 0.30 média 0.83 <0,85: 99/240    depois: min 0.18 média 0.89 <0,85: 63/240
+  todos           dobro     antes: min 0.11 média 0.84 <0,85: 99/240    depois: min 0.25 média 0.92 <0,85: 63/240
+  todos           quadruplo antes: min 0.35 média 0.91 <0,85: 54/212    depois: min 0.43 média 0.95 <0,85: 28/230
+teleporte: câmera 5.0 a 5.0 m; foco atrasado (máx |foco do efeito - distância do jogador|): antes 0.00 m, depois 0.00 m
+  todos           jogador   antes: min 0.99 média 1.00 <0,85: 0/180     depois: min 0.99 média 1.00 <0,85: 0/180
+  todos           dobro     antes: min 0.98 média 1.00 <0,85: 0/180     depois: min 0.98 média 1.00 <0,85: 0/180
+  todos           quadruplo antes: min 0.96 média 1.06 <0,85: 0/180     depois: min 0.96 média 1.06 <0,85: 0/180

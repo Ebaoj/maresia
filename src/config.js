@@ -113,11 +113,15 @@ export const PADRAO = {
     dofAutoFoco: true,     // o foco segue o jogador (distância da câmera até ele, suavizada); desligado = dofFocoManual
     dofFocoManual: 8,      // foco fixo (m), com o autofoco desligado
     dofFocoAjuste: 0,      // soma no foco (m): positivo põe o foco atrás do jogador
-    dofFocoSuave: 0.35,    // quanto o foco demora a acompanhar (s, 63% do caminho): sem "bombear" quando a câmera mexe
+    dofFocoSuave: 0,       // atraso do foco (s, 63% do caminho); 0 = o foco é a distância da câmera ao jogador em cada quadro (22/10: 0,35 ficava para trás no zoom)
     dofAbertura: 1.0,      // força geral (multiplica frente e fundo; 0 = nada desfoca)
     dofPerto: 1.0,         // força do desfoque da frente (o que está entre a câmera e o jogador)
-    dofPertoMargem: 1.5,   // quantos metros antes do jogador ainda ficam nítidos
-    dofLongeInicio: 8,     // quantos metros depois do jogador o fundo começa a amolecer
+    dofPertoFator: 0.65,   // a frente começa a desfocar em foco x isso (a faixa nítida cresce com o zoom, como numa lente)
+    dofPertoEscala: 3.5,   // quanto a frente desfoca por dioptria (1/m) a mais que o começo dela
+    dofPertoRef: 6,        // plano aberto: com o foco além disso (m) a frente desfoca menos, com o quadrado (a 45 m, quase nada)
+    dofPertoMargem: 1.0,   // mínimo nítido antes do jogador (m): o corpo dele com a câmera colada
+    dofLongeFator: 2.6,    // o fundo começa a amolecer em foco x isso
+    dofLongeInicio: 2,     // mínimo nítido depois do jogador (m)
     dofLongeCheio: 900,    // distância (m) em que o fundo chega ao desfoque máximo
     dofLonge: 0.7,         // desfoque máximo do fundo (fração do raio)
     dofRaio: 10,           // raio máximo (px numa imagem de 720 de altura)
@@ -551,6 +555,9 @@ export const PADRAO_MUDOU = [
   ['interacao.amorteceOnda', 0.985, 0.96], // 22/10/2026: anéis brancos enormes em volta de quem nada
   ['mundo.urubu.gente', 24, 48], // 22/10/2026: o campo montado; gente = as filas, o resto é povo
   ['mundo.urubu.alturaGalpao', 5.2, 4.4], // 22/10/2026: o galpão de 240 m virou o de 48 m; a chave é a cumeeira
+  ['estilo.dofFocoSuave', 0.35, 0], // 22/10/2026: a profundidade de campo não acompanhava o zoom (docs/profundidade-camera.md)
+  ['estilo.dofPertoMargem', 1.5, 1.0], // a faixa da frente passou a ser relativa ao foco; isto virou o mínimo
+  ['estilo.dofLongeInicio', 8, 2], // idem para o fundo
 ]
 
 export function migrarPadroes(salvo) {
