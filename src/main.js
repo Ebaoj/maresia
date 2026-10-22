@@ -221,6 +221,7 @@ async function iniciar() {
     ? new AranhaversoGpu(renderer, cena, camera, cfg, globais)
     : new Aranhaverso(renderer, cena, camera, cfg, globais)
   pos.coletarExcecoes()
+  pos.focarEm(cam.alvo) // autofoco da profundidade de campo: o ponto que a câmera segue
   // F4 (KAN-74): sombra dos objetos parados em cache, no WebGL e no WebGPU; liga em cfg.mundo.cacheSombra e vale ao vivo
   const cacheSombra = webgpu ? new CacheSombraGpu(renderer, cena, camera, ceu.sol, cfg, moduloWebgpu()) : new CacheSombra(renderer, cena, camera, ceu.sol, cfg)
   ceu.usarCache(cacheSombra)

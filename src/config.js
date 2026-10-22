@@ -106,7 +106,22 @@ export const PADRAO = {
     papel: 0.07,
     vinheta: 0.38,
     desfoqueFundo: 0.7,
-    focoDistancia: 140,
+    focoDistancia: 140,    // (desfoque antigo, de 8 amostras na tela: só vale com a profundidade de campo desligada)
+    // profundidade de campo (src/pos/profundidade.js, docs/profundidade-de-campo.md): o jogador nítido, a frente e o
+    // fundo moles, desfoque pintado (caixa, sem bokeh). Raio em pixels de uma imagem de 720 de altura
+    dof: true,
+    dofAutoFoco: true,     // o foco segue o jogador (distância da câmera até ele, suavizada); desligado = dofFocoManual
+    dofFocoManual: 8,      // foco fixo (m), com o autofoco desligado
+    dofFocoAjuste: 0,      // soma no foco (m): positivo põe o foco atrás do jogador
+    dofFocoSuave: 0.35,    // quanto o foco demora a acompanhar (s, 63% do caminho): sem "bombear" quando a câmera mexe
+    dofAbertura: 1.0,      // força geral (multiplica frente e fundo; 0 = nada desfoca)
+    dofPerto: 1.0,         // força do desfoque da frente (o que está entre a câmera e o jogador)
+    dofPertoMargem: 1.5,   // quantos metros antes do jogador ainda ficam nítidos
+    dofLongeInicio: 8,     // quantos metros depois do jogador o fundo começa a amolecer
+    dofLongeCheio: 900,    // distância (m) em que o fundo chega ao desfoque máximo
+    dofLonge: 0.7,         // desfoque máximo do fundo (fração do raio)
+    dofRaio: 10,           // raio máximo (px numa imagem de 720 de altura)
+    dofOrdem: 'antes',     // 'antes' ou 'depois' da pincelada na tela (A/B em docs/capturas/profundidade/)
     linhasVelocidade: true,
     pincel: 0.35,          // variação de pincelada nos materiais
     pincelEscala: 0.6,

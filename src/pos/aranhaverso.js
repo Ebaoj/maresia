@@ -12,6 +12,7 @@ import { criarAleatorio } from '../utils.js'
 import { CAL } from '../paleta.js'
 import { fragTensor, fragKuwahara, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
 import { uniformsFx2d, GLSL_FX2D } from './fx2d.js'
+import { uniformsProfundidade, atualizarProfundidade, criarEstadoFoco, ProfundidadeWebgl } from './profundidade.js'
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -115,6 +116,8 @@ uniform float uArcLuzEstrutura; uniform vec3 uArCor;
 uniform float uFx; uniform vec4 uFxA; uniform vec4 uFxB; uniform vec4 uFxC; uniform vec3 uFxCor1; uniform vec3 uFxCor2; uniform vec3 uFxSpray;
 uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcArClareia; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
+uniform float uDofLiga; uniform float uDofLongeIni; uniform float uDofLongeCheio; uniform float uDofLonge; uniform float uDofRaio;
+uniform float uDofPertoIni; uniform float uDofPerto;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
 ${COMUM}
@@ -122,6 +125,16 @@ ${COMUM}
 float distancia(vec2 uv) {
   float d = texture2D(tProf, uv).x;
   return -(uNear * uFar) / ((uFar - uNear) * d - uFar);
+}
+// profundidade de campo (profundidade.js): o traço e a quina clara somem onde o fundo já está desfocado
+// (linha nítida em cima de forma mole parecia colada)
+float dofTraco(float d) {
+  if (uDofLiga < 0.5) return 1.0;
+  float t = clamp((d - uDofLongeIni) / max(uDofLongeCheio - uDofLongeIni, 1.0), 0.0, 1.0);
+  float r = clamp((1.0 - (1.0 - t) * (1.0 - t)) * uDofLonge, 0.0, 1.0) * uDofRaio;
+  // a frente também (o banco desfocado perto da câmera ficava com a quina clara nítida por cima)
+  r = max(r, clamp(clamp((uDofPertoIni - d) / max(uDofPertoIni * 0.5, 0.05), 0.0, 1.0) * uDofPerto, 0.0, 1.0) * uDofRaio);
+  return 1.0 - smoothstep(0.5, 1.5, r);
 }
 vec3 paraSRGB(vec3 c) {
   c = clamp(c, 0.0, 1.0);
@@ -339,7 +352,7 @@ void main() {
   float bordaN = smoothstep(uLimNormal, uLimNormal + 0.4, max(gx, gy)) * 0.8;
   float dmin = min(d0, min(min(dl, dr), min(du, dd)));
   float alcance = mix(uDistLinha, uDistLinha * 3.0, step(0.9, peso));
-  float perto = 1.0 - smoothstep(alcance * 0.5, alcance, dmin);
+  float perto = (1.0 - smoothstep(alcance * 0.5, alcance, dmin)) * dofTraco(d0);
   float forca = mix(uPesoCenario, 1.0, smoothstep(0.3, 1.0, peso));
   float borda = max(bordaP, bordaN) * perto * forca;
   if (uArcane > 0.5) {
@@ -351,7 +364,7 @@ void main() {
     // vizinhos) ganha a borda gasta e clara do reboco, como o parapeito do forte da referência. Só no cenário
     // e perto (até ~45 m): de longe a quina tem menos de um pixel
     float convexo = smoothstep(0.002, 0.02, ((dl + dr + du + dd) * 0.25 - d0) / max(d0, 0.001));
-    float aresta = bordaN * convexo * (1.0 - smoothstep(25.0, 45.0, d0)) * step(0.95, alfa) * (1.0 - ceu);
+    float aresta = bordaN * convexo * (1.0 - smoothstep(25.0, 45.0, d0)) * step(0.95, alfa) * (1.0 - ceu) * dofTraco(d0);
     cor = mix(cor, cor * 1.22 + vec3(0.05, 0.045, 0.035), clamp(aresta * uArcAresta, 0.0, 1.0));
   } else {
     cor = mix(cor, uCorTinta, borda * uIntTinta);
@@ -547,6 +560,17 @@ export class Aranhaverso {
       uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
     }
 
+    // profundidade de campo: uniforms compartilhados com a tela (o traço some no fundo desfocado) e com o WebGPU
+    this.uDof = uniformsProfundidade(THREE)
+    this.estadoFoco = criarEstadoFoco()
+    this.alvoFoco = null // o ponto que a câmera segue (main.js, focarEm)
+    this.dof = null // os passes do WebGL, montados no primeiro quadro com o efeito ligado
+    this.dofLigado = false
+    Object.assign(this.uTela, {
+      uDofLiga: { value: 0 }, uDofLongeIni: this.uDof.uLongeIni, uDofLongeCheio: this.uDof.uLongeCheio,
+      uDofLonge: this.uDof.uLonge, uDofRaio: this.uDof.uRaioCheio, uDofPertoIni: this.uDof.uPertoIni, uDofPerto: this.uDof.uPerto,
+    })
+
     const shader = (frag, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, depthTest: false, depthWrite: false })
     this.matOclusao = shader(fragOclusao, this.uOclusao)
     this.matClaro = shader(fragClaro, this.uClaro)
@@ -572,6 +596,9 @@ export class Aranhaverso {
   // Mantido para compatibilidade: não há mais passe de normais.
   coletarExcecoes() {}
 
+  // autofoco da profundidade de campo: o ponto que a câmera segue (cam.alvo, na altura do peito do jogador)
+  focarEm(alvo) { this.alvoFoco = alvo }
+
   tamanho(largura, altura, pixelRatio) {
     const w = Math.max(1, Math.floor(largura * pixelRatio))
     const h = Math.max(1, Math.floor(altura * pixelRatio))
@@ -582,6 +609,7 @@ export class Aranhaverso {
     this.rtBrilhoB.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
     this.tamCheio = [w, h]
+    if (this.dof) this.dof.tamanho(w, h)
     this.meiaPintura = null // o tamanho do alvo pintado sai em atualizar(), pela opção do painel
     this.uPintura.tensor.uTexel.value.set(1 / w, 1 / h)
     this.uPintura.kuwahara.uTexel.value.set(1 / w, 1 / h)
@@ -701,7 +729,13 @@ export class Aranhaverso {
     u.uGrao.value = arc ? e.arcGrao : e.grao
     u.uPapel.value = (arc ? 0.02 : e.papel) + (0.2 - (arc ? 0.02 : e.papel)) * e.memoria
     u.uVinheta.value = e.vinheta
-    u.uDesfoque.value = e.desfoqueFundo
+    // profundidade de campo: com ela ligada, o desfoque antigo de 8 amostras da tela sai (ela o substitui)
+    {
+      const [w, h] = this.tamCheio || [1, 1]
+      this.dofLigado = atualizarProfundidade(this.uDof, this.estadoFoco, e, cam, this.alvoFoco, tempo, w, h)
+      u.uDofLiga.value = this.dofLigado ? 1 : 0
+    }
+    u.uDesfoque.value = this.dofLigado ? 0 : e.desfoqueFundo
     u.uFoco.value = e.focoDistancia
     u.uOclusao.value = arc ? (e.arcOclusao ?? e.oclusao) : e.oclusao
     u.uBrilho.value = e.brilho
@@ -797,12 +831,25 @@ export class Aranhaverso {
       this.passo(this.matDesfoque, this.rtBrilhoA)
     }
 
-    // 4b. pincelada na tela (pintura.js)
+    // 4b. profundidade de campo (profundidade.js), antes ou depois da pincelada (cfg.estilo.dofOrdem)
+    let fonte = this.rtCor.textures[0]
+    const dofAntes = e.dofOrdem !== 'depois'
+    if (this.dofLigado && !this.dof) {
+      this.dof = new ProfundidadeWebgl(THREE, this.uDof)
+      if (this.tamCheio) this.dof.tamanho(...this.tamCheio)
+    }
+    if (this.dofLigado && dofAntes) fonte = this.dof.desenhar(this, fonte, this.rtCor.depthTexture)
+
+    // 4c. pincelada na tela (pintura.js)
     if (this.pinturaLigada) {
+      this.uPintura.tensor.tCor.value = fonte
+      this.uPintura.kuwahara.tCor.value = fonte
       this.passo(this.matTensor, this.rtTensor)
       this.passo(this.kuwahara(amostrasPintura(e)), this.rtPintura)
+      fonte = this.rtPintura.texture
     }
-    this.uTela.tCor.value = this.pinturaLigada ? this.rtPintura.texture : this.rtCor.textures[0]
+    if (this.dofLigado && !dofAntes) fonte = this.dof.desenhar(this, fonte, this.rtCor.depthTexture)
+    this.uTela.tCor.value = fonte
 
     // 5. tela
     this.passo(this.matTela, null)
