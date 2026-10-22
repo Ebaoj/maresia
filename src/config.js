@@ -495,7 +495,7 @@ export const PADRAO = {
     metalPincel: 0.06,         // pincelada da borda das faixas de luz no metal (o jogo usa 0,35: no bronze curvo virava manchas)
     metalFormaLuz: 0.6,        // quanto a luz do sol nas esculturas lê a forma grande (aNormalForma) e não o relevo: 0 = o relevo, 1 = só a forma
     metalNivelSombra: 0.55,    // a faixa de sombra só no metal (o jogo usa 0,34: no ferro escuro a sombra virava breu sem volume)
-    metalNivelMeio: 1.2,       // o meio-tom do metal (o jogo usa 0,8): a face ao sol da manhã fica nesta faixa; o valor final tem de passar de ~0,33, porque a gradação final do Arcane (aranhaverso.js, passo 12) achata tudo entre 0,24 e 0,33 em 0,3 (a luz chapada do tigre)
+    metalNivelMeio: 1.2,       // o meio-tom do metal (o jogo usa 0,8): a face ao sol da manhã fica nesta faixa. Nasceu para passar de ~0,33, onde a gradação final achatava tudo em 0,3; desde grade-final (22/10/2026) a curva não tem mais faixa plana, e o 1,2 fica porque é o volume aprovado das esculturas (conferido nas fotos de docs/capturas/grade-final)
     metalNivelLuz: 1.45,       // a luz do metal (o jogo usa 1,1)
     metalCavidade: 0.45,        // o fundo das dobras escurece (a pátina guardada na juba, entre a pata e o peito): curvatura côncava, aCurva
     metalGasto: 0.35,          // a crista clareia (o metal gasto no alto do músculo e da escama): curvatura convexa
