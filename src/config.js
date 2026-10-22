@@ -432,6 +432,7 @@ export const PADRAO = {
     copiasMinBloco: 12,    // KAN-70: bloco com menos cópias que isso se junta aos vizinhos num bloco 2x maior (árvores espalhadas davam 2 cópias por bloco)
     tamBlocoMax: 768,      // até este tamanho; 0 em copiasMinBloco desliga a junção
     motorPlaca: false,     // KAN-72: no WebGPU, árvores e plantas no desenho guiado pela placa (three-virtual-geometry): menos objetos por quadro. Desligado até passar na régua
+    chaoSoltoPerto: true,  // 22/10/2026: o chão solto só vira objeto perto da câmera (eram 5.854 blocos na cena); false = como era, para medir
     atoresVat: true,       // KAN-74 fase 2b: atores de fundo como cópias com a pose em textura de ossos; só vale no WebGPU; recarregar
     resolucaoDinamica: false, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Desligada até passar na medição
     resolucaoMin: 0.6,     // R1: menor escala que a resolução dinâmica aceita

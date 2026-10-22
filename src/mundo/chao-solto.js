@@ -5,9 +5,15 @@
 // praia, os torrões e as touceiras de capim seco do Campo do Urubu e do mato (quadro 3).
 //
 // Tudo é sorteado uma vez, com semente, sobre a grade do terreno (o peso de cada tipo de chão de terreno.js) e vai em
-// blocos de cópias (instanciarEmBlocos, blocos de 64 m). Só os blocos a menos de cfg.chao.soltoRaio da câmera ficam
-// visíveis: de longe a peça tem poucos pixels e quem desenha o chão é o relevo. Não projeta sombra (peça de 3 a 40 cm
-// é menor que o pixel do mapa de sombra) e não tem colisão.
+// blocos de cópias de 64 m. Só os blocos a menos de cfg.chao.soltoRaio da câmera ficam visíveis: de longe a peça tem
+// poucos pixels e quem desenha o chão é o relevo. Não projeta sombra (peça de 3 a 40 cm é menor que o pixel do mapa de
+// sombra) e não tem colisão.
+//
+// Desde 22/10/2026 (docs/desempenho-22-10.md) o bloco só existe como objeto perto da câmera: as cópias ficam guardadas
+// por célula de 64 m, a malha do bloco nasce quando a câmera chega a menos de raio + 64 m da célula e só fica na cena
+// enquanto está nessa faixa. Antes eram 5.854 blocos na cena (434 mil pedras) para mostrar uns 10: cada objeto da cena
+// custava CPU por quadro mesmo escondido (o laço da visibilidade, a matriz do mundo e a travessia do desenho). A regra
+// de quem aparece é a mesma de antes (a esfera do bloco a menos do raio), então a imagem não muda.
 
 import * as THREE from 'three'
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -142,26 +148,99 @@ export function sortearChaoSolto(cfg) {
   return { pedras, coresPedra, tufos, coresTufo }
 }
 
-export function criarChaoSolto(cena, cfg) {
+// as cópias de cada tipo, separadas na célula de 64 m em que caem (a mesma grade dos blocos de antes)
+export function separarPorCelula(matrizes, cores, tam = TAM_BLOCO, celulas = new Map(), tipo = 0) {
+  const p = new THREE.Vector3()
+  for (let i = 0; i < matrizes.length; i++) {
+    p.setFromMatrixPosition(matrizes[i])
+    const ci = Math.floor(p.x / tam)
+    const cj = Math.floor(p.z / tam)
+    const k = `${ci},${cj}`
+    let c = celulas.get(k)
+    if (!c) { c = { ci, cj, tipos: [], malhas: null, naCena: false }; celulas.set(k, c) }
+    const t = (c.tipos[tipo] ||= { matrizes: [], cores: [] })
+    t.matrizes.push(matrizes[i])
+    t.cores.push(cores[i])
+  }
+  return celulas
+}
+
+// as chaves das células que encostam no quadrado de lado 2 * alcance em volta de (x, z)
+export function celulasEmVolta(x, z, alcance, tam = TAM_BLOCO) {
+  const lista = []
+  for (let cj = Math.floor((z - alcance) / tam); cj <= Math.floor((z + alcance) / tam); cj++) {
+    for (let ci = Math.floor((x - alcance) / tam); ci <= Math.floor((x + alcance) / tam); ci++) lista.push(`${ci},${cj}`)
+  }
+  return lista
+}
+
+// sorteio: as peças já sorteadas (os testes passam as deles; o jogo sorteia sobre o terreno)
+export function criarChaoSolto(cena, cfg, sorteio = null) {
   const t0 = performance.now()
-  const { pedras, coresPedra, tufos, coresTufo } = sortearChaoSolto(cfg)
+  const { pedras, coresPedra, tufos, coresTufo } = sorteio || sortearChaoSolto(cfg)
   const matPedra = toon('#ffffff', { semCache: true })
   const matTufo = toon('#ffffff', { semCache: true, vertexColors: true, side: THREE.DoubleSide })
-  const blocos = [
-    ...instanciarEmBlocos(cena, geometriaPedra(), matPedra, pedras, coresPedra, { tam: TAM_BLOCO, nome: 'chao-solto-pedras', sombra: false, peso: 0.4 }),
-    ...instanciarEmBlocos(cena, geometriaTouceira(), matTufo, tufos, coresTufo, { tam: TAM_BLOCO, nome: 'chao-solto-touceiras', sombra: false, peso: 0.5 }),
-  ]
-  for (const b of blocos) b.visible = false
-  window.__tChaoSolto = { ms: Math.round(performance.now() - t0), pedras: pedras.length, touceiras: tufos.length, blocos: blocos.length }
-  const c = new THREE.Vector3()
+  const geoPedra = geometriaPedra()
+  const geoTufo = geometriaTouceira()
+  const celulas = separarPorCelula(pedras, coresPedra)
+  separarPorCelula(tufos, coresTufo, TAM_BLOCO, celulas, 1)
+  // a malha da célula, na hora em que a câmera chega (os mesmos blocos que instanciarEmBlocos fazia: tam fixo de 64 m,
+  // sem junção, uma malha por tipo); fora da cena até a primeira vez que aparece
+  const deposito = new THREE.Group()
+  const montar = (c) => {
+    c.malhas = []
+    const [p, t] = c.tipos
+    if (p) c.malhas.push(...instanciarEmBlocos(deposito, geoPedra, matPedra, p.matrizes, p.cores, { tam: TAM_BLOCO, nome: 'chao-solto-pedras', sombra: false, peso: 0.4 }))
+    if (t) c.malhas.push(...instanciarEmBlocos(deposito, geoTufo, matTufo, t.matrizes, t.cores, { tam: TAM_BLOCO, nome: 'chao-solto-touceiras', sombra: false, peso: 0.5 }))
+    for (const b of c.malhas) {
+      b.visible = false
+      // a esfera no mundo (a malha fica na origem, sem pai que se mexa): a mesma conta que o laço fazia todo quadro
+      b.userData.centro = b.boundingSphere.center.clone()
+      b.userData.raio = b.boundingSphere.radius
+    }
+    deposito.remove(...c.malhas)
+  }
+  // o pré-aquecimento do WebGPU (renderizador.js) monta o shader de quem está na cena: um bloco de cada tipo fica
+  // sempre nela (escondido quando longe), para a primeira pedra não montar shader no meio do jogo
+  const fixos = []
+  for (const tipo of [0, 1]) {
+    const c = [...celulas.values()].find((x) => x.tipos[tipo] && x.tipos[1 - tipo])
+    if (c && !c.malhas) { montar(c); c.fixa = true; c.naCena = true; cena.add(...c.malhas); fixos.push(c) }
+  }
+  const naCena = new Set(fixos)
+  window.__tChaoSolto = { ms: Math.round(performance.now() - t0), pedras: pedras.length, touceiras: tufos.length, celulas: celulas.size }
+  const cp = new THREE.Vector3()
+  const c2 = new THREE.Vector3()
   return {
-    blocos,
+    celulas,
+    naCena,
+    geometrias: [geoPedra, geoTufo],
     atualizar(camera) {
       const raio = (cfg.chao.solto ?? true) ? cfg.chao.soltoRaio ?? 40 : -1e9
-      for (const b of blocos) {
-        const s = b.boundingSphere
-        c.copy(s.center).applyMatrix4(b.matrixWorld)
-        b.visible = c.distanceTo(camera.position) - s.radius < raio
+      cp.copy(camera.position)
+      if (cfg.desempenho?.chaoSoltoPerto === false) {
+        // como era até 22/10/2026, para medir (painel, Desempenho): todas as células na cena e o laço em todas
+        for (const c of celulas.values()) {
+          if (!c.malhas) montar(c)
+          if (!c.naCena) { c.naCena = true; cena.add(...c.malhas); naCena.add(c) }
+          for (const b of c.malhas) b.visible = c2.copy(b.boundingSphere.center).applyMatrix4(b.matrixWorld).distanceTo(cp) - b.userData.raio < raio
+        }
+        return
+      }
+      // as células na faixa (raio + uma célula): montadas e na cena; quem saiu da faixa sai da cena
+      const perto = new Set()
+      if (raio > 0) {
+        for (const k of celulasEmVolta(cp.x, cp.z, raio + TAM_BLOCO)) {
+          const c = celulas.get(k)
+          if (!c) continue
+          perto.add(c)
+          if (!c.malhas) montar(c)
+          if (!c.naCena) { c.naCena = true; cena.add(...c.malhas); naCena.add(c) }
+        }
+      }
+      for (const c of naCena) {
+        if (!perto.has(c) && !c.fixa) { c.naCena = false; cena.remove(...c.malhas); naCena.delete(c); continue }
+        for (const b of c.malhas) b.visible = b.userData.centro.distanceTo(cp) - b.userData.raio < raio
       }
     },
   }

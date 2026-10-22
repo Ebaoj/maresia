@@ -14,6 +14,7 @@ export function secaoDesempenho(gui, cfg) {
   des.add(d, 'tamBloco', [96, 192, 384]).name(rec('bloco de cópias (m)'))
   des.add(d, 'motorPlaca').name(rec('árvores na placa (WebGPU)'))
   des.add(d, 'atoresVat').name(rec('atores em textura (WebGPU)'))
+  des.add(d, 'chaoSoltoPerto').name('chão solto só perto (objetos)')
 
   const sombra = des.addFolder('Sombra')
   sombra.add(cfg.mundo, 'sombras').name('sombras')
