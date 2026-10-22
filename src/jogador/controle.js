@@ -308,7 +308,10 @@ export class Jogador {
       this.eventos.push({ tipo: 'pisada', pos: new THREE.Vector3(this.pos.x + rx * 0.12 * lado, this.pos.y, this.pos.z + rz * 0.12 * lado), yaw: this.yawVisual, lado })
     }
     this.ultimoLado = ladoAtual
-    if (this.velHoriz > 0.4) this.yawAlvo = Math.atan2(this.vel.x, this.vel.z)
+    // para onde o corpo quer olhar: a direção pedida (a tecla), não a da velocidade. A velocidade leva ~0,2 s
+    // para virar, e o corpo seguindo a velocidade somava esse atraso ao dele (22/10/2026)
+    if (this.velDesejada.lengthSq() > 0.09) this.yawAlvo = Math.atan2(this.velDesejada.x, this.velDesejada.z)
+    else if (this.velHoriz > 0.4) this.yawAlvo = Math.atan2(this.vel.x, this.vel.z)
 
     // mola do estica e amassa
     const k = 220
@@ -318,26 +321,33 @@ export class Jogador {
 
     // pose "em 2"
     this.acPose += dt
+    this.dtGiro = (this.dtGiro || 0) + dt
     const passo = 1 / Math.max(1, cfg.fpsPose)
-    if (this.acPose >= passo) {
+    // o corpo novo gira no quadro em que o animador desenha a pose (24/s no Arcane), o antigo no relógio dele
+    const posa = this.animador ? this.animador.vaiPosar(dt) : this.acPose >= passo
+    if (posa) {
       this.acPose %= passo
+      const dg = this.dtGiro // tempo desde o último giro: as taxas valem em qualquer ritmo de pose
+      this.dtGiro = 0
       if (this.animador?.mmAtivo && this.noChao && !this.nadando) {
         // motion matching: o corpo gira o que o movimento escolhido gira (meia-volta, curva, virar no
-        // lugar), e o controle só corrige o desvio aos poucos
+        // lugar), e o controle corrige o desvio. Andando, a correção é rápida (cfg.giroAndando): a 3/s,
+        // até 22/10/2026, encarar uma curva de 45° levava 0,7 s e o controle parecia travado
         const giro = this.animador.consumirGiro()
         this.yawVisual += giro
         if (this.animador.virarRapido) {
-          // desistiu do giro no meio: vira depressa, mas no máximo ~45° por desenho (sem estalo)
+          // desistiu do giro no meio: vira depressa, mas no máximo ~45° a cada 1/12 s (sem estalo)
           const d = Math.atan2(Math.sin(this.yawAlvo - this.yawVisual), Math.cos(this.yawAlvo - this.yawVisual))
-          this.yawVisual += THREE.MathUtils.clamp(d * (1 - Math.exp(-passo * 8)), -0.8, 0.8)
-        } else if (!this.animador.girando) this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 3))
+          const lim = 9.6 * dg
+          this.yawVisual += THREE.MathUtils.clamp(d * (1 - Math.exp(-dg * 8)), -lim, lim)
+        } else if (!this.animador.girando) this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-dg * cfg.giroAndando))
       } else {
         this.animador?.consumirGiro()
         // meia-volta saindo do parado: o motion matching ainda não assumiu (está entrando na mistura);
         // girar rápido aqui fazia o corpo estalar 120° em 0,1 s antes da animação de volta começar
         const d = this.yawAlvo - this.yawVisual
         const meiaVolta = this.animador?.mm && this.animador.opcoes.mm && !this.carregando && this.noChao && !this.nadando && Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) > 1.6
-        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * (meiaVolta ? 2 : 14)))
+        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-dg * (meiaVolta ? 2 : 14)))
       }
       if (!this.animador) {
         aplicarPose(this.p, {

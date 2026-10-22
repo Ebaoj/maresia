@@ -24,6 +24,7 @@ export function secaoPersonagem(gui, cfg) {
   mov.add(p, 'peNoChao').name('pé no chão (IK)')
   mov.add(p, 'inclinar').name('inclinar na curva')
   mov.add(p, 'motionMatching').name('motion matching')
+  mov.add(p, 'giroAndando', 1, 30, 0.5).name('virar andando (1/s)')
   mov.add(p, 'afundaAreia', 0, 0.08, 0.005).name('afunda na areia (m)')
   mov.add(p, 'joelhos', 0, 40, 1).name('joelho parado (graus)')
   mov.add(p, 'velocidade', 1, 10, 0.1).name('corpo antigo: andar (m/s)')

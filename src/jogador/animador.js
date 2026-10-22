@@ -307,6 +307,11 @@ export class Animador {
   // desistiu de um giro no meio (frente, trás, frente...): o controle vira depressa para o pedido
   get virarRapido() { return (this.mm?.semGiro || 0) > 0 }
 
+  // este quadro vai sair pose nova? O controle gira a raiz no mesmo quadro em que a pose muda: com o
+  // relógio dele (12/s) e o do animador (24/s no Arcane) soltos, o corpo virava só a cada 1/12 s e fora
+  // do tempo da pose (22/10/2026, docs/controle-22-10.md)
+  vaiPosar(dt) { return !this.opcoes.em2 || this.acumulado + dt >= 1 / Math.max(1, this.opcoes.fps) }
+
   // o controle lê e zera o giro acumulado
   consumirGiro() {
     const g = this.giroAcumulado || 0
