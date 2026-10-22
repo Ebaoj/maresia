@@ -55,8 +55,10 @@ try {
   })
   await new Promise((r) => ws.addEventListener('open', r))
   const cmd = (method, params = {}) => new Promise((r) => { const id = ++seq; esperando.set(id, r); ws.send(JSON.stringify({ id, method, params })) })
-  const avaliar = async (expression) => {
-    const r = await cmd('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
+  // com prazo: uma página travada (GPU disputada) prendia o Chrome sem fim e bloqueava as outras sessões
+  const avaliar = async (expression, prazo = 600000) => {
+    const r = await Promise.race([cmd('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }),
+      new Promise((_, nao) => setTimeout(() => nao(new Error('a página não respondeu em ' + prazo / 1000 + ' s')), prazo))])
     if (r.result?.exceptionDetails) return { erro: r.result.exceptionDetails.exception?.description || r.result.exceptionDetails.text }
     return { valor: r.result?.result?.value }
   }
