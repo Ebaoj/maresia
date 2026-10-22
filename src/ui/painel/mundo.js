@@ -23,6 +23,16 @@ export function secaoMundo(gui, cfg) {
   casario.add(cfg.casario.quintal, 'densidade', 0, 1, 0.05).name(rec('quintal: árvore por lote'))
   casario.add(cfg.casario.quintal, 'folga', 0, 8, 0.5).name(rec('quintal: distância atrás da casa (m)'))
 
+  const gente = mundo.addFolder('Gente de 1932 (de dia)')
+  gente.add(cfg.pessoas, 'andandoCentro', 0, 1000, 10).name(rec('andando no Centro'))
+  gente.add(cfg.pessoas, 'raioCentro', 100, 2000, 10).name(rec('Centro até (m)'))
+  gente.add(cfg.pessoas, 'gruposPraca', 0, 80, 1).name(rec('grupos na Praça do Ferreira'))
+  gente.add(cfg.pessoas, 'gruposFeira', 0, 80, 1).name(rec('grupos na feira'))
+  gente.add(cfg.pessoas, 'gruposEstacao', 0, 60, 1).name(rec('grupos na Estação'))
+  gente.add(cfg.pessoas, 'gruposSe', 0, 40, 1).name(rec('grupos no largo da Sé'))
+  gente.add(cfg.pessoas, 'diaDe', 0, 12, 0.25).name('o movimento começa (h)')
+  gente.add(cfg.pessoas, 'diaAte', 12, 24, 0.25).name('e acaba (h)')
+
   const vida = mundo.addFolder('Vida de rua de 1932')
   vida.add(cfg.vida, 'ligada').name(rec('ligada'))
   vida.add(cfg.vida, 'feiraCarrocas', 0, 20, 1).name(rec('feira: carroças'))

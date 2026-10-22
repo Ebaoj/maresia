@@ -145,7 +145,7 @@ async function iniciar() {
   marcar('coqueiros')
   criarQuintal1932(cena, cfg, pecas) // as árvores dos quintais de 1932, atrás das casas
   marcar('quintal')
-  const pessoas = criarPessoas(cena, grade)
+  const pessoas = criarPessoas(cena, grade, cfg)
   const horizonte = criarHorizonte(cena)
   const grama = criarGrama(cena, mapaAltura, cfg, toque.publico)
   marcar('grama')
@@ -314,7 +314,7 @@ async function iniciar() {
     centroPerto.copy(jogador.pos).addScaledVector(frenteCam, cfg.mundo.sombraPertoAFrente ?? 8)
     sombraPerto.atualizar(ceu.dirContinua, centroPerto)
     horizonte.atualizar(paleta)
-    pessoas.atualizar(dt, t)
+    pessoas.atualizar(dt, t, cfg.tempo.hora)
     atores?.atualizar(dt, jogador.pos)
     const fpsAvo = cfg.estilo.visual === 'arcane' ? cfg.personagem.fpsAcao : cfg.personagem.fpsPose // Arcane: 24 poses
     avo?.atualizar(dt, fpsAvo)

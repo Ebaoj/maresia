@@ -265,6 +265,17 @@ export const PADRAO = {
     soltoRaio: 40,        // até quantos metros da câmera ele aparece
     soltoDensidade: 1.0,  // quantas peças (1 = o padrão); vale ao recarregar
   },
+  // a gente do Centro de dia (src/mundo/pessoas.js); recarregar
+  pessoas: {
+    andandoCentro: 400,  // andando nas calçadas do Centro (além dos 150 da cidade inteira)
+    raioCentro: 600,     // até onde (m de verdade da Praça do Ferreira)
+    gruposPraca: 45,     // grupinhos conversando na Praça do Ferreira e na calçada dela
+    gruposFeira: 30,     // na feira do Mercado de Ferro
+    gruposEstacao: 14,   // na praça da Estação Central
+    gruposSe: 8,         // no largo da Sé
+    diaDe: 6,            // o movimento do dia começa (hora)
+    diaAte: 18.5,        // e acaba
+  },
   // a vida de rua de 1932 nos espaços abertos (src/mundo/vida1932.js); tudo muda ao recarregar
   vida: {
     ligada: true,
