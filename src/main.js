@@ -36,6 +36,7 @@ import { criarMarcos } from './mundo/marcos.js'
 import { criarPraia } from './mundo/praia.js'
 import { criarCoqueiros } from './mundo/vegetacao.js'
 import { criarQuintal1932 } from './mundo/quintal1932.js'
+import { criarVida1932 } from './mundo/vida1932.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
 import { criarUrubu1932 } from './mundo/urubu1932.js'
@@ -136,6 +137,8 @@ async function iniciar() {
   lugares.bancos.push(...marcos1932.bancos) // os bancos de ferro das praças dos marcos: dá para sentar
   marcar('rua')
   criarBondes(cena) // os trilhos das linhas de bonde da Light sobre a rede viária de 1932
+  const vida1932 = criarVida1932(cena, cfg, predios) // carroças, jumentos, carga, potes, varais e o fio do bonde
+  marcar('vida')
   criarArvores(cena, predios, grade)
   marcar('arvores')
   const { coqueiros, pecas } = criarCoqueiros(cena, cfg)
@@ -453,7 +456,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, ocupacao1932: ocup1932, urubu, marcos1932,
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, ocupacao1932: ocup1932, urubu, marcos1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

@@ -265,6 +265,22 @@ export const PADRAO = {
     soltoRaio: 40,        // até quantos metros da câmera ele aparece
     soltoDensidade: 1.0,  // quantas peças (1 = o padrão); vale ao recarregar
   },
+  // a vida de rua de 1932 nos espaços abertos (src/mundo/vida1932.js); tudo muda ao recarregar
+  vida: {
+    ligada: true,
+    feiraCarrocas: 5,     // carroças paradas em volta da feira do Mercado de Ferro
+    feiraPilhas: 10,      // pilhas de sacos e caixotes na feira
+    estacaoCarrocas: 4,   // carroças na praça da Estação Central
+    estacaoPilhas: 8,     // pilhas de fardos de algodão e sacos na Estação
+    raioCentro: 500,      // até onde (m de verdade da Praça do Ferreira) as ruas do Centro ganham pote, caixote e carroça
+    passoRua: 45,         // de quantos em quantos metros de rua (média)
+    raioBairros: 2500,    // até onde os bairros ganham pote e varal (m de verdade)
+    potesBairro: 0.25,    // a chance de uma casa simples ter pote na porta
+    varais: 0.15,         // a chance de uma casa simples ter varal no quintal
+    bonde: true,          // o poste e o fio aéreo do bonde sobre o trilho
+    raioBonde: 2500,      // até onde o fio do bonde vai (m de verdade)
+    passoPoste: 32,       // de quantos em quantos metros de trilho um poste do bonde
+  },
   casario: {
     larguraAlvo: 10,     // a largura de verdade que a casa deve ter (m): a testada longa da planta e partida em casas
     folgaParede: 0.12,   // a fresta entre duas casas geminadas (m)
