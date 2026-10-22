@@ -25,10 +25,12 @@ import { geometriaPote, geometriaVaral } from './pecas-vida1932.js'
 import { PADRAO } from '../config.js'
 import { criarPlanta, noNucleo } from './urubu-planta.js'
 import { geometriaGalpao, geometriaRede, vagasDeRede, CORES_REDE } from './urubu-galpao.js'
-import { geometriaCozinha, geometriaPipa, geometriaLata, geometriaBacia, geometriaPano, geometriaTrouxa, geometriaGuarita, geometriaPorteira, geometriaRegistro, geometriaCasinha, geometriaLatrinas } from './urubu-pecas.js'
+import { geometriaFogueira, geometriaCozinha, geometriaPipa, geometriaLata, geometriaBacia, geometriaPano, geometriaTrouxa, geometriaGuarita, geometriaPorteira, geometriaRegistro, geometriaCasinha, geometriaLatrinas } from './urubu-pecas.js'
 import { pecasCerca, pecasTrilho, geometriaVagao } from './urubu-linha.js'
 import { geometriaCercaTarefa, chaoDaTarefa } from './urubu-tarefas.js'
 import { modelosDoCampo, vagasDeGente } from './urubu-gente.js'
+import { criarNoiteDoCampo } from './urubu-noite.js'
+import { lugaresDoCampo } from './urubu-lugares.js'
 
 // quantos metros de verdade vale uma unidade de jogo aqui (desde 21/10/2026 o campo é 1:1)
 export function escalaNoCampo (x, z) {
@@ -100,6 +102,9 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
   const vagasRede = vagasDeRede(L, P, cfg.redePasso)
   const redes = { aberta: [], ocupada: [], enrolada: [] }
   const coresRede = { aberta: [], ocupada: [], enrolada: [] }
+  // de noite, as mesmas redes (a mesma cor), quase todas com alguém
+  const redesNoite = { aberta: [], ocupada: [] }
+  const coresNoite = { aberta: [], ocupada: [] }
   const trouxas = []
   const coresTrouxa = []
   const potes = []
@@ -127,8 +132,13 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
       const r = rnd.proximo()
       const forma = r < ocupadas ? 'ocupada' : r < ocupadas + cfg.redesEnroladasDia ? 'enrolada' : 'aberta'
       const [x, z] = q.mundo(g.u + v.x, g.w + v.z)
-      redes[forma].push(matriz(x, base, z, q.rot + rnd.entre(-0.04, 0.04)))
-      coresRede[forma].push(rnd.chance(0.07) ? rnd.escolha(CORES_REDE.slice(-3)) : rnd.escolha(CORES_REDE.slice(0, -3)))
+      const m = matriz(x, base, z, q.rot + rnd.entre(-0.04, 0.04))
+      const cor = rnd.chance(0.07) ? rnd.escolha(CORES_REDE.slice(-3)) : rnd.escolha(CORES_REDE.slice(0, -3))
+      redes[forma].push(m)
+      coresRede[forma].push(cor)
+      const deNoite = rnd.proximo() < (g.tipo === 'fechado' ? 0.95 : cfg.redesOcupadasNoite) ? 'ocupada' : 'aberta'
+      redesNoite[deNoite].push(m)
+      coresNoite[deNoite].push(cor)
       // os pertences no chão, encostados na linha de esteios
       if (rnd.chance(0.42)) {
         const lado = rnd.chance(0.5) ? 1 : -1
@@ -189,6 +199,8 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
     poe(geometriaLatrinas(lt.l, lt.p, lt.cabines), lt.x, alturaTerreno(lt.x, lt.z) - 0.05, lt.z)
     adicionarCaixa(lt.x, lt.z, lt.l / 2, lt.p / 2, q.rot)
   }
+  // ---- as fogueiras (a pedra e a lenha ficam de dia; o fogo é da noite, urubu-noite.js) ----
+  for (const f of planta.fogueiras) poe(geometriaFogueira(), f.x, alturaTerreno(f.x, f.z), f.z, f.u)
   // ---- a cerca e a linha do trem ----
   const perto = (x, z) => noNucleo(planta, x, z, 30)
   obra.push(...pecasCerca(planta, { altura: cfg.alturaCerca, perto }))
@@ -231,8 +243,13 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
   // ---- as cópias: redes, trouxas, potes, latas ----
   // miúdos: o que não se vê de longe (some além de cfg.distanciaMiudos: de longe o custo é de processador, por malha)
   const miudos = []
+  const redesDia = []
+  const redesDeNoite = []
   for (const forma of Object.keys(redes)) {
-    miudos.push(...instanciarEmBlocos(cena, geometriaRede(forma), matPano, redes[forma], coresRede[forma], { nome: `urubu-redes-${forma}` }))
+    redesDia.push(...instanciarEmBlocos(cena, geometriaRede(forma), matPano, redes[forma], coresRede[forma], { nome: `urubu-redes-${forma}` }))
+  }
+  for (const forma of Object.keys(redesNoite)) {
+    redesDeNoite.push(...instanciarEmBlocos(cena, geometriaRede(forma), matPano, redesNoite[forma], coresNoite[forma], { nome: `urubu-redes-noite-${forma}` }))
   }
   miudos.push(...instanciarEmBlocos(cena, geometriaTrouxa(), mat, trouxas, coresTrouxa, { nome: 'urubu-trouxas' }))
   miudos.push(...instanciarEmBlocos(cena, geometriaPote(), mat, potes, null, { nome: 'urubu-potes' }))
@@ -256,6 +273,10 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
     dia.push(...instanciarEmBlocos(cena, modelosGente.funcionario, mat, [matriz(c.x, alturaTerreno(c.x, c.z) + 0.14, c.z, q.rot - Math.PI / 2)], null, { nome: 'urubu-funcionario' }))
   }
   miudos.push(...guarda)
+  // a noite (urubu-noite.js): as fogueiras, as lamparinas, a gente em volta do fogo e as redes cheias
+  const nt = criarNoiteDoCampo(cena, planta, cfg, { matriz, montarGente, modelos: modelosGente, mat, matPano })
+  dia.push(...redesDia, ...nt.dia)
+  const noite = [...redesDeNoite, ...nt.noite]
 
   const ehDia = (hora) => hora >= (cfgJogo?.pessoas?.diaDe ?? 6) && hora <= (cfgJogo?.pessoas?.diaAte ?? 18.5)
   let agoraDia = null
@@ -265,6 +286,7 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
   return {
     centro: [planta.cozinha.x, planta.cozinha.z],
     planta,
+    lugares: lugaresDoCampo(planta), // os lugares da história (urubu-lugares.js), na planta deste config
     malhasObra,
     // de dia a gente do dia; de noite ela some (e, no commit da noite, a gente das fogueiras aparece)
     // depois de alguém mexer na visibilidade por fora (o medidor), o próximo atualizar refaz tudo
@@ -282,6 +304,7 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
       const perto = (m) => !c || centro(m).distanceToSquared(c) < lim
       for (const m of miudos) m.visible = perto(m)
       for (const m of dia) m.visible = d && perto(m)
+      for (const m of noite) m.visible = !d && perto(m)
     },
   }
 }
