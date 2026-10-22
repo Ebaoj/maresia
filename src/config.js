@@ -298,6 +298,7 @@ export const PADRAO = {
     quintal: {
       densidade: 0.25,   // a chance de uma arvore nascer no quintal de um lote
       folga: 2.5,        // quantos metros atras da casa a arvore fica (m)
+      ate: 320,          // longe disso (m da câmera) o bloco de quintais sai do desenho
     },
   },
   mundo: {

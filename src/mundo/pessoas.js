@@ -254,7 +254,15 @@ export function criarPessoas(cena, grade, cfg = null) {
   const ZERO = new THREE.Matrix4().makeScale(0, 0, 0)
   const registroNoite = registro.filter((r) => !r.diurno)
   let noite = false
+  let escondido = false
   return {
+    // para medir (src/debug/medidor.js): some com o movimento do dia sem mudar a hora
+    esconderDia(sim) {
+      const mexidas = new Set()
+      for (const r of diurnos) { if (!r.ator) { r.tipo.malha.setMatrixAt(r.idx, sim || noite ? ZERO : r.matriz); mexidas.add(r.tipo.malha) } }
+      for (const m of mexidas) m.instanceMatrix.needsUpdate = true
+      escondido = sim
+    },
     // à noite as figuras do movimento do dia saem do registro (nenhum ator ocupa o lugar delas)
     get registro() { return noite ? registroNoite : registro },
     // um ator animado ocupa (ou devolve) o lugar desta pessoa: a figura simples some ou volta
@@ -283,7 +291,7 @@ export function criarPessoas(cena, grade, cfg = null) {
       acumulado = 0
       const tocados = new Set()
       for (const a of andando) {
-        if (noite && a.diurno) continue
+        if ((noite || escondido) && a.diurno) continue
         if (a.rua) {
           a.t += a.vel * passo
           if (a.t > a.fim || a.t < a.ini) a.vel *= -1

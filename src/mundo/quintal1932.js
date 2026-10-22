@@ -147,17 +147,39 @@ export function criarQuintal1932(cena, cfg, pecas) {
   }
 
   const mat = toonVertice()
+  const blocos = []
+  const guardar = (r) => { if (Array.isArray(r)) blocos.push(...r) }
   for (const esp of ['mangueira', 'cajueiro']) {
     for (const v of ESP[esp]) {
       if (!v.mats.length) continue
-      instanciarEmBlocos(cena, v.geo, mat, v.mats, null, { nome: `quintal-${esp}`, placa: true })
+      guardar(instanciarEmBlocos(cena, v.geo, mat, v.mats, null, { nome: `quintal-${esp}`, placa: true }))
     }
   }
   // o coqueiro: a mesma geometria e o mesmo material dos coqueiros das vilas
   // (as folhas balançam com o vento)
   if (ESP.coqueiro.length && pecas) {
-    instanciarEmBlocos(cena, pecas.geoTronco, pecas.matTronco, ESP.coqueiro, null, { nome: 'quintal-coqueiro', placa: true })
-    instanciarEmBlocos(cena, pecas.geoCopa, pecas.matCopa, ESP.coqueiro, null, { nome: 'quintal-copa', semNormal: true, placa: true })
+    guardar(instanciarEmBlocos(cena, pecas.geoTronco, pecas.matTronco, ESP.coqueiro, null, { nome: 'quintal-coqueiro', placa: true }))
+    guardar(instanciarEmBlocos(cena, pecas.geoCopa, pecas.matCopa, ESP.coqueiro, null, { nome: 'quintal-copa', semNormal: true, placa: true }))
   }
-  return { plantadas }
+  // Longe, o quintal some (21/10/2026, orçamento da cidade cheia): a árvore fica atrás da casa, e além
+  // de cfg.casario.quintal.ate (m) a copa já não aparece por cima do telhado; o bloco inteiro de 96 m
+  // sai do desenho e da sombra. Na vista mais cheia (a Coluna da Hora) os quintais custavam ~2,5 ms.
+  const esferas = blocos.map((m) => { m.updateMatrixWorld(true); return m.boundingSphere ? m.boundingSphere.clone().applyMatrix4(m.matrixWorld) : null })
+  let ultimo = 0
+  return {
+    plantadas,
+    atualizar(camera) {
+      const agora = performance.now()
+      if (!camera || agora - ultimo < 400) return
+      ultimo = agora
+      const ate = cfg.casario.quintal.ate
+      for (let i = 0; i < blocos.length; i++) {
+        const s = esferas[i]
+        if (!s) continue
+        const d = Math.max(0, Math.hypot(camera.position.x - s.center.x, camera.position.z - s.center.z) - s.radius)
+        const ver = d < ate
+        if (blocos[i].visible !== ver) blocos[i].visible = ver
+      }
+    },
+  }
 }

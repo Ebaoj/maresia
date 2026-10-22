@@ -144,7 +144,7 @@ async function iniciar() {
   marcar('arvores')
   const { coqueiros, pecas } = criarCoqueiros(cena, cfg)
   marcar('coqueiros')
-  criarQuintal1932(cena, cfg, pecas) // as árvores dos quintais de 1932, atrás das casas
+  const quintal1932 = criarQuintal1932(cena, cfg, pecas) // as árvores dos quintais de 1932, atrás das casas
   marcar('quintal')
   const pessoas = criarPessoas(cena, grade, cfg)
   const horizonte = criarHorizonte(cena)
@@ -317,6 +317,7 @@ async function iniciar() {
     sombraPerto.atualizar(ceu.dirContinua, centroPerto)
     horizonte.atualizar(paleta)
     telhadosLonge.atualizar(camera, paleta)
+    quintal1932.atualizar(camera)
     pessoas.atualizar(dt, t, cfg.tempo.hora)
     atores?.atualizar(dt, jogador.pos)
     const fpsAvo = cfg.estilo.visual === 'arcane' ? cfg.personagem.fpsAcao : cfg.personagem.fpsPose // Arcane: 24 poses
@@ -459,7 +460,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, ocupacao1932: ocup1932, urubu, marcos1932,
+  window.maresia = { cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

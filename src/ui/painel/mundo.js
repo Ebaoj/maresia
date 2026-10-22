@@ -22,6 +22,7 @@ export function secaoMundo(gui, cfg) {
   casario.add(cfg.casario, 'folgaParede', 0, 0.6, 0.02).name(rec('fresta entre as casas (m)'))
   casario.add(cfg.casario.quintal, 'densidade', 0, 1, 0.05).name(rec('quintal: árvore por lote'))
   casario.add(cfg.casario.quintal, 'folga', 0, 8, 0.5).name(rec('quintal: distância atrás da casa (m)'))
+  casario.add(cfg.casario.quintal, 'ate', 50, 2000, 10).name('quintal: some depois de (m)')
 
   const gente = mundo.addFolder('Gente de 1932 (de dia)')
   gente.add(cfg.pessoas, 'andandoCentro', 0, 1000, 10).name(rec('andando no Centro'))
