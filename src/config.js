@@ -475,20 +475,33 @@ export const PADRAO = {
     corChapa: '#7a4636',       // a chapa da cobertura do mercado, pintada de zarcão (HIPÓTESE pelo conceito aprovado)
     corFerro: '#2b2724',       // ferro fundido pintado de escuro (postes, grades, sacadas)
     corBronze: '#4a4236',      // jarros bronzeados da balaustrada dos Leões
-    corFelinos: '#5a6450',     // ferro fundido Val d'Osne dos felinos: verde-bronze escuro, meio-tom legível (quase preto virava silhueta)
+    corFelinos: '#5f5a48',     // ferro fundido Val d'Osne dos felinos, pintado de bronze: oliva-bronze dos conceitos (o #5a6450 verde-cinza lia pedra)
     corGeneral: '#73603f',     // bronze patinado escuro do General Tibúrcio
-    metalBrilho: 0.45,         // o realce do metal onde a forma vira para o sol (metal.js)
-    metalDuro: 0.08,           // quanto o realce é recortado (menor = borda mais dura)
-    metalRim: 0.35,            // a borda fria do céu nas faces que olham para cima
-    metalCeu: 0.35,            // a luz do céu no lado da sombra das esculturas (de contraluz viravam silhueta)
+    metalBrilho: 1.2,          // o realce do metal onde a forma vira para o sol, nas cristas (metal.js)
+    metalDuro: 0.04,           // quanto o realce é recortado (menor = borda mais dura, de tinta)
+    metalRim: 0.45,            // a borda fria do céu nas faces que olham para cima
+    metalCeu: 0.7,            // a luz fria do céu no lado da sombra das esculturas, no que olha para cima (de contraluz viravam silhueta)
     corRimCeu: '#9cc0e0',      // a cor da borda do céu
     metalSuave: 0.05,          // m: raio das normais da forma nas esculturas esculpidas (normais-suaves.js); 0 = o relevo miúdo do modelo, que virava camuflagem
     metalBrilhoForma: 0.15,    // m: o tamanho da forma que decide onde cai o realce (o músculo, não o calombo): um brilho por volume
-    metalPonta: 120,           // expoente do realce do metal (era 40: no tigre e no leão viravam placas claras)
+    metalPonta: 25,            // expoente do realce (era 120 sozinho; preso às cristas por metalCrista, o 25 desenha a crista sem virar placa)
     metalConcorda: 0.9,        // o realce só onde a normal miúda concorda com a da forma (cosseno; 0 = em toda parte)
     metalPincel: 0.06,         // pincelada da borda das faixas de luz no metal (o jogo usa 0,35: no bronze curvo virava manchas)
+    metalFormaLuz: 0.6,        // quanto a luz do sol nas esculturas lê a forma grande (aNormalForma) e não o relevo: 0 = o relevo, 1 = só a forma
+    metalNivelSombra: 0.55,    // a faixa de sombra só no metal (o jogo usa 0,34: no ferro escuro a sombra virava breu sem volume)
+    metalNivelMeio: 1.2,       // o meio-tom do metal (o jogo usa 0,8): a face ao sol da manhã fica nesta faixa; o valor final tem de passar de ~0,33, porque a gradação final do Arcane (aranhaverso.js, passo 12) achata tudo entre 0,24 e 0,33 em 0,3 (a luz chapada do tigre)
+    metalNivelLuz: 1.45,       // a luz do metal (o jogo usa 1,1)
+    metalCavidade: 0.45,        // o fundo das dobras escurece (a pátina guardada na juba, entre a pata e o peito): curvatura côncava, aCurva
+    metalGasto: 0.35,          // a crista clareia (o metal gasto no alto do músculo e da escama): curvatura convexa
     metalCavIni: 0.02,         // a curvatura (fração do raio metalSuave) onde a cavidade começa
     metalCavFim: 0.1,          // e onde ela satura
+    metalCristaIni: 0.06,      // a convexidade onde a crista começa
+    metalCristaFim: 0.14,      // e onde ela satura
+    metalModela: 0.55,         // o volume dentro da faixa de luz do metal: o plano virado para o sol sobe, o que vira de lado desce
+    metalChao: 0.5,            // a luz quente do chão nas faces de baixo das esculturas, no lado da sombra (cor: corRebote)
+    metalCrista: 1.0,          // quanto o realce prefere as cristas (0 = a forma inteira virada para o sol: no dorso do tigre virava placa)
+    corRealce: '#e8d2a6',      // a cor do realce do metal (a areia da paleta: luz quente no bronze, não branco)
+    corPatina: '#5e8a6e',      // o matiz da pátina no fundo das dobras do metal (o verde da paleta: o verdete do bronze guardado onde a mão não passa)
     corBalaustrada: '#ede5d3', // balaústres de massa caiados
     corPedra: '#d8cfbd',       // cantaria e meio-fio
     corMuroLeoes: '#f0e3c8',   // a cal quente do muro e da escadaria dos Leões (o branco-cinza saía chapado)

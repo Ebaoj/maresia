@@ -214,8 +214,21 @@ export function secaoMundo(gui, cfg) {
   mc.add(cfg.marcos, 'metalPonta', 10, 400, 5).name('esculturas: realce pequeno (expoente)')
   mc.add(cfg.marcos, 'metalConcorda', 0, 0.99, 0.01).name('esculturas: realce só na forma lisa')
   mc.add(cfg.marcos, 'metalPincel', 0, 0.5, 0.01).name('esculturas: pincelada na borda da luz')
+  mc.add(cfg.marcos, 'metalFormaLuz', 0, 1, 0.05).name('esculturas: luz pela forma grande')
+  mc.add(cfg.marcos, 'metalNivelSombra', 0, 1.5, 0.01).name('esculturas: valor da sombra')
+  mc.add(cfg.marcos, 'metalNivelMeio', 0, 1.5, 0.01).name('esculturas: valor do meio-tom')
+  mc.add(cfg.marcos, 'metalNivelLuz', 0, 2, 0.01).name('esculturas: valor da luz')
+  mc.add(cfg.marcos, 'metalCavidade', 0, 1, 0.05).name('esculturas: escuro no fundo das dobras')
+  mc.add(cfg.marcos, 'metalGasto', 0, 1, 0.05).name('esculturas: claro nas cristas')
   mc.add(cfg.marcos, 'metalCavIni', -0.1, 0.2, 0.005).name('esculturas: dobra começa (curvatura)')
   mc.add(cfg.marcos, 'metalCavFim', 0, 0.3, 0.005).name('esculturas: dobra satura')
+  mc.add(cfg.marcos, 'metalCristaIni', -0.1, 0.3, 0.005).name('esculturas: crista começa')
+  mc.add(cfg.marcos, 'metalCristaFim', 0, 0.4, 0.005).name('esculturas: crista satura')
+  mc.add(cfg.marcos, 'metalModela', 0, 1, 0.05).name('esculturas: volume na luz')
+  mc.add(cfg.marcos, 'metalChao', 0, 1.5, 0.05).name('esculturas: luz do chão na sombra')
+  mc.add(cfg.marcos, 'metalCrista', 0, 1, 0.05).name('esculturas: realce nas cristas')
+  mc.addColor(cfg.marcos, 'corRealce').name('esculturas: cor do realce')
+  mc.addColor(cfg.marcos, 'corPatina').name('esculturas: pátina nas dobras')
   for (const [chave, nome] of [['corExcelsior', 'Excelsior'], ['corMajestic', 'Majestic'], ['corModerno', 'Cine Moderno'],
     ['corMercado', 'Mercado de Ferro'], ['corChapa', 'chapa do mercado'], ['corFerro', 'ferro fundido'], ['corBronze', 'jarros'], ['corFelinos', 'felinos (ferro)'], ['corGeneral', 'General (bronze)'],
     ['corBalaustrada', 'balaústres'], ['corPedra', 'cantaria'], ['corColuna', 'Coluna da Hora'], ['corMuroLeoes', 'muro dos Leões'], ['corMosaicoClaro', 'mosaico claro ⟳'], ['corMosaicoEscuro', 'mosaico escuro ⟳']]) {
