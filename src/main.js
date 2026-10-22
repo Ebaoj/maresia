@@ -52,6 +52,9 @@ import { distCosta as distCostaAreia, larguraPraia as larguraPraiaAreia } from '
 import { Jogador } from './jogador/controle.js'
 import { carregarCorpo } from './jogador/corpo.js'
 import { definirTonsLuz } from './materiais.js'
+import { definirFormaArvores } from './mundo/especies.js'
+import { atualizarVento } from './mundo/vento-arvores.js'
+import { atualizarLodArvores } from './mundo/lod-arvores.js'
 import { CameraTerceiraPessoa } from './jogador/camera.js'
 import { criarInteracoes } from './jogador/interacoes.js'
 import { carregarAvo } from './jogador/avo.js'
@@ -64,6 +67,7 @@ import { criarSom } from './audio.js'
 
 const cfg = carregarConfig()
 definirTonsLuz(cfg.estilo.visual === 'arcane' ? 'liso' : cfg.estilo.tonsLuz) // antes de qualquer material ser criado (Arcane: as faixas são do pintor de luz)
+definirFormaArvores(cfg.arvores) // a forma das árvores pintadas (recarregar): antes de qualquer espécie ser montada
 const canvas = document.getElementById('tela')
 // WebGL de sempre ou WebGPU (cfg.desempenho.renderizador, motor F1, KAN-67): criado no começo de iniciar(),
 // porque o WebGPU espera a placa responder
@@ -380,6 +384,8 @@ async function iniciar() {
     if (cfg.estilo.visual === 'arcane') particulas.poNoAr(pj, dt)
     particulas.atualizar(dt, { vento: VENTO_FX, forcaVento: cfg.interacao.ventoCoqueiros })
     globais.uVentoPalm.value = cfg.interacao.ventoCoqueiros
+    atualizarVento(cfg) // o vento das árvores (o painel muda ao vivo)
+    atualizarLodArvores(camera, cfg) // perto: corpo e cartões de folha; longe: a copa simples
     interacoes.atualizar()
     fisica.atualizar(dt, jogador)
     toque.atualizar(dt, pj)

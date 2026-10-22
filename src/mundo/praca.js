@@ -25,6 +25,7 @@ import { geometriaBanco } from './rua.js'
 import { instanciarEmBlocos } from './blocos.js'
 import { criarAleatorio } from '../utils.js'
 import { cajueiro, murici, oiti } from './especies.js'
+import { instanciarArvores } from './lod-arvores.js'
 import { adicionarCirculo } from './colisao.js'
 import { globais } from '../globais.js'
 import { CENTRO, CONTORNO, RAIO_MAX, dentroDaPraca, raioEm } from './praca1932.js'
@@ -310,7 +311,7 @@ export function criarPraca(cena, cfg = null) {
   }
   for (const [esp, lista] of Object.entries(matrizesArvoreira)) {
     if (!lista.length) continue
-    instanciarEmBlocos(cena, geoArvores[esp], mat, lista, null, { nome: `arvores-praca-${esp}`, placa: true })
+    instanciarArvores(cena, geoArvores[esp], lista, { nome: `arvores-praca-${esp}` })
   }
 
   // ---- os lampiões a gás do limite da praça (a luz elétrica só chegou em 1934)

@@ -35,7 +35,8 @@ try {
   // espécies: as mesmas variantes da bancada (semente 1932, três de cada, nesta ordem)
   const rndE = criarAleatorio(1932)
   const fns = { oiti: esp.oiti, cajueiro: esp.cajueiro, carnauba: esp.carnauba, mangue: esp.mangueVermelho, murici: esp.murici, guajiru: esp.guajiru }
-  for (const [nome, fn] of Object.entries(fns)) for (let v = 0; v < 3; v++) formas.set(`especie:${nome}:${v}`, fn(rndE))
+  // a copa simples das árvores pintadas (sem cartões nem vento, que a vg não roda)
+  for (const [nome, fn] of Object.entries(fns)) for (let v = 0; v < 3; v++) formas.set(`especie:${nome}:${v}`, fn(rndE).longe)
   const { geo: tronco, topo } = veg.geometriaTronco()
   formas.set('coqueiro:tronco', tronco)
   formas.set('coqueiro:copa', veg.geometriaCopa(topo))

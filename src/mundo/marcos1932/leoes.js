@@ -23,8 +23,8 @@ import { texturaCanvas, toon, texturizar } from '../../materiais.js'
 import { instanciarEmBlocos } from '../blocos.js'
 import { criarAleatorio } from '../../utils.js'
 import { oiti } from '../especies.js'
+import { instanciarArvores } from '../lod-arvores.js'
 import { pecasDoCoqueiro } from '../vegetacao.js'
-import { toonVertice } from '../../materiais.js'
 import { Obra, balaustrada, chaoMinimo, PERFIL } from './obra.js'
 import { PEGADA } from './pegadas.js'
 import { criarEsculturas } from './esculturas.js'
@@ -302,7 +302,7 @@ export function criarLeoes(cena, cfg, mats, mobilia) {
     ;(tipo === 'p' ? pal : cop).push(new THREE.Matrix4().compose(new THREE.Vector3(wx, y + H, wz), q, new THREE.Vector3(e, e, e)))
     obra.colisaoCirculo(lx, lz, 0.4)
   }
-  instanciarEmBlocos(cena, oiti(criarAleatorio(1913)), toonVertice(), cop, null, { nome: 'leoes-copas', placa: true })
+  instanciarArvores(cena, oiti(criarAleatorio(1913)), cop, { nome: 'leoes-copas' })
   const { geoTronco, geoCopa, matTronco, matCopa } = pecasDoCoqueiro(cfg)
   instanciarEmBlocos(cena, geoTronco, matTronco, pal, null, { nome: 'leoes-palmeiras', placa: true })
   instanciarEmBlocos(cena, geoCopa, matCopa, pal, null, { nome: 'leoes-palmeiras-copa', semNormal: true, placa: true })
