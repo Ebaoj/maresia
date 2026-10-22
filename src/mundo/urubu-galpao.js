@@ -18,6 +18,7 @@ export const ZINCO = '#c4c0b4'
 const ZINCO_VELHO = '#b5b0a4'
 const FERRUGEM = '#a48a74' // a folha velha: ferrugem apagada (taipa com o cinza do zinco), como no conceito
 const ESTEIO = '#6e5a44'
+const CAL_SUJA = '#c7ab8a' // o resto de cal sobre a taipa, já tomado de poeira (a cal pura acendia demais na sombra)
 const TABUAS = [CAL.piuba, '#8f785c', '#7d6a52', CAL.piuba, '#96806a']
 const caixa = (l, a, p, x, y, z, cor) => colorir(new THREE.BoxGeometry(l, a, p).translate(x, y, z), cor)
 
@@ -90,10 +91,10 @@ function paredeTabua (x0, x1, z, h, rnd, partes, eixo = 'x') {
 // cabeceira de taipa: barro na trama de vara, cal descascando por cima
 function paredeTaipa (x, P, h, rnd, partes) {
   partes.push(caixa(0.16, h, P, x, h / 2, 0, CAL.taipa))
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 3; i++) {
     const l = rnd.entre(0.8, 2.6)
     const a = rnd.entre(0.5, 1.4)
-    partes.push(caixa(0.18, a, l, x, rnd.entre(0.4, h - 0.6), rnd.entre(-P / 2 + l / 2, P / 2 - l / 2), CAL.calVelha))
+    partes.push(caixa(0.18, a, l, x, rnd.entre(0.4, h - 0.6), rnd.entre(-P / 2 + l / 2, P / 2 - l / 2), CAL_SUJA))
   }
 }
 

@@ -170,6 +170,7 @@ export function secaoMundo(gui, cfg) {
   urubu.add(u, 'redesOcupadasNoite', 0, 1, 0.01).name(rec('redes ocupadas de noite'))
   urubu.add(u, 'ferrugem', 0, 1, 0.01).name(rec('zinco enferrujado'))
   urubu.add(u, 'tarefas').name(rec('tarefas de terra cercadas'))
+  urubu.add(u, 'distanciaMiudos', 80, 1000, 10).name('miúdos somem além de (m)')
   // os marcos do centro de 1932 (src/mundo/marcos1932/): montados uma vez; só as cores mudam ao vivo
   const mc = mundo.addFolder('Marcos do centro (1932)')
   mc.add(cfg.marcos, 'ligados').name(rec('marcos do centro'))

@@ -4,7 +4,7 @@
 //
 // uso: node scripts/fotos-campo.mjs URL PLANO.json PASTA [sufixo]
 //   PLANO: [{ "nome": "portao-10h", "x": 1900, "z": 1110, "yaw": 0.6, "pitch": 0.05, "dist": 4.5, "hora": 10 }]
-//          "info": true  -> também guarda objetos, chamadas e triângulos do quadro (renderer.info)
+//          { "nome": "custo", "avaliar": "return await maresia.medir(...)" } -> só a conta, sem foto
 // Variáveis: RENDERIZADOR=webgpu|webgl (padrão webgpu), PORTA_EXTRA (soma na porta do CDP),
 //   CONFIG='{"mundo":{"urubu":{"gente":0}}}' (grupos do config mesclados no salvo antes de abrir; 1 nível).
 // Espera não haver outro Chrome sem janela na máquina antes de abrir o seu (uma GPU, um medidor por vez).
@@ -84,6 +84,12 @@ try {
   await avaliar('window.maresia.pronto')
   console.log('renderizador:', (await avaliar('String(window.maresia.webgpu)')).valor === 'true' ? 'webgpu' : 'webgl')
   for (const l of plano) {
+    // item de conta, sem foto: { "nome": "...", "avaliar": "await maresia.medir(...)" } (o resultado vai para o console)
+    if (l.avaliar) {
+      const r = await avaliar(`(async () => JSON.stringify(await (async () => { ${l.avaliar} })()))()`)
+      console.log(`conta ${l.nome}:`, r.valor || r.erro)
+      continue
+    }
     const r = await avaliar(`(async () => {
       const m = window.maresia
       m.controle.pausado = true

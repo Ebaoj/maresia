@@ -46,7 +46,7 @@ function parte(geo, cor) {
 export function figura(sentada, mulher = false, o = {}) {
   const r = o.rnd || rnd
   const P = o.paleta || {}
-  const seg = o.simples ? { aba: 8, copa: 6, corpo: [2, 6], cabeca: [7, 5], cabelo: [6, 4], membro: [2, 4], vestido: 7 } : { aba: 12, copa: 10, corpo: [3, 8], cabeca: [10, 8], cabelo: [8, 6], membro: [3, 6], vestido: 10 }
+  const seg = o.simples ? { aba: 10, copa: 7, corpo: [3, 7], cabeca: [9, 6], cabelo: [7, 5], membro: [2, 5], vestido: 8 } : { aba: 12, copa: 10, corpo: [3, 8], cabeca: [10, 8], cabelo: [8, 6], membro: [3, 6], vestido: 10 }
   const pele = r.escolha(P.peles || PELES)
   const roupa = mulher ? r.escolha(P.vestidos || VESTIDOS) : r.escolha(P.roupas || ROUPAS)
   const baixo = mulher ? roupa : r.escolha(P.baixos || BAIXO)

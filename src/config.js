@@ -401,6 +401,7 @@ export const PADRAO = {
       genteNoite: 30,       // gente sentada em volta das fogueiras à noite
       ferrugem: 0.1,        // fração das folhas de zinco com ferrugem
       tarefas: true,        // as tarefas de terra cercadas de arame (as que não caem no núcleo construído)
+      distanciaMiudos: 260, // m: além disso somem redes, trouxas, potes, latas e a gente (de longe o custo é de processador)
     },
   },
   // Os marcos do centro de 1932 (src/mundo/marcos1932/; fontes no dossiê ~/Projetos/marcos-1932-pesquisa).

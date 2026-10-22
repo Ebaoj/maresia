@@ -119,7 +119,7 @@ export function geometriaPipa () {
 
 // a lata de querosene (18 litros) que vira balde d'água
 export function geometriaLata () {
-  return juntar([caixa(0.24, 0.34, 0.24, 0, 0.17, 0, '#a9a69c'), caixa(0.02, 0.18, 0.02, 0, 0.42, 0, '#5a5752'), caixa(0.24, 0.02, 0.02, 0, 0.5, 0, '#5a5752')])
+  return juntar([caixa(0.24, 0.34, 0.24, 0, 0.17, 0, '#a9a69c'), caixa(0.25, 0.02, 0.25, 0, 0.335, 0, '#8d8a82'), caixa(0.2, 0.015, 0.015, 0, 0.4, 0, '#6b6862')])
 }
 
 // a bacia de barro de lavar roupa, com a água
