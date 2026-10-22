@@ -42,11 +42,12 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 | `src/mundo/cidade.js` | Prédios da orla, casario, favela, igreja; janelas no shader |
 | `src/mundo/praia.js` | Guarda-sóis, barracas, postes, jangadas, píer |
 | `src/mundo/marcos.js` | Pedras no mar, bondinho, farol |
-| `src/mundo/vegetacao.js` | Coqueiros (folhas com alpha map) |
+| `src/mundo/vegetacao.js` | Coqueiros (folhas com alpha map; o estipe balança no vento das árvores) |
 | `src/mundo/grama.js` | Grama instanciada (200 mil folhas em blocos 8x8: só desenha bloco com grama e na tela; longe, só a fração do LOD), viradas para a câmera, material toon que recebe sombra; vento no shader |
 | `src/mundo/fachadas.js` | Cornija, friso, telhado de barro, toldo, letreiro, varanda, ar-condicionado, antena |
 | `src/mundo/rua.js` | Postes com fiação, carros, bancos, lixeiras, carrinhos, placas, bancas, varais |
-| `src/mundo/especies.js` | Espécies nativas com galhos à mostra e folhagem em cachos: cajueiro, carnaúba, mangue-vermelho, murici, guajiru, oiti |
+| `src/mundo/especies.js` | Espécies nativas como árvores pintadas: oiti, fícus, cajueiro, carnaúba, mangue-vermelho, murici, guajiru (cada uma devolve corpo, longe e cartões) |
+| `src/mundo/arvore-forma.js` + `folha-textura.js` + `vento-arvores.js` + `lod-arvores.js` | Árvores pintadas (21/10/2026, `docs/arvores-pintadas.md`): galhos com forquilha, cachos com a normal do volume da copa, cartões de folha virados para a câmera (ramo desenhado no canvas), um vento só para todas e o coqueiro (`cfg.vento`, GLSL e TSL), copa simples de longe por bloco |
 | `src/mundo/arvores.js` | Árvores de copa pintada, buganvília, vasos |
 | `src/mundo/pessoas.js` | Gente genérica: sentada, de pé, caminhando "em 2" |
 | `src/mundo/horizonte.js` | Serras em camadas e cidade ao longe |

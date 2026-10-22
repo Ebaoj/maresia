@@ -57,3 +57,21 @@ Cada espécie tem três malhas com as mesmas cópias (`lod-arvores.js`): corpo e
 simples (cachos de 20 triângulos, um pouco maiores). Os cartões encolhem até sumir entre `lodPerto` e
 `lodLonge` antes de o bloco de 96 m trocar (`lodBloco`), então a troca não pula. A carnaúba mantém os leques
 longe (são a copa inteira).
+
+## 5. Custo (medido)
+
+`maresia.medir`, WebGPU, 2000 x 1125, cinco repetições alternadas de "árvores ligadas" contra "árvores escondidas",
+nos três pontos das provas. O servidor 5215 alternou entre o código de antes (`debf939`) e o de depois, duas
+rodadas cada, 21/10/2026 às 22h (load de 4,5 a 8,8 por outras sessões; as duas versões sofreram o mesmo, e as
+variantes "sem árvores" deram o mesmo número nas duas, de 17,1 a 19,5 ms). Saída crua em
+`docs/capturas/arvores/medicao-webgpu-antes-depois.txt`.
+
+| Lugar | Árvores antes (ms) | Árvores depois (ms) | Quadro inteiro antes / depois (ms) |
+|---|---|---|---|
+| Passeio Público (Caio Prado) | 4,04 / 4,20 | 1,32 / 1,07 | 23,6 / 20,6 |
+| Praça do Ferreira | 0,77 / 0,58 | 0,35 / 0,35 | 17,8 / 17,5 |
+| Rua de oitis | 2,53 / 2,31 | 0,43 / 0,49 | 21,3 / 19,5 |
+
+As árvores novas custam menos que as antigas, apesar dos cartões e do vento: a malha é indexada (o vértice roda
+uma vez, não seis), e de longe vai só a copa simples (de 160 a 740 triângulos por árvore, antes eram de 1,4 mil a
+4,3 mil em todas). O orçamento pedido (no máximo ~2 ms a mais) fica com folga.
