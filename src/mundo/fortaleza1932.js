@@ -31,6 +31,16 @@ const COSTA = [
   [-38.486, -3.7208], [-38.481, -3.7186], [-38.4775, -3.7158], [-38.4745, -3.7136], [-38.471, -3.714], [-38.466, -3.7168],
   [-38.459, -3.721], [-38.452, -3.726], [-38.444, -3.732], [-38.436, -3.739],
 ]
+// a latitude da costa de 1932 numa longitude (a polilinha oficial, interpolada em linha reta):
+// serve para prender um lugar da praia na costa de verdade (a fatia da Praia do Peixe, src/mundo/fatia.js)
+export function latCostaReal(lon) {
+  for (let i = 0; i < COSTA.length - 1; i++) {
+    const [a, la] = COSTA[i]
+    const [b, lb] = COSTA[i + 1]
+    if ((lon - a) * (lon - b) <= 0 && a !== b) return la + ((lon - a) / (b - a)) * (lb - la)
+  }
+  return null
+}
 // largura da faixa de areia (m de jogo) ao longo da costa, de oeste para leste
 const PRAIA = [[-38.62, 34], [-38.595, 30], [-38.57, 28], [-38.545, 22], [-38.532, 22], [-38.527, 10], [-38.522, 34], [-38.515, 40], [-38.5, 44], [-38.48, 38], [-38.46, 52], [-38.44, 52]]
 // rio Ceará (com meandros), da foz para o sul
