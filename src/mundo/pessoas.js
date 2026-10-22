@@ -17,6 +17,7 @@ import { PEGADA, dentroDeMarco } from './marcos1932/pegadas.js'
 import { naGrade } from './marcos1932/grade.js'
 import { PEGADAS as LOTES } from './lotes-marcos.js'
 import { distRealDaPraca } from './chao1932.js'
+import { noCorredor, pertoDeVista } from './frente1932.js'
 
 const rnd = criarAleatorio(808)
 
@@ -159,6 +160,8 @@ export function criarPessoas(cena, grade, cfg = null) {
     // grupinhos parados num lugar: n pessoas em roda, olhando para o meio
     const roda = (x0, z0) => {
       if (!ocupacao.livre(x0, z0, 0.5, 0.5)) return false
+      // o grupo não tampa o marco no ponto de vista do Ir para, nem fica colado na câmera
+      if (noCorredor(x0, z0, 1) || pertoDeVista(x0, z0, 14)) return false
       const n = 2 + Math.floor(rnd.entre(0, 3))
       for (let k = 0; k < n; k++) {
         const a = (k / n) * Math.PI * 2 + rnd.entre(-0.3, 0.3)

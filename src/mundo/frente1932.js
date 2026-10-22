@@ -39,12 +39,23 @@ const CORREDORES = [...Object.values(VISTAS), ...Object.values(VISTAS_MARCOS)].m
   // a câmera fica uns 8 m atrás do jogador
   return { ax: v.x - (dx / c) * 8, az: v.z - (dz / c) * 8, bx: v.alvo[0], bz: v.alvo[1] }
 })
-function noCorredor(x, z, r) {
+export function noCorredor(x, z, r) {
   for (const k of CORREDORES) {
     const dx = k.bx - k.ax
     const dz = k.bz - k.az
     const t = Math.max(0, Math.min(1, ((x - k.ax) * dx + (z - k.az) * dz) / (dx * dx + dz * dz || 1)))
     if (Math.hypot(x - (k.ax + dx * t), z - (k.az + dz * t)) < 3 + r) return true
+  }
+  return false
+}
+// o ponto está a menos de r de onde o jogador fica num ponto de vista (a câmera fica logo atrás)?
+export function pertoDeVista(x, z, r) {
+  for (const k of CORREDORES) {
+    const dx = k.bx - k.ax
+    const dz = k.bz - k.az
+    const c = Math.hypot(dx, dz) || 1
+    // o jogador fica 8 m à frente da câmera, na linha do corredor
+    if (Math.hypot(x - (k.ax + (dx / c) * 8), z - (k.az + (dz / c) * 8)) < r) return true
   }
   return false
 }

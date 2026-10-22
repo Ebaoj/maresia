@@ -21,6 +21,7 @@ import { dentroDaPraca } from './praca1932.js'
 import { RUAS, comprimentoRua, pontoNaRua } from './casario1932.js'
 import { distRealDaPraca } from './chao1932.js'
 import { rotasDosBondes } from './bondes.js'
+import { noCorredor } from './frente1932.js'
 import { geometriaBanco } from './rua.js'
 import { ACENTO, CAL } from '../paleta.js'
 import {
@@ -39,6 +40,7 @@ function matriz(x, z, yaw, y = null) {
 function livre(x, z, r) {
   if (!ocupacao.livre(x, z, r, r)) return false
   if (dentroDaPraca(x, z) || dentroDeMarco(x, z, 0.5) || marcoSob(x, z, r)) return false
+  if (noCorredor(x, z, r)) return false // nada na frente de um ponto de vista do Ir para
   return true
 }
 

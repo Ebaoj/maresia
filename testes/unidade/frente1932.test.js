@@ -70,3 +70,11 @@ describe('as folgas entre cadeias (hipótese de 21/10/2026)', () => {
     }
   })
 })
+
+describe('a gente e a vida de rua também não tampam as vistas', () => {
+  it('pertoDeVista marca o lugar do jogador em cada ponto de vista', async () => {
+    const { pertoDeVista } = await import('../../src/mundo/frente1932.js')
+    for (const v of [...Object.values(VISTAS), ...Object.values(VISTAS_MARCOS)]) expect(pertoDeVista(v.x, v.z, 2)).toBe(true)
+    expect(pertoDeVista(CENTRO[0] + 900, CENTRO[1] + 700, 14)).toBe(false)
+  })
+})
