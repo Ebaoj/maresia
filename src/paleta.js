@@ -84,11 +84,11 @@ export const MARCOS = {
 // meio e sombra (o baixo da copa, verde frio puxado para o azul, nunca preto). Acento só onde a planta tem:
 // folha nova acobreada do cajueiro, flor do murici, fruto do guajiru.
 export const FOLHAGEM = {
-  oiti: { luz: '#8c9a48', meio: '#4c6e38', sombra: '#3e625c', casca: '#5c4b3d' },
-  ficus: { luz: '#94a050', meio: '#53743e', sombra: '#41625d', casca: '#8a8170' },
-  cajueiro: { luz: '#92a34a', meio: '#4a7236', sombra: '#3c5f56', casca: '#5e4636', acento: '#a8653c' },
-  mangue: { luz: '#8ca94e', meio: '#48793e', sombra: '#3a6159', casca: '#6b5544' },
-  carnauba: { luz: '#aab896', meio: '#7a956f', sombra: '#5f7a6e', casca: '#7a6a5c' },
-  murici: { luz: '#9aa955', meio: '#668843', sombra: '#4a6c55', casca: '#6b5240', acento: '#d9b04a' },
-  guajiru: { luz: '#a3b462', meio: '#76984f', sombra: '#527254', casca: '#6b5240', acento: '#6a3a5a' },
+  oiti: { luz: '#b4b852', meio: '#6c8a42', sombra: '#4a6e66', casca: '#6a5848' },
+  ficus: { luz: '#bab95a', meio: '#728f46', sombra: '#4d7069', casca: '#9a9080' },
+  cajueiro: { luz: '#b0b64e', meio: '#6a8a3e', sombra: '#4a6d62', casca: '#6a5040', acento: '#b8703f' },
+  mangue: { luz: '#b0c058', meio: '#668e42', sombra: '#476e64', casca: '#7a6250' },
+  carnauba: { luz: '#c6d2ac', meio: '#8eab82', sombra: '#6a8a7e', casca: '#8a7a6a' },
+  murici: { luz: '#b0b95a', meio: '#76944a', sombra: '#557a62', casca: '#7a604c', acento: '#dcb24c' },
+  guajiru: { luz: '#b6c46a', meio: '#82a054', sombra: '#5f8366', casca: '#7a604c', acento: '#6a3a5a' },
 }

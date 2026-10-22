@@ -36,9 +36,12 @@ export function atualizarVento(cfg) {
   globais.uArvBorda.value = a.borda
   globais.uArvBordaCor.value.set(a.bordaCor)
   globais.uArvTransluz.value = a.transluz
+  globais.uArvPreenche.value = a.preenche
+  globais.uArvCeu.value.set(a.preencheCeu)
+  globais.uArvChao.value.set(a.preencheChao)
 }
 
-const U = ['uVentoDir', 'uVentoForca', 'uVentoRaj', 'uVentoRajVel', 'uVentoTronco', 'uVentoGalhos', 'uVentoFolhas', 'uArvLod', 'uArvBorda', 'uArvBordaCor', 'uArvTransluz']
+const U = ['uVentoDir', 'uVentoForca', 'uVentoRaj', 'uVentoRajVel', 'uVentoTronco', 'uVentoGalhos', 'uVentoFolhas', 'uArvLod', 'uArvBorda', 'uArvBordaCor', 'uArvTransluz', 'uArvPreenche', 'uArvCeu', 'uArvChao']
 
 // a parte comum: onde está a cópia, a matriz dela, o vento no espaço da forma, a rajada e o balanço lento
 const GLSL_BASE = /* glsl */ `
@@ -150,6 +153,18 @@ export function ventoPalmeira(mat, alturaRef = 8.2) {
   return mat
 }
 
+// preenchimento da copa: no lado da sombra entra luz de céu (fria, por cima) e luz que o chão devolve (quente, por
+// baixo), como na pintura dos conceitos: a sombra da copa fica verde-azulada e legível, nunca preta. Somado depois das
+// faixas do pintor de luz, só onde a luz é pouca; a segunda saída (gLuz) sobe um pouco, para a hachura não fechar a copa
+const GLSL_PREENCHE = /* glsl */ `
+{
+  vec3 nF = normalize(vNMundo);
+  float sombF = 1.0 - smoothstep(0.2, 0.85, gLuz.r);
+  vec3 corF = mix(uArvChao, uArvCeu, smoothstep(-0.6, 0.8, nF.y));
+  reflectedLight.directDiffuse += diffuseColor.rgb * RECIPROCAL_PI * uLuzRef * corF * (uArvPreenche * sombF);
+  gLuz.r += uArvPreenche * sombF * 0.3;
+}`
+
 function aplicarVento(mat, cartao) {
   const u = Object.fromEntries(U.map((k) => [k, globais[k]]))
   u.uTempoA = globais.uTempo
@@ -160,8 +175,9 @@ function aplicarVento(mat, cartao) {
       .replace('#include <common>', `#include <common>\n${decl}\nattribute vec4 aVento;\n#ifdef ARV_CARTAO\nattribute vec3 aCentro; attribute vec3 aCanto;\n#endif`)
       .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + GLSL_VERTICE)
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uArvBorda; uniform vec3 uArvBordaCor; uniform float uArvTransluz;')
+      .replace('#include <common>', '#include <common>\nuniform float uArvBorda; uniform vec3 uArvBordaCor; uniform float uArvTransluz; uniform float uArvPreenche; uniform vec3 uArvCeu; uniform vec3 uArvChao;')
       .replace('#include <color_fragment>', '#include <color_fragment>\n' + GLSL_BORDA)
+      .replace('#include <aomap_fragment>', GLSL_PREENCHE + '\n#include <aomap_fragment>')
   }
   mat.userData.tsl = {
     nome: cartao ? 'arvore-cartao' : 'arvore-corpo',
@@ -193,6 +209,14 @@ function aplicarVento(mat, cartao) {
       const q = p.mul(3.1).add(ph)
       des = des.add(vec3(sin(t.mul(8.3).add(q.y)), cos(t.mul(9.7).add(q.x)), sin(t.mul(7.1).add(q.z))).mul(f).mul(0.035))
       return p.add(des)
+    },
+    luz({ W, lumA, nMundo, albedo }) {
+      const { normalize, smoothstep, mix, float } = W
+      const nF = normalize(nMundo)
+      const somb = float(1).sub(smoothstep(0.2, 0.85, lumA))
+      const corF = mix(ref(u.uArvChao), ref(u.uArvCeu), smoothstep(-0.6, 0.8, nF.y))
+      const k = ref(u.uArvPreenche).mul(somb)
+      return { luz: albedo.mul(ref(globais.uLuzRef)).mul(corF).mul(k), gLuz: k.mul(0.3) }
     },
     cor({ W }, rgb) {
       const { normalize, normalWorld, positionWorld, cameraPosition, pow, clamp, abs, dot, smoothstep, float } = W

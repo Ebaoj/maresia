@@ -11,7 +11,7 @@ import { QUADRANTE as Q, cantoQuadrante } from './folha-textura.js'
 import { FOLHAGEM } from '../paleta.js'
 
 // ajustes do painel que valem ao montar (cfg.arvores; recarregar): definidos uma vez, antes de criar o mundo
-let F = { esfera: 0.72, oclusao: 0.75, cartaoTam: 1, cartaoDens: 1, variacao: 1 }
+let F = { esfera: 0.72, oclusao: 0.88, cartaoTam: 1, cartaoDens: 1, variacao: 1 }
 export function definirFormaArvores(o = {}) { F = { ...F, ...o } }
 export function formaArvores() { return F }
 const op = (pal, cartao, extra = {}) => ({ pal, esfera: F.esfera, oclusao: F.oclusao, cartao: { ...cartao, tam: cartao.tam * F.cartaoTam, dens: cartao.dens * F.cartaoDens }, ...extra })
@@ -20,7 +20,7 @@ const fase = (rnd) => rnd.entre(0, Math.PI * 2)
 
 // OITI: árvore de rua nativa, tronco reto, quatro ou cinco pernadas subindo, copa densa e redonda, verde escuro
 export function oiti(rnd) {
-  const est = novaEstrutura(rnd, op(FOLHAGEM.oiti, { tam: 1.0, quadrantes: [Q.miuda], dens: 0.5 }))
+  const est = novaEstrutura(rnd, op(FOLHAGEM.oiti, { tam: 1.0, quadrantes: [Q.miuda], dens: 0.42 }))
   const H = rnd.entre(2.0, 2.6)
   const topo = V(rnd.entre(-0.2, 0.2), H, rnd.entre(-0.2, 0.2))
   galhoPts(est, [V(0, 0, 0), V(topo.x * 0.3, H * 0.5, topo.z * 0.3), topo], 0.26, 0.19, { raiz: true, peso1: 0 })
@@ -28,17 +28,18 @@ export function oiti(rnd) {
   for (let i = 0; i < n; i++) {
     const a = volta(rnd, i, n)
     const f = fase(rnd)
-    const pts = galho(est, topo, V(Math.cos(a) * 0.8, 1, Math.sin(a) * 0.8), rnd.entre(1.6, 2.2), 0.15, 0.07, { sobe: 0.1, peso1: 0.7, fase: f })
+    // pernadas longas e abertas, cachos menores e separados: céu entre os grupos e a borda em lóbulos
+    const pts = galho(est, topo, V(Math.cos(a), 0.9, Math.sin(a)), rnd.entre(2.2, 2.9), 0.15, 0.07, { sobe: 0.1, peso1: 0.7, fase: f })
     for (let j = 0; j < 2; j++) {
-      const b = a + (j ? 0.7 : -0.7) + rnd.entre(-0.3, 0.3)
-      const p2 = galho(est, pts[2], V(Math.cos(b), 0.9, Math.sin(b)), rnd.entre(1.0, 1.4), 0.07, 0.03, { peso0: 0.45, fase: f })
-      cacho(est, p2[p2.length - 1].clone().add(V(0, 0.3, 0)), rnd.entre(1.0, 1.3), { fase: f })
+      const b = a + (j ? 0.8 : -0.8) + rnd.entre(-0.3, 0.3)
+      const p2 = galho(est, pts[2], V(Math.cos(b), 0.8, Math.sin(b)), rnd.entre(1.1, 1.6), 0.07, 0.03, { peso0: 0.45, fase: f })
+      cacho(est, p2[p2.length - 1].clone().add(V(0, 0.25, 0)), rnd.entre(0.75, 1.1), { fase: f, forca: 0.45 })
     }
-    cacho(est, pts[pts.length - 1].clone().add(V(0, 0.4, 0)), rnd.entre(1.1, 1.4), { fase: f })
+    cacho(est, pts[pts.length - 1].clone().add(V(0, 0.35, 0)), rnd.entre(0.9, 1.2), { fase: f, forca: 0.45 })
   }
-  for (let i = 0; i < 3; i++) {
-    const a = volta(rnd, i, 3, 1)
-    cacho(est, topo.clone().add(V(Math.cos(a) * 0.7, rnd.entre(2.7, 3.2), Math.sin(a) * 0.7)), rnd.entre(1.2, 1.45), { fase: fase(rnd), peso: 0.8 })
+  for (let i = 0; i < 2; i++) {
+    const a = volta(rnd, i, 2, 1)
+    cacho(est, topo.clone().add(V(Math.cos(a) * 0.6, rnd.entre(2.9, 3.4), Math.sin(a) * 0.6)), rnd.entre(1.0, 1.25), { fase: fase(rnd), peso: 0.8, forca: 0.45 })
   }
   return montar(est)
 }
@@ -47,7 +48,7 @@ export function oiti(rnd) {
 // baixas que se abrem quase na horizontal; copa em guarda-chuva, mais larga que alta, de folha miúda e densa,
 // com o baixo escuro e frio bem à mostra; algumas raízes aéreas caindo das pernadas
 export function ficus(rnd) {
-  const est = novaEstrutura(rnd, op(FOLHAGEM.ficus, { tam: 0.95, quadrantes: [Q.miuda], dens: 0.55 }, { esfera: Math.min(1, F.esfera + 0.08) }))
+  const est = novaEstrutura(rnd, op(FOLHAGEM.ficus, { tam: 0.95, quadrantes: [Q.miuda], dens: 0.46 }, { esfera: Math.min(1, F.esfera + 0.08) }))
   const H = rnd.entre(1.3, 1.6)
   const topo = V(rnd.entre(-0.15, 0.15), H, rnd.entre(-0.15, 0.15))
   galhoPts(est, [V(0, 0, 0), V(0, H * 0.5, 0), topo], 0.4, 0.32, { raiz: true, peso1: 0 })
@@ -55,22 +56,22 @@ export function ficus(rnd) {
   for (let i = 0; i < n; i++) {
     const a = volta(rnd, i, n, 0.3)
     const f = fase(rnd)
-    const pts = galho(est, topo, V(Math.cos(a), rnd.entre(0.55, 0.85), Math.sin(a)), rnd.entre(2.0, 2.5), 0.2, 0.08, { sobe: 0.05, cai: 0.15, torce: 0.15, peso1: 0.6, fase: f })
+    const pts = galho(est, topo, V(Math.cos(a), rnd.entre(0.55, 0.85), Math.sin(a)), rnd.entre(2.2, 2.9), 0.2, 0.08, { sobe: 0.05, cai: 0.15, torce: 0.15, peso1: 0.6, fase: f })
     for (let j = 0; j < 2; j++) {
       const b = a + (j ? 0.6 : -0.6) + rnd.entre(-0.25, 0.25)
-      const p2 = galho(est, pts[2 + j], V(Math.cos(b), 0.6, Math.sin(b)), rnd.entre(1.0, 1.4), 0.08, 0.03, { peso0: 0.4, fase: f })
-      cacho(est, p2[p2.length - 1].clone().add(V(0, 0.35, 0)), rnd.entre(1.0, 1.25), { fase: f, achatar: 0.7 })
+      const p2 = galho(est, pts[2 + j], V(Math.cos(b), 0.6, Math.sin(b)), rnd.entre(1.1, 1.6), 0.08, 0.03, { peso0: 0.4, fase: f })
+      cacho(est, p2[p2.length - 1].clone().add(V(0, 0.3, 0)), rnd.entre(0.8, 1.1), { fase: f, achatar: 0.7, forca: 0.45 })
     }
-    cacho(est, pts[pts.length - 1].clone().add(V(0, 0.45, 0)), rnd.entre(1.1, 1.35), { fase: f, achatar: 0.7 })
+    cacho(est, pts[pts.length - 1].clone().add(V(0, 0.4, 0)), rnd.entre(0.95, 1.2), { fase: f, achatar: 0.7, forca: 0.45 })
     // raiz aérea: fio quase reto até o chão
     if (rnd.chance(0.45)) {
       const p = pts[2]
       galhoPts(est, [p, V(p.x * 1.02, p.y * 0.5, p.z * 1.02), V(p.x * 1.03, -0.1, p.z * 1.03)], 0.035, 0.028, { peso0: 0.3, peso1: 0.05, fase: f })
     }
   }
-  for (let i = 0; i < 4; i++) {
-    const a = volta(rnd, i, 4, 0.8)
-    cacho(est, topo.clone().add(V(Math.cos(a) * 1.2, rnd.entre(2.3, 2.7), Math.sin(a) * 1.2)), rnd.entre(1.25, 1.5), { fase: fase(rnd), peso: 0.8, achatar: 0.7 })
+  for (let i = 0; i < 3; i++) {
+    const a = volta(rnd, i, 3, 0.8)
+    cacho(est, topo.clone().add(V(Math.cos(a) * 1.3, rnd.entre(2.4, 2.9), Math.sin(a) * 1.3)), rnd.entre(1.05, 1.3), { fase: fase(rnd), peso: 0.8, achatar: 0.7, forca: 0.45 })
   }
   return montar(est)
 }
@@ -92,13 +93,13 @@ export function cajueiro(rnd) {
     const lado = V(-Math.sin(a), 0, Math.cos(a)).multiplyScalar(rnd.chance(0.5) ? 1 : -1)
     const s1 = galho(est, pts[2], lado.clone().add(V(Math.cos(a) * 0.5, 0.8, Math.sin(a) * 0.5)), rnd.entre(1.1, 1.8), 0.11, 0.04, { peso0: 0.4, fase: f })
     for (const p of [pts[3], pts[5], s1[s1.length - 1]]) {
-      const r = rnd.entre(1.15, 1.7)
-      cacho(est, p.clone().add(V(rnd.entre(-0.3, 0.3), r * 0.4, rnd.entre(-0.3, 0.3))), r, { fase: f, topo: rnd.chance(0.4) ? cobre : null, achatar: 0.72 })
+      const r = rnd.entre(0.95, 1.45)
+      cacho(est, p.clone().add(V(rnd.entre(-0.3, 0.3), r * 0.4, rnd.entre(-0.3, 0.3))), r, { fase: f, topo: rnd.chance(0.4) ? cobre : null, achatar: 0.72, forca: 0.45 })
     }
   }
-  for (let i = 0; i < 4; i++) {
-    const a = rnd.entre(0, Math.PI * 2)
-    cacho(est, inc.clone().add(V(Math.cos(a) * rnd.entre(0.5, 1.8), rnd.entre(2.2, 2.9), Math.sin(a) * rnd.entre(0.5, 1.8))), rnd.entre(1.45, 2.0), { fase: fase(rnd), peso: 0.75, topo: cobre, achatar: 0.72 })
+  for (let i = 0; i < 3; i++) {
+    const a = volta(rnd, i, 3, 0.9)
+    cacho(est, inc.clone().add(V(Math.cos(a) * rnd.entre(0.8, 2.0), rnd.entre(2.3, 3.0), Math.sin(a) * rnd.entre(0.8, 2.0))), rnd.entre(1.2, 1.65), { fase: fase(rnd), peso: 0.75, topo: cobre, achatar: 0.72, forca: 0.45 })
   }
   return montar(est)
 }
@@ -213,9 +214,9 @@ export function mangueVermelho(rnd) {
     const pts = galho(est, topo, V(Math.cos(a), 0.6, Math.sin(a)), rnd.entre(1.4, 2.1), 0.1, 0.045, { peso0: 0.1, peso1: 0.8, fase: f })
     const p = pts[pts.length - 1]
     if (rnd.chance(0.6)) galhoPts(est, [pts[2], V(pts[2].x * 1.05, pts[2].y * 0.5, pts[2].z * 1.05), V(pts[2].x * 1.06, -0.2, pts[2].z * 1.06)], 0.03, 0.025, { peso0: 0.3, peso1: 0.05, fase: f })
-    cacho(est, p.clone().add(V(0, 0.45, 0)), rnd.entre(1.1, 1.45), { fase: f })
+    cacho(est, p.clone().add(V(0, 0.45, 0)), rnd.entre(0.95, 1.3), { fase: f, forca: 0.45 })
   }
-  cacho(est, topo.clone().add(V(0, 1.3, 0)), rnd.entre(1.4, 1.75), { fase: fase(rnd), peso: 0.8 })
+  cacho(est, topo.clone().add(V(0, 1.3, 0)), rnd.entre(1.2, 1.5), { fase: fase(rnd), peso: 0.8, forca: 0.45 })
   return montar(est)
 }
 

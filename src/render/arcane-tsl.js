@@ -106,7 +106,11 @@ function criarClasse(W) {
       const albL = max(BRDF_Lambert({ diffuseColor: diffuseColor.rgb }), vec3(1e-3))
       const irrL = directDiffuse.add(indirectDiffuse).div(albL)
       const lumA = dot(irrL, LUM).div(max(ref(globais.uLuzRef), 0.05))
-      this.material.gLuz.assign(vec4(lumA, dot(this.material.emissivoTotal, LUM), 0.0, 1.0))
+      // luz própria do material, somada depois das faixas (a copa das árvores: luz de céu e de chão no lado da sombra,
+      // vento-arvores.js); devolve { luz, gLuz }: a cor somada e quanto ela soma na segunda saída
+      const extraLuz = this.material.original?.userData.tsl?.luz
+      const luzX = extraLuz ? extraLuz({ W, lumA, nMundo: this.material.nMundo, albedo: BRDF_Lambert({ diffuseColor: diffuseColor.rgb }) }) : null
+      this.material.gLuz.assign(vec4(luzX ? lumA.add(luzX.gLuz) : lumA, dot(this.material.emissivoTotal, LUM), 0.0, 1.0))
 
       // PINTOR DE LUZ (visual Arcane): três faixas pintadas, borda recortada pela pincelada presa ao mundo
       const pesoIrr = max(dot(irrL, LUM), 1e-3)
@@ -135,6 +139,7 @@ function criarClasse(W) {
       const arc = ref(globais.uArcane).greaterThan(0.5)
       directDiffuse.assign(arc.select(BRDF_Lambert({ diffuseColor: diffuseColor.rgb }).mul(faixa).mul(ref(globais.uLuzRef)), directDiffuse))
       indirectDiffuse.assign(arc.select(vec3(0.0), indirectDiffuse))
+      if (luzX) directDiffuse.addAssign(luzX.luz)
     }
   }
 

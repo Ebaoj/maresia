@@ -49,6 +49,9 @@ export const globais = {
   uArvBorda: { value: 0.18 },
   uArvBordaCor: { value: new THREE.Color('#cfe3ee') },
   uArvTransluz: { value: 0.6 }, // a folha acende quente na contraluz
+  uArvPreenche: { value: 0.45 }, // luz de céu e de chão no lado da sombra da copa
+  uArvCeu: { value: new THREE.Color('#9cc0d8') },
+  uArvChao: { value: new THREE.Color('#e0c08a') },
 }
 globais.tLampioes.value.needsUpdate = true
 

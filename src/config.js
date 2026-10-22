@@ -245,8 +245,11 @@ export const PADRAO = {
     borda: 0.18,           // luz do céu na borda de cima da copa
     bordaCor: '#cfe3ee',   // a cor dessa luz
     transluz: 0.6,         // contraluz: com o sol atrás, a folha deixa a luz passar e acende quente
+    preenche: 0.45,        // luz de céu e de chão no lado da sombra da copa (a sombra fica verde-azulada, nunca preta)
+    preencheCeu: '#9cc0d8', // a luz de céu, que entra por cima (fria)
+    preencheChao: '#e0c08a', // a luz que o chão devolve, por baixo (quente: a areia e a cal)
     esfera: 0.72,          // quanto a luz lê a copa inteira como um volume só (0 = cada cacho uma bola); recarregar
-    oclusao: 0.75,         // miolo da copa mais escuro (1 = sem); recarregar
+    oclusao: 0.88,         // miolo da copa mais escuro (1 = sem); recarregar
     cartaoTam: 1.0,        // tamanho dos cartões de folha; recarregar
     cartaoDens: 1.0,       // quantidade de cartões; recarregar
     variacao: 1.0,         // cada árvore um pouco diferente na cor; recarregar

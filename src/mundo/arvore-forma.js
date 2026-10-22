@@ -68,7 +68,7 @@ export function novaEstrutura(rnd, opcoes) {
   const mat = rnd.entre(-1, 1)
   const val = rnd.entre(0.93, 1.06)
   for (const k of ['luz', 'meio', 'sombra']) pal[k].offsetHSL(mat * 0.018, mat * 0.03, 0).multiplyScalar(val)
-  return { rnd, pal, galhos: [], cachos: [], H: 1, copa: null, esfera: 0.72, oclusao: 0.75, cartao: { tam: 0.9, quadrantes: [0], dens: 0.6 }, ...opcoes, pal: pal }
+  return { rnd, pal, galhos: [], cachos: [], H: 1, copa: null, esfera: 0.72, oclusao: 0.88, cartao: { tam: 0.9, quadrantes: [0], dens: 0.6 }, ...opcoes, pal: pal }
 }
 
 // galho curvo: de "origem" na direção "dir", com curva para cima (sobe) e caída na ponta (cai); devolve os pontos
@@ -241,9 +241,11 @@ function cartoes(est, m) {
     for (let i = 0; i < n; i++) {
       const u = V(rnd.entre(-1, 1), rnd.entre(-1, 1), rnd.entre(-1, 1)).normalize()
       if (u.dot(fora) < -0.3) u.addScaledVector(fora, 0.9).normalize()
-      const c = k.centro.clone().addScaledVector(u, k.raio * rnd.entre(0.72, 1.02) * V(1, k.achatar, 1).dot(V(u.x * u.x, u.y * u.y, u.z * u.z)) ** 0.5)
+      const c = k.centro.clone().addScaledVector(u, k.raio * rnd.entre(0.78, 1.18) * V(1, k.achatar, 1).dot(V(u.x * u.x, u.y * u.y, u.z * u.z)) ** 0.5)
       const nn = u.clone().lerp(normalCopa(est, c, tmp), est.esfera).normalize()
       corFolha(est, c, k, cor)
+      // manchas de sol dentro da copa: alguns ramos do lado de fora e de cima pegam luz direta e acendem quente
+      if (normalCopa(est, c, tmp).y > -0.15 && rnd.chance(0.2)) cor.lerp(est.pal.luz, 0.55).multiplyScalar(1.12)
       const s = tam * rnd.entre(0.75, 1.25) / 2
       const giro = rnd.entre(0, Math.PI * 2)
       const cs = Math.cos(giro) * s
