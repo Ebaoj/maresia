@@ -31,16 +31,19 @@ export function instanciarArvores(cena, pecas, matrizes, { nome = 'arvore', vari
   const perto = instanciarEmBlocos(cena, pecas.corpo, corpo, matrizes, cores, { ...op, nome })
   const longe = instanciarEmBlocos(cena, pecas.longe, corpo, matrizes, cores, { ...op, nome: nome + '-longe' })
   const cart = pecas.cartoes ? instanciarEmBlocos(cena, pecas.cartoes, cartoes, matrizes, cores, { ...op, nome: nome + '-folhas' }) : null
-  registrarLod(perto, longe, pecas.cartoesSempre ? null : cart)
-  return { perto, longe, cartoes: cart }
+  // peças que a espécie não pode perder de longe (os leques da carnaúba), na versão simples
+  const cartLonge = pecas.cartoesLonge ? instanciarEmBlocos(cena, pecas.cartoesLonge, cartoes, matrizes, cores, { ...op, nome: nome + '-folhas-longe' }) : null
+  registrarLod(perto, longe, cart, cartLonge)
+  return { perto, longe, cartoes: cart, cartoesLonge: cartLonge }
 }
 
-export function registrarLod(perto, longe, cartoes) {
+export function registrarLod(perto, longe, cartoes, cartoesLonge = null) {
   if (!Array.isArray(perto) || !Array.isArray(longe) || perto.length !== longe.length) return
   for (let i = 0; i < perto.length; i++) {
     const s = perto[i].boundingSphere || (perto[i].computeBoundingSphere(), perto[i].boundingSphere)
-    grupos.push({ c: s.center.clone().applyMatrix4(perto[i].matrixWorld), r: s.radius, perto: perto[i], longe: longe[i], cart: cartoes ? cartoes[i] : null, estado: null })
+    grupos.push({ c: s.center.clone().applyMatrix4(perto[i].matrixWorld), r: s.radius, perto: perto[i], longe: longe[i], cart: cartoes ? cartoes[i] : null, cartLonge: cartoesLonge ? cartoesLonge[i] : null, estado: null })
     longe[i].visible = false
+    if (cartoesLonge) cartoesLonge[i].visible = false
   }
 }
 
@@ -58,6 +61,7 @@ export function atualizarLodArvores(camera, cfg) {
     g.estado = perto
     g.perto.visible = perto
     if (g.cart) g.cart.visible = perto
+    if (g.cartLonge) g.cartLonge.visible = !perto
     g.longe.visible = !perto
   }
 }

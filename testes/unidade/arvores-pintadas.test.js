@@ -93,6 +93,17 @@ describe('árvores pintadas: forma', () => {
   })
 })
 
+describe('carnaúba de longe', () => {
+  // a carnaúba de longe ficava com os leques cheios (3,3 mil triângulos por árvore, 820 mil no quadro da Coluna da
+  // Hora, cidade-cheia 21/10/2026): de longe vai a versão simples, que não pode sumir (é a copa inteira)
+  it('tem leques simples para longe, com menos de um quarto dos triângulos', () => {
+    const p = carnauba(criarAleatorio(9))
+    expect(p.cartoesLonge).toBeTruthy()
+    expect(tris(p.cartoesLonge)).toBeGreaterThan(0)
+    expect(tris(p.cartoesLonge)).toBeLessThan(tris(p.cartoes) * 0.25)
+  })
+})
+
 describe('vento e distância', () => {
   it('o alísio de lés-sudeste sopra para oeste e um pouco para o norte (x leste, z sul)', () => {
     const d = direcaoVento(110)

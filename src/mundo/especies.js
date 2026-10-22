@@ -106,8 +106,8 @@ export function cajueiro(rnd) {
 
 // o leque da carnaúba no material dos cartões (sem virar para a câmera): setor de ~250 graus com pregas, a textura
 // rasga as pontas em tiras (folha-textura.js, quadrante "leque"). Feito com os dois lados.
-function lequeNaMalha(est, m, raio, q, pos, f) {
-  const N = 16
+function lequeNaMalha(est, m, raio, q, pos, f, simples = false) {
+  const N = simples ? 6 : 16
   const aberto = 2.2
   const [u0, v0] = cantoQuadrante(Q.leque)
   const k = { semente: f * 10, tom: est.rnd.entre(0.94, 1.06), topo: null }
@@ -119,7 +119,8 @@ function lequeNaMalha(est, m, raio, q, pos, f) {
     return V(Math.cos(a) * raio * fr, prega - fr * fr * raio * 0.22, Math.sin(a) * raio * fr).applyQuaternion(q).add(pos)
   }
   const anel = []
-  for (const fr of [0, 0.4, 1]) {
+  const aneis = simples ? [0, 1] : [0, 0.4, 1]
+  for (const fr of aneis) {
     const linha = []
     for (let i = 0; i <= N; i++) {
       const t = i / N
@@ -136,7 +137,7 @@ function lequeNaMalha(est, m, raio, q, pos, f) {
   for (const lado of [0, 1]) {
     const ids = anel.map((linha) => linha.map((v) => m.vert({ position: [v.p.x, v.p.y, v.p.z], normal: [v.n.x, v.n.y, v.n.z], color: v.c, uv: v.uv,
       aVento: [flex(est, v.p.y), 1, f, v.w], aCentro: [v.p.x, v.p.y, v.p.z], aCanto: [0, 0, 0] })))
-    for (let r = 0; r < 2; r++) {
+    for (let r = 0; r < aneis.length - 1; r++) {
       for (let i = 0; i < N; i++) {
         const a = ids[r][i], b = ids[r][i + 1], c = ids[r + 1][i], d = ids[r + 1][i + 1]
         if (lado) { m.tri(a, c, b); m.tri(b, c, d) } else { m.tri(a, b, c); m.tri(b, d, c) }
@@ -170,7 +171,7 @@ export function carnauba(rnd) {
     folhas.push({ raio: rnd.entre(0.95, 1.25), q, fim, f })
   }
   cacho(est, topo.clone().add(V(0, 0.2, 0)), 0.55, { achatar: 1.2, peso: 0.6 })
-  const pecas = montar(est, {
+  return montar(est, {
     // bainhas cruzadas no terço de baixo: anéis de escamas (no corpo, em geometria)
     extraCorpo: (m, longe) => {
       for (let k = 0; k < (longe ? 7 : 14); k++) {
@@ -188,10 +189,10 @@ export function carnauba(rnd) {
       }
     },
     extraCartoes: (m) => { for (const l of folhas) lequeNaMalha(est, m, l.raio, l.q, l.fim, l.f) },
+    // longe: os leques são a copa inteira e não podem sumir; vão 2 em cada 3, maiores, com 6 gomos e sem prega
+    // (de 64 para 6 triângulos por lado: a carnaúba era a espécie mais cara de longe, cidade-cheia 21/10/2026)
+    extraCartoesLonge: (m) => { folhas.forEach((l, i) => { if (i % 3 !== 2) lequeNaMalha(est, m, l.raio * 1.15, l.q, l.fim, l.f, true) }) },
   })
-  // os leques são a copa inteira (não detalhe): ficam de perto e de longe
-  pecas.cartoesSempre = true
-  return pecas
 }
 
 // MANGUE-VERMELHO: raízes-escora em arco saindo do tronco para a lama, raízes aéreas caindo dos galhos; copa densa e

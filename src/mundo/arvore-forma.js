@@ -268,7 +268,8 @@ function cartoes(est, m) {
 }
 
 // as três malhas da estrutura; "extra(m)" acrescenta peças próprias da espécie nos cartões (o leque da carnaúba)
-export function montar(est, { extraCorpo = null, extraCartoes = null } = {}) {
+// extraCartoesLonge: uma versão simples dessas peças para longe (onde a espécie não pode ficar sem elas)
+export function montar(est, { extraCorpo = null, extraCartoes = null, extraCartoesLonge = null } = {}) {
   if (!est.copa) fecharCopa(est)
   const corpo = new Malha(CORPO)
   const longe = new Malha(CORPO)
@@ -278,7 +279,13 @@ export function montar(est, { extraCorpo = null, extraCartoes = null } = {}) {
   if (extraCorpo) { extraCorpo(corpo, false); extraCorpo(longe, true) }
   cartoes(est, cart)
   if (extraCartoes) extraCartoes(cart)
-  return { corpo: corpo.geometria(), longe: longe.geometria(), cartoes: cart.nv ? cart.geometria(['aCentro', 'aCanto']) : null }
+  const pecas = { corpo: corpo.geometria(), longe: longe.geometria(), cartoes: cart.nv ? cart.geometria(['aCentro', 'aCanto']) : null }
+  if (extraCartoesLonge) {
+    const cl = new Malha(CARTOES)
+    extraCartoesLonge(cl)
+    pecas.cartoesLonge = cl.geometria(['aCentro', 'aCanto'])
+  }
+  return pecas
 }
 
 export { CORPO, CARTOES, normalCopa, flex, corFolha }
