@@ -7,7 +7,7 @@
 //   "variantes": { "off": { "dof": false }, "on": { "dof": true } },
 //   "lugares": [ { "nome": "coluna", "lugar": "pracaFerreira", "vista": "colunaHora", "passos": 90 },
 //                { "nome": "rua", "x": 0, "z": 0, "yaw": 0, "hora": 12, "pitch": 0.2, "dist": 5 } ],
-//   "video": { "nome": "andando", "segundos": 6, "fps": 30, "lugar": {...}, "roteiro": "(t, m) => { m.teclas.frente = true }" }
+//   "videos": [{ "nome": "andando", "segundos": 6, "fps": 30, "lugar": {...}, "cfg": {...}, "roteiro": "(t, m) => { m.teclas.frente = true }" }]
 // }
 // Sai PASTA/<lugar>-<variante>.png; o vídeo vai para docs/capturas/video/<nome>/ (gravador do modo dev).
 // Variáveis: RENDERIZADOR ('webgpu' padrão ou 'webgl'), PORTA_EXTRA (soma na porta do CDP).
@@ -122,12 +122,12 @@ try {
         await avaliar(`Object.assign(window.maresia.cfg.estilo, ${padrao}), 'ok'`)
       }
     }
-    if (plano.video) {
-      const v = plano.video
+    for (const v of plano.videos || (plano.video ? [plano.video] : [])) {
       if (v.lugar) console.log('video lugar:', (await avaliar(posicionar(v.lugar))).valor)
       if (v.cfg) await avaliar(variante(v.cfg))
       const r = await avaliar(`window.maresia.gravar({ nome: ${JSON.stringify(v.nome)}, segundos: ${v.segundos ?? 6}, fps: ${v.fps ?? 30}, roteiro: ${v.roteiro || '() => {}'} }).then((x) => JSON.stringify(x))`)
       console.log('video:', r.valor || r.erro)
+      await avaliar(`Object.assign(window.maresia.cfg.estilo, ${padrao}), 'ok'`)
     }
     console.log('quebrados no fim:', (await avaliar('JSON.stringify(window.__shadersQuebrados || [])')).valor)
   }

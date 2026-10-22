@@ -26,19 +26,21 @@ export class ProfundidadeGpu {
     const C = contas(W, U, prof)
     const r = this.rt
     this.matPreviaLonge = material(previa(W, U, C, fonte, uvGL, false))
-    this.matPreviaPerto = material(previa(W, U, C, fonte, uvGL, true))
+    this.matPreviaPerto = material(previaPerto(W, U, C, fonte, uvGL))
     this.matLongeH = material(longe(W, U, de(r.longeA.texture), U.uDirH, uvGL, false))
     this.matLongeV = material(longe(W, U, de(r.longeB.texture), U.uDirV, uvGL, true))
-    this.matDilH = material(dilata(W, U, de(r.pertoA.texture), U.uDirH, uvGL))
-    this.matDilV = material(dilata(W, U, de(r.dilA.texture), U.uDirV, uvGL))
-    this.matPertoH = material(perto(W, U, de(r.pertoA.texture), de(r.dilB.texture), U.uDirH, uvGL))
-    this.matPertoV = material(perto(W, U, de(r.pertoB.texture), de(r.dilB.texture), U.uDirV, uvGL))
+    // a frente em um quarto da resolução: raio, passo e direções do quarto
+    const Q = { ...U, uRaioMeio: U.uRaioQuarto, uPasso: U.uPassoQuarto }
+    this.matDilH = material(dilata(W, Q, de(r.pertoA.texture), U.uDirHQ, uvGL))
+    this.matDilV = material(dilata(W, Q, de(r.dilA.texture), U.uDirVQ, uvGL))
+    this.matPertoH = material(perto(W, Q, de(r.pertoA.texture), de(r.dilB.texture), U.uDirHQ, uvGL))
+    this.matPertoV = material(perto(W, Q, de(r.pertoB.texture), de(r.dilB.texture), U.uDirVQ, uvGL))
     this.matJunta = material(junta(W, U, C, fonte, de(r.longeA.texture), de(r.pertoA.texture), uvGL))
   }
 
   tamanho(w, h) {
-    const mw = Math.ceil(w / 2), mh = Math.ceil(h / 2)
-    for (const k in this.rt) this.rt[k].setSize(mw, mh)
+    const mw = Math.ceil(w / 2), mh = Math.ceil(h / 2), qw = Math.ceil(w / 4), qh = Math.ceil(h / 4)
+    for (const k in this.rt) this.rt[k].setSize(k.startsWith('longe') ? mw : qw, k.startsWith('longe') ? mh : qh)
     this.rtJunta.setSize(w, h)
   }
 
@@ -90,6 +92,25 @@ function previa(W, U, C, fonte, uvGL, frente) {
     }
     const cor = soma.div(somaW)
     return frente ? vec4(cor.mul(mx), mx) : vec4(cor, mx)
+  })()
+}
+
+// prévia da frente em um quarto (fragPreviaPerto): a cor do bloco 2x2 por média bilinear, o desfoque de um pixel dele
+function previaPerto(W, U, C, fonte, uvGL) {
+  const { Fn, vec2, vec3, vec4, float, max } = W
+  return Fn(() => {
+    const soma = vec3(0.0).toVar()
+    const somaW = float(0.0).toVar()
+    const mx = float(0.0).toVar()
+    for (const [ox, oy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const q = uvGL.add(vec2(ox, oy).mul(U.uTexelCheio))
+      const c = C.cocPerto(C.distDof(q.sub(U.uTexelCheio.mul(0.5)))).toVar()
+      const w = c.add(1e-3)
+      soma.addAssign(fonte(q).rgb.mul(w))
+      somaW.addAssign(w)
+      mx.assign(max(mx, c))
+    }
+    return vec4(soma.div(somaW).mul(mx), mx)
   })()
 }
 

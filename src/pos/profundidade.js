@@ -9,14 +9,15 @@
 // (a pincelada, o peso do traço no alfa). Aqui as mesmas contas rodam nos dois: GLSL neste arquivo, TSL em
 // profundidade-gpu.js, com os mesmos objetos de uniform (o painel muda os dois juntos).
 //
-// Passes, em meia resolução (um quarto dos pixels), lendo a cor e a profundidade que o filtro já tem:
+// Passes, lendo a cor e a profundidade que o filtro já tem; o fundo em meia resolução (um quarto dos pixels), a
+// frente em um quarto (um dezesseis avos: ela é o borrão grande, e em meia custava metade do efeito):
 //   1. prévia do fundo: cada texel junta os 4 pixels dele pesando pelo desfoque de cada um (o jogador, nítido, pesa
 //      quase nada no texel que divide com o fundo) e guarda o desfoque no alfa
 //   2-3. fundo borrado em cruz (horizontal, vertical): "espalhar por junção" (scatter-as-gather). Cada amostra só
 //      entra se o raio DELA alcança o centro, e o raio vale o menor dos dois (o da amostra e o do centro): coisa
 //      nítida (o jogador) não vaza para o fundo (sem halo em volta da silhueta) e o fundo mais longe não come a
 //      borda do que está mais perto
-//   4. prévia da frente: a cor do que está entre a câmera e o foco, multiplicada pela cobertura (pré-multiplicada)
+//   4. prévia da frente (um quarto): a cor do que está entre a câmera e o foco, multiplicada pela cobertura
 //   5-6. dilatação da cobertura da frente (o raio de quem alcança cada lugar)
 //   7-8. frente borrada em cruz com o raio dilatado: a borda do objeto da frente se espalha por cima do jogador,
 //      como numa lente (o que está na frente cobre o que está atrás)
@@ -56,6 +57,9 @@ export function parametrosProfundidade(e, foco, altura) {
     raioMeio,
     // passo inteiro (amostra no centro do texel, sem mistura bilinear) que cobre o raio com AMOSTRAS de cada lado
     passo: Math.max(1, Math.ceil(raioMeio / AMOSTRAS)),
+    // a frente é borrada em um quarto da resolução (medido em 22/10: em meia ela custava ~1 ms dos 2 do efeito)
+    raioQuarto: raioCheio / 4,
+    passoQuarto: Math.max(1, Math.ceil(raioCheio / 4 / AMOSTRAS)),
   }
 }
 
@@ -91,10 +95,11 @@ export function uniformsProfundidade(THREE) {
   return {
     uNear: f(0.3), uFar: f(6000), uFoco: f(6),
     uLongeIni: f(16), uLongeCheio: f(900), uLonge: f(0.8), uPertoIni: f(4.5), uPerto: f(0.8),
-    uRaioCheio: f(8), uRaioMeio: f(4), uPasso: f(1),
+    uRaioCheio: f(8), uRaioMeio: f(4), uPasso: f(1), uRaioQuarto: f(2), uPassoQuarto: f(1),
     uTexelCheio: v2(), uTexelMeio: v2(),
-    // direções dos borrões, em uv (passo * texel): uma por passe, fixas (o WebGPU monta um shader por material)
-    uDirH: v2(), uDirV: v2(),
+    // direções dos borrões, em uv (passo * texel): uma por passe, fixas (o WebGPU monta um shader por material);
+    // Q = as da frente, em um quarto da resolução
+    uDirH: v2(), uDirV: v2(), uDirHQ: v2(), uDirVQ: v2(),
     uPertoLiga: f(1),
   }
 }
@@ -139,6 +144,11 @@ export function atualizarProfundidade(u, estado, e, camera, alvo, tempo, larg, a
   u.uTexelMeio.value.set(1 / mw, 1 / mh)
   u.uDirH.value.set(p.passo / mw, 0)
   u.uDirV.value.set(0, p.passo / mh)
+  u.uRaioQuarto.value = p.raioQuarto
+  u.uPassoQuarto.value = p.passoQuarto
+  const qw = Math.ceil(larg / 4), qh = Math.ceil(alt / 4)
+  u.uDirHQ.value.set(p.passoQuarto / qw, 0)
+  u.uDirVQ.value.set(0, p.passoQuarto / qh)
   u.uPertoLiga.value = p.perto > 0.001 ? 1 : 0
   return ligado
 }
@@ -182,6 +192,23 @@ void main() {
   gl_FragColor = ${frente ? 'vec4(cor * mx, mx)' : 'vec4(cor, mx)'};
 }`
 }
+
+// 4: prévia da frente em um quarto da resolução: 4 blocos de 2x2 pixels; a cor é a média bilinear do bloco e o
+// desfoque sai de um pixel dele (a profundidade não se mistura)
+const fragPreviaPerto = /* glsl */ `
+uniform sampler2D tCor; uniform sampler2D tProf; uniform vec2 uTexelCheio;
+varying vec2 vUv;
+${GLSL_COC}
+void main() {
+  vec3 soma = vec3(0.0); float somaW = 0.0; float mx = 0.0;
+  for (int i = 0; i < 4; i++) {
+    vec2 q = vUv + vec2(i == 0 || i == 2 ? -1.0 : 1.0, i < 2 ? -1.0 : 1.0) * uTexelCheio;
+    float c = cocPerto(distDof(tProf, q - 0.5 * uTexelCheio));
+    float w = c + 1e-3;
+    soma += texture2D(tCor, q).rgb * w; somaW += w; mx = max(mx, c);
+  }
+  gl_FragColor = vec4(soma / somaW * mx, mx);
+}`
 
 // 2-3: fundo em cruz. premult: a saída vai pré-multiplicada pelo desfoque (para a junção ignorar texel nítido)
 function fragLonge(premult) {
@@ -269,19 +296,21 @@ export class ProfundidadeWebgl {
     })
     const r = this.rt
     this.matPreviaLonge = mat(fragPrevia(false), { tCor: fonte, tProf: prof })
-    this.matPreviaPerto = mat(fragPrevia(true), { tCor: fonte, tProf: prof })
+    this.matPreviaPerto = mat(fragPreviaPerto, { tCor: fonte, tProf: prof })
     this.matLongeH = mat(fragLonge(false), { tFonte: { value: r.longeA.texture }, uDir: u.uDirH })
     this.matLongeV = mat(fragLonge(true), { tFonte: { value: r.longeB.texture }, uDir: u.uDirV })
-    this.matDilH = mat(fragDilata, { tFonte: { value: r.pertoA.texture }, uDir: u.uDirH })
-    this.matDilV = mat(fragDilata, { tFonte: { value: r.dilA.texture }, uDir: u.uDirV })
-    this.matPertoH = mat(fragPerto, { tFonte: { value: r.pertoA.texture }, tDil: { value: r.dilB.texture }, uDir: u.uDirH })
-    this.matPertoV = mat(fragPerto, { tFonte: { value: r.pertoB.texture }, tDil: { value: r.dilB.texture }, uDir: u.uDirV })
+    // a frente em um quarto: os mesmos shaders com o raio, o passo e as direções do quarto
+    const q = { uRaioMeio: u.uRaioQuarto, uPasso: u.uPassoQuarto }
+    this.matDilH = mat(fragDilata, { ...q, tFonte: { value: r.pertoA.texture }, uDir: u.uDirHQ })
+    this.matDilV = mat(fragDilata, { ...q, tFonte: { value: r.dilA.texture }, uDir: u.uDirVQ })
+    this.matPertoH = mat(fragPerto, { ...q, tFonte: { value: r.pertoA.texture }, tDil: { value: r.dilB.texture }, uDir: u.uDirHQ })
+    this.matPertoV = mat(fragPerto, { ...q, tFonte: { value: r.pertoB.texture }, tDil: { value: r.dilB.texture }, uDir: u.uDirVQ })
     this.matJunta = mat(fragJunta, { tCor: fonte, tProf: prof, tLonge: { value: r.longeA.texture }, tPerto: { value: r.pertoA.texture } })
   }
 
   tamanho(w, h) {
-    const mw = Math.ceil(w / 2), mh = Math.ceil(h / 2)
-    for (const k in this.rt) this.rt[k].setSize(mw, mh)
+    const mw = Math.ceil(w / 2), mh = Math.ceil(h / 2), qw = Math.ceil(w / 4), qh = Math.ceil(h / 4)
+    for (const k in this.rt) this.rt[k].setSize(k.startsWith('longe') ? mw : qw, k.startsWith('longe') ? mh : qh)
     this.rtJunta.setSize(w, h)
   }
 

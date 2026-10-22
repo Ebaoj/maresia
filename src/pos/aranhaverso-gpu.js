@@ -263,7 +263,10 @@ function fragTela(W, u, T, uvGL) {
   const dofTraco = (d) => {
     const t = clamp(d.sub(U.uDofLongeIni).div(max(U.uDofLongeCheio.sub(U.uDofLongeIni), 1.0)), 0.0, 1.0)
     const um = float(1.0).sub(t)
-    const r = clamp(float(1.0).sub(um.mul(um)).mul(U.uDofLonge), 0.0, 1.0).mul(U.uDofRaio)
+    const rL = clamp(float(1.0).sub(um.mul(um)).mul(U.uDofLonge), 0.0, 1.0)
+    // a frente também (o banco desfocado perto da câmera ficava com a quina clara nítida por cima)
+    const rP = clamp(clamp(U.uDofPertoIni.sub(d).div(max(U.uDofPertoIni.mul(0.5), 0.05)), 0.0, 1.0).mul(U.uDofPerto), 0.0, 1.0)
+    const r = max(rL, rP).mul(U.uDofRaio)
     return U.uDofLiga.lessThan(0.5).select(float(1.0), float(1.0).sub(smoothstep(0.5, 1.5, r)))
   }
   const paraSRGB = (c0) => {

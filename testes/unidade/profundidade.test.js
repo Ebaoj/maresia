@@ -66,6 +66,8 @@ describe('profundidade: quanto cada distância desfoca', () => {
       const q = parametrosProfundidade({ ...e, dofRaio: 24 }, foco, h)
       expect(Number.isInteger(q.passo)).toBe(true)
       expect(q.passo * 8).toBeGreaterThanOrEqual(q.raioMeio - 1e-9)
+      expect(Number.isInteger(q.passoQuarto)).toBe(true)
+      expect(q.passoQuarto * 8).toBeGreaterThanOrEqual(q.raioQuarto - 1e-9)
     }
   })
 })

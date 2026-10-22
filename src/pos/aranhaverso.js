@@ -117,6 +117,7 @@ uniform float uFx; uniform vec4 uFxA; uniform vec4 uFxB; uniform vec4 uFxC; unif
 uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcArClareia; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
 uniform float uDofLiga; uniform float uDofLongeIni; uniform float uDofLongeCheio; uniform float uDofLonge; uniform float uDofRaio;
+uniform float uDofPertoIni; uniform float uDofPerto;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
 varying vec2 vUv;
 ${COMUM}
@@ -131,6 +132,8 @@ float dofTraco(float d) {
   if (uDofLiga < 0.5) return 1.0;
   float t = clamp((d - uDofLongeIni) / max(uDofLongeCheio - uDofLongeIni, 1.0), 0.0, 1.0);
   float r = clamp((1.0 - (1.0 - t) * (1.0 - t)) * uDofLonge, 0.0, 1.0) * uDofRaio;
+  // a frente também (o banco desfocado perto da câmera ficava com a quina clara nítida por cima)
+  r = max(r, clamp(clamp((uDofPertoIni - d) / max(uDofPertoIni * 0.5, 0.05), 0.0, 1.0) * uDofPerto, 0.0, 1.0) * uDofRaio);
   return 1.0 - smoothstep(0.5, 1.5, r);
 }
 vec3 paraSRGB(vec3 c) {
@@ -565,7 +568,7 @@ export class Aranhaverso {
     this.dofLigado = false
     Object.assign(this.uTela, {
       uDofLiga: { value: 0 }, uDofLongeIni: this.uDof.uLongeIni, uDofLongeCheio: this.uDof.uLongeCheio,
-      uDofLonge: this.uDof.uLonge, uDofRaio: this.uDof.uRaioCheio,
+      uDofLonge: this.uDof.uLonge, uDofRaio: this.uDof.uRaioCheio, uDofPertoIni: this.uDof.uPertoIni, uDofPerto: this.uDof.uPerto,
     })
 
     const shader = (frag, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: vert, fragmentShader: frag, depthTest: false, depthWrite: false })
