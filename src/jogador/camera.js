@@ -3,7 +3,7 @@
 
 import * as THREE from 'three'
 import { alturaChao } from '../mundo/colisao.js'
-import { prepararSolidos, solidosCamera } from '../mundo/solidos.js'
+import { prepararSolidos, solidosAoAlcance } from '../mundo/solidos.js'
 import { clamp } from '../utils.js'
 
 export class CameraTerceiraPessoa {
@@ -68,6 +68,9 @@ export class CameraTerceiraPessoa {
     // se tiver prédio entre o personagem e a câmera, a câmera chega mais perto.
     // Um feixe de 5 raios (centro e 4 lados do tamanho da lente) evita a lente raspar na quina.
     prepararSolidos()
+    // só os sólidos ao alcance dos raios deste quadro: os do feixe (até a distância da câmera, saindo a menos de
+    // 0,5 m do alvo) e os dois do lado (1,4 m a partir da câmera)
+    const solidos = solidosAoAlcance(this.alvo, cfg.distancia + 2.5, this._solidos ||= [])
     const livreEm = (pitch) => {
       const cp = Math.cos(pitch)
       const dir = this._dir.set(Math.sin(this.yaw) * cp, Math.sin(pitch), Math.cos(this.yaw) * cp)
@@ -78,7 +81,7 @@ export class CameraTerceiraPessoa {
         this._origem.copy(this.alvo).addScaledVector(this._lado, a).addScaledVector(this._cima, b)
         this.raio.set(this._origem, dir)
         this.raio.far = livre
-        const bate = this.raio.intersectObjects(solidosCamera, true)[0]
+        const bate = this.raio.intersectObjects(solidos, true)[0]
         if (bate) livre = Math.min(livre, bate.distance)
       }
       return { dir, livre }
@@ -109,7 +112,7 @@ export class CameraTerceiraPessoa {
     for (const s of [1, -1]) {
       this.raio.set(p, this._origem.copy(this._lado).multiplyScalar(s))
       this.raio.far = 1.4
-      const bate = this.raio.intersectObjects(solidosCamera, true)[0]
+      const bate = this.raio.intersectObjects(solidos, true)[0]
       if (bate) empurra -= s * (1.4 - bate.distance)
     }
     this.empurrao = (this.empurrao || 0) + (empurra - (this.empurrao || 0)) * (1 - Math.exp(-dt * 5))

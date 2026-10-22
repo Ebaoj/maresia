@@ -35,6 +35,34 @@ THREE.Mesh.prototype.raycast = raycastSolido
 
 let preparados = 0
 
+// Os sólidos que um raio pode tocar (22/10/2026, docs/desempenho-22-10.md): os raios da câmera saem de até `folga` m
+// de `centro` e andam no máximo `alcance` m, então quem tem a esfera inteira mais longe que isso não pode ser tocado e
+// não precisa ir para o intersectObjects (que testaria a esfera de cada um, 11 raios por quadro). Com o mapa 2,5 vezes
+// maior eram ~900 sólidos por raio; o resultado do raio é o mesmo. Quem tem filhos (o raio é recursivo) vai sempre.
+const _esferas = new WeakMap()
+function esferaNoMundo(o) {
+  let s = _esferas.get(o)
+  // congelado com a matriz do mundo já feita: a esfera não muda mais
+  if (s && s.fixa) return s
+  let local
+  if (o.isInstancedMesh) { if (o.boundingSphere === null) o.computeBoundingSphere(); local = o.boundingSphere }
+  else if (o.isMesh) { if (o.geometry.boundingSphere === null) o.geometry.computeBoundingSphere(); local = o.geometry.boundingSphere }
+  else return null
+  if (!s) { s = new THREE.Sphere(); _esferas.set(o, s) }
+  s.copy(local).applyMatrix4(o.matrixWorld)
+  s.fixa = o.static === true && o.matrixAutoUpdate === false && o.matrixWorldNeedsUpdate === false
+  return s
+}
+
+export function solidosAoAlcance(centro, alcance, saida = []) {
+  saida.length = 0
+  for (const o of solidosCamera) {
+    const s = o.children.length ? null : esferaNoMundo(o)
+    if (!s || s.center.distanceTo(centro) - s.radius <= alcance) saida.push(o)
+  }
+  return saida
+}
+
 // monta a BVH das geometrias que entraram em solidosCamera desde a última chamada
 export function prepararSolidos() {
   if (preparados === solidosCamera.length) return
