@@ -66,6 +66,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 | `src/jogador/` | Personagem, controle (andar, pular, nadar, sentar), câmera e interações (camada 3, tecla E) |
 | `src/pos/aranhaverso.js` | O filtro de quadrinho (nanquim, retícula, hachura, aberração) |
 | `src/pos/profundidade.js` + `profundidade-gpu.js` | Profundidade de campo (22/10/2026, `docs/profundidade-de-campo.md`): autofoco no jogador, fundo em meia resolução sem halo na silhueta, frente em um quarto, desfoque pintado antes da pincelada; GLSL e TSL com os mesmos uniforms (`cfg.estilo.dof*`). Fotos: `scripts/fotos-profundidade.mjs` |
+| `src/pos/estabilizar.js` + `estabilizar-gpu.js` | Estabilização no tempo contra o pisca (22/10/2026, `docs/pisca-22-10.md`): logo depois da cena, a cor do quadro anterior reprojetada pela profundidade e limitada às vizinhas, sem tremor de câmera; jogador e gente (alfa < 0,95) ficam fora. `cfg.estilo.estabilizar` (0 desliga). Medir pisca: `scripts/pisca.mjs` + `scripts/pisca-mapa.py --compensar` |
 | `src/ui/` | Legendas de gibi, onomatopeias e o painel lil-gui |
 | `src/audio.js` | Mar e vento gerados na hora, sem arquivo de som |
 | `arte/gerador.py` | Gera arte 2D (conceito do personagem) com ComfyUI + Z-Image Turbo numa GPU L4 do Modal; rodar só via `arte/modal.sh` (chaves `modal_token_id`/`modal_secret` do cofre); imagens em `arte/saida/` |
