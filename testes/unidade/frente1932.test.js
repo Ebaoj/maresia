@@ -56,3 +56,17 @@ describe('onde a frente contínua não entra', () => {
     expect(folgaProibida(casa(CENTRO[0] + 900, CENTRO[1] + 700))).toBe(false)
   })
 })
+
+describe('as folgas entre cadeias (hipótese de 21/10/2026)', () => {
+  const hip = VAOS.filter((v) => v.hipotese)
+  it('existem, e a maioria das folgas entre cadeias é rua transversal (fica aberta)', () => {
+    expect(hip.length).toBeGreaterThan(100)
+    expect(hip.filter((v) => v.rua).length / hip.length).toBeGreaterThan(0.5)
+  })
+  it('a folga entre cadeias é da mesma face de quarteirão: de 7 a 120 m', () => {
+    for (const v of hip) {
+      expect(v.largura).toBeGreaterThanOrEqual(7)
+      expect(v.largura).toBeLessThanOrEqual(120)
+    }
+  })
+})

@@ -16,6 +16,7 @@
 import dados from './mapa1932-lotes.json'
 import { ll, LIMITES, LUGARES_RESERVADOS } from './fortaleza1932.js'
 import { FRENTES, LARGURA_ALVO, FOLGA_PAREDE, emLonLat, fatiasDoCaminho } from './casarioPlanta1932.js'
+import { folgaCruzaRua, frenteOlhaParaFolga, folgasEntreCadeias } from './folgas1932.js'
 
 export const USOS = dados.usos
 export const USO_FAVELA = 99
@@ -122,57 +123,6 @@ export function pontoNaRua(rua, dist) {
   return [p0[0], p0[1], n0[0], n0[1]]
 }
 
-
-// A folga da testada e uma rua que cruza? A cadeia segue a mesma rua de um
-// quarteirao para o outro, e a folga entre a ultima casa de um e a primeira do
-// outro e a rua transversal: um muro ou uma casa ali fecha a rua (o defeito
-// "parede cega atravessando a rua" que o Joabe viu em 03d7bb1). O sinal e o lote
-// de esquina: na rua transversal os lotes dao a frente para dentro da folga
-// (a normal deles aponta para o meio da folga). Lote vazio no meio do
-// quarteirao nao tem ninguem olhando para ele. Tudo em metros de verdade.
-const CELULA_FRENTES = 40
-const frentesPorCelula = new Map()
-FRENTES.forEach((f, i) => {
-  const mx = (f.a[0] + f.b[0]) / 2
-  const mz = (f.a[1] + f.b[1]) / 2
-  const k = `${Math.floor(mx / CELULA_FRENTES)},${Math.floor(mz / CELULA_FRENTES)}`
-  if (!frentesPorCelula.has(k)) frentesPorCelula.set(k, [])
-  frentesPorCelula.get(k).push(i)
-})
-// a frente f olha para dentro da folga de a a b? (normal: a da folga, para a rua; prof: o fundo do lote)
-export function frenteOlhaParaFolga(f, a, b, normal, prof) {
-  const L = Math.hypot(b[0] - a[0], b[1] - a[1])
-  if (L < 0.5) return false
-  const tx = (b[0] - a[0]) / L
-  const tz = (b[1] - a[1]) / L
-  const fundo = Math.max(prof, 6) + 8
-  const mx = (f.a[0] + f.b[0]) / 2 - a[0]
-  const mz = (f.a[1] + f.b[1]) / 2 - a[1]
-  const s = mx * tx + mz * tz // ao longo da folga
-  const q = -(mx * normal[0] + mz * normal[1]) // para dentro do quarteirao
-  if (s < -3 || s > L + 3 || q < 0 || q > fundo) return false
-  const virada = f.normal[0] * tx + f.normal[1] * tz
-  if (Math.abs(virada) < 0.7) return false // a frente corre junto da folga, nao olha para ela
-  return Math.sign(virada) === Math.sign(L / 2 - s)
-}
-
-export function folgaCruzaRua(a, b, normal, prof) {
-  const L = Math.hypot(b[0] - a[0], b[1] - a[1])
-  if (L < 0.5) return false
-  const fundo = Math.max(prof, 6) + 8
-  const i0 = Math.floor((Math.min(a[0], b[0]) - fundo) / CELULA_FRENTES)
-  const i1 = Math.floor((Math.max(a[0], b[0]) + fundo) / CELULA_FRENTES)
-  const j0 = Math.floor((Math.min(a[1], b[1]) - fundo) / CELULA_FRENTES)
-  const j1 = Math.floor((Math.max(a[1], b[1]) + fundo) / CELULA_FRENTES)
-  for (let j = j0; j <= j1; j++) {
-    for (let i = i0; i <= i1; i++) {
-      for (const k of frentesPorCelula.get(`${i},${j}`) || []) {
-        if (frenteOlhaParaFolga(FRENTES[k], a, b, normal, prof)) return true
-      }
-    }
-  }
-  return false
-}
 
 // as fachadas em coordenada de jogo, ja agrupadas em casas
 let vaosDaTestada = []
@@ -356,7 +306,8 @@ export const FACHADAS = (() => {
 // Os vaos da testada: os trechos da rua que a planta oficial deixa sem
 // construcao. No Centro eles viram casa geminada; nos bairros, muro com
 // portao (src/mundo/cidade.js).
-export const VAOS = vaosDaTestada
+export const VAOS = [...vaosDaTestada, ...folgasEntreCadeias()]
+export { frenteOlhaParaFolga, folgaCruzaRua }
 
 // os lugares que a cidade nao pode cobrir: a reconstituicao de cada um entra por cima
 export const RESERVADOS = LUGARES_RESERVADOS
