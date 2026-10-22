@@ -69,7 +69,7 @@ export const MARCOS = {
   chapa: '#7a4636',
   ferro: '#2b2724',
   bronze: '#4a4236',
-  felinos: '#5a6450',
+  felinos: '#5f5a48', // bronze-oliva medido nos conceitos (mediana 74, 69, 61): o verde-cinza #5a6450 lia pedra-sabão
   general: '#73603f',
   balaustrada: '#ede5d3',
   pedra: '#d8cfbd',

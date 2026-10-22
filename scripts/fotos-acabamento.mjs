@@ -24,6 +24,8 @@ const LUGARES = [
   { nome: 'se-torre', se: { de: [-12, 14, 1.7], para: [-7.7, -3, 15] }, hora: 9.0 },
   { nome: 'se-quina', se: { de: [-20, 9, 1.7], para: [-11, -3, 6] }, hora: 9.0 },
   ...['leaoSerpente', 'leao', 'tigre', 'general'].flatMap((e) => [5, 20].map((d) => ({ nome: `${e}-${d}m`, escultura: e, dist: d, hora: 9.5 }))),
+  // a tarde (metal-claro, 22/10/2026): o sol do outro lado, a câmera do mesmo lado de manhã vê a face na sombra
+  ...['leaoSerpente', 'leao', 'tigre', 'general'].flatMap((e) => [5, 20].map((d) => ({ nome: `${e}-${d}m-15h`, escultura: e, dist: d, hora: 15 }))),
   { nome: 'rua-oeste', x: 2952.7, z: 1964.6, yaw: 2.2, dist: 7, pitch: 0.12, hora: 15.5 },
   { nome: 'rua-prainha', lon: -38.5230, lat: -3.7240, yaw: -1.0, dist: 7, pitch: 0.12, hora: 9.5 },
   { nome: 'rua-muro', lon: -38.5310, lat: -3.7230, yaw: 1.5, dist: 7, pitch: 0.12, hora: 9.5 },

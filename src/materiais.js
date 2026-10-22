@@ -64,6 +64,8 @@ export function pintar(mat, chave) {
     if (mat.userData.arcPincel) sh.uniforms.uArcPincel = mat.userData.arcPincel
     // e a própria cor da sombra (o reboco dos marcos: sombra azul-violeta fria, não cinza)
     if (mat.userData.arcCorSombra) sh.uniforms.uArcCorSombra = mat.userData.arcCorSombra
+    // e os próprios níveis das três faixas (o metal escuro das esculturas: com os do jogo, a sombra virava breu)
+    if (mat.userData.arcNiveis) sh.uniforms.uArcNiveis = mat.userData.arcNiveis
     sh.uniforms.uSolDirA = globais.uSolDir
     const tp = mat.userData.texPintada
     if (tp) {

@@ -122,8 +122,12 @@ export function prepararModelo(gltf, def, suave = 0, brilho = 0) {
 // lugares: { chave: [x local, y local, z local, giro] } no referencial da obra da praça
 export function criarEsculturas(cena, cfg, mats, obra, lugares) {
   const formas = { leaoSerpente: leaoComSerpente(), leao: felinoDePe(true), tigre: felinoDePe(false), general: general() }
-  // o metal lê o realce pela aNormalForma (metal.js): na forma procedural é a própria normal
-  for (const g of Object.values(formas)) g.setAttribute('aNormalForma', g.attributes.normal.clone())
+  // o metal lê o realce pela aNormalForma (metal.js): na forma procedural é a própria normal,
+  // e a curvatura (a cavidade escura do metal): na forma procedural, nenhuma
+  for (const g of Object.values(formas)) {
+    g.setAttribute('aNormalForma', g.attributes.normal.clone())
+    g.setAttribute('aCurva', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count), 1))
+  }
   const grupos = []
   const porChave = {}
   for (const [chave, [lx, ly, lz, giro]] of Object.entries(lugares)) {
