@@ -12,6 +12,7 @@ import { criarAleatorio } from '../utils.js'
 import { CAL } from '../paleta.js'
 import { fragTensor, fragKuwahara, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
 import { uniformsFx2d, GLSL_FX2D } from './fx2d.js'
+import { GLSL_GRADACAO } from './gradacao-final.js'
 import { uniformsProfundidade, atualizarProfundidade, criarEstadoFoco, ProfundidadeWebgl } from './profundidade.js'
 import { uniformsEstabilizar, criarEstadoEstabilizar, atualizarEstabilizar, EstabilizarWebgl } from './estabilizar.js'
 
@@ -117,6 +118,8 @@ uniform float uArcLuzEstrutura; uniform vec3 uArCor;
 uniform float uFx; uniform vec4 uFxA; uniform vec4 uFxB; uniform vec4 uFxC; uniform vec3 uFxCor1; uniform vec3 uFxCor2; uniform vec3 uFxSpray;
 uniform float uTelaPintura; uniform float uArcAresta; uniform float uArcArClareia; uniform float uArcCalNeutro; uniform float uArcArTinta; uniform float uArcPreto; uniform float uArcBranco;
 uniform float uArcGradeCal; uniform float uArcGradeContraste; uniform float uArcGradeSaturacao; uniform vec3 uCalCor;
+uniform float uArcGradeSombraIni; uniform float uArcGradeSombraFim;
+${GLSL_GRADACAO}
 uniform float uDofLiga; uniform float uDofLongeIni; uniform float uDofLongeCheio; uniform float uDofLonge; uniform float uDofRaio;
 uniform float uDofPertoIni; uniform float uDofPerto; uniform float uDofPertoEscala;
 uniform float uMemoria; uniform vec3 uMemPapel; uniform vec3 uMemTinta; uniform vec3 uMemAnil; uniform vec3 uMemUrucum; uniform vec3 uMemOcre;
@@ -461,10 +464,9 @@ void main() {
   // neutro perde um pouco de cor, e o que é saturado (mar, pano, fruta) fica.
   if (uArcane > 0.5 && uArcGradeCal > 0.5) {
     float Lf = dot(cor, vec3(0.299, 0.587, 0.114));
-    // a curva: os meios escurecem, as luzes abrem um pouco. O fator fica preso entre
-    // 0,7 e 1,25: uma curva sem limite transformava as sombras em preto chapado.
-    float curva = clamp((Lf - 0.5) * uArcGradeContraste + 0.5, 0.3, 1.0);
-    cor *= mix(1.0, clamp(curva / max(Lf, 0.15), 0.7, 1.25), uArcGradeCal * (1.0 - ceu));
+    // a curva (gradacao-final.js): as sombras fundas ganham 1,25, os meios escurecem, as luzes abrem um
+    // pouco, com emenda suave entre as duas; o fator fica preso entre 0,7 e 1,25
+    cor *= mix(1.0, fatorGradacao(Lf, uArcGradeContraste, uArcGradeSombraIni, uArcGradeSombraFim), uArcGradeCal * (1.0 - ceu));
     // a saturação: o neutro puxa para o cal da paleta, o acento fica como está
     float mx = max(cor.r, max(cor.g, cor.b));
     float mn = min(cor.r, min(cor.g, cor.b));
@@ -558,7 +560,7 @@ export class Aranhaverso {
       uArcane: { value: 0 }, uArcLinha: { value: 0.7 }, uArcContraste: { value: 1.15 }, uArcExposicao: { value: 0.94 },
       uArcLuzEstrutura: { value: 1 }, uArCor: v3(),
       uTelaPintura: { value: 0 }, uArcAresta: { value: 0 }, uArcArClareia: { value: 0 }, uArcCalNeutro: { value: 0.12 }, uArcArTinta: { value: 0.45 }, uArcPreto: { value: 0 }, uArcBranco: { value: 1 },
-      uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(),
+      uArcGradeCal: { value: 1 }, uArcGradeContraste: { value: 1.15 }, uArcGradeSaturacao: { value: 1.05 }, uCalCor: v3(), uArcGradeSombraIni: { value: 0.12 }, uArcGradeSombraFim: { value: 0.45 },
     }
 
     // profundidade de campo: uniforms compartilhados com a tela (o traço some no fundo desfocado) e com o WebGPU
@@ -677,6 +679,8 @@ export class Aranhaverso {
     u.uArcGradeCal.value = e.arcGradeCal ?? 1
     u.uArcGradeContraste.value = e.arcGradeContraste ?? 1.15
     u.uArcGradeSaturacao.value = e.arcGradeSaturacao ?? 1.05
+    u.uArcGradeSombraIni.value = e.arcGradeSombraIni ?? 0.12
+    u.uArcGradeSombraFim.value = e.arcGradeSombraFim ?? 0.45
     srgb(CAL.cal, u.uCalCor.value)
     // sol na tela, para o reflexo de lente: só quando está na frente da câmera
     {

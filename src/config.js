@@ -34,6 +34,8 @@ export const PADRAO = {
     arcGradeCal: 1.0,      // a gradação final: curva de contraste e saturação pela paleta "cal e sal" (0 = sem gradação)
     arcGradeContraste: 1.15,
     arcGradeSaturacao: 1.05,
+    arcGradeSombraIni: 0.12,  // a curva da gradação: abaixo daqui, as sombras ganham 1,25 (gradacao-final.js)
+    arcGradeSombraFim: 0.45,  // acima daqui, a reta de contraste; entre os dois, uma emenda suave (o piso de 0,3 de antes chapava 0,24 a 0,33)
     // hora dourada (luz-arcane, item 3): sol baixo de dia = luz laranja, sombra longa e azul funda, mais contraste
     arcDourada: 1.0,             // força (0 = a luz de antes em todas as horas)
     arcDouradaLuz: '#ffb36b',    // para onde a luz do sol puxa (3b: '#ff9d55' alaranjava tudo)
