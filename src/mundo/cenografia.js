@@ -1,6 +1,8 @@
 // Cenografia de 1932 nas ruas do casario (docs/direcao-de-arte.md):
 //   - lampião a gás em braço de ferro na fachada: a iluminação pública de Fortaleza em 1932 ainda
-//     era a gás (documentado); acende à noite
+//     era a gás (documentado; a era do gás acabou em 25/10/1935); acende à noite
+//   - lampião a gás de coluna de ferro nas ruas, no lugar dos postes de luz (22/10/2026, decisão do Joabe):
+//     a mesma lanterna do de parede, sobre uma coluna; rua.js registra onde cada um fica
 //   - cadeiras na calçada em frente às portas (o fim de tarde de Fortaleza)
 // Usa os dados de fachada que quarteirao.js guarda em cada casa (it.fachada).
 
@@ -42,6 +44,38 @@ function geometriaLampiao() {
     partes.push(colorir(new THREE.BoxGeometry(0.02, 0.4, 0.02).translate(x * 1.05, -0.42, 0.75 + z * 1.05), ferro))
   }
   return mergeGeometries(partes)
+}
+
+// lampião a gás de coluna: a mesma lanterna do de parede (chapéu, aros, quinas), sem o braço, no alto de
+// uma coluna de ferro fundido com pedestal. Origem no chão; o vidro fica em VIDRO_COLUNA.
+export const ALTURA_LAMPIAO_COLUNA = 3.4 // o alto do chapéu da lanterna
+export const VIDRO_COLUNA = ALTURA_LAMPIAO_COLUNA - 0.42 // o centro do vidro (onde a luz nasce)
+export function geometriaLampiaoColuna() {
+  const ferro = '#2b2622'
+  const H = ALTURA_LAMPIAO_COLUNA
+  const partes = [
+    colorir(new THREE.CylinderGeometry(0.15, 0.2, 0.4, 8).translate(0, 0.2, 0), ferro), // pedestal
+    colorir(new THREE.CylinderGeometry(0.09, 0.13, 0.12, 8).translate(0, 0.46, 0), ferro),
+    colorir(new THREE.CylinderGeometry(0.045, 0.07, H - 1.2, 8).translate(0, 0.52 + (H - 1.2) / 2, 0), ferro), // fuste
+    colorir(new THREE.CylinderGeometry(0.11, 0.06, 0.1, 8).translate(0, H - 0.63, 0), ferro), // capitel sob a lanterna
+    // a lanterna do de parede, no eixo da coluna
+    colorir(new THREE.CylinderGeometry(0.17, 0.12, 0.05, 4).rotateY(Math.PI / 4).translate(0, H - 0.2, 0), ferro),
+    colorir(new THREE.CylinderGeometry(0.1, 0.07, 0.06, 4).rotateY(Math.PI / 4).translate(0, H - 0.63, 0), ferro),
+    colorir(new THREE.ConeGeometry(0.22, 0.2, 4).rotateY(Math.PI / 4).translate(0, H - 0.12, 0), ferro),
+    colorir(new THREE.SphereGeometry(0.035, 6, 4).translate(0, H + 0.0, 0), ferro), // pinha do chapéu
+  ]
+  for (const [x, z] of [[-0.1, -0.1], [0.1, -0.1], [-0.1, 0.1], [0.1, 0.1]]) {
+    partes.push(colorir(new THREE.BoxGeometry(0.02, 0.4, 0.02).translate(x * 1.05, VIDRO_COLUNA, z * 1.05), ferro))
+  }
+  // a escora da escada do acendedor: a travessa curta sob a lanterna
+  partes.push(colorir(new THREE.BoxGeometry(0.5, 0.03, 0.03).translate(0, H - 0.85, 0), ferro))
+  return mergeGeometries(partes)
+}
+
+// os lampiões de coluna das ruas (rua.js): pé no chão (x, y, z) e o giro; entram no mapa de luz
+const lampioesColuna = []
+export function registrarLampiaoColuna(x, y, z, yaw = 0) {
+  lampioesColuna.push({ x, y, z, yaw })
 }
 
 export function geometriaCadeira(hex) {
@@ -156,13 +190,21 @@ export function criarCenografia(cena, casas, lanternasExtras = []) {
   instanciarEmBlocos(cena, geometriaLampiao(), matPeca, lampioes, null, { nome: 'lampioes' })
   // vidro do lampião: claro e apagado de dia, quente à noite (vira brilho em pontos no filtro)
   const matVidro = luzFixa(new THREE.MeshBasicMaterial({ color: '#e8e0c8', transparent: false }), 1, globais.uNoite)
-  instanciarEmBlocos(cena, new THREE.BoxGeometry(0.19, 0.38, 0.19), matVidro, vidros, null, { nome: 'lampioes-vidro', sombra: false })
+  const geoVidro = new THREE.BoxGeometry(0.19, 0.38, 0.19)
+  instanciarEmBlocos(cena, geoVidro, matVidro, vidros, null, { nome: 'lampioes-vidro', sombra: false })
+  // os de coluna das ruas: o ferro, o vidro (o mesmo material, acende junto) e o ponto de luz no vidro
+  const colunas = lampioesColuna.map(({ x, y, z, yaw }) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), q.setFromAxisAngle(Y, yaw), um))
+  const vidrosColuna = lampioesColuna.map(({ x, y, z, yaw }) => new THREE.Matrix4().compose(new THREE.Vector3(x, y + VIDRO_COLUNA, z), q.setFromAxisAngle(Y, yaw), um))
+  if (colunas.length) {
+    instanciarEmBlocos(cena, geometriaLampiaoColuna(), matPeca, colunas, null, { nome: 'lampioes-coluna' })
+    instanciarEmBlocos(cena, geoVidro, matVidro, vidrosColuna, null, { nome: 'lampioes-coluna-vidro', sombra: false })
+  }
   ESQUADRIAS.slice(0, 3).forEach((hex, i) => {
     const madeira = i === 2 ? '#8a5a3c' : hex
     instanciarEmBlocos(cena, geometriaCadeira(madeira), matPeca, cadeiras[i], null, { nome: 'cadeiras' })
   })
 
-  mapaDeLuz([...lampioes, ...lanternasExtras, ...lampioesExtras])
+  mapaDeLuz([...lampioes, ...vidrosColuna, ...lanternasExtras, ...lampioesExtras])
 
   const apagado = new THREE.Color('#e8e0c8')
   const aceso = new THREE.Color('#ffc66a').multiplyScalar(2.4)

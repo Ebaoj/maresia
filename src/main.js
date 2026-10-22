@@ -129,7 +129,6 @@ async function iniciar() {
   marcar('cidade')
   criarFachadas(cena, predios)
   marcar('fachadas')
-  const cenografia = criarCenografia(cena, predios.filter((p) => p.tipo === 'casario'), marcos1932.lampioes)
   const marcos = criarMarcos(cena)
   const praia = criarPraia(cena)
   const casasPalha = criarVilas(cena)
@@ -139,6 +138,8 @@ async function iniciar() {
   // reservados na grade de ocupação, e nenhum poste da rua cai em cima
   criarPraca(cena, cfg) // a Praça do Ferreira de 1932 com o coreto (só quando a reforma está desligada)
   const lugares = criarRua(cena, predios, grade)
+  // a cenografia vem depois da rua: os lampiões a gás de coluna das ruas (rua.js) entram no mesmo mapa de luz
+  const cenografia = criarCenografia(cena, predios.filter((p) => p.tipo === 'casario'), marcos1932.lampioes)
   lugares.bancos.push(...marcos1932.bancos) // os bancos de ferro das praças dos marcos: dá para sentar
   marcar('rua')
   criarBondes(cena) // os trilhos das linhas de bonde da Light sobre a rede viária de 1932
