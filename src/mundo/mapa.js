@@ -7,11 +7,12 @@
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js'
 import {
   costaZ, larguraPraiaX, rioCearaX, distPolilinha, pajeuJogo, lagoasJogo, lugaresJogo,
-  nomeBairro, trechosJogo, VILAS, LIMITES,
+  nomeBairro, trechosJogo, VILAS, LIMITES, ll, LUGARES, metrosPorUn,
 } from './fortaleza1932.js'
 import { pesoCidade1932, naCidade1932, eraRua1932 } from './ocupacao1932.js'
 import { pesoCampoUrubu } from './mapa1932.js'
 import { alturaComPasseio } from './passeio-terreno.js'
+import { semCasa } from './dunas1932.js'
 
 const perlin = new ImprovedNoise()
 
@@ -84,7 +85,33 @@ const [pajX0, pajX1, pajZ0, pajZ1] = (() => {
   const zs = pajeuJogo.map((p) => p[1])
   return [Math.min(...xs) - 40, Math.max(...xs) + 40, Math.min(...zs) - 40, Math.max(...zs) + 40]
 })()
-const [, aldeotaX] = [0, lugaresJogo.seminario[0] + 60] // as dunas começam a leste da Prainha
+// O outeiro e as dunas são medidos em metros de verdade (22/10/2026): eram unidades de jogo do mundo
+// comprimido (70 un de raio, as dunas 60 un a leste do Seminário e cheias 120 un depois), e com o centro em
+// 1:1 o outeiro ficava três vezes mais íngreme e as dunas subiam por cima das casas da Prainha (o trilho do
+// bonde passava enterrado no barranco: testes/unidade/trilho-bonde.test.js). Os metros são os de antes:
+// 70 un a 2,86 m/un (o Seminário no mapa de antes) = 200 m; 60 un = 170 m; 120 un = 340 m.
+const RAIO_OUTEIRO = 200 / metrosPorUn(semX, semZ)
+// a borda das dunas é um meridiano (a longitude 170 m e 510 m a leste do Seminário): no jogo, uma curva x(z)
+const [LON_SEM] = LUGARES.seminario
+const M_LON = 111320 * Math.cos((3.725 * Math.PI) / 180)
+const bordaDuna = (metros) => {
+  const lon = LON_SEM + metros / M_LON
+  const pts = []
+  for (let lat = -3.80; lat <= -3.66; lat += 0.0005) pts.push(ll(lon, lat))
+  pts.sort((a, b) => a[1] - b[1])
+  return (z) => {
+    if (z <= pts[0][1]) return pts[0][0]
+    for (let i = 1; i < pts.length; i++) {
+      if (z <= pts[i][1]) {
+        const t = (z - pts[i - 1][1]) / Math.max(1e-9, pts[i][1] - pts[i - 1][1])
+        return pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t
+      }
+    }
+    return pts[pts.length - 1][0]
+  }
+}
+const dunaComeca = bordaDuna(170)
+const dunaCheia = bordaDuna(510)
 
 // o chão com os patamares do Passeio Público (passeio-terreno.js): o resto do mapa é o relevo de sempre
 export function alturaBruta(x, z) {
@@ -113,13 +140,14 @@ function alturaNatural(x, z) {
     h = NIVEL_CIDADE + dentro * (4.5 + fbm(x * 0.006, z * 0.006, 2, 2) * 2.5) + fbm(x * 0.03, z * 0.03, 3, 2) * 0.35 * dentro
 
     // outeiro da Prainha (o morro do Seminário)
-    h += 6 * Math.exp(-(((x - semX) ** 2 + (z - semZ) ** 2) / (70 * 70)))
+    h += 6 * Math.exp(-(((x - semX) ** 2 + (z - semZ) ** 2) / (RAIO_OUTEIRO * RAIO_OUTEIRO)))
 
     // dunas a leste (Aldeota, Meireles, Mucuripe) e um pouco a oeste da Barra
-    const leste = smooth(aldeotaX, aldeotaX + 120, x)
+    const leste = smooth(dunaComeca(z), dunaCheia(z), x)
     const oeste = 1 - smooth(-1000, -900, x)
     const praiaLivre = smooth(bw + 6, bw + 50, s) // a primeira faixa atrás da praia fica baixa
-    const pesoDuna = (leste * 16 + oeste * 5) * praiaLivre
+    // a duna não sobe por cima do arruado de 1932 (dunas1932.js)
+    const pesoDuna = (leste * 16 + oeste * 5) * praiaLivre * (leste > 0 ? semCasa(x, z) : 1)
     if (pesoDuna > 0) {
       const crista = Math.max(0, fbm(x * 0.009, z * 0.016, 3, 41)) * 1.6 + Math.max(0, fbm(x * 0.03, z * 0.05, 2, 43)) * 0.4
       h += pesoDuna * crista
@@ -127,8 +155,10 @@ function alturaNatural(x, z) {
 
     // riacho Pajeú: um vale raso e verde cortando o lado leste do centro
     if (x > pajX0 && x < pajX1 && z > pajZ0 && z < pajZ1) {
+      // a largura do vale em metros de verdade (22/10/2026): eram 3 a 22 un do mundo comprimido (~2,9 m/un),
+      // e no centro em 1:1 o vale ficava três vezes mais estreito e íngreme
       const dp = distPolilinha(x, z, pajeuJogo)
-      h -= 3.2 * (1 - smooth(3, 22, dp))
+      if (dp < 70) h -= 3.2 * (1 - smooth(9, 64, dp * metrosPorUn(x, z)))
     }
 
     // lagoas: bacias que descem abaixo da água

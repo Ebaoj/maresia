@@ -29,8 +29,9 @@ import { cajueiro, mangueira } from './especies.js'
 import { instanciarArvores } from './lod-arvores.js'
 
 // onde o coqueiro faz sentido: a palmeira é da praia
-// (docs/referencias-fotos-1932.md); os outros são da cidade
-const COQUEIRO_PERTO_DA_PRAIA = 160
+// (docs/referencias-fotos-1932.md); os outros são da cidade. Em metros de verdade (22/10/2026): eram 160 un
+// do mundo comprimido (~2,9 m/un na orla do centro, ~460 m), e com o centro em 1:1 a faixa encolhia a 160 m
+const COQUEIRO_PERTO_DA_PRAIA = 460
 // o lote tem que ter fundura para ter quintal (m)
 const FUNDO_MINIMO = 6
 
@@ -60,7 +61,7 @@ export function candidatosDoQuintal(cfg, semente = 1932) {
     const [lon, lat] = emLonLat(rx, rz)
     // o coqueiro é da praia; a mangueira é das sombras fundas do quintal
     const [jx, jz] = ll(lon, lat)
-    const pertoDoMar = distCosta(jx, jz) < COQUEIRO_PERTO_DA_PRAIA
+    const pertoDoMar = distCosta(jx, jz) * metrosPorUn(jx, jz) < COQUEIRO_PERTO_DA_PRAIA
     let esp = 'cajueiro'
     if (pertoDoMar && rnd.chance(0.45)) esp = 'coqueiro'
     else if (f.prof > 16 && rnd.chance(0.5)) esp = 'mangueira'

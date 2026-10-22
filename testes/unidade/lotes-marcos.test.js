@@ -45,16 +45,21 @@ describe('terrenos dos marcos de 1932', () => {
     expect(pulam).toBeGreaterThan(0)
     expect(pulam / FACHADAS.length).toBeLessThan(0.01)
   })
-  it('nenhum marco engole o bairro em volta: pula no máximo 30% das fachadas a 50 m dele', () => {
+  it('nenhum marco engole o bairro em volta: pula no máximo 30% das fachadas a 150 m dele', () => {
     // um marco em tamanho real no mapa comprimido cobre lotes da planta (a Estação fica numa faixa
     // comprimida ~3 vezes); 30% é o teto acima do que já se via em debf939 (15 a 17%) e hoje (13 a 22%)
+    // O "perto" mudou de 50 un para 150 un em 22/10/2026, e a afirmação não: eram 50 un do mundo comprimido
+    // em volta dos marcos (~2,98 m/un na Estação, v14), uns 150 m de verdade. Com o centro histórico inteiro
+    // em 1:1 (decisão do Joabe, 21-22/10/2026) 1 un = 1 m ali, e 50 un viravam 50 m: sobravam 8 fachadas
+    // perto da Estação, e a fração deixava de medir o bairro. O bairro medido é o mesmo de antes, em metros.
+    const PERTO = 150
     for (const [nome, p] of Object.entries(PEGADAS)) {
       let perto = 0
       let pula = 0
       for (const f of FACHADAS) {
         const [lx, lz] = localDaPegada(p, f.x, f.z)
         const d = Math.hypot(Math.max(p.x0 - lx, 0, lx - p.x1), Math.max(p.z0 - lz, 0, lz - p.z1))
-        if (d > 50) continue
+        if (d > PERTO) continue
         perto++
         if (marcoSob(f.x, f.z, Math.hypot(f.w, f.d) / 2) === nome) pula++
       }

@@ -127,6 +127,7 @@ function lampioesDasRuas(cena, predios, grade) {
   // ficar a uns 30 m do outro como em qualquer rua.
   const linhas = []
   const pontos = [] // cada ponto aceito, uma vez (as linhas abaixo repetem e perdem pontos: ver o fim)
+  const vistos = new Set()
   for (const rua of RUAS) {
     const comp = comprimentoRua(rua)
     const [mx, mz] = pontoNaRua(rua, Math.min(comp / 2, 40))
@@ -153,6 +154,10 @@ function lampioesDasRuas(cena, predios, grade) {
       ultimoD = d
       const p = new THREE.Vector3(px, alturaTerreno(px, pz), pz)
       atual.push(p)
+      // duas cadeias da mesma rua podem cair uma sobre a outra: um lampião só por lugar (meio metro)
+      const chave = `${Math.round(px * 2)},${Math.round(pz * 2)}`
+      if (vistos.has(chave)) continue
+      vistos.add(chave)
       pontos.push(p)
     }
     if (atual.length > 1) linhas.push(atual)

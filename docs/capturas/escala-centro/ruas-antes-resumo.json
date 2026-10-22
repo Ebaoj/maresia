@@ -1,0 +1,22 @@
+{
+ "rotulo": "antes",
+ "ruas": 2618,
+ "testadas": 10534,
+ "travessia/ao longo (p1, p50, p99, pior)": [
+  0.178,
+  1,
+  5.793,
+  8.191
+ ],
+ "maior salto da travessia entre testadas vizinhas da mesma rua (p50, p99, pior)": [
+  1.002,
+  1.703,
+  6.899
+ ],
+ "a travessia mais larga sobre a mais estreita na mesma rua (p50, p99, pior)": [
+  1.002,
+  1.71,
+  6.899
+ ],
+ "ruas cuja travessia varia mais de 2 vezes": 20
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ll, ANGULO_GRADE } from '../../src/mundo/fortaleza1932.js';
+import { ll, ANGULO_GRADE, zonaDe } from '../../src/mundo/fortaleza1932.js';
 import lotes from '../../src/mundo/mapa1932-lotes.json';
 
 // A grade de Herbster: as ruas do centro de 1932 correm a 107,8 graus de azimute
@@ -22,6 +22,15 @@ import lotes from '../../src/mundo/mapa1932-lotes.json';
 // As ruas medidas sao de verdade: linhas na direcao da grade, em pontos
 // diferentes da cidade, e as direcoes das testadas longas da propria planta
 // de 1932.
+//
+// A afirmacao mudou em 22/10/2026 por decisao do Joabe (o centro historico inteiro em 1:1, sem as faixas
+// da escala separavel, docs/mapa-1932.md v16): a compressao separavel no quadro da grade deixava toda reta
+// da grade reta no mapa inteiro, mas cada zona 1:1 virava uma faixa que cruzava o mapa (a mesma rua 3 vezes
+// mais larga dentro dela). O mapa agora e um campo continuo: DENTRO das zonas 1:1 a rua da grade continua
+// exatamente reta e no angulo da grade (a mesma folga de 0,5 un); FORA delas a rua faz uma curva suave na
+// rampa entre o 1:1 e o comprimido, e o que se prende e que ela nao quebra: nenhum canto de mais de 6 graus
+// entre dois trechos de 20 m (medido no mapa de 22/10/2026: 4,8 graus no pior caso, na borda oeste do
+// centro, em Moura Brasil). "Dentro" e a reta inteira dentro da zona.
 
 const M_LON = 111320 * Math.cos((-3.7275 * Math.PI) / 180);
 const M_LAT = 110574;
@@ -37,6 +46,29 @@ function barriga(pontos) {
   for (const p of pontos) {
     const d = Math.abs((p[0] - a[0]) * dz - (p[1] - a[1]) * dx) / len;
     if (d > max) max = d;
+  }
+  return max;
+}
+
+// a reta da grade de 400 m pelo ponto cai inteira dentro de uma zona 1:1?
+function inteiraNaZona(lon, lat, comprimento = 400) {
+  const ux = Math.sin(Math.PI - ANGULO_GRADE);
+  const uy = Math.cos(Math.PI - ANGULO_GRADE);
+  for (const s of [-comprimento / 2, 0, comprimento / 2]) {
+    if (!zonaDe(lon + (s * ux) / M_LON, lat + (s * uy) / M_LAT)) return false;
+  }
+  return true;
+}
+
+// o maior canto entre dois trechos seguidos da polilinha, em graus
+function cantoMaximo(pontos) {
+  let max = 0;
+  for (let i = 2; i < pontos.length; i++) {
+    const a = Math.atan2(pontos[i - 1][1] - pontos[i - 2][1], pontos[i - 1][0] - pontos[i - 2][0]);
+    const b = Math.atan2(pontos[i][1] - pontos[i - 1][1], pontos[i][0] - pontos[i - 1][0]);
+    let d = Math.abs(b - a);
+    if (d > Math.PI) d = 2 * Math.PI - d;
+    max = Math.max(max, (d * 180) / Math.PI);
   }
   return max;
 }
@@ -73,11 +105,18 @@ describe('a grade de Herbster no jogo', () => {
     ];
     for (const [nome, lon, lat] of lugares) {
       const pontos = linhaDaGrade(lon, lat);
-      // a barriga: a rua nao pode curvar (0,5 un de folga no mundo todo)
-      expect(barriga(pontos), `barriga da rua em ${nome}`).toBeLessThan(0.5);
-      // e o angulo e o da grade: +17,8 graus no jogo (o z do jogo cresce para o sul: a rua desce para lés-sudeste)
-      expect(Math.abs(angulo(pontos) - (90 - (ANGULO_GRADE * 180) / Math.PI)), `angulo da rua em ${nome}`).toBeLessThan(0.5);
+      if (inteiraNaZona(lon, lat)) {
+        // a barriga: a rua nao pode curvar (0,5 un de folga dentro das zonas 1:1)
+        expect(barriga(pontos), `barriga da rua em ${nome}`).toBeLessThan(0.5);
+        // e o angulo e o da grade: +17,8 graus no jogo (o z do jogo cresce para o sul: a rua desce para lés-sudeste)
+        expect(Math.abs(angulo(pontos) - (90 - (ANGULO_GRADE * 180) / Math.PI)), `angulo da rua em ${nome}`).toBeLessThan(0.5);
+      } else {
+        expect(cantoMaximo(pontos), `canto da rua em ${nome}`).toBeLessThan(6);
+      }
     }
+    // a praca e o Centro estao nas zonas 1:1 (a afirmacao exata continua valendo neles)
+    expect(zonaDe(-38.5276, -3.7275)).toBe('centro');
+    expect(zonaDe(-38.5250, -3.7240)).toBe('centro');
   });
 
   it('as testadas longas da planta de 1932 nao torcem no jogo', () => {
@@ -101,7 +140,8 @@ describe('a grade de Herbster no jogo', () => {
       const lon = (f[1] + f[3]) / 2;
       const lat = (f[2] + f[4]) / 2;
       const pontos = linhaDaGrade(lon, lat);
-      expect(barriga(pontos), `barriga na testada ${lon},${lat}`).toBeLessThan(0.5);
+      if (inteiraNaZona(lon, lat)) expect(barriga(pontos), `barriga na testada ${lon},${lat}`).toBeLessThan(0.5);
+      else expect(cantoMaximo(pontos), `canto na testada ${lon},${lat}`).toBeLessThan(6);
     }
   });
 });

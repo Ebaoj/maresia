@@ -102,7 +102,10 @@ describe('trilho do bonde (bondes-malha.js)', () => {
   })
 
   it('o trilho em frente à Estação continua inteiro: a limpeza da rota não come o ramal da fachada', () => {
-    // a linha corre ao longo da fachada leste, de x = 44 a 85 (local da Estação), a z = 13 a 16
+    // a linha corre ao longo da fachada leste, de x = 44 a 85 (local da Estação), a z = 13 a 16.
+    // Desde 22/10/2026 (o centro histórico inteiro em 1:1, decisão do Joabe) a rua da frente fica onde a planta
+    // a põe, em metros: a linha corre a z = 26 a 44 (antes 13 a 16 un do mundo comprimido) e chega de leste até
+    // x = 95. A janela mudou com a escala; a afirmação (o trilho do ramal é inteiro, sem buraco) é a mesma.
     const P = PEGADAS.estacao
     const xs = new Set()
     for (const [ax, az, , bx, bz] of acos) {
@@ -110,10 +113,10 @@ describe('trilho do bonde (bondes-malha.js)', () => {
       for (let i = 0; i <= passos; i++) {
         const t = i / passos
         const [lx, lz] = localDaPegada(P, ax + (bx - ax) * t, az + (bz - az) * t)
-        if (lz > 11 && lz < 18 && lx > 30 && lx < 100) xs.add(Math.round(lx))
+        if (lz > 26 && lz < 44 && lx > 80 && lx < 190) xs.add(Math.round(lx))
       }
     }
-    for (let x = 45; x <= 84; x++) expect(xs.has(x), `aço em x = ${x}`).toBe(true)
+    for (let x = 95; x <= 175; x++) expect(xs.has(x), `aço em x = ${x}`).toBe(true)
   })
 
   it('a travessa fica rente ao calçamento: o topo a no máximo 3 cm da malha do chão, nunca acima', () => {
