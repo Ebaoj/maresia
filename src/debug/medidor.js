@@ -26,6 +26,14 @@ export function instalar(m) {
     if (m.webgpu) await m.renderer.readRenderTargetPixelsAsync(alvo, 0, 0, 1, 1)
     else m.renderer.readRenderTargetPixels(alvo, 0, 0, 1, 1, px)
   }
+  // Quadro novo para o WebGPU a cada passo (22/10/2026): o three só anda o contador de quadros dele no quadro do
+  // navegador, e o que é "por quadro" (os mapas de sombra, os ossos) só é refeito quando ele anda. Num laço de
+  // passos seguidos sem isto, a sombra era desenhada uma vez em 20 quadros e o medidor deixava de fora o custo dela
+  // (na Coluna da Hora, 12 objetos de sombra por quadro em vez de ~700). O mesmo que a foto justa já fazia.
+  const passo = () => {
+    if (m.webgpu) m.renderer._nodes.nodeFrame.update()
+    m.passo(1 / 60)
+  }
   async function medirAqui(quadros, alvo, vezes = 3) {
     const rodadas = []
     for (let r = 0; r < vezes; r++) {
@@ -35,7 +43,7 @@ export function instalar(m) {
       let cpu = 0
       for (let i = 0; i < quadros; i++) {
         const a = performance.now()
-        m.passo(1 / 60)
+        passo()
         cpu += performance.now() - a
       }
       await ler(alvo)
@@ -70,7 +78,7 @@ export function instalar(m) {
           for (const [v, aplicar] of Object.entries(variantes)) {
             m.irPara(x, z, yaw, hora)
             const desfaz = aplicar(m)
-            for (let i = 0; i < 20; i++) m.passo(1 / 60) // câmera e streaming assentam
+            for (let i = 0; i < 20; i++) passo() // câmera e streaming assentam
             ;(amostras[v] ||= []).push(await medirAqui(quadros, alvo, repeticoes > 1 ? 1 : 3))
             if (typeof desfaz === 'function') desfaz()
           }

@@ -24,7 +24,8 @@ Depuração pelo console do navegador: `maresia.irPara(x, z, yawCamera, hora)` t
 Gravar vídeo para avaliar movimento (só em `npm run dev`): `await maresia.gravar({ nome, segundos, fps, roteiro })`
 salva os quadros em `docs/capturas/video/<nome>/`; depois `ffmpeg -framerate 30 -i q%04d.jpg ...`.
 Fluidez se avalia em vídeo, nunca em quadro parado.
-Desempenho: `await maresia.medir({ lugares, variantes, repeticoes: 5 })` (ver o arquivo). Não confiar no cronômetro
+Desempenho: `await maresia.medir({ lugares, variantes, repeticoes: 5 })` (ver o arquivo). No WebGPU ele anda o quadro do three a cada passo
+(sem isso a sombra ficava fora da conta; corrigido em 22/10/2026). Não confiar no cronômetro
 de GPU do WebGL no Mac (dá números incoerentes) nem em ler a tela com o painel escondido. A GPU do Mac muda de
 frequência e outra aba do jogo aberta disputa a placa: comparar só variantes alternadas na mesma rodada.
 
@@ -52,6 +53,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 | `src/mundo/pessoas.js` | Gente genérica: sentada, de pé, caminhando "em 2" |
 | `src/mundo/horizonte.js` | Serras em camadas e cidade ao longe |
 | `src/mundo/blocos.js` | Divide cópias em blocos de 96 m para o three pular o que está fora da tela e da sombra |
+| `src/mundo/muito-longe.js` | Desempenho do mapa grande (22/10/2026, `docs/desempenho-22-10.md`): de longe, os blocos de LOD (terreno, casario) e os blocos sem LOD (`atualizarBlocosLonge` em blocos.js) se juntam por célula de 768 m; árvores e palhoças de longe viram uma malha por forma só com as cópias à vista (`LongeMascarado`). Desliga ao vivo: `cfg.desempenho.muitoLonge`, `blocosJuntos`, `chaoSoltoPerto`. Bloco que se esconde sozinho precisa de `semJuntarLonge: true` |
 | `src/mundo/colisao.js` | Colisão 2D e altura do chão (inclui decks) |
 | `src/mundo/quarteirao.js` | Casas de 1932 com geometria de verdade: todo o casario e, em versão simples, o morro (vãos recuados, folhas 3D, beiral com telha canal, platibanda, sacada, calçada alta, janelas de fundos, interiores acesos à noite). LOD por bloco de 96 m: perto, a casa detalhada; longe, a caixa com fachada pintada. A câmera colide com caixas invisíveis |
 | `src/mundo/marcos1932/` | Marcos do centro de 1932 em código, um por arquivo: Praça do Ferreira reformada e Coluna da Hora, Hotel Excelsior, Majestic e Cine Moderno, Praça dos Leões (com o Rosário, o Palácio da Luz e as esculturas), Mercado de Ferro e a feira. `pegadas.js` diz onde cada um fica e o chão que a cidade não cobre; `vistas.js`, os pontos de vista dos conceitos (painel "Ir para"); provas em `docs/capturas/marcos/` |

@@ -284,6 +284,7 @@ export function criarCidade(cena, cfg) {
   const casas = criarCasas(cena, cas.itens, sim.itens)
   casas.registrarLonge(cas.criar(cena, 'casario-longe', false), false)
   casas.registrarLonge(sim.criar(cena, 'favela-longe', false), true)
+  casas.montarMuitoLonge()
   // os muros dos bairros, com o portão de madeira
   criarMuros1932(cena, muros)
 
