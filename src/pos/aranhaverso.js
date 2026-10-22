@@ -13,6 +13,7 @@ import { CAL } from '../paleta.js'
 import { fragTensor, fragKuwahara, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
 import { uniformsFx2d, GLSL_FX2D } from './fx2d.js'
 import { uniformsProfundidade, atualizarProfundidade, criarEstadoFoco, ProfundidadeWebgl } from './profundidade.js'
+import { uniformsEstabilizar, criarEstadoEstabilizar, atualizarEstabilizar, EstabilizarWebgl } from './estabilizar.js'
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -565,6 +566,11 @@ export class Aranhaverso {
     this.estadoFoco = criarEstadoFoco()
     this.alvoFoco = null // o ponto que a câmera segue (main.js, focarEm)
     this.dof = null // os passes do WebGL, montados no primeiro quadro com o efeito ligado
+    // estabilização no tempo (estabilizar.js): uniforms compartilhados com o WebGPU
+    this.uEstab = uniformsEstabilizar(THREE)
+    this.estadoEstab = criarEstadoEstabilizar()
+    this.estab = null
+    this.estabLigado = false
     this.dofLigado = false
     Object.assign(this.uTela, {
       uDofLiga: { value: 0 }, uDofLongeIni: this.uDof.uLongeIni, uDofLongeCheio: this.uDof.uLongeCheio,
@@ -610,6 +616,7 @@ export class Aranhaverso {
     this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
     this.tamCheio = [w, h]
     if (this.dof) this.dof.tamanho(w, h)
+    if (this.estab) this.estab.tamanho(w, h)
     this.meiaPintura = null // o tamanho do alvo pintado sai em atualizar(), pela opção do painel
     this.uPintura.tensor.uTexel.value.set(1 / w, 1 / h)
     this.uPintura.kuwahara.uTexel.value.set(1 / w, 1 / h)
@@ -734,6 +741,8 @@ export class Aranhaverso {
       const [w, h] = this.tamCheio || [1, 1]
       this.dofLigado = atualizarProfundidade(this.uDof, this.estadoFoco, e, cam, this.alvoFoco, tempo, w, h)
       u.uDofLiga.value = this.dofLigado ? 1 : 0
+      // estabilização no tempo: a câmera deste quadro e a do anterior
+      this.estabLigado = atualizarEstabilizar(this.uEstab, this.estadoEstab, e, cam, w, h, THREE)
     }
     u.uDesfoque.value = this.dofLigado ? 0 : e.desfoqueFundo
     u.uFoco.value = e.focoDistancia
@@ -833,6 +842,14 @@ export class Aranhaverso {
 
     // 4b. profundidade de campo (profundidade.js), antes ou depois da pincelada (cfg.estilo.dofOrdem)
     let fonte = this.rtCor.textures[0]
+    // 4a. estabilização no tempo (estabilizar.js): o resto da cadeia lê a cor já estável
+    if (this.estabLigado) {
+      if (!this.estab) {
+        this.estab = new EstabilizarWebgl(THREE, this.uEstab)
+        if (this.tamCheio) this.estab.tamanho(...this.tamCheio)
+      }
+      fonte = this.estab.desenhar(this, fonte, this.rtCor.depthTexture)
+    }
     const dofAntes = e.dofOrdem !== 'depois'
     if (this.dofLigado && !this.dof) {
       this.dof = new ProfundidadeWebgl(THREE, this.uDof)
