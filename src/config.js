@@ -287,6 +287,20 @@ export const PADRAO = {
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
+    // Os marcos do norte do centro em 1932 (Sé velha, Estação Central, Passeio Público): src/mundo/marcos-norte.js
+    marcosNorte: {
+      se: true,             // a velha Sé de 1854 (demolida em 1938)
+      estacao: true,        // a Estação Central de 1880, de um pavimento
+      passeio: true,        // o Passeio Público com os três planos
+      detalheAte: 170,
+      pincel: 0.1,          // pincelada da borda das faixas de luz nas paredes deles (o jogo usa 0,35; em parede grande virava camuflagem)      // metros: além disso gradil, balaústre, estátua e lampião somem (a silhueta fica)
+      corSe: '#bccfc6',     // fachada verde-acinzentada da aquarela de 1859 e do conceito: a caiação #cddbd6 da paleta com 15% do verde de esquadria #5e8a6e
+      corEstacao: '#ebdcba', // creme quente (a meia entre a cal #efe6d2 e o creme #e7d3a3 da paleta): a cor original não tem fonte
+      corSombra: '#646fae', // sombra do reboco deles: azul-violeta fria (os conceitos), no lugar do cinza-azulado
+      noiteReboco: 0.55,    // quanto do reboco fica à noite (a parede não recebe a sombra da lua e clareava mais que as casas)
+      corFerro: '#2b2f2c',  // gradil, poste e grade: ferro escuro (verde quase preto, hipótese)
+      corEsfinge: '#d9cbb0', // pedra artificial lisa, de uma cor só (nota do Joabe nos conceitos)
+    },
     urubu: {
       alturaGalpao: 5.2,    // altura da parede do galpão de folha de zinco (src/mundo/urubu1932.js)
       alturaCerca: 1.8,     // altura do arame que cerca as tarefas de terra
@@ -381,6 +395,9 @@ function mesclar(base, salvo) {
 // antigo destas chaves e nunca veria o novo. Valor salvo igual ao padrão antigo vira o padrão novo.
 export const PADRAO_MUDOU = [
   ['mundo.passoSombraMin', 4, 0], // 21/10/2026: a sombra dava um tranco a cada 4 s
+  ['mundo.marcosNorte.corSe', '#cddbd6', '#bccfc6'], // 21/10/2026: reboco dos marcos, cores refeitas pelos conceitos
+  ['mundo.marcosNorte.corSe', '#b7cbc1', '#bccfc6'],
+  ['mundo.marcosNorte.corEstacao', '#efe6d2', '#ebdcba'],
 ]
 
 export function migrarPadroes(salvo) {

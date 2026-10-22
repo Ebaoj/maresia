@@ -3,15 +3,18 @@
 
 import { lugaresJogo } from '../../mundo/fortaleza1932.js'
 import { VISTAS } from '../../mundo/marcos1932/vistas.js'
+import { VISTAS_MARCOS } from '../../mundo/vistas-marcos.js'
 
 // "Ir para": atalhos para os lugares mais conhecidos de Fortaleza em 1932 (pedido do Joabe, 21/10/2026),
 // para conferir cada um. A chave é a de LUGARES em src/mundo/fortaleza1932.js; quem é prédio vai para a praça
-// ou o largo da frente (a Estação vai para a Praça da Estação).
+// ou o largo da frente (a Estação vai para a Praça da Estação). O 3º item, quando há, é um ponto de vista de
+// src/mundo/vistas-marcos.js: o jogador vai para onde o quadro de conceito do marco foi pintado, olhando para ele.
 export const DESTINOS = [
   ['Praça do Ferreira', 'pracaFerreira'],
-  ['Passeio Público', 'passeioPublico'],
-  ['Estação Central', 'pracaEstacao'],
-  ['Sé', 'se'],
+  ['Passeio Público (Avenida Caio Prado)', 'passeioPublico', 'caioPrado'],
+  ['Passeio Público (escada das esfinges)', 'passeioPublico', 'esfinges'],
+  ['Estação Central', 'pracaEstacao', 'estacao'],
+  ['Sé', 'se', 'se'],
   ['Forte', 'forte'],
   ['Mercado', 'mercado'],
   ['Theatro José de Alencar', 'theatro'],
@@ -32,14 +35,18 @@ export const DESTINOS = [
 ]
 
 // leva o jogador ao lugar: solta a fatia (senão ele bate na borda dela) e usa o teleporte do jogo
-// com vista (marcos1932/vistas.js), o jogador fica no ponto do conceito e a câmera olha para o marco
+// com vista (marcos1932/vistas.js do centro ou vistas-marcos.js do norte), o jogador fica no ponto do
+// conceito e a câmera olha para o marco
 export function irParaLugar(cfg, chave, maresia = globalThis.window?.maresia, vista = null) {
   const p = lugaresJogo[chave]
   if (!p || !maresia?.irPara) return false
   cfg.fatia.travar = false
-  const v = vista && VISTAS[vista]
-  if (v) maresia.irPara(v.x, v.z, v.yaw)
-  else maresia.irPara(p[0], p[1])
+  const v = vista && (VISTAS_MARCOS[vista] || VISTAS[vista])
+  if (v) {
+    if (v.hora != null) maresia.irPara(v.x, v.z, v.yaw, v.hora)
+    else maresia.irPara(v.x, v.z, v.yaw)
+    if (maresia.cam && v.pitch != null) maresia.cam.pitch = v.pitch
+  } else maresia.irPara(p[0], p[1])
   return true
 }
 
@@ -64,9 +71,10 @@ export function secaoJogo(gui, cfg) {
   const ir = jogo.addFolder('Ir para')
   const botoes = {}
   for (const [nome, chave, vista] of DESTINOS) {
-    const id = vista ? `vista_${vista}` : chave
-    botoes[id] = () => irParaLugar(cfg, chave, undefined, vista)
-    ir.add(botoes, id).name('📍 ' + nome)
+    // a chave do botão é a do lugar; o segundo ponto de vista do mesmo lugar usa a da vista
+    const k = botoes[chave] ? vista : chave
+    botoes[k] = () => irParaLugar(cfg, chave, undefined, vista)
+    ir.add(botoes, k).name('📍 ' + nome)
   }
 
   const cam = jogo.addFolder('Câmera')

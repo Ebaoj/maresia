@@ -60,6 +60,10 @@ export function pintar(mat, chave) {
     sh.uniforms.uCorLamp = globais.uCorLamp
     sh.uniforms.uNoiteL = globais.uNoite
     for (const k of ['uArcane', 'uArcLim', 'uArcSuave', 'uArcPincel', 'uArcCorSombra', 'uArcNiveis', 'uArcRim']) sh.uniforms[k] = globais[k]
+    // um material pode ter a própria pincelada da borda das faixas (os marcos de 1932: parede grande e lisa)
+    if (mat.userData.arcPincel) sh.uniforms.uArcPincel = mat.userData.arcPincel
+    // e a própria cor da sombra (o reboco dos marcos: sombra azul-violeta fria, não cinza)
+    if (mat.userData.arcCorSombra) sh.uniforms.uArcCorSombra = mat.userData.arcCorSombra
     sh.uniforms.uSolDirA = globais.uSolDir
     const tp = mat.userData.texPintada
     if (tp) {

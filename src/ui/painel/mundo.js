@@ -1,4 +1,4 @@
-// Seção "Mundo": o chão, a grama, o mar, o que o jogador mexe no ambiente e o Campo do Urubu.
+// Seção "Mundo": o chão, a grama, o mar, o que o jogador mexe no ambiente, os marcos de 1932 e o Campo do Urubu.
 // Padrão para controle novo: pasta.add(cfg.grupo, 'chave', min, max, passo).name('nome'); rec('nome') se pede recarregar
 
 import { rec } from './comum.js'
@@ -65,6 +65,20 @@ export function secaoMundo(gui, cfg) {
   it.add(cfg.interacao, 'recuperaGrama', 0.05, 3, 0.01).name('grama levanta (por s)')
   it.add(cfg.interacao, 'amorteceOnda', 0.9, 0.999, 0.001).name('ondinhas duram')
   it.add(cfg.interacao, 'ventoCoqueiros', 0, 3, 0.01).name('vento nas folhas e roupas')
+
+  // os marcos do norte do centro (src/mundo/marcos-norte.js): desligar esconde o marco (a colisão fica)
+  const mn = mundo.addFolder('Marcos de 1932: Sé, Estação, Passeio')
+  mn.add(cfg.mundo.marcosNorte, 'se').name('velha Sé')
+  mn.add(cfg.mundo.marcosNorte, 'estacao').name('Estação Central')
+  mn.add(cfg.mundo.marcosNorte, 'passeio').name('Passeio Público')
+  mn.add(cfg.mundo.marcosNorte, 'detalheAte', 40, 600, 10).name('detalhe até (m)')
+  mn.add(cfg.mundo.marcosNorte, 'pincel', 0, 0.5, 0.01).name('pincelada nas paredes')
+  mn.addColor(cfg.mundo.marcosNorte, 'corSe').name(rec('fachada da Sé'))
+  mn.addColor(cfg.mundo.marcosNorte, 'corEstacao').name(rec('parede da Estação'))
+  mn.addColor(cfg.mundo.marcosNorte, 'corSombra').name('sombra do reboco')
+  mn.add(cfg.mundo.marcosNorte, 'noiteReboco', 0.1, 1, 0.01).name('reboco à noite')
+  mn.addColor(cfg.mundo.marcosNorte, 'corFerro').name('ferro (gradil, poste)')
+  mn.addColor(cfg.mundo.marcosNorte, 'corEsfinge').name('pedra das esfinges')
 
   const urubu = mundo.addFolder('Campo do Urubu')
   // o campo é montado uma vez, quando o mundo nasce (urubu1932.js lê o cfg): só muda ao recarregar

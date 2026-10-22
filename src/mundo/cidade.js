@@ -9,6 +9,7 @@ import { larguraPraia, distCosta, rioX, RIO_MEIA_LARGURA, FIM_AVENIDA } from './
 import { alturaTerreno, inclinacao } from './terreno.js'
 import { materialPredio } from '../materiais.js'
 import { FACHADAS, RESERVADOS, USO } from './casario1932.js'
+import { marcoSob } from './lotes-marcos.js'
 import { FACHADAS as CORES_CASARIO, CASAS_SIMPLES, CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
@@ -208,6 +209,8 @@ function cidade(cas, sim) {
   for (const f of FACHADAS) {
     const recusa = lugarRecusado(f)
     if (recusa) { RECUSA[recusa]++; continue }
+    // o terreno de um marco de 1932 do norte do centro em tamanho real (Sé, Estação, Passeio: lotes-marcos.js)
+    if (marcoSob(f.x, f.z, Math.hypot(f.w, f.d) / 2)) { RECUSA.marco++; continue }
     const galpao = f.uso === USO.Industrial || f.uso === USO.Transporte
     const lote = f.tipo === 'casario' ? cas : sim
     const alturaMin = galpao ? 4.6 : f.tipo === 'simples' ? 3.1 : 6.2
