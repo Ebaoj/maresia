@@ -14,6 +14,8 @@
 // raio: metros (cfg.marcos.metalSuave); 0 deixa como veio. Roda uma vez, quando o modelo carrega: a vizinhança
 // (quem está a menos de um raio de quem) sai uma vez e cada passada é só uma soma sobre ela.
 
+import * as THREE from 'three'
+
 // a vizinhança de cada vértice no raio, numa lista corrida: viz[ini[i] .. ini[i + 1]) com o peso da distância
 export function vizinhanca(pos, raio) {
   const n = pos.length / 3
@@ -83,11 +85,43 @@ export function alisar(nor0, { ini, viz, peso }, passadas) {
   return nor
 }
 
+// a curvatura de cada vértice, uma vez, sobre a mesma vizinhança: quanto os vizinhos (do mesmo lado) ficam acima do plano
+// do vértice, em frações do raio. Positivo = côncavo (o fundo da juba, a dobra entre a pata e o peito, onde o bronze
+// guarda a pátina escura); negativo = convexo (a crista do músculo, a escama, onde o metal se gasta e clareia).
+// Depois, passadas de média do próprio número, para a dobra ler como mancha da forma e não como pingo do relevo
+export function curvatura(pos, nor, { ini, viz, peso }, raio, passadas = 1) {
+  const n = ini.length - 1
+  let c = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2]
+    const nx = nor[i * 3], ny = nor[i * 3 + 1], nz = nor[i * 3 + 2]
+    let s = 0, w = 0
+    for (let q = ini[i]; q < ini[i + 1]; q++) {
+      const j = viz[q]
+      if (j === i || nor[j * 3] * nx + nor[j * 3 + 1] * ny + nor[j * 3 + 2] * nz <= 0) continue
+      s += ((pos[j * 3] - x) * nx + (pos[j * 3 + 1] - y) * ny + (pos[j * 3 + 2] - z) * nz) * peso[q]
+      w += peso[q]
+    }
+    c[i] = w > 0 ? s / w / raio : 0
+  }
+  for (let p = 0; p < passadas; p++) {
+    const nova = new Float32Array(n)
+    for (let i = 0; i < n; i++) {
+      let s = 0, w = 0
+      for (let q = ini[i]; q < ini[i + 1]; q++) { s += c[viz[q]] * peso[q]; w += peso[q] }
+      nova[i] = w > 0 ? s / w : c[i]
+    }
+    c = nova
+  }
+  return c
+}
+
 // alisa a `normal` (passadas) e grava a `aNormalForma` (mais passadasForma por cima); raio 0: as duas como vieram
 export function suavizarNormais(geo, raio, passadas = 2, passadasForma = 0) {
   const n0 = geo.attributes.normal.array
   if (!(raio > 0)) {
     if (passadasForma) geo.setAttribute('aNormalForma', new geo.attributes.normal.constructor(Float32Array.from(n0), 3))
+    geo.setAttribute('aCurva', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count), 1))
     return geo
   }
   const v = vizinhanca(geo.attributes.position.array, raio)
@@ -95,6 +129,8 @@ export function suavizarNormais(geo, raio, passadas = 2, passadasForma = 0) {
   geo.attributes.normal.array.set(n1)
   geo.attributes.normal.needsUpdate = true
   if (passadasForma) geo.setAttribute('aNormalForma', new geo.attributes.normal.constructor(alisar(n1, v, passadasForma), 3))
+  // a curvatura (a cavidade escura do metal, metal.js) sai da mesma vizinhança: nenhuma busca a mais
+  geo.setAttribute('aCurva', new THREE.BufferAttribute(curvatura(geo.attributes.position.array, n1, v, raio, 2), 1))
   return geo
 }
 

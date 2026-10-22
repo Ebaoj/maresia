@@ -487,6 +487,8 @@ export const PADRAO = {
     metalPonta: 120,           // expoente do realce do metal (era 40: no tigre e no leão viravam placas claras)
     metalConcorda: 0.9,        // o realce só onde a normal miúda concorda com a da forma (cosseno; 0 = em toda parte)
     metalPincel: 0.06,         // pincelada da borda das faixas de luz no metal (o jogo usa 0,35: no bronze curvo virava manchas)
+    metalCavIni: 0.02,         // a curvatura (fração do raio metalSuave) onde a cavidade começa
+    metalCavFim: 0.1,          // e onde ela satura
     corBalaustrada: '#ede5d3', // balaústres de massa caiados
     corPedra: '#d8cfbd',       // cantaria e meio-fio
     corMuroLeoes: '#f0e3c8',   // a cal quente do muro e da escadaria dos Leões (o branco-cinza saía chapado)
