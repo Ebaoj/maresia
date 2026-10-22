@@ -138,3 +138,24 @@ Custo depois do segundo passe (WebGPU, 2000 x 1125, cinco repetições alternada
 
 Fica para decidir: o topo ao sol do meio-dia ainda chega perto do amarelo claro (é o sol branco do sertão sobre a
 cor de luz da folha); a copa abriu, mas ainda menos que nos conceitos; os cartões viram com a câmera ao girar.
+
+## 9. Quintais e o estipe da carnaúba (22/10/2026)
+
+- **Quintais** (`quintal1932.js`, da cidade-cheia): mangueira e cajueiro agora são árvores pintadas de `especies.js`
+  (com vento, cartões perto e copa simples longe); `especies-quintal.js` saiu. Espécie nova: a **mangueira** (tronco
+  grosso e curto, copa grande, densa e redonda, o verde mais escuro das copas, folha comprida, um pouco de bronze no
+  alto). O corte além de `cfg.casario.quintal.ate` (320 m) passou para o LOD das árvores (`lod-arvores.js`, estado
+  `fora`), porque o quintal e o LOD escreviam o `visible` dos mesmos blocos; o quintal só corta os coqueiros dele.
+- **Estipe da carnaúba**: os "espetos pretos em zigue-zague" da rua do Centro eram as bases das folhas velhas, caixas que
+  saíam ~0,38 m do eixo; valia para a carnaúba antiga e para a pintada. Agora são relevo baixo em espiral no próprio
+  tubo. Teste: nada sai mais de 0,3 m do eixo no pé do estipe.
+- **Provas** em `docs/capturas/arvores/quintal/`: bairro (Jacarecanga, lon -38,54003 lat -3,724747), Coluna da Hora e
+  a rua do Centro (lon -38,5268 lat -3,7296), ao meio-dia e às 16h30, e a mangueira de quintal mais perto do bairro;
+  antes (`375f0f0`) em cima, depois embaixo, conceito ao lado, WebGPU e WebGL (nenhum shader quebrado, nenhum material
+  sem gLuz).
+- **Custo** (`maresia.medir`, WebGPU, 2000 x 1125, cinco repetições alternadas, duas rodadas de cada lado alternando
+  o servidor, load de 2,9 a 3,6; saída em `quintal/medicao-webgpu.txt`): todas as árvores custam 0,86 a 0,88 ms no
+  bairro (antes 0,31 a 0,62) e 3,0 a 3,5 ms na Coluna da Hora (antes 2,9 a 4,5); só os quintais ficam dentro do ruído
+  nos dois (de -0,7 a +0,5 ms). No mundo 2,5 vezes maior a Coluna da Hora é presa de processador (27 a 30 ms de
+  JavaScript por quadro): as árvores de quintal viraram 3 malhas por variante (231 objetos, eram 77), e no WebGPU cada
+  objeto custa processador; foi o que subiu no bairro.

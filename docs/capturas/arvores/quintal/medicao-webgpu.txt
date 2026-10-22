@@ -1,0 +1,10 @@
+== depois  5:20  up 5 days, 10:05, 1 user, load averages: 3.46 4.09 3.66
+js> {"arv":1409,"qui":231,"pixels":"2000x1125","res":{"2754,1485":{"com":{"ms":21.77,"cpu":12.47},"semArvores":{"ms":20.89,"cpu":11.24},"semQuintal":{"ms":21.54,"cpu":12.4}},"3372,1530":{"com":{"ms":29.34,"cpu":27.58},"semArvores":{"ms":26.32,"cpu":23.48},"semQuintal":{"ms":29.68,"cpu":27.93}}}}
+== antes  5:22  up 5 days, 10:07, 1 user, load averages: 3.20 3.76 3.57
+js> {"arv":1255,"qui":77,"pixels":"2000x1125","res":{"2754,1485":{"com":{"ms":21.98,"cpu":15.07},"semArvores":{"ms":21.67,"cpu":12.84},"semQuintal":{"ms":21.97,"cpu":13.57}},"3372,1530":{"com":{"ms":32.02,"cpu":30.18},"semArvores":{"ms":27.53,"cpu":25.83},"semQuintal":{"ms":32.13,"cpu":30.27}}}}
+== depois  5:24  up 5 days, 10:09, 1 user, load averages: 3.61 4.00 3.71
+js> {"arv":1409,"qui":231,"pixels":"2000x1125","res":{"2754,1485":{"com":{"ms":21.93,"cpu":12.69},"semArvores":{"ms":21.07,"cpu":11.35},"semQuintal":{"ms":21.4,"cpu":12.66}},"3372,1530":{"com":{"ms":31.63,"cpu":29.76},"semArvores":{"ms":28.11,"cpu":26.42},"semQuintal":{"ms":32.37,"cpu":30.53}}}}
+== antes  5:27  up 5 days, 10:12, 1 user, load averages: 2.90 3.90 3.74
+js> {"arv":1255,"qui":77,"pixels":"2000x1125","res":{"2754,1485":{"com":{"ms":22.02,"cpu":12.39},"semArvores":{"ms":21.4,"cpu":11.66},"semQuintal":{"ms":22,"cpu":12.82}},"3372,1530":{"com":{"ms":29.9,"cpu":27.93},"semArvores":{"ms":27.02,"cpu":24.9},"semQuintal":{"ms":31.09,"cpu":29.27}}}}
+# antes (375f0f0), primeira rodada com load 14 (não vale como medida)
+js> {"arv":1255,"qui":77,"pixels":"2000x1125","res":{"2754,1485":{"com":{"ms":22.06,"cpu":12.38},"semArvores":{"ms":21.64,"cpu":11.68},"semQuintal":{"ms":21.87,"cpu":12.53}},"3372,1530":{"com":{"ms":28.22,"cpu":26.43},"semArvores":{"ms":26.89,"cpu":22.4},"semQuintal":{"ms":28.51,"cpu":26.7}}}}
