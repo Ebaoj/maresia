@@ -475,6 +475,11 @@ export const PADRAO = {
     metalRim: 0.35,            // a borda fria do céu nas faces que olham para cima
     metalCeu: 0.35,            // a luz do céu no lado da sombra das esculturas (de contraluz viravam silhueta)
     corRimCeu: '#9cc0e0',      // a cor da borda do céu
+    metalSuave: 0.05,          // m: raio das normais da forma nas esculturas esculpidas (normais-suaves.js); 0 = o relevo miúdo do modelo, que virava camuflagem
+    metalBrilhoForma: 0.15,    // m: o tamanho da forma que decide onde cai o realce (o músculo, não o calombo): um brilho por volume
+    metalPonta: 120,           // expoente do realce do metal (era 40: no tigre e no leão viravam placas claras)
+    metalConcorda: 0.9,        // o realce só onde a normal miúda concorda com a da forma (cosseno; 0 = em toda parte)
+    metalPincel: 0.06,         // pincelada da borda das faixas de luz no metal (o jogo usa 0,35: no bronze curvo virava manchas)
     corBalaustrada: '#ede5d3', // balaústres de massa caiados
     corPedra: '#d8cfbd',       // cantaria e meio-fio
     corMuroLeoes: '#f0e3c8',   // a cal quente do muro e da escadaria dos Leões (o branco-cinza saía chapado)

@@ -15,6 +15,7 @@ import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometr
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { registrarEstatico } from '../../render/sombra-estatica.js'
 import { Obra } from './obra.js'
+import { suavizarNormais } from './normais-suaves.js'
 
 // o modelo esculpido: arquivo, para onde ele olha (giro que leva a cabeça para +z), tamanho alvo e medida
 export const MODELOS = {
@@ -91,8 +92,10 @@ function general() {
   return mergeGeometries(p.map(limpa))
 }
 
-// o modelo esculpido como uma geometria só, no pé (y = 0), centrado, de frente para +z e no tamanho do dossiê
-function prepararModelo(gltf, def) {
+// o modelo esculpido como uma geometria só, no pé (y = 0), centrado, de frente para +z e no tamanho do dossiê.
+// suave: raio (m) das normais da forma (normais-suaves.js): sem ele o relevo miúdo da dizimação virava camuflagem;
+// brilho: raio (m) da forma que decide onde cai o realce do metal (aNormalForma, metal.js)
+export function prepararModelo(gltf, def, suave = 0, brilho = 0) {
   gltf.scene.updateMatrixWorld(true)
   const partes = []
   gltf.scene.traverse((o) => { if (o.isMesh) partes.push(limpa(o.geometry.clone().applyMatrix4(o.matrixWorld))) })
@@ -109,6 +112,9 @@ function prepararModelo(gltf, def) {
   g.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2)
   g.scale(esc, esc, esc)
   g.computeVertexNormals()
+  // passadas sobre a mesma vizinhança: a média alcança ~ raio * raiz(passadas / 2)
+  const passadasForma = suave > 0 ? Math.max(1, Math.round(2 * (Math.max(brilho, suave) / suave) ** 2)) : 1
+  suavizarNormais(g, suave, 2, passadasForma)
   g.computeBoundingSphere()
   return g
 }
@@ -116,6 +122,8 @@ function prepararModelo(gltf, def) {
 // lugares: { chave: [x local, y local, z local, giro] } no referencial da obra da praça
 export function criarEsculturas(cena, cfg, mats, obra, lugares) {
   const formas = { leaoSerpente: leaoComSerpente(), leao: felinoDePe(true), tigre: felinoDePe(false), general: general() }
+  // o metal lê o realce pela aNormalForma (metal.js): na forma procedural é a própria normal
+  for (const g of Object.values(formas)) g.setAttribute('aNormalForma', g.attributes.normal.clone())
   const grupos = []
   const porChave = {}
   for (const [chave, [lx, ly, lz, giro]] of Object.entries(lugares)) {
@@ -156,7 +164,7 @@ export function criarEsculturas(cena, cfg, mats, obra, lugares) {
       if (!alvo) continue
       loader.load(def.arquivo, (gltf) => {
         try {
-          const m = new THREE.Mesh(prepararModelo(gltf, def), alvo.mat)
+          const m = new THREE.Mesh(prepararModelo(gltf, def, cfg.marcos.metalSuave, cfg.marcos.metalBrilhoForma), alvo.mat)
           m.name = `escultura-${chave}-modelo`
           m.castShadow = m.receiveShadow = true
           alvo.g.add(m)
