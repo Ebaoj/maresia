@@ -67,6 +67,7 @@ export class Jogador {
       // visual Arcane: personagem a 24 poses por segundo sempre (o "em 2" é linguagem do Aranhaverso)
       fps: acao || this.cfg.estilo.visual === 'arcane' ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
       mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0, clavicula: cfg.clavicula, joelhos: cfg.joelhos,
+      giroClipeMin: cfg.giroClipeMin, ritmoGiro: cfg.ritmoGiro,
     })
     // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo
     const forca = Math.max(clamp((this.velHoriz - cfg.corridaNova * 0.8) / (cfg.corridaNova * 0.3), 0, 1), this.noChao || this.nadando ? 0 : 0.5)
@@ -220,8 +221,13 @@ export class Jogador {
     if (this.naAreiaSeca) alvoVel *= 0.86
     if (this.nadando) alvoVel = teclas.correr ? 4 : 2.6
     else if (profAqui > 0.35 && this.pos.y < 0.2) alvoVel *= 0.6 // água pela canela
-    // girando (meia-volta): quase para enquanto vira, em vez de sair andando de costas para a nova direção
-    if (this.animador?.girando) alvoVel *= 0.3
+    // girando (meia-volta gravada, que é no lugar): a raiz já freia e sai para o lado pedido no primeiro quadro,
+    // mas só ganha velocidade conforme o corpo encara a direção (cfg.velNoGiro de costas, inteira de frente).
+    // Até 22/10/2026 ficava a 30% o giro todo (~0,8 s), esperando a animação acabar
+    if (this.animador?.girando && n > 0) {
+      const falta = Math.abs(Math.atan2(Math.sin(Math.atan2(dx, dz) - this.yawVisual), Math.cos(Math.atan2(dx, dz) - this.yawVisual)))
+      alvoVel *= Math.max(cfg.velNoGiro, Math.cos(Math.min(falta, Math.PI / 2)))
+    }
     alvoVel *= devagar
 
     // soltou a tecla: freia mais forte do que acelera (cfg.frenagem). Com os dois a 10/s, a raiz levava 0,3 s
