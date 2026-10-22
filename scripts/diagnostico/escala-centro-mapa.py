@@ -85,7 +85,7 @@ def main():
     lotes = json.load(open(os.path.join(RAIZ, "src", "mundo", "mapa1932-lotes.json")))
     dados = json.load(open(os.path.join(RAIZ, "src", "mundo", "mapa1932-dados.json")))
     linhas = []
-    for rotulo, nome in (("antes", "ANTES (a764f60)"), ("agora", "DEPOIS")):
+    for rotulo, nome in (("antes", os.environ.get("NOME_ANTES", "ANTES (a764f60)")), ("agora", "DEPOIS")):
         m, esc, ani = carregar(pasta, rotulo)
         linhas.append([
             painel(m, cor_escala(esc), f"{nome}: escala local (branco 1:1; cada cor, mais 2x comprimido)", lotes, dados),

@@ -108,12 +108,76 @@ PARAM = {
     "rampa_vazio": 400.0,  # m: perto de uma zona o vazio tambem desce devagar de 1 (sem degrau na borda do porto e do campo)
     "peso_cheio": 3.0,  # o peso de um triangulo de cidade cheia (o vazio cede para ela)
     "peso_giro": 0.0,  # na cidade, o quanto o triangulo e preso ao norte (J perto da identidade, sem girar)
+    # as retas (22/10/2026, docs/mapa-1932.md v17): onde a planta e reta, o mapa nao pode curvar. Cada linha de
+    # verdade e andada a cada passo_reta metros e a segunda diferenca dos pontos no jogo (f(a) - 2 f(b) + f(c),
+    # em unidades de jogo) entra na energia com o peso da familia; so entram os trios retos na planta (o rumo muda
+    # menos que reta_tolerancia graus). As familias: a costa de 1932, a via ferrea da Planta de 1931-1932 (as linhas
+    # de reta_ferrovia) e as ruas da grade (retas nos dois rumos da grade, so onde ha lote de 1932 e ate raio_reta_ruas
+    # da zona do centro, peso vezes a fracao de cidade cheia)
+    "passo_reta": 50.0,
+    "reta_tolerancia": 3.0,
+    "peso_reta_costa": 1000.0,
+    "peso_reta_ferrovia": 10000.0,
+    "peso_reta_ruas": 150.0,
+    # as familias em que so a parte normal da segunda diferenca conta (a escala pode variar ao longo da linha); nas
+    # outras conta a segunda diferenca inteira (a rua tambem nao muda de escala de repente: a largura da quadra fica)
+    "reta_so_normal": "",
+    "reta_ferrovia": "tronco,norte,porto",  # as linhas da via ferrea que entram (o tronco e o caminho do campo)
+    "raio_reta_ruas": 1500.0,  # m: as ruas da grade so entram ate essa distancia da zona do centro (a transicao)
     "iteracoes": 60,
 }
 
 # o caminho do campo ao centro: o areal entre a borda oeste de Jacarecanga e a borda leste do campo (u, v; o
 # portao do campo fica no lado leste dele desde 22/10/2026, em (-3450, 260))
 CAMINHO = [[-1900.0, 100.0], [-3240.0, 150.0]]
+
+
+def retas(rho_de):
+    """os trios de pontos de verdade (u, v) que sao retos na planta, com o peso de cada um"""
+    dados = json.load(open(os.path.join(RAIZ, "src", "mundo", "mapa1932-dados.json")))
+    fer = json.load(open(os.path.join(RAIZ, "src", "mundo", "ferrovia1932.json")))
+    h = PARAM["passo_reta"]
+    tol = math.radians(PARAM["reta_tolerancia"])
+    trios = []
+
+    def andar(pts):
+        pts = np.array([grade_de(lon, lat) for lon, lat in pts])
+        seg = np.hypot(*np.diff(pts, axis=0).T)
+        s = np.concatenate([[0], np.cumsum(seg)])
+        t = np.arange(0, s[-1], h)
+        return np.stack([np.interp(t, s, pts[:, 0]), np.interp(t, s, pts[:, 1])], 1)
+
+    def juntar(q, peso, familia):
+        so = PARAM["reta_so_normal"].split(",")
+        normal = familia in so or (familia.startswith("ruas") and "ruas" in so)
+        if not callable(peso) and peso <= 0:
+            return
+        for k in range(1, len(q) - 1):
+            a, b, c = q[k - 1], q[k], q[k + 1]
+            r1 = math.atan2(b[1] - a[1], b[0] - a[0])
+            r2 = math.atan2(c[1] - b[1], c[0] - b[0])
+            if abs((r2 - r1 + math.pi) % (2 * math.pi) - math.pi) > tol:
+                continue
+            w = peso(b) if callable(peso) else peso
+            if w > 0:
+                trios.append((a, b, c, w, normal))
+
+    juntar(andar(dados["costa"]), PARAM["peso_reta_costa"], "costa")
+    for l in fer["linhas"]:
+        if l["id"] in PARAM["reta_ferrovia"].split(","):
+            juntar(andar(l["tracado"]), PARAM["peso_reta_ferrovia"], "ferrovia")
+    if PARAM["peso_reta_ruas"] > 0:
+        def peso_rua(b):
+            d = float(dist_zona(ZONAS[0], np.array([b[0]]), np.array([b[1]]))[0])
+            if d > PARAM["raio_reta_ruas"]:
+                return 0.0
+            return PARAM["peso_reta_ruas"] * rho_de(b)
+        for c0 in np.arange(-3000, 3001, 100.0):
+            linha_u = np.stack([np.arange(-4000, 4001, h), np.full(int(8000 / h) + 1, c0)], 1)
+            linha_v = np.stack([np.full(int(8000 / h) + 1, c0), np.arange(-4000, 4001, h)], 1)
+            juntar(linha_u, peso_rua, "ruas_u")
+            juntar(linha_v, peso_rua, "ruas_v")
+    return trios
 
 
 def densidade(us, vs):
@@ -239,6 +303,75 @@ def main():
     giro = PARAM["peso_giro"] * cheio
     giro[na_zona] = 0
 
+    # as retas: R y + r0 e a segunda diferenca (no jogo) de cada trio; a energia soma o quadrado da parte dela que
+    # sai da reta (a componente normal a corda f(c) - f(a), com a normal da iteracao anterior), com o peso. So a normal:
+    # a escala pode mudar ao longo da linha (a compressao do mapa), o que nao pode e a linha virar
+    def cheio_em(b):
+        return float(np.clip(map_coordinates(rho, [[(b[1] - V0) / PASSO], [(b[0] - U0) / PASSO]], order=1)[0] / PARAM["rho_cheio"], 0, 1))
+    trios = retas(cheio_em)
+    linhas_r, cols_r, vals_r = [], [], []
+    linhas_c, cols_c, vals_c = [], [], []
+    nr = 0
+    so_normal = []
+    for (a, b, c, w, eh_normal) in trios:
+        pts = []
+        ok = True
+        for q, f in ((a, 1.0), (b, -2.0), (c, 1.0)):
+            ru = (q[0] - U0) / PASSO
+            rv = (q[1] - V0) / PASSO
+            j, i = int(math.floor(ru)), int(math.floor(rv))
+            if not (0 <= j < nu - 1 and 0 <= i < nv - 1):
+                ok = False
+                break
+            fu, fv = ru - j, rv - i
+            n0 = i * nu + j
+            if fu >= fv:
+                pts += [(n0, f * (1 - fu)), (n0 + 1, f * (fu - fv)), (n0 + nu + 1, f * fv)]
+            else:
+                pts += [(n0, f * (1 - fv)), (n0 + nu + 1, f * fu), (n0 + nu, f * (fv - fu))]
+        if not ok:
+            continue
+        sw = math.sqrt(w)
+        for comp in (0, 1):
+            for k, (node, f) in enumerate(pts):
+                linhas_r.append(nr + comp)
+                cols_r.append(comp * N + node)
+                vals_r.append(sw * f)
+                if k < 3 or k >= 6:  # a corda: f(c) - f(a)
+                    linhas_c.append(nr + comp)
+                    cols_c.append(comp * N + node)
+                    vals_c.append(f if k >= 6 else -f)
+        nr += 2
+        so_normal.append(eh_normal)
+    if nr:
+        Dm = sp.csr_matrix((vals_r, (linhas_r, cols_r)), shape=(nr, 2 * N))
+        Rm = (Dm @ Pm).tocsr()
+        r0 = Dm @ cvec
+        Cm = sp.csr_matrix((vals_c, (linhas_c, cols_c)), shape=(nr, 2 * N))
+        Rx, Ry = Rm[0::2], Rm[1::2]
+    print(f"  retas: {len(trios)} trios ({nr // 2} na malha)", flush=True)
+    normal = {}
+
+    def montar_normal(y):
+        """a linha (Rn y + rn0) da parte normal de cada segunda diferenca, com a normal da corda em y"""
+        if not nr:
+            return
+        ch = (Cm @ (Pm @ y + cvec)).reshape(-1, 2)
+        comp = np.maximum(np.hypot(ch[:, 0], ch[:, 1]), 1e-9)
+        nx, ny = -ch[:, 1] / comp, ch[:, 0] / comp
+        m = np.array(so_normal)
+        Rn = (sp.diags(nx[m]) @ Rx[m] + sp.diags(ny[m]) @ Ry[m]).tocsr()
+        rn = nx[m] * r0[0::2][m] + ny[m] * r0[1::2][m]
+        cheia = np.repeat(~m, 2)
+        normal["R"] = sp.vstack([Rn, Rm[cheia]]).tocsr()
+        normal["r0"] = np.concatenate([rn, r0[cheia]])
+
+    def energia_retas(y):
+        if not nr:
+            return 0.0
+        q = normal["R"] @ y + normal["r0"]
+        return float(q @ q)
+
     def energia(J):
         if (np.linalg.det(J) <= 0).any():
             return np.inf
@@ -253,7 +386,8 @@ def main():
     raiz_pa = np.sqrt(area * peso)
     for it in range(PARAM["iteracoes"]):
         J = jac(y)
-        E = energia(J)
+        montar_normal(y)
+        E = energia(J) + energia_retas(y)
         Uu, S, Vt = np.linalg.svd(J)
         sinal = np.where(np.linalg.det(Uu @ Vt) < 0, -1.0, 1.0)
         Uu[:, :, 1] *= sinal[:, None]
@@ -277,6 +411,9 @@ def main():
             Gm = sp.diags(rg)
             A = sp.vstack([A, Gm @ JP]).tocsr()
             b = np.concatenate([b, rg * (np.tile(np.eye(2).ravel(), nt) - Jc)])
+        if nr:
+            A = sp.vstack([A, normal["R"]]).tocsr()
+            b = np.concatenate([b, -normal["r0"]])
         novo = sla.spsolve((A.T @ A).tocsc() + sp.identity(ny) * 1e-9, A.T @ b)
         dy = novo - y
         # o maior passo sem virar triangulo: det(J0 + t dJ) = 0
@@ -296,7 +433,7 @@ def main():
             if lin.any():
                 tmax = min(tmax, 0.9 * float((-qc[lin] / qb[lin]).min()))
         t = tmax
-        while energia(jac(y + t * dy)) > E and t > 1e-7:
+        while energia(jac(y + t * dy)) + energia_retas(y + t * dy) > E and t > 1e-7:
             t *= 0.5
         y = y + t * dy
         if it % 10 == 0 or it == PARAM["iteracoes"] - 1:
