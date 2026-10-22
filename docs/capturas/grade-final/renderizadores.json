@@ -1,0 +1,45 @@
+{
+ "o_que": "erro médio por canal (0 a 255) entre a foto do WebGPU e a do WebGL, linhas 60 a 620 (sem o letreiro de FPS e a legenda)",
+ "fotos": {
+  "coluna-9h30": {
+   "antes": 4.81,
+   "depois": 2.33
+  },
+  "rua-9h30": {
+   "antes": 3.64,
+   "depois": 0.87
+  },
+  "passeio-9h30": {
+   "antes": 7.28,
+   "depois": 5.96
+  },
+  "leoes-9h30": {
+   "antes": 5.9,
+   "depois": 5.68
+  },
+  "tigre-9h30": {
+   "antes": 8.06,
+   "depois": 3.98
+  },
+  "coluna-15h": {
+   "antes": 5.43,
+   "depois": 4.15
+  },
+  "rua-15h": {
+   "antes": 3.73,
+   "depois": 3.47
+  },
+  "passeio-15h": {
+   "antes": 5.1,
+   "depois": 1.24
+  },
+  "leoes-15h": {
+   "antes": 4.87,
+   "depois": 2.67
+  },
+  "tigre-15h": {
+   "antes": 6.12,
+   "depois": 4.6
+  }
+ }
+}

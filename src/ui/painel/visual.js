@@ -64,6 +64,8 @@ export function secaoVisual(gui, cfg) {
   grade.add(e, 'arcGradeCal', 0, 1, 0.01).name('gradação final (cal e sal)')
   grade.add(e, 'arcGradeContraste', 0.6, 2, 0.01).name('contraste da gradação')
   grade.add(e, 'arcGradeSaturacao', 0.5, 1.5, 0.01).name('saturação da gradação')
+  grade.add(e, 'arcGradeSombraIni', 0, 0.4, 0.01).name('gradação: ganho nos escuros até')
+  grade.add(e, 'arcGradeSombraFim', 0.2, 0.8, 0.01).name('gradação: contraste desde')
   grade.add(e, 'arcGradeNeutro', 0, 0.6, 0.01).name('neutro vira cal')
   grade.add(e, 'arcPreto', 0, 0.3, 0.005).name('níveis: preto')
   grade.add(e, 'arcBranco', 0.6, 1, 0.005).name('níveis: branco')

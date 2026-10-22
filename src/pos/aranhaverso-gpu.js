@@ -12,6 +12,7 @@ import { ref, funcoes, modulo, amostraAlvo } from '../render/gpu/comum.js'
 import { fragTensorGpu, fragKuwaharaGpu } from './pintura-gpu.js'
 import { amostrasPintura } from './pintura.js'
 import { aplicarFx2dTsl } from './fx2d.js'
+import { fatorGradacaoTsl } from './gradacao-final.js'
 import { ProfundidadeGpu } from './profundidade-gpu.js'
 import { EstabilizarGpu } from './estabilizar-gpu.js'
 
@@ -257,6 +258,7 @@ function fragTela(W, u, T, uvGL) {
   const { Fn, If, Loop, vec2, vec3, vec4, float, int, abs, max, min, clamp, mix, step, smoothstep, pow, exp, sqrt,
     length, fract, floor, dot, cos, sin, fwidth, atan2, screenCoordinate } = W
   const { hash, ruido } = funcoes()
+  const fatorGradacao = fatorGradacaoTsl(W) // a curva do passo 12, a mesma do GLSL
   const U = {}
   for (const k in u) if (!k.startsWith('t')) U[k] = ref(u[k])
   const LUM = vec3(0.299, 0.587, 0.114)
@@ -584,9 +586,8 @@ function fragTela(W, u, T, uvGL) {
     If(U.uArcane.greaterThan(0.5), () => {
       If(U.uArcGradeCal.greaterThan(0.5), () => {
         const Lf = dot(cor, LUM)
-        // a curva fica presa entre 0,7 e 1,25: sem limite, as sombras viravam preto chapado
-        const curva = clamp(Lf.sub(0.5).mul(U.uArcGradeContraste).add(0.5), 0.3, 1.0)
-        cor.mulAssign(mix(float(1.0), clamp(curva.div(max(Lf, 0.15)), 0.7, 1.25), U.uArcGradeCal.mul(float(1.0).sub(ceu))))
+        // a curva (gradacao-final.js): ganho nas sombras fundas, reta de contraste em cima, emenda suave
+        cor.mulAssign(mix(float(1.0), fatorGradacao(Lf, U.uArcGradeContraste, U.uArcGradeSombraIni, U.uArcGradeSombraFim), U.uArcGradeCal.mul(float(1.0).sub(ceu))))
         const mx = max(cor.r, max(cor.g, cor.b))
         const mn = min(cor.r, min(cor.g, cor.b))
         const sat = mx.sub(mn).div(max(mx, 1e-3))

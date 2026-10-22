@@ -69,6 +69,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 | `src/mundo/fisica.js` | Camada 2: Rapier só perto do jogador; bolas e cocos, empuxo na água, coco cai do coqueiro |
 | `src/jogador/` | Personagem, controle (andar, pular, nadar, sentar), câmera e interações (camada 3, tecla E) |
 | `src/pos/aranhaverso.js` | O filtro de quadrinho (nanquim, retícula, hachura, aberração) |
+| `src/pos/gradacao-final.js` | A curva de tom da gradação final do Arcane (passo 12), uma só para o GLSL, o TSL e o teste: ganho nas sombras fundas, reta de contraste em cima, emenda suave (`cfg.estilo.arcGradeSombraIni`/`Fim`). Até 22/10/2026 um piso de 0,3 chapava L de 0,24 a 0,33; provas em `docs/capturas/grade-final/` |
 | `src/pos/profundidade.js` + `profundidade-gpu.js` | Profundidade de campo (22/10/2026, `docs/profundidade-de-campo.md`): autofoco no jogador, fundo em meia resolução sem halo na silhueta, frente em um quarto, desfoque pintado antes da pincelada; GLSL e TSL com os mesmos uniforms (`cfg.estilo.dof*`). Fotos: `scripts/fotos-profundidade.mjs` |
 | `src/pos/estabilizar.js` + `estabilizar-gpu.js` | Estabilização no tempo contra o pisca (22/10/2026, `docs/pisca-22-10.md`): logo depois da cena, a cor do quadro anterior reprojetada pela profundidade e limitada às vizinhas, sem tremor de câmera; jogador e gente (alfa < 0,95) ficam fora. `cfg.estilo.estabilizar` (0 desliga). Medir pisca: `scripts/pisca.mjs` + `scripts/pisca-mapa.py --compensar` |
 | `src/ui/` | Legendas de gibi, onomatopeias e o painel lil-gui |
