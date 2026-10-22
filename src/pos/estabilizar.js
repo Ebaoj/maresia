@@ -51,10 +51,12 @@ vec3 historia(vec2 q) {
 }
 void main() {
   vec4 c = texture2D(tCor, vUv);
-  vec3 m1 = vec3(0.0), m2 = vec3(0.0);
-  float aMin = 1.0;
-  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-    vec4 v4 = texture2D(tCor, vUv + vec2(float(i), float(j)) * uTexel);
+  // vizinhança em cruz (o pixel e os 4 do lado): metade das leituras de um 3 x 3, quase o mesmo resultado
+  vec3 m1 = paraYCoCg(c.rgb), m2 = m1 * m1;
+  float aMin = c.a;
+  for (int k = 0; k < 4; k++) {
+    vec2 o = k == 0 ? vec2(1.0, 0.0) : (k == 1 ? vec2(-1.0, 0.0) : (k == 2 ? vec2(0.0, 1.0) : vec2(0.0, -1.0)));
+    vec4 v4 = texture2D(tCor, vUv + o * uTexel);
     vec3 s = paraYCoCg(v4.rgb);
     m1 += s; m2 += s * s;
     aMin = min(aMin, v4.a);
@@ -62,8 +64,8 @@ void main() {
   // personagem (alfa 0,5) e gente (0,85) se mexem sozinhos: a conta da câmera não acha onde eles estavam, e a cor de
   // antes os borrava; neles e na borda deles fica só a cor deste quadro
   float parado = step(0.95, aMin);
-  m1 /= 9.0;
-  vec3 sig = sqrt(max(m2 / 9.0 - m1 * m1, 0.0));
+  m1 /= 5.0;
+  vec3 sig = sqrt(max(m2 / 5.0 - m1 * m1, 0.0));
   // o ponto do mundo deste pixel, na tela do quadro anterior
   float d = texture2D(tProf, vUv).x;
   vec4 v = uProjInv * vec4(vUv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);

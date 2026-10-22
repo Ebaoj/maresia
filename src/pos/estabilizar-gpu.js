@@ -59,22 +59,22 @@ function fragEstabilizar(W, u, cor, hist, prof, uvGL) {
   }
   return Fn(() => {
     const c = cor(uvGL).toVar()
-    const m1 = vec3(0.0).toVar()
-    const m2 = vec3(0.0).toVar()
-    const aMin = float(1.0).toVar()
-    for (let j = -1; j <= 1; j++) {
-      for (let i = -1; i <= 1; i++) {
-        const v4 = cor(uvGL.add(vec2(i, j).mul(uTexel))).toVar()
-        const s = paraYCoCg(v4.rgb).toVar()
-        m1.addAssign(s)
-        m2.addAssign(s.mul(s))
-        aMin.assign(min(aMin, v4.a))
-      }
+    // vizinhança em cruz (o pixel e os 4 do lado), como no GLSL
+    const s0 = paraYCoCg(c.rgb).toVar()
+    const m1 = vec3(s0).toVar()
+    const m2 = s0.mul(s0).toVar()
+    const aMin = float(c.a).toVar()
+    for (const [i, j] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const v4 = cor(uvGL.add(vec2(i, j).mul(uTexel))).toVar()
+      const s = paraYCoCg(v4.rgb).toVar()
+      m1.addAssign(s)
+      m2.addAssign(s.mul(s))
+      aMin.assign(min(aMin, v4.a))
     }
     // personagem e gente (alfa abaixo de 0,95) andam sozinhos: neles e na borda deles, só a cor deste quadro
     const parado = step(0.95, aMin)
-    m1.divAssign(9.0)
-    const sig = sqrt(max(m2.div(9.0).sub(m1.mul(m1)), vec3(0.0)))
+    m1.divAssign(5.0)
+    const sig = sqrt(max(m2.div(5.0).sub(m1.mul(m1)), vec3(0.0)))
     // o ponto do mundo deste pixel, na tela do quadro anterior (profundidade de 0 a 1 no WebGPU)
     const d = prof(uvGL).x
     const v = uProjInv.mul(vec4(uvGL.mul(2.0).sub(1.0), d, 1.0))
