@@ -58,4 +58,14 @@ describe('controle: resposta à tecla', () => {
     rodar(DT)
     expect(Math.abs(emb(Math.atan2(j.vel.x, j.vel.z) - d0))).toBeGreaterThan(0.05)
   })
+
+  it('soltar a tecla para a raiz em até 0,2 s', () => {
+    const { j, teclas, rodar } = montar()
+    teclas.frente = true
+    rodar(2)
+    expect(j.velHoriz).toBeGreaterThan(1)
+    teclas.frente = false
+    rodar(0.2)
+    expect(j.velHoriz).toBeLessThan(0.1)
+  })
 })

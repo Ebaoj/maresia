@@ -224,10 +224,14 @@ export class Jogador {
     if (this.animador?.girando) alvoVel *= 0.3
     alvoVel *= devagar
 
-    const acel = this.noChao || this.nadando ? 10 : 3
+    // soltou a tecla: freia mais forte do que acelera (cfg.frenagem). Com os dois a 10/s, a raiz levava 0,3 s
+    // deslizando até parar e o corpo parecia escorregar no fim do passo (22/10/2026)
+    // a aproximação é exponencial no tempo (antes, dt × taxa: mudava com o FPS)
+    const acel = this.noChao || this.nadando ? (n > 0 || this.indoSentar ? cfg.aceleracao : cfg.frenagem) : 3
+    const ka = 1 - Math.exp(-dt * acel)
     this.velDesejada.set(dx * alvoVel, 0, dz * alvoVel) // o motion matching lê para prever a trajetória
-    this.vel.x += (dx * alvoVel - this.vel.x) * Math.min(1, dt * acel)
-    this.vel.z += (dz * alvoVel - this.vel.z) * Math.min(1, dt * acel)
+    this.vel.x += (dx * alvoVel - this.vel.x) * ka
+    this.vel.z += (dz * alvoVel - this.vel.z) * ka
 
     if (this.pediuPulo && this.noChao && !this.nadando) {
       this.vel.y = cfg.pulo

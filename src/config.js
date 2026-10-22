@@ -198,6 +198,8 @@ export const PADRAO = {
     afundaAreia: 0.02,     // m que o corpo afunda na areia seca (era 0,045: os dedos sumiam no chão)
     joelhos: 6,            // graus: parado, o quadril sobe até o joelho mais dobrado ficar nisso (o mocap vem com 15 a 40°)
     motionMatching: true,  // locomoção por motion matching (motion-matching.js); desligado = mistura antiga por velocidade
+    aceleracao: 10,        // 1/s: rapidez com que a raiz chega à velocidade pedida (90% em 0,23 s)
+    frenagem: 16,          // 1/s: rapidez com que a raiz para ao soltar a tecla (era a mesma da aceleração: 0,3 s deslizando)
     giroAndando: 10,       // 1/s: rapidez com que o corpo encara a direção pedida andando (era 3: 90% de uma curva de 45° em 0,7 s; docs/controle-22-10.md)
     fpsAcao: 24,           // correndo e no ar a pose anda "em 1" (Aranhaverso: ação mais fluida, calma em 2)
     pausaPulo: true,       // a pose segura alguns quadros no alto do pulo
