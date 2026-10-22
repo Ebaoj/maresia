@@ -181,15 +181,17 @@ function gare(o, yBase) {
   // lanternim: a faixa levantada ao longo da cumeeira, com a vidraça escura dos lados
   o.caixa('vidroGare', 0, cume + 0.55, zm, 112, 1.1, 2.8)
   o.caixa('zinco', 0, cume + 1.2, zm, 113, 0.14, 4.0)
-  // plataformas e as duas linhas, que seguem para oeste (o Baturité)
+  // plataformas e as duas linhas da gare. Para fora do terreno da Estação a linha é a de verdade
+  // (ferrovia1932.js, da planta de 1931-1932): até 22/10/2026 estas duas seguiam 140 m em reta para oeste,
+  // por cima das casas
   o.bloco('pedra', 0, yBase, -P / 2 - 3, 112, 0.9 - yBase, 5)
   o.piso(0, -P / 2 - 3, 56, 2.5, 0.9)
   o.bloco('pedra', 0, yBase, zm, 100, 0.9 - yBase, 3.6)
   o.piso(0, zm, 50, 1.8, 0.9)
   for (const zt of [-P / 2 - 8.2, zm - 5.2]) {
-    o.bloco('lastro', -40, yBase - 1, zt, 200, 1.15 - yBase, 3.4)
-    for (const d of [-0.72, 0.72]) o.caixa('trilho', -40, 0.22, zt + d, 200, 0.14, 0.08)
-    for (let x = -139; x < 60; x += 0.9) o.caixa('dormente', x, 0.12, zt, 0.24, 0.1, 2.5)
+    o.bloco('lastro', -3, yBase - 1, zt, 126, 1.15 - yBase, 3.4)
+    for (const d of [-0.72, 0.72]) o.caixa('trilho', -3, 0.22, zt + d, 126, 0.14, 0.08)
+    for (let x = -65.5; x < 60; x += 0.9) o.caixa('dormente', x, 0.12, zt, 0.24, 0.1, 2.5)
   }
 }
 

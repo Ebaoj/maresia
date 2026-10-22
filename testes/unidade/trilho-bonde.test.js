@@ -11,6 +11,9 @@ import * as THREE from 'three'
 import { calcularAlturas, alturas, NX, NZ } from '../../src/mundo/terreno.js'
 import { LIMITES } from '../../src/mundo/mapa.js'
 import { PEGADAS, localDaPegada } from '../../src/mundo/lotes-marcos.js'
+import { ll } from '../../src/mundo/fortaleza1932.js'
+import { dentroDaPraca } from '../../src/mundo/praca1932.js'
+import linhasBonde from '../../src/mundo/bondes1932.json'
 
 // o letreiro das paradas é desenhado num <canvas>: no Node, um de mentira que aceita tudo
 if (!globalThis.document) globalThis.document = {}
@@ -102,18 +105,35 @@ describe('trilho do bonde (bondes-malha.js)', () => {
   })
 
   it('o trilho em frente à Estação continua inteiro: a limpeza da rota não come o ramal da fachada', () => {
-    // a linha corre ao longo da fachada leste, de x = 44 a 85 (local da Estação), a z = 13 a 16
+    // a linha corre ao longo da fachada leste, de x = 44 a 85 (local da Estação), a z = 13 a 16.
+    // Desde 22/10/2026 a linha da Via-Férrea é a da planta (src/mundo/bondes1932.json: o laço na Praça Castro
+    // Carreira, em frente à Estação), e o centro está em 1:1 (decisão do Joabe): a janela fixa em coordenada
+    // local deixou de valer. A afirmação é a mesma, medida no traçado: em todo ponto da Via-Férrea a menos de
+    // 150 m da Estação há aço (um ramal inteiro, sem buraco).
     const P = PEGADAS.estacao
-    const xs = new Set()
-    for (const [ax, az, , bx, bz] of acos) {
-      const passos = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 0.25))
-      for (let i = 0; i <= passos; i++) {
-        const t = i / passos
-        const [lx, lz] = localDaPegada(P, ax + (bx - ax) * t, az + (bz - az) * t)
-        if (lz > 11 && lz < 18 && lx > 30 && lx < 100) xs.add(Math.round(lx))
+    const via = linhasBonde.linhas.find((l) => l.id === 'via_ferrea').tracado
+    const grade = new Map()
+    for (const a of acos) {
+      for (const [x, z] of [[a[0], a[1]], [a[3], a[4]]]) {
+        const k = `${Math.floor(x / 4)},${Math.floor(z / 4)}`
+        if (!grade.has(k)) grade.set(k, [])
+        if (!grade.get(k).includes(a)) grade.get(k).push(a)
       }
     }
-    for (let x = 45; x <= 84; x++) expect(xs.has(x), `aço em x = ${x}`).toBe(true)
+    let n = 0
+    for (let i = 0; i < via.length - 1; i++) {
+      for (let k = 0; k < 10; k++) {
+        const t = k / 10
+        const [x, z] = ll(via[i][0] + (via[i + 1][0] - via[i][0]) * t, via[i][1] + (via[i + 1][1] - via[i][1]) * t)
+        const [lx, lz] = localDaPegada(P, x, z)
+        if (Math.abs(lx) > 150 || lz < -60 || lz > 160) continue
+        if (dentroDaPraca(x, z)) continue
+        n++
+        // o eixo da via: os dois trilhos ficam a meia bitola de cada lado
+        expect(acoPerto(grade, x, z).d, `aço em (${lx.toFixed(0)}, ${lz.toFixed(0)})`).toBeLessThan(BITOLA / 2 + 0.1)
+      }
+    }
+    expect(n).toBeGreaterThan(20)
   })
 
   it('a travessa fica rente ao calçamento: o topo a no máximo 3 cm da malha do chão, nunca acima', () => {

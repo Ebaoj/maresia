@@ -77,6 +77,12 @@ async function lerRaster() {
 // Carrega o raster e monta a grade de ocupação do mundo.
 export async function carregarOcupacao1932() {
   const { dados: pix, w, h, canvas } = await lerRaster()
+  montarOcupacao1932(pix, w, h, canvas)
+}
+
+// A mesma grade a partir dos pixels do raster já lidos (RGBA): os testes (Node, sem canvas) leem o PNG por
+// conta própria e chamam aqui (testes/unidade/apoio/png.js)
+export function montarOcupacao1932(pix, w, h, canvas = null) {
   const cores = classesDasCores()
   const fundo = (244 << 16) | (236 << 8) | 216
 

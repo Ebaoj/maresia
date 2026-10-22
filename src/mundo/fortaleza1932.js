@@ -10,16 +10,18 @@
 import {
   DESLOC, ll, llInverso, LIMITES, pchip,
   K_PRACA_X, K_PRACA_Z, FATOR_PRACA, ANGULO_GRADE,
-  esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, escalaBaseJogo, metrosPorUn,
-  metrosDoVao, direcaoJogo, comprimentoJogo, geoDe, gradeDe, llInversoRapido, norteJogo,
+  esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, metrosPorUn, anisotropiaJogo, anisotropiaGeo,
+  metrosDoVao, direcaoJogo, comprimentoJogo, geoDe, gradeDe, llInversoRapido, llInversoExato, norteJogo,
+  jacobianoGeo, zonaDe, ZONAS_1A1,
   METRO_POR_GRAU_LAT, METRO_POR_GRAU_LON,
 } from './escala1932.js'
 
 export {
   DESLOC, ll, llInverso, LIMITES,
   K_PRACA_X, K_PRACA_Z, FATOR_PRACA, ANGULO_GRADE,
-  esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, escalaBaseJogo, metrosPorUn,
-  metrosDoVao, direcaoJogo, comprimentoJogo, geoDe, gradeDe, llInversoRapido, norteJogo,
+  esticamento, esticamentoJogo, esticamentoNoVao, escalaJogo, metrosPorUn, anisotropiaJogo, anisotropiaGeo,
+  metrosDoVao, direcaoJogo, comprimentoJogo, geoDe, gradeDe, llInversoRapido, llInversoExato, norteJogo,
+  jacobianoGeo, zonaDe, ZONAS_1A1,
 }
 
 // costa de 1932 (hipótese guiada pela borda norte dos lotes; refinar sobre a planta de 1931-1932)
@@ -138,7 +140,21 @@ function catmull(pts, n = 10) {
   out.push(p[p.length - 2])
   return out
 }
-export const costaJogo = catmull(COSTA.map(([a, b]) => ll(a, b)), 12)
+// a costa é adensada em longitude/latitude (um ponto a cada ~25 m, em linha reta entre os nós da planta)
+// antes de ir para o jogo: os nós ficam a ~450 m um do outro, e o catmull no jogo, com o centro em 1:1,
+// abria uma barriga de 13 m entre eles (a linha de verdade é a reta entre os nós: latCostaReal)
+function adensar(pts, passoM = 25) {
+  const out = []
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [a, b] = [pts[i], pts[i + 1]]
+    const m = Math.hypot((b[0] - a[0]) * 111100, (b[1] - a[1]) * 110574)
+    const n = Math.max(1, Math.ceil(m / passoM))
+    for (let k = 0; k < n; k++) out.push([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n])
+  }
+  out.push(pts[pts.length - 1])
+  return out
+}
+export const costaJogo = catmull(adensar(COSTA).map(([a, b]) => ll(a, b)), 2)
 const praiaX = PRAIA.map(([lon]) => ll(lon, -3.72)[0])
 const praiaL = pchip(praiaX, PRAIA.map(([, l]) => l))
 export const rioJogo = catmull(RIO_CEARA.map(([a, b]) => ll(a, b)), 10)

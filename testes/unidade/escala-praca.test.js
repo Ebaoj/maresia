@@ -16,7 +16,9 @@ import dadosMapa from '../../src/mundo/mapa1932-dados.json';
 //
 // Desde 22/10/2026 a compressao acontece no QUADRO DA GRADE (u ao longo da rua, v de
 // travessia), e nao em lon/lat: e isso que mantem as ruas da grade de Herbster retas
-// no jogo. As rampas da descompressao sao faixas ao longo de u e de v.
+// no jogo. As rampas da descompressao eram faixas ao longo de u e de v; desde a v16
+// (docs/mapa-1932.md) o mapa e um campo continuo, sem faixas, com o centro historico
+// inteiro em 1:1 (testes/unidade/escala-centro.test.js).
 //
 // Estes testes prendem tres coisas:
 //   1. a praca esta em 1:1 (a area no jogo e a area real, dentro de uma tolerancia
@@ -148,7 +150,7 @@ describe('escala: a Praça do Ferreira em tamanho real', () => {
   });
 
   it('a descompressão é local: a compressão do resto do mapa continua', () => {
-    // Longe das duas zonas em tamanho real (a praca e o Campo do Urubu), a escala
+    // Longe das duas zonas em tamanho real (o centro histórico e o Campo do Urubu), a escala
     // e a de sempre: na Barra do Ceara o mapa esta 5 a 14 vezes mais comprimido
     // que a praca (metrosPorUn: quantos metros de verdade vale uma unidade).
     // O lugar medido era o Urubu ate 21/10/2026, quando o campo virou zona em
@@ -157,40 +159,33 @@ describe('escala: a Praça do Ferreira em tamanho real', () => {
     const longe = metrosPorUn(...ll(-38.598, -3.695));
     expect(longe).toBeLessThan(14);
     expect(longe).toBeGreaterThan(5);
-    expect(esticamento(-38.598, -3.695)).toBeCloseTo(1, 6);
+    // O esticamento mudou de sentido em 22/10/2026 (o centro histórico inteiro em 1:1, decisao do
+    // Joabe, sem as faixas da escala separavel): ele era "quanto a zona esticou a compressao de sempre"
+    // (1 fora das faixas) e passou a ser "quantas unidades de jogo vale uma medida ajustada no mundo
+    // comprimido de antes" (FATOR_PRACA / metrosPorUn: 2,74 nas zonas, menos que 1 no vazio)
+    expect(esticamento(-38.598, -3.695)).toBeCloseTo(FATOR_PRACA / longe, 3);
   });
 
   it('a rampa é suave: a escala muda sem degrau', () => {
-    // A descompressao da praca e uma faixa ao longo de u (a direcao da rua da
-    // grade, 445 m) e outra ao longo de v (420 m). Andando por cada uma das
-    // duas, a escala local cai sem degrau: em 40 passos pela rampa, a mudanca
-    // e de no maximo 0,05 un/m por passo (o perfil e um seno, e o meio da
-    // rampa e onde a escala muda mais).
-    for (const [eixo, tam] of [['u', 0.004 * 111092], ['v', 0.0038 * 110574]]) {
+    // A afirmacao mudou em 22/10/2026 (o centro historico inteiro em 1:1, decisao do Joabe): a rampa
+    // era uma faixa ao longo de u e outra ao longo de v, e o teste andava pelas duas. Agora a zona do
+    // centro e o circulo de 1 km em volta da praca (mais o porto) e a rampa e o campo continuo em volta
+    // dela (docs/mapa-1932-escala.py). Andando para fora da borda do circulo, em 8 direcoes, por 1,5 km,
+    // a escala local cai sem degrau: a mudanca e de no maximo 0,05 un/m por passo de 11 m (o passo de
+    // antes: 40 passos pela faixa de 445 m).
+    for (let k = 0; k < 8; k++) {
+      const ang = (k * Math.PI) / 4;
       let anterior = null;
-      for (let i = 0; i <= 40; i++) {
-        const t = (tam * i) / 40;
-        const [lon, lat] = eixo === 'u' ? geoDe(t, 0) : geoDe(0, t);
-        const [x, z] = ll(lon, lat);
-        const e = escalaJogo(x, z);
-        const s = eixo === 'u' ? e.u : Math.abs(e.v);
+      for (let i = 0; i <= 135; i++) {
+        const r = 1000 + (1500 * i) / 135;
+        const [lon, lat] = geoDe(r * Math.cos(ang), r * Math.sin(ang));
+        const s = 1 / metrosPorUn(...ll(lon, lat));
         if (anterior !== null) {
-          expect(Math.abs(s - anterior), `degrau em ${eixo}, passo ${i}`).toBeLessThan(0.05);
+          expect(Math.abs(s - anterior), `degrau na direcao ${k}, passo ${i}`).toBeLessThan(0.05);
         }
         anterior = s;
       }
     }
-    // e o esticamento (a media das duas direcoes) nunca sobe ao longo da rampa
-    let anterior = esticamento(...geoDe(0, 600));
-    expect(anterior).toBeCloseTo(Math.sqrt(K_PRACA_X), 6);
-    for (let i = 1; i <= 40; i++) {
-      const [lon, lat] = geoDe((0.004 * 111092 * i) / 40, 600);
-      const e = esticamento(lon, lat);
-      expect(e).toBeLessThanOrEqual(anterior + 1e-9);
-      anterior = e;
-    }
-    // no fim da rampa de u, e ja fora da rampa de v, a compressao e a de sempre
-    expect(anterior).toBeCloseTo(1, 6);
   });
 
   it('o fator de descompressão é o inverso da escala da compressão no centro', () => {

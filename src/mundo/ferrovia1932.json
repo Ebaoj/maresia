@@ -1,0 +1,1495 @@
+{
+ "fonte": "Planta da cidade de Fortaleza, levantada na administracao revolucionaria 1931-1932 (Orlando Luna Freire e Edgard Guerra; copia de M. Guilherme, out/1936, DNOCS/IFOCS), escala 1:5000; scan Wikimedia Commons File:Planta_da_cidade_de_Fortaleza_1931-1932.png (1624x918 px, CC0). Tracado lido no scan; conferido com a Planta da cidade de Fortaleza de 1936 (1:10000) e com a rede OSM atual.",
+ "georreferencia": {
+  "metodo": "1) Afim inicial por busca exaustiva de escala/rotacao/translacao maximizando a correlacao (filtro DoG) entre a tinta escura do scan e os 10.519 lotes de 1932 rasterizados; 2) correcao polinomial cubica (20 parametros) otimizada pela mesma correlacao dentro da area dos lotes; 3) thin-plate spline final com 492 pontos de controle dessa correcao (area dos lotes, grade de 30 px), 212 pontos do afim fora dela (para extrapolar sem ondas) e 6 ancoras independentes: Estacao Central e meio da Ponte Metalica (posicoes OSM, porque o ajuste so pelos lotes deixava a faixa da costa 50 a 120 m ao sul) e 4 pontos do ramal/patio das Oficinas do Urubu casados com o patio atual da RFFSA no OSM (fora da area dos lotes).",
+  "residuo_m": {
+   "lotes_vs_planta_RMS": 23,
+   "lotes_vs_planta_mediana": 13,
+   "conferencia_independente_antes_das_ancoras": {
+    "Estacao_Central": 51,
+    "Praca_Castro_Carreira": 94,
+    "Ponte_Metalica": 122,
+    "patio_Oficinas": 123,
+    "Linha_Sul_em_Porangabussu": 31,
+    "Otavio_Bonfim": 141
+   },
+   "nota": "RMS de 23 m e o desvio entre os lotes e a planta em 128 janelas de 128 px (desvio local residual da correlacao). A conferencia independente (marcos OSM nao usados no ajuste) mostrou erro sistematico de 50 a 120 m para o sul na faixa da costa; por isso Estacao e Ponte viraram ancoras. Incerteza honesta: ~20-30 m no centro e nos bracos dos lotes, ~50 m na faixa costeira entre as ancoras, ~100 m nas pontas oeste e sul da planta."
+  }
+ },
+ "confianca_legenda": {
+  "D": "lido diretamente na planta 1931-1932 (posicao sujeita ao erro da georreferencia)",
+  "H": "inferido"
+ },
+ "linhas": [
+  {
+   "id": "tronco",
+   "nome": "Tronco da Estacao Central (patio -> bifurcacao Norte/Sul em Jacarecanga)",
+   "confianca": "D",
+   "liga_em": null,
+   "comprimento_m": 1707,
+   "nota": "Faixa de trilhos hachurada (simbolo de estrada de ferro) atras (ao norte) da Estacao Central, rumo WNW por Moura Brasil ate a bifurcacao junto ao Cemiterio S. Joao Batista / Jacarecanga. Comeca no extremo leste do patio, ao norte do predio da estacao.",
+   "tracado": [
+    [
+     -38.529364,
+     -3.72155
+    ],
+    [
+     -38.529889,
+     -3.721426
+    ],
+    [
+     -38.530425,
+     -3.721361
+    ],
+    [
+     -38.530964,
+     -3.721345
+    ],
+    [
+     -38.531505,
+     -3.721346
+    ],
+    [
+     -38.532041,
+     -3.72135
+    ],
+    [
+     -38.532045,
+     -3.72135
+    ],
+    [
+     -38.53254,
+     -3.72135
+    ],
+    [
+     -38.532854,
+     -3.721335
+    ],
+    [
+     -38.533122,
+     -3.721303
+    ],
+    [
+     -38.533608,
+     -3.721208
+    ],
+    [
+     -38.534091,
+     -3.721099
+    ],
+    [
+     -38.534575,
+     -3.720994
+    ],
+    [
+     -38.535107,
+     -3.7209
+    ],
+    [
+     -38.535637,
+     -3.720799
+    ],
+    [
+     -38.53616,
+     -3.720665
+    ],
+    [
+     -38.536683,
+     -3.720529
+    ],
+    [
+     -38.537206,
+     -3.720394
+    ],
+    [
+     -38.537687,
+     -3.720273
+    ],
+    [
+     -38.538211,
+     -3.720142
+    ],
+    [
+     -38.538734,
+     -3.720008
+    ],
+    [
+     -38.539255,
+     -3.719865
+    ],
+    [
+     -38.539737,
+     -3.719754
+    ],
+    [
+     -38.540049,
+     -3.719705
+    ],
+    [
+     -38.540361,
+     -3.719669
+    ],
+    [
+     -38.540854,
+     -3.719621
+    ],
+    [
+     -38.541303,
+     -3.719586
+    ],
+    [
+     -38.541751,
+     -3.719543
+    ],
+    [
+     -38.542147,
+     -3.719462
+    ],
+    [
+     -38.542497,
+     -3.719386
+    ],
+    [
+     -38.542898,
+     -3.719388
+    ],
+    [
+     -38.543302,
+     -3.719385
+    ],
+    [
+     -38.543703,
+     -3.719336
+    ],
+    [
+     -38.544104,
+     -3.71928
+    ],
+    [
+     -38.544494,
+     -3.719225
+    ]
+   ]
+  },
+  {
+   "id": "sul",
+   "nome": "Linha Sul / E.F. de Baturite (bifurcacao -> Otavio Bonfim -> Porangabucu -> rumo a Parangaba)",
+   "confianca": "D",
+   "liga_em": "tronco",
+   "comprimento_m": 3985,
+   "nota": "Linha grossa tracejada: da bifurcacao faz curva fechada para o sul (raio ~150 m), desce reta por Farias Brito passando junto ao predio de Otavio Bonfim (cruzamento com a estrada do Alagadico), curva para SW a leste do sangradouro da Lagoa do Porangabucu e segue ate onde a planta a desenha (ela termina antes da borda, perto do carimbo IFOCS). A planta de 1936 rotula esta linha \"Para o Crato\".",
+   "tracado": [
+    [
+     -38.544494,
+     -3.719225
+    ],
+    [
+     -38.544724,
+     -3.719208
+    ],
+    [
+     -38.544942,
+     -3.719221
+    ],
+    [
+     -38.545334,
+     -3.71931
+    ],
+    [
+     -38.545741,
+     -3.719497
+    ],
+    [
+     -38.545924,
+     -3.719626
+    ],
+    [
+     -38.546054,
+     -3.719749
+    ],
+    [
+     -38.54626,
+     -3.720041
+    ],
+    [
+     -38.54641,
+     -3.720416
+    ],
+    [
+     -38.546495,
+     -3.720858
+    ],
+    [
+     -38.546512,
+     -3.721354
+    ],
+    [
+     -38.546465,
+     -3.721894
+    ],
+    [
+     -38.546411,
+     -3.722252
+    ],
+    [
+     -38.546349,
+     -3.722608
+    ],
+    [
+     -38.546236,
+     -3.723139
+    ],
+    [
+     -38.54611,
+     -3.72362
+    ],
+    [
+     -38.546008,
+     -3.724105
+    ],
+    [
+     -38.545953,
+     -3.724645
+    ],
+    [
+     -38.545914,
+     -3.725141
+    ],
+    [
+     -38.545877,
+     -3.725637
+    ],
+    [
+     -38.545817,
+     -3.726085
+    ],
+    [
+     -38.545709,
+     -3.72657
+    ],
+    [
+     -38.545562,
+     -3.727092
+    ],
+    [
+     -38.545425,
+     -3.72757
+    ],
+    [
+     -38.545338,
+     -3.727921
+    ],
+    [
+     -38.54527,
+     -3.72823
+    ],
+    [
+     -38.54518,
+     -3.728719
+    ],
+    [
+     -38.545113,
+     -3.729166
+    ],
+    [
+     -38.545044,
+     -3.729613
+    ],
+    [
+     -38.544972,
+     -3.730059
+    ],
+    [
+     -38.544918,
+     -3.730462
+    ],
+    [
+     -38.544866,
+     -3.730865
+    ],
+    [
+     -38.544736,
+     -3.731344
+    ],
+    [
+     -38.544627,
+     -3.731781
+    ],
+    [
+     -38.54457,
+     -3.732229
+    ],
+    [
+     -38.544523,
+     -3.732679
+    ],
+    [
+     -38.544479,
+     -3.733129
+    ],
+    [
+     -38.544433,
+     -3.733579
+    ],
+    [
+     -38.544376,
+     -3.734027
+    ],
+    [
+     -38.544296,
+     -3.734518
+    ],
+    [
+     -38.544213,
+     -3.734962
+    ],
+    [
+     -38.544118,
+     -3.735451
+    ],
+    [
+     -38.544043,
+     -3.735896
+    ],
+    [
+     -38.543965,
+     -3.736388
+    ],
+    [
+     -38.543884,
+     -3.736832
+    ],
+    [
+     -38.543811,
+     -3.737278
+    ],
+    [
+     -38.543758,
+     -3.737727
+    ],
+    [
+     -38.543719,
+     -3.738133
+    ],
+    [
+     -38.54368,
+     -3.738583
+    ],
+    [
+     -38.543645,
+     -3.738988
+    ],
+    [
+     -38.54361,
+     -3.739439
+    ],
+    [
+     -38.543582,
+     -3.739845
+    ],
+    [
+     -38.543552,
+     -3.740296
+    ],
+    [
+     -38.54353,
+     -3.740703
+    ],
+    [
+     -38.543514,
+     -3.741155
+    ],
+    [
+     -38.543511,
+     -3.741607
+    ],
+    [
+     -38.543537,
+     -3.741967
+    ],
+    [
+     -38.543584,
+     -3.74228
+    ],
+    [
+     -38.543654,
+     -3.742588
+    ],
+    [
+     -38.543734,
+     -3.742846
+    ],
+    [
+     -38.543955,
+     -3.74334
+    ],
+    [
+     -38.544209,
+     -3.743767
+    ],
+    [
+     -38.544457,
+     -3.744144
+    ],
+    [
+     -38.54473,
+     -3.744559
+    ],
+    [
+     -38.544968,
+     -3.744943
+    ],
+    [
+     -38.545173,
+     -3.745294
+    ],
+    [
+     -38.545363,
+     -3.745653
+    ],
+    [
+     -38.545551,
+     -3.746013
+    ],
+    [
+     -38.545748,
+     -3.746315
+    ],
+    [
+     -38.546104,
+     -3.746721
+    ],
+    [
+     -38.54647,
+     -3.74712
+    ],
+    [
+     -38.546795,
+     -3.747496
+    ],
+    [
+     -38.547147,
+     -3.747907
+    ],
+    [
+     -38.547498,
+     -3.748319
+    ],
+    [
+     -38.547829,
+     -3.748689
+    ],
+    [
+     -38.548171,
+     -3.749049
+    ],
+    [
+     -38.548519,
+     -3.749403
+    ],
+    [
+     -38.548837,
+     -3.749723
+    ],
+    [
+     -38.549188,
+     -3.750074
+    ],
+    [
+     -38.549503,
+     -3.750396
+    ],
+    [
+     -38.549815,
+     -3.750723
+    ],
+    [
+     -38.550091,
+     -3.751019
+    ],
+    [
+     -38.550359,
+     -3.751307
+    ]
+   ]
+  },
+  {
+   "id": "norte",
+   "nome": "Linha Norte (bifurcacao -> Jacarecanga -> Floresta -> juncao das Oficinas do Urubu -> rumo SW, ate a borda da planta)",
+   "confianca": "D",
+   "liga_em": "tronco",
+   "comprimento_m": 3245,
+   "nota": "Linha tracejada: da bifurcacao segue a oeste por Jacarecanga, dobra para WSW ao sul do loteamento da Floresta e, apos a juncao do ramal das Oficinas, curva para SSW ate terminar com uma seta perto da borda oeste da planta (rumo a Antonio Bezerra/Caucaia e Sobral). A planta de 1936 tem o mesmo tracado.",
+   "tracado": [
+    [
+     -38.544494,
+     -3.719225
+    ],
+    [
+     -38.545005,
+     -3.719049
+    ],
+    [
+     -38.545354,
+     -3.71896
+    ],
+    [
+     -38.545663,
+     -3.718903
+    ],
+    [
+     -38.54593,
+     -3.718863
+    ],
+    [
+     -38.546243,
+     -3.718823
+    ],
+    [
+     -38.546556,
+     -3.71879
+    ],
+    [
+     -38.547005,
+     -3.71876
+    ],
+    [
+     -38.547455,
+     -3.718746
+    ],
+    [
+     -38.54786,
+     -3.718727
+    ],
+    [
+     -38.548982,
+     -3.718647
+    ],
+    [
+     -38.55006,
+     -3.718577
+    ],
+    [
+     -38.550552,
+     -3.718523
+    ],
+    [
+     -38.551041,
+     -3.718448
+    ],
+    [
+     -38.551534,
+     -3.718401
+    ],
+    [
+     -38.552074,
+     -3.718382
+    ],
+    [
+     -38.552569,
+     -3.71837
+    ],
+    [
+     -38.553064,
+     -3.718361
+    ],
+    [
+     -38.553558,
+     -3.718347
+    ],
+    [
+     -38.553873,
+     -3.71835
+    ],
+    [
+     -38.554143,
+     -3.718365
+    ],
+    [
+     -38.554456,
+     -3.718397
+    ],
+    [
+     -38.554722,
+     -3.718441
+    ],
+    [
+     -38.555198,
+     -3.718575
+    ],
+    [
+     -38.555632,
+     -3.718694
+    ],
+    [
+     -38.556118,
+     -3.718788
+    ],
+    [
+     -38.556605,
+     -3.718875
+    ],
+    [
+     -38.557091,
+     -3.71897
+    ],
+    [
+     -38.557619,
+     -3.719085
+    ],
+    [
+     -38.558103,
+     -3.719193
+    ],
+    [
+     -38.558586,
+     -3.719299
+    ],
+    [
+     -38.559071,
+     -3.719403
+    ],
+    [
+     -38.559555,
+     -3.719506
+    ],
+    [
+     -38.560039,
+     -3.719612
+    ],
+    [
+     -38.560521,
+     -3.719722
+    ],
+    [
+     -38.560959,
+     -3.71983
+    ],
+    [
+     -38.561349,
+     -3.719938
+    ],
+    [
+     -38.561821,
+     -3.720089
+    ],
+    [
+     -38.56229,
+     -3.720247
+    ],
+    [
+     -38.562721,
+     -3.720376
+    ],
+    [
+     -38.563201,
+     -3.720501
+    ],
+    [
+     -38.563682,
+     -3.720619
+    ],
+    [
+     -38.564165,
+     -3.720725
+    ],
+    [
+     -38.564609,
+     -3.720799
+    ],
+    [
+     -38.565056,
+     -3.720847
+    ],
+    [
+     -38.565506,
+     -3.720871
+    ],
+    [
+     -38.565911,
+     -3.720877
+    ],
+    [
+     -38.566361,
+     -3.720878
+    ],
+    [
+     -38.566766,
+     -3.72089
+    ],
+    [
+     -38.567214,
+     -3.720929
+    ],
+    [
+     -38.567523,
+     -3.720986
+    ],
+    [
+     -38.567942,
+     -3.721142
+    ],
+    [
+     -38.568325,
+     -3.721378
+    ],
+    [
+     -38.56863,
+     -3.721643
+    ],
+    [
+     -38.568869,
+     -3.721967
+    ],
+    [
+     -38.56902,
+     -3.722306
+    ],
+    [
+     -38.56907,
+     -3.722419
+    ],
+    [
+     -38.569219,
+     -3.722893
+    ],
+    [
+     -38.569377,
+     -3.723365
+    ],
+    [
+     -38.56952,
+     -3.723841
+    ],
+    [
+     -38.569681,
+     -3.724311
+    ],
+    [
+     -38.569856,
+     -3.724727
+    ],
+    [
+     -38.570025,
+     -3.725097
+    ],
+    [
+     -38.570193,
+     -3.725466
+    ],
+    [
+     -38.57035,
+     -3.725812
+    ]
+   ]
+  },
+  {
+   "id": "oficinas",
+   "nome": "Ramal das Oficinas da RVC (Urubu): da juncao na Linha Norte para NNW, ate a borda da planta",
+   "confianca": "D",
+   "liga_em": "norte",
+   "comprimento_m": 1085,
+   "nota": "Linha tracejada que sai da Linha Norte para NNW, passa a oeste do recinto das Oficinas e sai pela borda superior esquerda da planta. A juncao abre para o lado de Sobral (o desenho nao mostra triangulo). O destino alem da borda nao aparece na planta.",
+   "tracado": [
+    [
+     -38.56902,
+     -3.722306
+    ],
+    [
+     -38.568988,
+     -3.721804
+    ],
+    [
+     -38.568964,
+     -3.721353
+    ],
+    [
+     -38.568969,
+     -3.720856
+    ],
+    [
+     -38.568998,
+     -3.720405
+    ],
+    [
+     -38.569041,
+     -3.720092
+    ],
+    [
+     -38.569094,
+     -3.719826
+    ],
+    [
+     -38.569188,
+     -3.71943
+    ],
+    [
+     -38.569285,
+     -3.719035
+    ],
+    [
+     -38.56939,
+     -3.718642
+    ],
+    [
+     -38.569551,
+     -3.718172
+    ],
+    [
+     -38.569722,
+     -3.717705
+    ],
+    [
+     -38.569898,
+     -3.717241
+    ],
+    [
+     -38.570108,
+     -3.71679
+    ],
+    [
+     -38.570319,
+     -3.716341
+    ],
+    [
+     -38.570523,
+     -3.715887
+    ],
+    [
+     -38.570735,
+     -3.715388
+    ],
+    [
+     -38.570941,
+     -3.714886
+    ],
+    [
+     -38.571149,
+     -3.714386
+    ],
+    [
+     -38.571231,
+     -3.714202
+    ],
+    [
+     -38.571351,
+     -3.713932
+    ],
+    [
+     -38.571558,
+     -3.71348
+    ],
+    [
+     -38.571773,
+     -3.713037
+    ]
+   ]
+  },
+  {
+   "id": "desvio_oficinas",
+   "nome": "Desvio interno das Oficinas da RVC (ao longo do letreiro, entrando no recinto)",
+   "confianca": "D",
+   "liga_em": "oficinas",
+   "comprimento_m": 645,
+   "nota": "Linha tracejada ao longo do letreiro \"Officinas da Rede de Viacao Cearense\", saindo do ramal e entrando no recinto das oficinas (direcao ESE). E o desvio de servico das oficinas do Urubu.",
+   "tracado": [
+    [
+     -38.571231,
+     -3.714202
+    ],
+    [
+     -38.570759,
+     -3.714351
+    ],
+    [
+     -38.57033,
+     -3.714488
+    ],
+    [
+     -38.569859,
+     -3.71464
+    ],
+    [
+     -38.569432,
+     -3.714783
+    ],
+    [
+     -38.568966,
+     -3.714952
+    ],
+    [
+     -38.56855,
+     -3.715125
+    ],
+    [
+     -38.568185,
+     -3.715301
+    ],
+    [
+     -38.567826,
+     -3.71549
+    ],
+    [
+     -38.567511,
+     -3.715664
+    ],
+    [
+     -38.567081,
+     -3.715911
+    ],
+    [
+     -38.566693,
+     -3.716141
+    ],
+    [
+     -38.566308,
+     -3.716373
+    ],
+    [
+     -38.56596,
+     -3.716583
+    ]
+   ]
+  },
+  {
+   "id": "porto",
+   "nome": "Ramal do Porto (patio -> Praia Formosa -> sul do Poco da Draga -> juncao da Ponte Metalica)",
+   "confianca": "D",
+   "liga_em": "tronco",
+   "comprimento_m": 1315,
+   "nota": "Sai do lado norte do patio, passa ao norte do predio da estacao e corre para leste pela Praia Formosa, ao sul do Poco da Draga, ate a juncao junto a raiz da Ponte Metalica.",
+   "tracado": [
+    [
+     -38.532041,
+     -3.72135
+    ],
+    [
+     -38.531736,
+     -3.72126
+    ],
+    [
+     -38.531436,
+     -3.721174
+    ],
+    [
+     -38.531084,
+     -3.721098
+    ],
+    [
+     -38.530682,
+     -3.721051
+    ],
+    [
+     -38.530278,
+     -3.721046
+    ],
+    [
+     -38.52992,
+     -3.721082
+    ],
+    [
+     -38.529477,
+     -3.721157
+    ],
+    [
+     -38.529077,
+     -3.72122
+    ],
+    [
+     -38.528586,
+     -3.72129
+    ],
+    [
+     -38.52814,
+     -3.721347
+    ],
+    [
+     -38.527693,
+     -3.721404
+    ],
+    [
+     -38.527204,
+     -3.721479
+    ],
+    [
+     -38.526759,
+     -3.721549
+    ],
+    [
+     -38.526314,
+     -3.721615
+    ],
+    [
+     -38.525956,
+     -3.721641
+    ],
+    [
+     -38.525506,
+     -3.721631
+    ],
+    [
+     -38.525147,
+     -3.721603
+    ],
+    [
+     -38.524834,
+     -3.721566
+    ],
+    [
+     -38.524435,
+     -3.7215
+    ],
+    [
+     -38.524081,
+     -3.721433
+    ],
+    [
+     -38.523726,
+     -3.721371
+    ],
+    [
+     -38.523414,
+     -3.721324
+    ],
+    [
+     -38.523102,
+     -3.721286
+    ],
+    [
+     -38.522653,
+     -3.721254
+    ],
+    [
+     -38.522113,
+     -3.721245
+    ],
+    [
+     -38.521618,
+     -3.721229
+    ],
+    [
+     -38.521307,
+     -3.721195
+    ],
+    [
+     -38.521093,
+     -3.721135
+    ],
+    [
+     -38.520855,
+     -3.721013
+    ],
+    [
+     -38.520646,
+     -3.720854
+    ],
+    [
+     -38.520476,
+     -3.720677
+    ]
+   ]
+  },
+  {
+   "id": "ponte",
+   "nome": "Ramal do Porto: ramo da Ponte Metalica (curva e viaduto de 1928 sobre o mar)",
+   "confianca": "D",
+   "liga_em": "porto",
+   "comprimento_m": 458,
+   "nota": "Da juncao, curva para o norte ate a raiz do viaduto e segue sobre ele mar adentro (a planta desenha o viaduto como linha reta para N). Ancorado na posicao OSM da Ponte Metalica.",
+   "tracado": [
+    [
+     -38.520476,
+     -3.720677
+    ],
+    [
+     -38.520396,
+     -3.720323
+    ],
+    [
+     -38.520325,
+     -3.71997
+    ],
+    [
+     -38.520259,
+     -3.719568
+    ],
+    [
+     -38.520203,
+     -3.719165
+    ],
+    [
+     -38.52018,
+     -3.71885
+    ],
+    [
+     -38.520193,
+     -3.718309
+    ],
+    [
+     -38.520178,
+     -3.717948
+    ],
+    [
+     -38.520145,
+     -3.717588
+    ],
+    [
+     -38.520108,
+     -3.717273
+    ],
+    [
+     -38.520061,
+     -3.716917
+    ],
+    [
+     -38.520008,
+     -3.716574
+    ]
+   ]
+  },
+  {
+   "id": "alfandega",
+   "nome": "Ramal do Porto: ramo da Praia de Iracema (rumo a Alfandega)",
+   "confianca": "D",
+   "liga_em": "porto",
+   "comprimento_m": 242,
+   "nota": "Da juncao segue para ENE pela Praia de Iracema, para o lado da Alfandega. O ponto final e onde o traco deixa de ser legivel; a ligacao exata com o predio da Alfandega e HIPOTESE.",
+   "tracado": [
+    [
+     -38.520476,
+     -3.720677
+    ],
+    [
+     -38.520218,
+     -3.720491
+    ],
+    [
+     -38.519964,
+     -3.72031
+    ],
+    [
+     -38.519682,
+     -3.720184
+    ],
+    [
+     -38.519239,
+     -3.720123
+    ],
+    [
+     -38.518835,
+     -3.720101
+    ],
+    [
+     -38.51845,
+     -3.72009
+    ]
+   ]
+  },
+  {
+   "id": "quebramar",
+   "nome": "Linha ao longo da margem leste do Poco da Draga ate o quebra-mar (muralha Hawkshaw)",
+   "confianca": "D",
+   "liga_em": "porto",
+   "comprimento_m": 674,
+   "nota": "Linha tracejada que contorna a ponta leste do Poco da Draga e segue em reta para NW ate o mar, sobre a muralha/quebra-mar. Desenhada na planta (D); que tivesse trilho em servico em 1932 e HIPOTESE (a pesquisa ja levantava isso).",
+   "tracado": [
+    [
+     -38.520476,
+     -3.720677
+    ],
+    [
+     -38.520411,
+     -3.720275
+    ],
+    [
+     -38.520367,
+     -3.719871
+    ],
+    [
+     -38.520363,
+     -3.719601
+    ],
+    [
+     -38.52039,
+     -3.719332
+    ],
+    [
+     -38.520478,
+     -3.718889
+    ],
+    [
+     -38.520594,
+     -3.7185
+    ],
+    [
+     -38.520707,
+     -3.718257
+    ],
+    [
+     -38.520844,
+     -3.718086
+    ],
+    [
+     -38.521025,
+     -3.717964
+    ],
+    [
+     -38.521233,
+     -3.717888
+    ],
+    [
+     -38.521541,
+     -3.717831
+    ],
+    [
+     -38.521805,
+     -3.717778
+    ],
+    [
+     -38.522279,
+     -3.717637
+    ],
+    [
+     -38.522714,
+     -3.717519
+    ],
+    [
+     -38.523151,
+     -3.717412
+    ],
+    [
+     -38.523635,
+     -3.71731
+    ],
+    [
+     -38.524098,
+     -3.717225
+    ]
+   ]
+  }
+ ],
+ "patios": [
+  {
+   "id": "patio_central",
+   "nome": "Patio da Estacao Central e feixe de linhas de Moura Brasil (area ferroviaria ao norte da estacao)",
+   "confianca": "D",
+   "poligono": [
+    [
+     -38.541925,
+     -3.719039
+    ],
+    [
+     -38.539727,
+     -3.719217
+    ],
+    [
+     -38.537381,
+     -3.719742
+    ],
+    [
+     -38.535596,
+     -3.720189
+    ],
+    [
+     -38.533814,
+     -3.720564
+    ],
+    [
+     -38.532062,
+     -3.720811
+    ],
+    [
+     -38.530388,
+     -3.720839
+    ],
+    [
+     -38.529053,
+     -3.721155
+    ],
+    [
+     -38.528926,
+     -3.721907
+    ],
+    [
+     -38.530369,
+     -3.721743
+    ],
+    [
+     -38.53161,
+     -3.721722
+    ],
+    [
+     -38.533002,
+     -3.721606
+    ],
+    [
+     -38.534649,
+     -3.721252
+    ],
+    [
+     -38.53598,
+     -3.720946
+    ],
+    [
+     -38.537449,
+     -3.720565
+    ],
+    [
+     -38.53967,
+     -3.719958
+    ],
+    [
+     -38.541863,
+     -3.719721
+    ],
+    [
+     -38.541925,
+     -3.719039
+    ]
+   ]
+  },
+  {
+   "id": "oficinas_urubu",
+   "nome": "Recinto das Oficinas da Rede de Viacao Cearense (Urubu)",
+   "confianca": "D",
+   "poligono": [
+    [
+     -38.570176,
+     -3.712955
+    ],
+    [
+     -38.566774,
+     -3.714353
+    ],
+    [
+     -38.565766,
+     -3.717347
+    ],
+    [
+     -38.570594,
+     -3.715234
+    ],
+    [
+     -38.571013,
+     -3.714239
+    ],
+    [
+     -38.570176,
+     -3.712955
+    ]
+   ]
+  }
+ ],
+ "verificacao_lotes": {
+  "tronco": {
+   "frac_em_lotes": 0.1253,
+   "m_em_lotes": 214,
+   "trechos_maiores_15m": [
+    {
+     "de_m": 385,
+     "ate_m": 441,
+     "comprimento_m": 57,
+     "centro_lonlat": [
+      -38.533062,
+      -3.72131
+     ]
+    },
+    {
+     "de_m": 510,
+     "ate_m": 563,
+     "comprimento_m": 54,
+     "centro_lonlat": [
+      -38.534155,
+      -3.721085
+     ]
+    },
+    {
+     "de_m": 572,
+     "ate_m": 623,
+     "comprimento_m": 52,
+     "centro_lonlat": [
+      -38.534692,
+      -3.720973
+     ]
+    },
+    {
+     "de_m": 637,
+     "ate_m": 687,
+     "comprimento_m": 51,
+     "centro_lonlat": [
+      -38.53526,
+      -3.720871
+     ]
+    }
+   ]
+  },
+  "sul": {
+   "frac_em_lotes": 0.0,
+   "m_em_lotes": 0,
+   "trechos_maiores_15m": []
+  },
+  "norte": {
+   "frac_em_lotes": 0.0,
+   "m_em_lotes": 0,
+   "trechos_maiores_15m": []
+  },
+  "oficinas": {
+   "frac_em_lotes": 0.0,
+   "m_em_lotes": 0,
+   "trechos_maiores_15m": []
+  },
+  "desvio_oficinas": {
+   "frac_em_lotes": 0.0,
+   "m_em_lotes": 0,
+   "trechos_maiores_15m": []
+  },
+  "porto": {
+   "frac_em_lotes": 0.0859,
+   "m_em_lotes": 113,
+   "trechos_maiores_15m": [
+    {
+     "de_m": 903,
+     "ate_m": 925,
+     "comprimento_m": 23,
+     "centro_lonlat": [
+      -38.523908,
+      -3.721403
+     ]
+    },
+    {
+     "de_m": 931,
+     "ate_m": 950,
+     "comprimento_m": 20,
+     "centro_lonlat": [
+      -38.523668,
+      -3.721362
+     ]
+    },
+    {
+     "de_m": 1097,
+     "ate_m": 1159,
+     "comprimento_m": 63,
+     "centro_lonlat": [
+      -38.521991,
+      -3.721241
+     ]
+    }
+   ]
+  },
+  "ponte": {
+   "frac_em_lotes": 0.0,
+   "m_em_lotes": 0,
+   "trechos_maiores_15m": []
+  },
+  "alfandega": {
+   "frac_em_lotes": 0.0537,
+   "m_em_lotes": 13,
+   "trechos_maiores_15m": []
+  },
+  "quebramar": {
+   "frac_em_lotes": 0.0,
+   "m_em_lotes": 0,
+   "trechos_maiores_15m": []
+  }
+ }
+}

@@ -94,7 +94,10 @@ describe('dados do mapa de 1932', () => {
     const ramal = TRILHOS.find((t) => t.nome.includes('Urubu'));
     expect(ramal).toBeTruthy();
     const [ex, ez] = ll(-38.5302, -3.7219);
-    expect(Math.hypot(ramal.traco[0][0] - ex, ramal.traco[0][1] - ez)).toBeLessThan(60);
+    // Desde 22/10/2026 a linha é a da Planta de 1931-1932 (ferrovia1932.json) e começa na ponta leste do pátio,
+    // atrás da Estação; e o centro está em 1:1 (decisão do Joabe). Os 60 un eram do mundo comprimido (~2,98 m/un
+    // na Estação): os mesmos ~180 m de verdade, que agora são 180 un
+    expect(Math.hypot(ramal.traco[0][0] - ex, ramal.traco[0][1] - ez)).toBeLessThan(180);
     const fim = ramal.traco[ramal.traco.length - 1];
     // O fim do ramal chega à cerca do campo. Até 21/10/2026 a medida era "a menos de 700 unidades do
     // primeiro canto da cerca", num campo comprimido ~9 vezes; com o campo em tamanho real (decisão do
