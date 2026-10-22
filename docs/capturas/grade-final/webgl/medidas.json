@@ -1,0 +1,62 @@
+{
+ "coluna-9h30": {
+  "pico_antes": 2.11,
+  "em_antes": 0.302,
+  "pico_depois": 1.08,
+  "em_depois": 0.267
+ },
+ "rua-9h30": {
+  "pico_antes": 5.41,
+  "em_antes": 0.298,
+  "pico_depois": 1.17,
+  "em_depois": 0.318
+ },
+ "passeio-9h30": {
+  "pico_antes": 3.73,
+  "em_antes": 0.302,
+  "pico_depois": 1.12,
+  "em_depois": 0.259
+ },
+ "leoes-9h30": {
+  "pico_antes": 2.35,
+  "em_antes": 0.282,
+  "pico_depois": 1.07,
+  "em_depois": 0.329
+ },
+ "tigre-9h30": {
+  "pico_antes": 5.83,
+  "em_antes": 0.298,
+  "pico_depois": 1.42,
+  "em_depois": 0.333
+ },
+ "coluna-15h": {
+  "pico_antes": 4.81,
+  "em_antes": 0.298,
+  "pico_depois": 1.15,
+  "em_depois": 0.294
+ },
+ "rua-15h": {
+  "pico_antes": 2.2,
+  "em_antes": 0.29,
+  "pico_depois": 1.14,
+  "em_depois": 0.271
+ },
+ "passeio-15h": {
+  "pico_antes": 3.5,
+  "em_antes": 0.298,
+  "pico_depois": 1.07,
+  "em_depois": 0.282
+ },
+ "leoes-15h": {
+  "pico_antes": 7.52,
+  "em_antes": 0.282,
+  "pico_depois": 1.27,
+  "em_depois": 0.282
+ },
+ "tigre-15h": {
+  "pico_antes": 2.06,
+  "em_antes": 0.298,
+  "pico_depois": 1.16,
+  "em_depois": 0.263
+ }
+}
