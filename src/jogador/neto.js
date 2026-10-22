@@ -19,18 +19,23 @@ const PERSONAGEM = { opacity: 0.5, blending: THREE.NoBlending, semCache: true } 
 
 function materialPara(malha) {
   const nome = (malha.material?.name || malha.name).toLowerCase()
+  // o arquivo pode trazer as peças como casca (no v6 a roupa é uma superfície em cima da pele): o lado
+  // duplo do autor precisa ficar, senão a borda da peça abre buraco
+  const lado = malha.material?.side === THREE.DoubleSide ? { side: THREE.DoubleSide } : {}
   if (malha.material?.map && !malha.geometry.attributes.color && (malha.userData.tripo || malha.geometry.attributes.position.count > 5000)) {
     // modelo inteiro numa textura pintada (Tripo): a textura é a cor
     const map = malha.material.map
     map.colorSpace = THREE.SRGBColorSpace
-    return toon('#ffffff', { ...PERSONAGEM, map })
+    return toon('#ffffff', { ...PERSONAGEM, ...lado, map })
   }
-  if (nome.includes('camisa')) return toonVertice({ opacity: 0.5, blending: THREE.NoBlending }) // listras nos vértices
+  if (nome.includes('camisa')) return toonVertice({ opacity: 0.5, blending: THREE.NoBlending, ...lado }) // listras nos vértices
   if (nome.includes('labio')) return toon(COR.labios, PERSONAGEM)
   if (nome.includes('calca')) return toon(COR.calca, PERSONAGEM)
   if (nome.includes('cabelo') || nome.includes('short')) return toon(COR.cabelo, PERSONAGEM)
   if (nome.includes('pelos') || nome.includes('eyebrow') || nome.includes('eyelash')) return toon(COR.pelos, PERSONAGEM)
-  if (malha.material?.map) return toon('#ffffff', { ...PERSONAGEM, map: malha.material.map }) // olhos
+  if (malha.material?.map) return toon('#ffffff', { ...PERSONAGEM, ...lado, map: malha.material.map }) // olhos
+  // pele sem textura, mas com a cor pintada nos vértices (o tronco do v6): a cor vem do vértice
+  if (malha.geometry.attributes.color) return toonVertice({ opacity: 0.5, blending: THREE.NoBlending, ...lado })
   return toon(COR.pele, PERSONAGEM)
 }
 

@@ -7,6 +7,9 @@ import { globais } from '../globais.js'
 import { linhaCosta, rioX } from './mapa.js'
 import { SAIDA_LUZ } from '../materiais.js'
 import { amostraAlvo, funcoes } from '../render/gpu/comum.js'
+import { CRISTA } from './toque.js'
+
+const f = (v) => v.toFixed(4) // número para o GLSL
 
 const vert = /* glsl */ `
 varying vec3 vMundo;
@@ -21,7 +24,7 @@ uniform sampler2D tAltura; uniform vec4 uMapa; uniform vec2 uMapaTam;
 uniform float uTempo; uniform vec3 uCorFundo; uniform vec3 uCorRaso; uniform vec3 uCorEspuma;
 uniform vec3 uSolDir; uniform vec3 uSolCor; uniform vec3 uAmbiente; uniform float uNoite; uniform float uOndas;
 uniform float uRio; uniform float uCostaRio; uniform float uRioX;
-uniform sampler2D tOnda; uniform vec2 uToqueCentro; uniform float uToqueArea;
+uniform sampler2D tOnda; uniform vec2 uOndaCentro; uniform float uOndaArea;
 uniform vec3 uNevoaCor; uniform float uNevoaPerto; uniform float uNevoaLonge;
 varying vec3 vMundo;
 ${SAIDA_LUZ}
@@ -60,11 +63,11 @@ void main() {
   cor = mix(cor, uCorEspuma, max(espuma, borda * dentro));
 
   // ondinhas de quem entrou na água: crista clara, cava um pouco mais escura
-  vec2 uvO = (vMundo.xz - uToqueCentro) / uToqueArea + 0.5;
+  vec2 uvO = (vMundo.xz - uOndaCentro) / uOndaArea + 0.5;
   float ondinha = 0.0;
   if (uvO.x > 0.0 && uvO.x < 1.0 && uvO.y > 0.0 && uvO.y < 1.0) ondinha = texture2D(tOnda, uvO).r;
-  // só a crista do anel fica clara (faixa fina), como traço de espuma desenhado
-  float crista = smoothstep(0.04, 0.08, ondinha) * (1.0 - smoothstep(0.22, 0.4, ondinha));
+  // só a crista do anel fica clara (faixa fina), como traço de espuma desenhado (CRISTA, toque.js)
+  float crista = smoothstep(${f(CRISTA.de)}, ${f(CRISTA.cheia)}, ondinha) * (1.0 - smoothstep(${f(CRISTA.some)}, ${f(CRISTA.fim)}, ondinha));
   cor = mix(cor, uCorEspuma, crista * 0.85);
   cor *= 1.0 - smoothstep(0.03, 0.14, -ondinha) * 0.18;
 
@@ -117,10 +120,10 @@ function marTsl({ W, ref }, u) {
   const borda = float(1.0).sub(smoothstep(0.05, sin(t.mul(1.3).add(vMundo.x.mul(0.07))).mul(0.15).add(0.35), prof))
   cor = mix(cor, U.uCorEspuma, max(espuma, borda.mul(dentro)))
   // ondinhas de quem entrou na água
-  const uvO = vMundo.xz.sub(U.uToqueCentro).div(U.uToqueArea).add(0.5)
+  const uvO = vMundo.xz.sub(U.uOndaCentro).div(U.uOndaArea).add(0.5)
   const dentroO = uvO.x.greaterThan(0.0).and(uvO.x.lessThan(1.0)).and(uvO.y.greaterThan(0.0)).and(uvO.y.lessThan(1.0))
   const ondinha = dentroO.select(amostraAlvo(u.tOnda, uvO).x, float(0.0))
-  const crista = smoothstep(0.04, 0.08, ondinha).mul(float(1.0).sub(smoothstep(0.22, 0.4, ondinha)))
+  const crista = smoothstep(CRISTA.de, CRISTA.cheia, ondinha).mul(float(1.0).sub(smoothstep(CRISTA.some, CRISTA.fim, ondinha)))
   cor = mix(cor, U.uCorEspuma, crista.mul(0.85))
   cor = cor.mul(float(1.0).sub(smoothstep(0.03, 0.14, ondinha.negate()).mul(0.18)))
   // brilho do sol
@@ -155,7 +158,7 @@ export function criarMar(cena, mapaAltura, cfg, toque) {
     uRio: { value: 1 },
     uCostaRio: { value: linhaCosta(rioX(0)) },
     uRioX: { value: rioX(300) },
-    tOnda: toque.tOnda, uToqueCentro: toque.uToqueCentro, uToqueArea: toque.uToqueArea,
+    tOnda: toque.tOnda, uOndaCentro: toque.uOndaCentro, uOndaArea: toque.uOndaArea,
     uSolDir: globais.uSolDir,
     uSolCor: globais.uSolCor,
     uAmbiente: globais.uAmbiente,

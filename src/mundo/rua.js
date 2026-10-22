@@ -1,5 +1,5 @@
-// Fase 3: rua habitada. Postes de concreto com fiação emaranhada,
-// bancos e lixeiras no calçadão, carrinhos de tapioca e de água de coco, placas azuis,
+// Fase 3: rua habitada. Lampiões a gás de coluna nas ruas (até 22/10/2026, postes de madeira com
+// fiação), bancos e lixeiras no calçadão, carrinhos de tapioca e de água de coco, placas azuis,
 // bancas de revista e varais nas lajes da favela.
 
 import * as THREE from 'three'
@@ -18,6 +18,7 @@ import { toon, toonVertice, texturaCanvas, pintar, gradienteToon, texturizar } f
 import { globais } from '../globais.js'
 import { ref } from '../render/gpu/comum.js'
 import { adicionarCaixa, adicionarCirculo } from './colisao.js'
+import { registrarLampiaoColuna } from './cenografia.js'
 import { ocupacao } from './ocupacao.js'
 import { criarAleatorio } from '../utils.js'
 import { instanciarEmBlocos } from './blocos.js'
@@ -49,8 +50,10 @@ function colorir(geo, hex) {
 const tangenteCosta = (x) => -Math.atan((linhaCosta(x + 1) - linhaCosta(x - 1)) / 2)
 const pertoDoRio = (x, z, folga = 1.6) => pesos(x).recife > 0.3 && Math.abs(x - rioX(z)) < RIO_MEIA_LARGURA * folga
 
-// ---------- postes e fiação ----------
+// ---------- lampiões das ruas ----------
 
+// o poste de madeira com cruzeta: saiu das ruas do jogo em 22/10/2026 (virou lampião a gás); fica para a
+// cidade de estresse (src/debug/cidade.js), que só mede densidade
 export function geometriaPoste() {
   const haste = new THREE.CylinderGeometry(0.11, 0.2, 9, 4).rotateY(Math.PI / 4).translate(0, 4.5, 0)
   const cruzeta = new THREE.BoxGeometry(1.8, 0.14, 0.14).translate(0, 8.3, 0)
@@ -107,21 +110,23 @@ function geometriaFios(fios, raio = 0.028) {
   return g
 }
 
-// 1932: postes de madeira nas ruas do centro, com o fio suspenso do bonde (a
-// The Ceará Tramway Light & Power roda bondes elétricos desde 1913) e o fio do
-// telégrafo. A iluminação pública das ruas era a gás, lampião em braço de
-// ferro na fachada (src/mundo/cenografia.js).
+// 1932: a iluminação pública de Fortaleza era a GÁS até 25/10/1935 (docs/mapa-1932.md): lampião de coluna
+// de ferro nas ruas, a uns 30 m um do outro, além do de braço na fachada (src/mundo/cenografia.js).
+// Até 22/10/2026 aqui havia postes de madeira com cruzeta e dois fios em toda rua, que liam como poste de luz
+// elétrica; decisão do Joabe: viram lampiões a gás. O poste e o fio aéreo do bonde elétrico (a Light roda
+// bondes desde 1913) ficam, só sobre o trilho (src/mundo/vida1932.js).
 // Nada de poste de concreto, transformador ou "gato" (saíram em 16/10/2026).
-function postesEFios(cena, predios, grade) {
+function lampioesDasRuas(cena, predios, grade) {
   const favela = []
   void grade
-  // Os postes ficam nas ruas de verdade: a linha da frente dos lotes de 1932, que
-  // e a propria rede viaria da planta. Um poste a cada ~10 unidades (uns 30 m de
-  // rua), na beira do calco, e os fios de luz e de bonde ligam um ao outro.
+  // Os lampiões ficam nas ruas de verdade: a linha da frente dos lotes de 1932, que
+  // e a propria rede viaria da planta. Um a cada ~10 unidades (uns 30 m de
+  // rua), na beira do calco.
   // O passo e o recuo seguem a escala local da rua: perto da praca (que foi
   // descomprimida para 1:1) 10 unidades sao 10 m de verdade, e o poste tem de
   // ficar a uns 30 m do outro como em qualquer rua.
   const linhas = []
+  const pontos = [] // cada ponto aceito, uma vez (as linhas abaixo repetem e perdem pontos: ver o fim)
   for (const rua of RUAS) {
     const comp = comprimentoRua(rua)
     const [mx, mz] = pontoNaRua(rua, Math.min(comp / 2, 40))
@@ -146,53 +151,30 @@ function postesEFios(cena, predios, grade) {
         if (!ok) continue
       }
       ultimoD = d
-      atual.push(new THREE.Vector3(px, alturaTerreno(px, pz), pz))
+      const p = new THREE.Vector3(px, alturaTerreno(px, pz), pz)
+      atual.push(p)
+      pontos.push(p)
     }
     if (atual.length > 1) linhas.push(atual)
   }
   void predios
 
-  const postes = []
-  const fios = []
-  const topo = (p, k) => new THREE.Vector3(p.x + (k - 1) * 0.75, p.y + 8.35, p.z)
+  // As linhas eram as dos fios entre postes. Elas guardam a mesma lista (atual) várias vezes e a esvaziam
+  // na quebra, então só o último trecho de cada rua sobrava, repetido. O lampião não tem fio: entra em cada
+  // ponto aceito. Os sorteios dos postes e dos fios continuam iguais (yaw por poste, flecha por fio), para o
+  // resto da rua (bancos do calçadão, varais) sair no mesmo lugar de antes.
   for (const linha of linhas) {
-    // o poste e reto: o yaw e um multiplo de 45 graus, senao a haste de quatro
-    // faces (que esta girada de 45) parece torta
-    linha.forEach((p) => postes.push({ p, yaw: Math.floor(rnd.entre(0, 4)) * (Math.PI / 4) }))
-    for (let i = 0; i < linha.length - 1; i++) {
-      const a = linha[i]
-      const b = linha[i + 1]
-      for (let k = 0; k < 2; k++) fios.push(catenaria(topo(a, k * 2), topo(b, k * 2), rnd.entre(0.4, 0.8)))
-    }
+    linha.forEach(() => rnd.entre(0, 4))
+    for (let i = 0; i < linha.length - 1; i++) for (let k = 0; k < 2; k++) rnd.entre(0.4, 0.8)
   }
-  // A praça não tem poste de luz: em 1932 a iluminação dela ainda era a gás, e o
-  // lampião de ferro fica no limite da praça (src/mundo/praca.js). O anel de
-  // postes da Light com fio dando a volta era anacrônico — a energia elétrica só
-  // chegou à Praça do Ferreira em 8/dez/1934 — e o fio dele cortava a praça em
-  // diagonal por causa do "braço" falso do contorno.
-  for (const p of favela) {
-    postes.push({ p, yaw: 0 })
-    const vizinhos = favela.filter((q) => q !== p).sort((u, v) => u.distanceToSquared(p) - v.distanceToSquared(p)).slice(0, 2)
-    for (const q of vizinhos) {
-      if (q.distanceTo(p) > 40) continue
-      for (let k = 0; k < 2 + Math.floor(rnd.entre(0, 3)); k++) fios.push(catenaria(topo(p, k % 3), topo(q, (k + 1) % 3), rnd.entre(0.6, 2.5)))
-    }
-    // "gatos": fios do poste para as casas em volta
-    const casas = predios.filter((c) => c.tipo === 'favela' && Math.abs(c.x - p.x) < 14 && Math.abs(c.z - p.z) < 14)
-    for (const c of casas.slice(0, 4)) {
-      fios.push(catenaria(topo(p, rnd.chance(0.5) ? 0 : 2), new THREE.Vector3(c.x, c.y + c.h - 0.3, c.z), rnd.entre(0.4, 1.4), 6))
-    }
+  // A praça não tem lampião de rua: o de ferro dela fica no limite da praça (src/mundo/praca.js). A energia
+  // elétrica só chegou à Praça do Ferreira em 8/dez/1934.
+  const postes = pontos.map((p) => ({ p }))
+  for (const { p } of postes) {
+    registrarLampiaoColuna(p.x, p.y, p.z)
+    adicionarCirculo(p.x, p.z, 0.25)
   }
-
-  const matrizes = postes.map(({ p, yaw }) => matriz(p.x, p.y - 0.3, p.z, yaw))
-  postes.forEach(({ p }) => adicionarCirculo(p.x, p.z, 0.25))
-  instanciar(cena, geometriaPoste(), toonVertice(), matrizes, null, 'postes', { peso: 0.6 })
-
-  const malhaFios = new THREE.Mesh(geometriaFios(fios), toon('#231a33'))
-  malhaFios.name = 'fios'
-  malhaFios.userData.peso = 0.5
-  cena.add(malhaFios)
-
+  void favela
   return { postes }
 }
 
@@ -383,7 +365,7 @@ function varais(cena, predios) {
 }
 
 export function criarRua(cena, predios, grade) {
-  postesEFios(cena, predios, grade)
+  lampioesDasRuas(cena, predios, grade)
   const lugares = calcadao(cena)
   varais(cena, predios)
   return lugares

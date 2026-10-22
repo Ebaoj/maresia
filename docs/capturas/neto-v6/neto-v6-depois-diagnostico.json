@@ -1,0 +1,961 @@
+{
+ "modelo": "neto-v6",
+ "diagnostico": {
+  "modelo": "neto-v6",
+  "renderizador": "webgpu",
+  "webgpu": true,
+  "temAnimador": true,
+  "temRosto": false,
+  "temMolas": true,
+  "temDobras": true,
+  "temBanco": true,
+  "raizesMultiplos": 2,
+  "clipes": [
+   "parado",
+   "olhando",
+   "andar",
+   "correr",
+   "disparada",
+   "pulo-subida",
+   "pulo-queda",
+   "pulo-pouso",
+   "sentar",
+   "sentado",
+   "levantar",
+   "carregar-andando",
+   "carregar-parado",
+   "boiar",
+   "nadar",
+   "empurrar",
+   "mm:mm-parado:A",
+   "mm:mm-parado:B",
+   "mm:mm-andar:A",
+   "mm:mm-andar:B",
+   "mm:mm-andar-padrao:A",
+   "mm:mm-andar-padrao:B",
+   "mm:mm-correr:A",
+   "mm:mm-correr:B",
+   "mm:mm-trote:A",
+   "mm:mm-trote:B",
+   "mm:mm-disparada:A",
+   "mm:mm-disparada:B",
+   "mm:mm-arrancar:A",
+   "mm:mm-arrancar:B",
+   "mm:mm-arrancar-esp:A",
+   "mm:mm-arrancar-esp:B",
+   "mm:mm-parar-andando:A",
+   "mm:mm-parar-andando:B",
+   "mm:mm-parar-andando-esp:A",
+   "mm:mm-parar-andando-esp:B",
+   "mm:mm-parar-correndo:A",
+   "mm:mm-parar-correndo:B",
+   "mm:mm-parar-correndo-esp:A",
+   "mm:mm-parar-correndo-esp:B",
+   "mm:mm-curva-andando:A",
+   "mm:mm-curva-andando:B",
+   "mm:mm-curva-andando-esp:A",
+   "mm:mm-curva-andando-esp:B",
+   "mm:mm-volta-andando:A",
+   "mm:mm-volta-andando:B",
+   "mm:mm-volta-andando-esp:A",
+   "mm:mm-volta-andando-esp:B",
+   "mm:mm-volta-correndo:A",
+   "mm:mm-volta-correndo:B",
+   "mm:mm-volta-correndo-esp:A",
+   "mm:mm-volta-correndo-esp:B",
+   "mm:mm-virar-esq:A",
+   "mm:mm-virar-esq:B",
+   "mm:mm-virar-dir:A",
+   "mm:mm-virar-dir:B"
+  ],
+  "ossos": 65,
+  "dedos": 40,
+  "cameraDistancia": 3.2,
+  "malhas": [
+   {
+    "nome": "neto-calca001",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": false,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 13968,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-calca001_1",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": false,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 14532,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-camisa002",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": false,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 8404,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-camisa002_1",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": false,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 11648,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-corpo-continuo_1",
+    "luzMRT": true,
+    "mapa": false,
+    "coresVertice": true,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 4623,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-corpo-continuo_2",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": true,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 6920,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-corpo-continuo_3",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": true,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 46397,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-corpo-continuo_4",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": true,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 29002,
+    "ossos": 65
+   },
+   {
+    "nome": "neto-corpo-continuo_5",
+    "luzMRT": true,
+    "mapa": true,
+    "coresVertice": true,
+    "lado": 2,
+    "sombra": [
+     true,
+     true
+    ],
+    "vertices": 25390,
+    "ossos": 65
+   }
+  ]
+ },
+ "medidas": [
+  {
+   "movimento": "andar",
+   "angulo": "frente",
+   "rotulo": 2.6,
+   "minimo": -0.0206,
+   "penetracaoCm": 2.1,
+   "dentro": 401,
+   "total": 9712,
+   "folgaMediana": 0.0299,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0206,
+    "regiao": "torso",
+    "osso": "Hips",
+    "peca": "neto-camisa002_1",
+    "pos": [
+     680.43,
+     1.493,
+     -19.151
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "frente",
+   "rotulo": 3.6,
+   "minimo": -0.0161,
+   "penetracaoCm": 1.6,
+   "dentro": 359,
+   "total": 9712,
+   "folgaMediana": 0.0296,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0161,
+    "regiao": "torso",
+    "osso": "RightUpLeg",
+    "peca": "neto-camisa002",
+    "pos": [
+     681.8,
+     1.542,
+     -18.135
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "frente",
+   "rotulo": 4.4,
+   "minimo": -0.0147,
+   "penetracaoCm": 1.5,
+   "dentro": 317,
+   "total": 9712,
+   "folgaMediana": 0.0296,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0147,
+    "regiao": "torso",
+    "osso": "Spine2",
+    "peca": "neto-camisa002",
+    "pos": [
+     682.845,
+     1.882,
+     -17.426
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "lado",
+   "rotulo": 2.6,
+   "minimo": -0.0229,
+   "penetracaoCm": 2.3,
+   "dentro": 477,
+   "total": 9711,
+   "folgaMediana": 0.0293,
+   "peleAmostrada": 56167,
+   "semVizinho": 1,
+   "pior": {
+    "sinal": -0.0229,
+    "regiao": "bracos",
+    "osso": "RightShoulder",
+    "peca": "neto-camisa002_1",
+    "pos": [
+     680.105,
+     1.87,
+     -18.272
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "lado",
+   "rotulo": 3.6,
+   "minimo": -0.0155,
+   "penetracaoCm": 1.6,
+   "dentro": 343,
+   "total": 9712,
+   "folgaMediana": 0.0298,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0155,
+    "regiao": "torso",
+    "osso": "Spine2",
+    "peca": "neto-camisa002",
+    "pos": [
+     680.339,
+     1.905,
+     -16.589
+    ]
+   }
+  },
+  {
+   "movimento": "andar",
+   "angulo": "lado",
+   "rotulo": 4.4,
+   "minimo": -0.0161,
+   "penetracaoCm": 1.6,
+   "dentro": 301,
+   "total": 9712,
+   "folgaMediana": 0.0298,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0161,
+    "regiao": "pernas",
+    "osso": "RightUpLeg",
+    "peca": "neto-calca001",
+    "pos": [
+     680.489,
+     1.598,
+     -15.339
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "frente",
+   "rotulo": 2.6,
+   "minimo": -0.027,
+   "penetracaoCm": 2.7,
+   "dentro": 411,
+   "total": 9712,
+   "folgaMediana": 0.0291,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.027,
+    "regiao": "bracos",
+    "osso": "RightArm",
+    "peca": "neto-camisa002",
+    "pos": [
+     682.858,
+     1.884,
+     -17.252
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "frente",
+   "rotulo": 3.6,
+   "minimo": -0.031,
+   "penetracaoCm": 3.1,
+   "dentro": 425,
+   "total": 9712,
+   "folgaMediana": 0.029,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.031,
+    "regiao": "torso",
+    "osso": "LeftUpLeg",
+    "peca": "neto-camisa002",
+    "pos": [
+     686.05,
+     1.692,
+     -15.078
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "frente",
+   "rotulo": 4.4,
+   "minimo": -0.0207,
+   "penetracaoCm": 2.1,
+   "dentro": 332,
+   "total": 9712,
+   "folgaMediana": 0.0292,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0207,
+    "regiao": "torso",
+    "osso": "LeftUpLeg",
+    "peca": "neto-camisa002",
+    "pos": [
+     688.5,
+     1.838,
+     -13.185
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "lado",
+   "rotulo": 2.6,
+   "minimo": -0.0266,
+   "penetracaoCm": 2.7,
+   "dentro": 411,
+   "total": 9712,
+   "folgaMediana": 0.0291,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0266,
+    "regiao": "pernas",
+    "osso": "LeftLeg",
+    "peca": "neto-calca001_1",
+    "pos": [
+     680.445,
+     1.397,
+     -16.746
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "lado",
+   "rotulo": 3.6,
+   "minimo": -0.0185,
+   "penetracaoCm": 1.9,
+   "dentro": 355,
+   "total": 9712,
+   "folgaMediana": 0.0295,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0185,
+    "regiao": "pernas",
+    "osso": "RightLeg",
+    "peca": "neto-calca001_1",
+    "pos": [
+     680.797,
+     1.481,
+     -13.014
+    ]
+   }
+  },
+  {
+   "movimento": "correr",
+   "angulo": "lado",
+   "rotulo": 4.4,
+   "minimo": -0.0247,
+   "penetracaoCm": 2.5,
+   "dentro": 407,
+   "total": 9712,
+   "folgaMediana": 0.0293,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0247,
+    "regiao": "bracos",
+    "osso": "RightArm",
+    "peca": "neto-camisa002",
+    "pos": [
+     681.287,
+     2.274,
+     -10.463
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 2.4,
+   "minimo": -0.0239,
+   "penetracaoCm": 2.4,
+   "dentro": 369,
+   "total": 9712,
+   "folgaMediana": 0.0293,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0239,
+    "regiao": "torso",
+    "osso": "Spine",
+    "peca": "neto-camisa002_1",
+    "pos": [
+     679.347,
+     1.473,
+     -19.698
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 3.2,
+   "minimo": -0.0348,
+   "penetracaoCm": 3.5,
+   "dentro": 408,
+   "total": 9712,
+   "folgaMediana": 0.03,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0348,
+    "regiao": "torso",
+    "osso": "Hips",
+    "peca": "neto-camisa002_1",
+    "pos": [
+     679.596,
+     1.518,
+     -19.55
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 4,
+   "minimo": -0.0171,
+   "penetracaoCm": 1.7,
+   "dentro": 357,
+   "total": 9712,
+   "folgaMediana": 0.0295,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0171,
+    "regiao": "pernas",
+    "osso": "RightUpLeg",
+    "peca": "neto-calca001",
+    "pos": [
+     679.421,
+     1.392,
+     -19.699
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 4.8,
+   "minimo": -0.0159,
+   "penetracaoCm": 1.6,
+   "dentro": 335,
+   "total": 9712,
+   "folgaMediana": 0.0294,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0159,
+    "regiao": "torso",
+    "osso": "Spine2",
+    "peca": "neto-camisa002",
+    "pos": [
+     679.198,
+     1.798,
+     -19.575
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "frente",
+   "rotulo": 5.6,
+   "minimo": -0.025,
+   "penetracaoCm": 2.5,
+   "dentro": 390,
+   "total": 9701,
+   "folgaMediana": 0.0298,
+   "peleAmostrada": 56167,
+   "semVizinho": 11,
+   "pior": {
+    "sinal": -0.025,
+    "regiao": "pernas",
+    "osso": "RightUpLeg",
+    "peca": "neto-calca001",
+    "pos": [
+     679.65,
+     1.462,
+     -19.597
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 2.4,
+   "minimo": -0.031,
+   "penetracaoCm": 3.1,
+   "dentro": 371,
+   "total": 9712,
+   "folgaMediana": 0.0294,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.031,
+    "regiao": "torso",
+    "osso": "Spine",
+    "peca": "neto-calca001_1",
+    "pos": [
+     679.961,
+     1.545,
+     -18.955
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 3.2,
+   "minimo": -0.0241,
+   "penetracaoCm": 2.4,
+   "dentro": 388,
+   "total": 9712,
+   "folgaMediana": 0.0298,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0241,
+    "regiao": "pernas",
+    "osso": "RightUpLeg",
+    "peca": "neto-calca001",
+    "pos": [
+     680.006,
+     1.492,
+     -19.213
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 4,
+   "minimo": -0.017,
+   "penetracaoCm": 1.7,
+   "dentro": 357,
+   "total": 9712,
+   "folgaMediana": 0.0297,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.017,
+    "regiao": "pernas",
+    "osso": "RightUpLeg",
+    "peca": "neto-calca001",
+    "pos": [
+     679.948,
+     1.404,
+     -19.068
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 4.8,
+   "minimo": -0.016,
+   "penetracaoCm": 1.6,
+   "dentro": 336,
+   "total": 9710,
+   "folgaMediana": 0.0295,
+   "peleAmostrada": 56167,
+   "semVizinho": 2,
+   "pior": {
+    "sinal": -0.016,
+    "regiao": "torso",
+    "osso": "Spine2",
+    "peca": "neto-camisa002",
+    "pos": [
+     680.072,
+     1.832,
+     -18.845
+    ]
+   }
+  },
+  {
+   "movimento": "virar",
+   "angulo": "lado",
+   "rotulo": 5.6,
+   "minimo": -0.0251,
+   "penetracaoCm": 2.5,
+   "dentro": 393,
+   "total": 9657,
+   "folgaMediana": 0.0294,
+   "peleAmostrada": 56167,
+   "semVizinho": 55,
+   "pior": {
+    "sinal": -0.0251,
+    "regiao": "pernas",
+    "osso": "RightUpLeg",
+    "peca": "neto-calca001",
+    "pos": [
+     680.05,
+     1.479,
+     -19.297
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "frente",
+   "rotulo": 2.6,
+   "minimo": -0.0228,
+   "penetracaoCm": 2.3,
+   "dentro": 806,
+   "total": 9712,
+   "folgaMediana": 0.0288,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0228,
+    "regiao": "bracos",
+    "osso": "RightShoulder",
+    "peca": "neto-camisa002",
+    "pos": [
+     691.682,
+     -0.344,
+     -54.355
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "frente",
+   "rotulo": 3.8,
+   "minimo": -0.0339,
+   "penetracaoCm": 3.4,
+   "dentro": 990,
+   "total": 9712,
+   "folgaMediana": 0.0292,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0339,
+    "regiao": "bracos",
+    "osso": "RightShoulder",
+    "peca": "neto-camisa002",
+    "pos": [
+     689.418,
+     -0.275,
+     -52.178
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "frente",
+   "rotulo": 5,
+   "minimo": -0.0427,
+   "penetracaoCm": 4.3,
+   "dentro": 980,
+   "total": 9712,
+   "folgaMediana": 0.0293,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0427,
+    "regiao": "torso",
+    "osso": "Hips",
+    "peca": "neto-camisa002",
+    "pos": [
+     687.602,
+     -0.399,
+     -50.153
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "lado",
+   "rotulo": 2.6,
+   "minimo": -0.0279,
+   "penetracaoCm": 2.8,
+   "dentro": 940,
+   "total": 9712,
+   "folgaMediana": 0.029,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0279,
+    "regiao": "bracos",
+    "osso": "RightArm",
+    "peca": "neto-camisa002_1",
+    "pos": [
+     693.887,
+     -0.27,
+     -53.395
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "lado",
+   "rotulo": 3.8,
+   "minimo": -0.0291,
+   "penetracaoCm": 2.9,
+   "dentro": 755,
+   "total": 9712,
+   "folgaMediana": 0.0295,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0291,
+    "regiao": "bracos",
+    "osso": "RightShoulder",
+    "peca": "neto-camisa002",
+    "pos": [
+     693.991,
+     -0.384,
+     -50.265
+    ]
+   }
+  },
+  {
+   "movimento": "nadar",
+   "angulo": "lado",
+   "rotulo": 5,
+   "minimo": -0.0214,
+   "penetracaoCm": 2.1,
+   "dentro": 419,
+   "total": 9712,
+   "folgaMediana": 0.0294,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0214,
+    "regiao": "bracos",
+    "osso": "LeftShoulder",
+    "peca": "neto-camisa002_1",
+    "pos": [
+     694.063,
+     0.089,
+     -47.641
+    ]
+   }
+  },
+  {
+   "movimento": "sentar",
+   "angulo": "frente",
+   "rotulo": 4,
+   "minimo": -0.0226,
+   "penetracaoCm": 2.3,
+   "dentro": 299,
+   "total": 9689,
+   "folgaMediana": 0.0294,
+   "peleAmostrada": 56167,
+   "semVizinho": 23,
+   "pior": {
+    "sinal": -0.0226,
+    "regiao": "torso",
+    "osso": "RightUpLeg",
+    "peca": "neto-camisa002",
+    "pos": [
+     690.078,
+     2.298,
+     -0.986
+    ]
+   }
+  },
+  {
+   "movimento": "sentar",
+   "angulo": "frente",
+   "rotulo": 7,
+   "minimo": -0.0151,
+   "penetracaoCm": 1.5,
+   "dentro": 442,
+   "total": 9712,
+   "folgaMediana": 0.0295,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0151,
+    "regiao": "bracos",
+    "osso": "RightShoulder",
+    "peca": "neto-camisa002_1",
+    "pos": [
+     690.005,
+     2.866,
+     -1.594
+    ]
+   }
+  },
+  {
+   "movimento": "sentar",
+   "angulo": "lado",
+   "rotulo": 4,
+   "minimo": -0.0225,
+   "penetracaoCm": 2.3,
+   "dentro": 279,
+   "total": 9690,
+   "folgaMediana": 0.0294,
+   "peleAmostrada": 56167,
+   "semVizinho": 22,
+   "pior": {
+    "sinal": -0.0225,
+    "regiao": "torso",
+    "osso": "RightUpLeg",
+    "peca": "neto-camisa002",
+    "pos": [
+     690.078,
+     2.297,
+     -0.986
+    ]
+   }
+  },
+  {
+   "movimento": "sentar",
+   "angulo": "lado",
+   "rotulo": 7,
+   "minimo": -0.0151,
+   "penetracaoCm": 1.5,
+   "dentro": 442,
+   "total": 9712,
+   "folgaMediana": 0.0295,
+   "peleAmostrada": 56167,
+   "semVizinho": 0,
+   "pior": {
+    "sinal": -0.0151,
+    "regiao": "bracos",
+    "osso": "RightShoulder",
+    "peca": "neto-camisa002_1",
+    "pos": [
+     690.005,
+     2.866,
+     -1.594
+    ]
+   }
+  }
+ ],
+ "lugares": {
+  "passeio": {
+   "x": 680,
+   "z": -19.646770740180997,
+   "yaw": 1.7014219677028484,
+   "altura": 0.73
+  },
+  "mar": {
+   "x": 694,
+   "z": -56.646770740181,
+   "fundo": -2.28
+  },
+  "banco": {
+   "x": 690,
+   "y": 1.85,
+   "z": -0.8787299491130214,
+   "yaw": 3.272739181772022
+  },
+  "fatia": {
+   "x0": 643.6789650472899,
+   "x1": 743.6789650472899,
+   "z0": -61.60438397692146,
+   "z1": 47.322684832177714,
+   "centro": [
+    693.6789650472899,
+    -21.140849572371874
+   ]
+  }
+ }
+}

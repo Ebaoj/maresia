@@ -144,10 +144,11 @@ export const PADRAO = {
     fpsPose: 12,           // animação "em 2": 12 poses por segundo
     posicaoEm2: false,     // ligado: o corpo inteiro anda em 2 (mais Aranhaverso, mais travado)
     corpoNovo: true,       // esqueleto padrão com os movimentos do Mixamo (jogador/corpo.js); desligado = boneco antigo
-    // corpo do jogador: 'neto-tripo' (o menino do Tripo, escolha do Joabe em 17/10/2026), 'neto' (MakeHuman,
+    // corpo do jogador: 'neto-v6' (o corpo novo, de 19/10/2026: tronco e mãos novos, corpo inteiro, roupa
+    // como superfície), 'neto-vestido' (o de 17/10), 'neto-tripo' (o menino do Tripo), 'neto' (MakeHuman,
     // arte/finais/neto-mpfb.glb) ou 'boneco' (cápsulas, para testes); recarregar. Nome novo para o valor salvo
     // no navegador de antes não passar por cima
-    modeloJogador: 'neto-vestido',
+    modeloJogador: 'neto-v6',
     chapeu: false,         // chapéu de palha no neto (o Joabe tirou em 16/10/2026); recarregar
     ombros: 0.9,           // largura dos ombros do neto (1 = como veio do modelo, largo de adulto); recarregar
     folgaCamisa: 0.012,    // folga máxima da camisa sobre a pele no ombro e na manga, em metros (0 = como veio); recarregar
@@ -222,7 +223,8 @@ export const PADRAO = {
   },
   interacao: {
     recuperaGrama: 0.5,    // quão rápido a grama amassada volta a ficar de pé (por segundo)
-    amorteceOnda: 0.985,   // quanto as ondinhas da água duram (mais perto de 1 = mais tempo)
+    amorteceOnda: 0.96,    // quanto das ondinhas sobra a cada 1/60 s (mais perto de 1 = duram mais; 0,96 some em ~2 s)
+    velocidadeOnda: 1.8,   // a que velocidade o anel da água se abre (m/s); até 22/10/2026 eram ~10 m/s e o anel ia a 7 m
     pegadas: true,
     duracaoPegada: 25,     // segundos até a pegada sumir na areia seca
     ventoCoqueiros: 1.0,   // quanto as folhas dos coqueiros e as roupas balançam
@@ -475,6 +477,7 @@ export const PADRAO_MUDOU = [
   ['mundo.marcosNorte.corSe', '#cddbd6', '#bccfc6'], // 21/10/2026: reboco dos marcos, cores refeitas pelos conceitos
   ['mundo.marcosNorte.corSe', '#b7cbc1', '#bccfc6'],
   ['mundo.marcosNorte.corEstacao', '#efe6d2', '#ebdcba'],
+  ['interacao.amorteceOnda', 0.985, 0.96], // 22/10/2026: anéis brancos enormes em volta de quem nada
 ]
 
 export function migrarPadroes(salvo) {

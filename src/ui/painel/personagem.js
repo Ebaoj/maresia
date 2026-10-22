@@ -8,7 +8,7 @@ const ESTILOS_ROSTO = ['atual', 'aranhaverso', 'grande', 'grande-mel', 'grande-o
 export function secaoPersonagem(gui, cfg) {
   const p = cfg.personagem
   const pers = gui.addFolder('Personagem')
-  pers.add(p, 'modeloJogador', ['neto-tripo', 'neto-tripo-partes', 'neto-tripo-p2', 'neto-vestido', 'neto', 'boneco']).name(rec('modelo do jogador'))
+  pers.add(p, 'modeloJogador', ['neto-v6', 'neto-tripo', 'neto-tripo-partes', 'neto-tripo-p2', 'neto-vestido', 'neto', 'boneco']).name(rec('modelo do jogador'))
   // o estilo do rosto troca na hora, sem recarregar
   pers.add(p, 'estiloRostoNeto', ESTILOS_ROSTO).name('estilo do rosto desenhado').onChange((v) => { window.maresia?.jogador?.animador?.rosto?.estilo(v); window.maresia?.avo?.rosto?.estilo(v) })
   pers.add(p, 'rostoNeto').name(rec('rosto desenhado no neto'))
