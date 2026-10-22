@@ -1,0 +1,14 @@
+final-parado-oiti
+  oiti: desvio 1.28 px, pico a pico 10.16 px, frequência dominante 0.27 Hz, tremor entre quadros 0.861 px
+  vizinho1: desvio 0.27 px, pico a pico 1.71 px, frequência dominante 0.14 Hz, tremor entre quadros 0.113 px
+  vizinho2: desvio 0.13 px, pico a pico 0.70 px, frequência dominante 0.14 Hz, tremor entre quadros 0.046 px
+  correlação oiti x vizinho1: 0.26
+  correlação oiti x vizinho2: -0.09
+  correlação vizinho1 x vizinho2: 0.16
+final-parado-passeio
+  ficusA: desvio 0.26 px, pico a pico 2.69 px, frequência dominante 0.14 Hz, tremor entre quadros 0.124 px
+  ficusB: desvio 0.13 px, pico a pico 0.81 px, frequência dominante 0.27 Hz, tremor entre quadros 0.059 px
+  fundoC: desvio 0.07 px, pico a pico 0.35 px, frequência dominante 0.14 Hz, tremor entre quadros 0.024 px
+  correlação ficusA x ficusB: 0.15
+  correlação ficusA x fundoC: 0.16
+  correlação ficusB x fundoC: 0.63

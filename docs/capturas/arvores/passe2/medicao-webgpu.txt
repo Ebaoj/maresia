@@ -1,0 +1,13 @@
+js> {"nome":"final-parado-passeio","quadros":240}
+js> {"nome":"final-parado-oiti","quadros":240}
+js> {"nome":"final-andando-passeio","quadros":240}
+js> {"nome":"final-girando-oiti","quadros":240}
+== depois 23:24  up 5 days,  4:08, 1 user, load averages: 4.40 4.32 3.63
+js> {"n":564,"pixels":"2000x1125","res":{"342,70":{"com":{"ms":20.95,"cpu":12.3},"sem":{"ms":19.56,"cpu":10.51}},"186,452":{"com":{"ms":17.65,"cpu":7.91},"sem":{"ms":17.23,"cpu":7.11}},"109,755":{"com":{"ms":19.75,"cpu":9.26},"sem":{"ms":19.24,"cpu":7.96}}}}
+== antes 23:25  up 5 days,  4:10, 1 user, load averages: 5.65 4.79 3.88
+js> {"n":188,"pixels":"2000x1125","res":{"342,70":{"com":{"ms":23.77,"cpu":10.53},"sem":{"ms":19.32,"cpu":8.93}},"186,452":{"com":{"ms":17.72,"cpu":7.01},"sem":{"ms":17.12,"cpu":6.81}},"109,755":{"com":{"ms":21.07,"cpu":8.12},"sem":{"ms":18.9,"cpu":7.46}}}}
+== depois 23:26  up 5 days,  4:11, 1 user, load averages: 5.03 4.79 3.93
+
+# depois do f0aa120 (leques simples da carnaúba), 23h58
+== depois final 23:58  up 5 days,  4:43, 1 user, load averages: 4.55 4.58 4.26
+js> {"n":588,"pixels":"2000x1125","res":{"342,70":{"com":{"ms":20.65,"cpu":11.36},"sem":{"ms":19.71,"cpu":9.54}},"186,452":{"com":{"ms":17.65,"cpu":7.58},"sem":{"ms":17.3,"cpu":7}},"109,755":{"com":{"ms":19.65,"cpu":8.62},"sem":{"ms":19.1,"cpu":7.74}}}}

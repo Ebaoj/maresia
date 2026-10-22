@@ -102,3 +102,39 @@ uma vez, não seis), e de longe vai só a copa simples (de 160 a 740 triângulos
 - A copa ainda fecha mais que a do conceito (pouco céu dentro); dá para abrir com menos cachos de miolo por espécie.
 - A sombra no chão não balança (a dos parados fica em cache, de propósito).
 - O vento da grama (`grama.js`) continua com a direção própria dele; só árvores e coqueiros usam `cfg.vento`.
+
+## 8. Segundo passe (21/10/2026, revisão do coordenador)
+
+Provas em `docs/capturas/arvores/passe2/`: os três lugares nas duas horas, PASSE 1 em cima, PASSE 2 embaixo e o
+conceito ao lado, nos dois renderizadores; as espécies; `grama-vento.jpg`; os vídeos `vento-*.mp4` (parado no
+Passeio e no oiti, andando sob o renque, girando a câmera em volta do oiti); `tira-30fps-oiti.jpg` (15 quadros
+seguidos, meio segundo em ritmo real); `amplitude-passeio.jpg`; `movimento-medido.txt`; `medicao-webgpu.txt`.
+
+- **Copa nunca preta.** A faixa de sombra do pintor de luz multiplica o albedo por 0,5 e o sertão do meio-dia
+  ainda aprofunda; com a folhagem escura de antes sobrava preto. Resolvido do lado da árvore, sem mexer no pós:
+  paleta `FOLHAGEM` mais clara (luz verde-amarelo quente, meio verde, sombra verde-azulada), preenchimento de céu
+  (frio, por cima) e de chão (quente, por baixo) somado depois das faixas só onde a luz é pouca
+  (`cfg.arvores.preenche`, `preencheCeu`, `preencheChao`), miolo menos fundo (`oclusao` 0,88) e manchas de sol (um em
+  cada cinco ramos de fora e de cima). No WebGPU o preenchimento entra por um gancho novo do pintor de luz
+  (`userData.tsl.luz`).
+- **Céu e lóbulos.** Pernadas mais longas, cachos menores e separados, menos cachos de miolo, borda com mais ruído,
+  menos cartões.
+- **Grama no vento das árvores.** A grama deitava para leste (direção fixa no shader); agora lê `cfg.vento`
+  (direção, força geral e rajadas que passam pelas árvores ao mesmo tempo). Teste `grama-vento.test.js`.
+- **Movimento conferido em vídeo.** Três achados e o que foi feito:
+  1. a textura pintada e a pincelada, projetadas no mundo, ficavam paradas com a copa balançando (escorriam por cima
+     da folha): agora se prendem à posição antes do vento (GLSL e o gancho `userData.tsl.pintura` no WebGPU);
+  2. a fase do tremor era por vértice e deformava cada cartão: agora é pelo centro do cartão, e o tremor ficou mais
+     lento (0,7 a 1 Hz);
+  3. vizinhas não balançam juntas: correlação do deslocamento horizontal entre copas vizinhas de -0,09 a 0,26
+     (oiti) e de 0,15 a 0,16 (fícus do Passeio, fora o par em que as duas janelas pegam a mesma copa ao fundo, 0,63).
+     Balanço dominante de 0,14 a 0,27 Hz, tremor de folha de menos de 1 px por quadro a 12 m.
+  O giro de câmera muda o desenho da copa mais que o de um prédio (diferença entre quadros 8,4 contra 5,0, com
+  4,1 de vento só): os cartões viram com a câmera, como é da técnica; não vi nada pulando na tira.
+- **Carnaúba de longe** com leques simples (2 em 3, 6 gomos): era a espécie mais cara de longe.
+
+Custo depois do segundo passe (WebGPU, 2000 x 1125, cinco repetições alternadas, mesma sessão com `debf939`):
+árvores 1,06 a 1,39 ms no Passeio (antes 4,45), 0,42 na Praça (0,60) e 0,23 a 0,51 na rua (2,17); depois dos leques simples da carnaúba, 0,94, 0,35 e 0,55.
+
+Fica para decidir: o topo ao sol do meio-dia ainda chega perto do amarelo claro (é o sol branco do sertão sobre a
+cor de luz da folha); a copa abriu, mas ainda menos que nos conceitos; os cartões viram com a câmera ao girar.
