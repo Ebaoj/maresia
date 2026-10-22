@@ -204,6 +204,12 @@ export class Animador {
     // logo depois de desistir de um giro, nada de outra volta do mocap (lenta, ~1 s): o controle vira rápido
     mm.semGiro = Math.max(0, (mm.semGiro || 0) - DT)
     const faltaGiro = s.yawPedido != null ? Math.abs(angulo(s.yawPedido - s.yaw)) : Math.PI
+    // o pedido mudou (outra direção, andar/correr, parar): procura já, sem esperar a próxima das 10 buscas por
+    // segundo (até 100 ms de atraso no começo da curva, da freada e da arrancada; 22/10/2026)
+    const ped = (mm.pedido ??= { yaw: null, vel: 0 })
+    const yp = s.yawPedido ?? null, vp = s.velPedida || 0
+    if (this.opcoes.buscaNaHora !== false && ((yp == null) !== (ped.yaw == null) || (yp != null && Math.abs(angulo(yp - ped.yaw)) > 0.35) || Math.abs(vp - ped.vel) > 0.8)) mm.espera = 0
+    ped.yaw = yp; ped.vel = vp
     if (!travado && (!atual || mm.espera <= 0 || fimDoClipe)) {
       mm.espera = 0.1 // procura 10 vezes por segundo
       const pose = atual ? this.banco.linha(atual.userData.e, fAtual) : this.banco.linha(0, 0)

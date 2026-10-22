@@ -67,7 +67,7 @@ export class Jogador {
       // visual Arcane: personagem a 24 poses por segundo sempre (o "em 2" é linguagem do Aranhaverso)
       fps: acao || this.cfg.estilo.visual === 'arcane' ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
       mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0, clavicula: cfg.clavicula, joelhos: cfg.joelhos,
-      giroClipeMin: cfg.giroClipeMin, ritmoGiro: cfg.ritmoGiro,
+      giroClipeMin: cfg.giroClipeMin, ritmoGiro: cfg.ritmoGiro, buscaNaHora: cfg.mmBuscaNaHora,
     })
     // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo
     const forca = Math.max(clamp((this.velHoriz - cfg.corridaNova * 0.8) / (cfg.corridaNova * 0.3), 0, 1), this.noChao || this.nadando ? 0 : 0.5)

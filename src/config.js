@@ -203,6 +203,7 @@ export const PADRAO = {
     giroClipeMin: 2.2,     // rad: giro gravado (meia-volta, virar no lugar) só a partir deste ângulo; abaixo, o controle vira (126°)
     ritmoGiro: 1.5,        // o giro gravado toca a esta velocidade (1 = como no mocap: a meia-volta levava 0,8 s)
     velNoGiro: 0.3,        // fração da velocidade enquanto o corpo ainda está de costas no giro gravado (cresce ao encarar)
+    mmBuscaNaHora: true,   // o motion matching procura o movimento no quadro em que o pedido muda (senão espera até 0,1 s)
     giroAndando: 10,       // 1/s: rapidez com que o corpo encara a direção pedida andando (era 3: 90% de uma curva de 45° em 0,7 s; docs/controle-22-10.md)
     fpsAcao: 24,           // correndo e no ar a pose anda "em 1" (Aranhaverso: ação mais fluida, calma em 2)
     pausaPulo: true,       // a pose segura alguns quadros no alto do pulo
