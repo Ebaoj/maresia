@@ -1,37 +1,35 @@
-// O Campo do Urubu em 1932.
+// O Campo do Urubu em 1932: monta no mundo o que a planta (urubu-planta.js) diz.
 //
-// A história está em docs/historia-urubu.md; as posições e os tamanhos das peças estão em
-// src/mundo/mapa1932.js (dados com marca de confiança: o campo é H, hipótese, e a
-// reconstituição vem do desenho v3).
+// Fato e hipótese: ver o cabeçalho de urubu-planta.js (o que tem fonte e o que é reconstituição) e
+// docs/mapa-1932.md. O tom (docs/direcao-de-arte.md, seção 6 e tabela de riscos): o campo aparece pelo
+// cuidado e pelo trabalho, nunca como espetáculo; a cerca e o soldado existem e não são o centro do quadro.
 //
-// Aqui só a geometria: os galpões de folha de zinco, as 20 tarefas de terra cercadas com
-// arame, a cozinha, o posto médico, a capela e o portão da triagem, mais a gente do campo.
-//
-// O tom (docs/direcao-de-arte.md): o campo aparece pelo cuidado, nunca como espetáculo.
-// De longe se vê telhado de zinco e arame; de perto, a fila da cozinha e o trabalho na terra.
+// Custo (o mundo já é limitado pelo processador): tudo o que é parado e único (galpões, cozinha, cerca, linha)
+// vira UMA malha por bloco de 96 m; o que se repete (redes, trouxas, potes, gente) vai em cópias por bloco
+// (instanciarEmBlocos). Peças: urubu-galpao.js (galpão e rede), urubu-pecas.js (cozinha, pipa, guarita,
+// registro, posto, capela, latrinas), urubu-linha.js (cerca e trilho), urubu-tarefas.js (as tarefas de terra).
 
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { toonVertice } from '../materiais.js'
-import { instanciarEmBlocos } from './blocos.js'
-import { adicionarCaixa } from './colisao.js'
+import { instanciarEmBlocos, TAM_LOD } from './blocos.js'
+import { adicionarCaixa, adicionarCirculo } from './colisao.js'
 import { alturaTerreno, materialChao } from './terreno.js'
 import { congelar } from './congelar.js'
+import { registrarEstatico } from '../render/sombra-estatica.js'
 import { criarAleatorio } from '../utils.js'
 import { CAMPO_URUBU, llInverso } from './mapa1932.js'
 import { ll } from './fortaleza1932.js'
 import { colorir } from './cenografia.js'
-import { CAL } from '../paleta.js'
+import { geometriaPote, geometriaVaral } from './pecas-vida1932.js'
 import { PADRAO } from '../config.js'
+import { criarPlanta, noNucleo } from './urubu-planta.js'
+import { geometriaGalpao, geometriaRede, vagasDeRede, CORES_REDE } from './urubu-galpao.js'
+import { geometriaCozinha, geometriaPipa, geometriaLata, geometriaTrouxa, geometriaGuarita, geometriaPorteira, geometriaRegistro, geometriaCasinha, geometriaLatrinas } from './urubu-pecas.js'
+import { pecasCerca, pecasTrilho, geometriaVagao } from './urubu-linha.js'
+import { geometriaCercaTarefa, chaoDaTarefa } from './urubu-tarefas.js'
 
-// zinco de folha: cinza desbotado, perto do cal da paleta
-const ZINCO = '#c4c0b4'
-const ZINCO_ESCURO = '#a29d90'
-const ARAME = '#8a8578'
-// a terra das tarefas, revolvida e mais escura que o chão batido do campo (conceito-sertão 3)
-const TERRA_TAREFA = CAL.taipa
-
-// quantos metros de verdade vale uma unidade de jogo aqui (o mapa é comprimido)
+// quantos metros de verdade vale uma unidade de jogo aqui (desde 21/10/2026 o campo é 1:1)
 export function escalaNoCampo (x, z) {
   const [lon, lat] = llInverso(x, z)
   const [x2] = ll(lon + 0.001, lat)
@@ -44,312 +42,224 @@ export function escalaNoCampo (x, z) {
   }
 }
 
-// galpão de folha de zinco: paredes, telhado de duas águas, nervura da chapa e a porteira
-function geometriaGalpao (l, p, altura) {
-  const partes = []
-  const nervura = 1.6
-  const beira = p * 0.1
-  const cumeeira = altura * 0.32
-  const agua = Math.hypot(p / 2 + beira, cumeeira)
-  const angulo = Math.atan2(cumeeira, p / 2 + beira)
-  partes.push(colorir(new THREE.BoxGeometry(l, altura, p).translate(0, altura / 2, 0), ZINCO))
-  partes.push(colorir(
-    new THREE.BoxGeometry(l + 0.5, 0.14, agua).rotateX(-angulo).translate(0, altura + cumeeira / 2, (p / 2 + beira) / 2), ZINCO_ESCURO))
-  partes.push(colorir(
-    new THREE.BoxGeometry(l + 0.5, 0.14, agua).rotateX(angulo).translate(0, altura + cumeeira / 2, -(p / 2 + beira) / 2), ZINCO_ESCURO))
-  // nervura da chapa nas paredes compridas
-  for (let x = -l / 2 + 0.8; x < l / 2; x += nervura) {
-    for (const z of [p / 2, -p / 2]) {
-      partes.push(colorir(new THREE.BoxGeometry(0.1, altura - 0.2, 0.07).translate(x, (altura - 0.2) / 2, z), ZINCO_ESCURO))
-    }
+const um = new THREE.Vector3(1, 1, 1)
+const eixoY = new THREE.Vector3(0, 1, 0)
+const quat = new THREE.Quaternion()
+export const matriz = (x, y, z, yaw = 0, escala = 1) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), quat.setFromAxisAngle(eixoY, yaw), escala === 1 ? um : new THREE.Vector3(escala, escala, escala))
+
+// junta as peças paradas (geometria já no lugar do mundo) numa malha por bloco: um objeto por bloco, não um por peça
+function juntarPorBloco (cena, pecas, material, nome, tam = TAM_LOD) {
+  const grupos = new Map()
+  for (const p of pecas) {
+    const k = `${Math.floor(p.x / tam)},${Math.floor(p.z / tam)}`
+    if (!grupos.has(k)) grupos.set(k, [])
+    grupos.get(k).push(p.geo)
   }
-  // porteira e janelas altas
-  partes.push(colorir(new THREE.BoxGeometry(3, 3.4, 0.12).translate(0, 1.7, p / 2 + 0.02), CAL.mangue))
-  for (const x of [-l / 3, l / 3]) {
-    partes.push(colorir(new THREE.BoxGeometry(1.6, 1, 0.1).translate(x, altura * 0.62, p / 2 + 0.02), '#5a5952'))
+  const malhas = []
+  for (const geos of grupos.values()) {
+    const m = new THREE.Mesh(mergeGeometries(geos), material)
+    m.geometry.computeBoundingSphere()
+    m.castShadow = true
+    m.receiveShadow = true
+    m.name = nome
+    registrarEstatico(m)
+    cena.add(congelar(m))
+    malhas.push(m)
   }
-  return mergeGeometries(partes)
+  return malhas
 }
 
-// cerca de arame da tarefa: postes de estaca e três fios, com o vão da porteira
-function geometriaCerca (l, p, altura) {
-  const partes = []
-  const passo = 2.4
-  const vao = 2.8
-  const poste = (x, z) => partes.push(colorir(new THREE.BoxGeometry(0.16, altura + 0.7, 0.16).translate(x, (altura + 0.7) / 2 - 0.5, z), CAL.mangue))
-  const fios = (x0, x1, z) => {
-    for (const y of [0.5, 0.95, altura - 0.15]) {
-      partes.push(colorir(new THREE.BoxGeometry(Math.abs(x1 - x0), 0.04, 0.04).translate((x0 + x1) / 2, y, z), ARAME))
-    }
-  }
-  for (let x = -l / 2; x <= l / 2 + 0.01; x += passo) {
-    if (Math.abs(x) > vao / 2) poste(x, p / 2)
-    poste(x, -p / 2)
-  }
-  for (const z of [-p / 2, p / 2]) poste(l / 2, z)
-  poste(-l / 2, -p / 2)
-  poste(-l / 2, p / 2)
-  fios(-l / 2, -vao / 2, p / 2)
-  fios(vao / 2, l / 2, p / 2)
-  fios(-l / 2, l / 2, -p / 2)
-  // a porteira: dois postes mais altos e uma travessa
-  for (const x of [-vao / 2, vao / 2]) poste(x, p / 2)
-  partes.push(colorir(new THREE.BoxGeometry(vao, 0.12, 0.12).translate(0, altura - 0.3, p / 2), CAL.mangue))
-  return mergeGeometries(partes)
-}
-
-// cozinha, posto médico e capela: cada um com a sua silhueta
-function geometriaConstrucao (tipo, r) {
-  const partes = []
-  const l = r * 1.7
-  const p = r * 1.3
-  const h = tipo === 'capela' ? 3.6 : 3.1
-  partes.push(colorir(new THREE.BoxGeometry(l, h, p).translate(0, h / 2, 0), CAL.cal))
-  partes.push(colorir(new THREE.BoxGeometry(l + 0.4, 0.16, p + 0.4).translate(0, h + 0.08, 0), ZINCO_ESCURO))
-  if (tipo === 'cozinha') {
-    // chaminé da cozinha e a lenha ao lado
-    partes.push(colorir(new THREE.BoxGeometry(0.8, 2.4, 0.8).translate(l / 2 - 0.9, h + 1.2, 0), CAL.mangue))
-    for (let i = 0; i < 5; i++) {
-      partes.push(colorir(new THREE.CylinderGeometry(0.14, 0.14, 1.6, 5).rotateZ(Math.PI / 2).translate(-l / 2 - 0.6, 0.2 + (i % 2) * 0.3, -0.4 + i * 0.22), CAL.palha))
-    }
-  }
-  if (tipo === 'posto medico') {
-    // cruz branca na fachada
-    partes.push(colorir(new THREE.BoxGeometry(0.5, 1.6, 0.1).translate(0, h * 0.55, p / 2 + 0.03), CAL.cal))
-    partes.push(colorir(new THREE.BoxGeometry(1.6, 0.5, 0.1).translate(0, h * 0.55, p / 2 + 0.03), CAL.cal))
-  }
-  if (tipo === 'capela') {
-    // torre do sino e a cruz
-    partes.push(colorir(new THREE.BoxGeometry(1.1, h + 1.8, 1.1).translate(l / 2 - 0.9, (h + 1.8) / 2, 0), CAL.cal))
-    partes.push(colorir(new THREE.BoxGeometry(0.16, 1.1, 0.16).translate(l / 2 - 0.9, h + 2.6, 0), CAL.mangue))
-    partes.push(colorir(new THREE.BoxGeometry(0.7, 0.16, 0.16).translate(l / 2 - 0.9, h + 2.85, 0), CAL.mangue))
-  }
-  return mergeGeometries(partes)
-}
-
-// gente do campo: magra, com chapéu de palha. A roupa é o que separa um do outro.
-function geometriaRetirante (roupa) {
-  const partes = []
-  const pele = '#b08968'
-  const calca = '#8e8a7d'
-  partes.push(colorir(new THREE.BoxGeometry(0.34, 0.72, 0.22).translate(0, 1.06, 0), roupa))
-  partes.push(colorir(new THREE.BoxGeometry(0.3, 0.28, 0.22).translate(0, 1.52, 0), pele))
-  partes.push(colorir(new THREE.CylinderGeometry(0.3, 0.34, 0.12, 8).translate(0, 1.72, 0), CAL.palha))
-  for (const x of [-0.11, 0.11]) {
-    partes.push(colorir(new THREE.BoxGeometry(0.12, 0.72, 0.14).translate(x, 0.36, 0), calca))
-  }
-  for (const x of [-0.24, 0.24]) {
-    partes.push(colorir(new THREE.BoxGeometry(0.11, 0.6, 0.12).translate(x, 1.08, 0), roupa))
-  }
-  return mergeGeometries(partes)
-}
-
-// a terra batida da tarefa, seguindo o relevo
-function chaoDaTarefa (x, z, l, p, ang, r) {
-  const N = 6
-  const M = 4
-  const c = Math.cos(ang)
-  const s = Math.sin(ang)
-  const pos = []
-  const idx = []
-  for (let j = 0; j <= M; j++) {
-    for (let i = 0; i <= N; i++) {
-      const lx = (i / N - 0.5) * l
-      const lz = (j / M - 0.5) * p
-      const wx = x + lx * c + lz * s
-      const wz = z - lx * s + lz * c
-      pos.push(wx, alturaTerreno(wx, wz) + 0.09, wz)
-    }
-  }
-  for (let j = 0; j < M; j++) {
-    for (let i = 0; i < N; i++) {
-      const a = j * (N + 1) + i
-      idx.push(a, a + 1, a + N + 2, a, a + N + 2, a + N + 1)
-    }
-  }
-  const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
-  g.setIndex(idx)
-  g.computeVertexNormals()
-  // a terra da tarefa usa o material do chão (terreno.js): o mesmo relevo pintado, com torrões de terra revolvida
-  // e a rachadura da seca (relevo-chao.js); os atributos que o material do chão lê vão junto
-  const t = colorir(g, TERRA_TAREFA)
-  const n = t.attributes.position.count
-  const solo = new Float32Array(n * 4)
-  for (let i = 0; i < n; i++) solo.set([0, 0.65, 0.35, 0], i * 4)
-  t.setAttribute('aSolo', new THREE.BufferAttribute(solo, 4))
-  t.setAttribute('aPiso', new THREE.BufferAttribute(new Float32Array(n), 1))
-  t.setAttribute('aAreia', new THREE.BufferAttribute(new Float32Array(n), 1))
-  t.setAttribute('aRota', new THREE.BufferAttribute(new Float32Array(n).fill(-1), 1))
-  return t
-}
-
-// a cerca do campo: o arame de contorno, com o portão da triagem no lado da cidade
-function cercaDoCampo (vertices, vao) {
-  const partes = []
-  for (let i = 0; i < vertices.length; i++) {
-    const [x0, z0] = vertices[i]
-    const [x1, z1] = vertices[(i + 1) % vertices.length]
-    const dx = x1 - x0
-    const dz = z1 - z0
-    const comp = Math.hypot(dx, dz)
-    const n = Math.max(2, Math.round(comp / 2.6))
-    const ang = Math.atan2(dx, dz)
-    const c = Math.cos(ang)
-    const s = Math.sin(ang)
-    for (let k = 0; k <= n; k++) {
-      if (i === vao.lado && k >= vao.de && k <= vao.ate) continue
-      const t = k / n
-      const px = x0 + dx * t
-      const pz = z0 + dz * t
-      const h = alturaTerreno(px, pz)
-      partes.push(colorir(new THREE.BoxGeometry(0.16, 2.4, 0.16).translate(px, h + 0.8, pz), CAL.mangue))
-    }
-    // os fios, acompanhando o terreno (e sem cruzar a porteira)
-    for (const alt of [0.5, 1.0, 1.6]) {
-      const passos = Math.max(2, n)
-      for (let k = 0; k < passos; k++) {
-        const t0 = k / passos
-        const t1 = (k + 1) / passos
-        const meio = (t0 + t1) / 2
-        if (i === vao.lado && meio * n >= vao.de && meio * n <= vao.ate) continue
-        const mx = x0 + dx * (t0 + t1) / 2
-        const mz = z0 + dz * (t0 + t1) / 2
-        const h = alturaTerreno(mx, mz)
-        const comp2 = Math.hypot(dx, dz) / passos
-        partes.push(colorir(new THREE.BoxGeometry(comp2, 0.04, 0.04).rotateY(ang).translate(mx, h + alt, mz), ARAME))
-      }
-    }
-  }
-  return mergeGeometries(partes)
+// a altura do pé de uma peça retangular: a média dos cantos (os esteios entram 0,8 m no chão)
+function alturaMedia (q, cu, cw, l, p) {
+  let s = 0
+  for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]]) s += alturaTerreno(...q.mundo(cu + (a * l) / 2, cw + (b * p) / 2))
+  return s / 5
 }
 
 // cfg: o config do jogo (o painel mexe nele; vale ao recarregar). Sem ele, o padrão
 export function criarUrubu1932 (cena, cfgJogo = null) {
-  const cfg = cfgJogo?.mundo?.urubu ?? PADRAO.mundo.urubu
+  const cfg = { ...PADRAO.mundo.urubu, ...(cfgJogo?.mundo?.urubu || {}) }
+  const planta = criarPlanta(cfg)
+  const q = planta.quadro
   const rnd = criarAleatorio(1932)
   const mat = toonVertice()
-  const um = new THREE.Vector3(1, 1, 1)
-  const quat = new THREE.Quaternion()
-  const eixoY = new THREE.Vector3(0, 1, 0)
-
-  // o centro do campo: onde as tarefas se juntam
-  let cx = 0
-  let cz = 0
-  for (const t of CAMPO_URUBU.tarefas) { cx += t.ponto[0]; cz += t.ponto[1] }
-  cx /= CAMPO_URUBU.tarefas.length
-  cz /= CAMPO_URUBU.tarefas.length
-  const escala = escalaNoCampo(cx, cz)
+  const matPano = toonVertice({ side: THREE.DoubleSide })
+  const obra = [] // peças paradas, no lugar do mundo
+  const poe = (geo, x, y, z, yaw = q.rot) => { obra.push({ geo: geo.applyMatrix4(matriz(x, y, z, yaw)), x, z }) }
 
   // ---- os galpões ----
-  // os quatro têm a mesma medida, então a geometria é uma só, no tamanho de verdade
-  const galpoes = []
-  let gl = 0
-  let gp = 0
-  for (const g of CAMPO_URUBU.galpoes) {
-    const [x, z] = g.ponto
-    const l = g.largura / escala.x
-    const p = g.profundidade / escala.z
-    gl = l
-    gp = p
-    const h = alturaTerreno(x, z)
-    quat.setFromAxisAngle(eixoY, 0)
-    galpoes.push(new THREE.Matrix4().compose(new THREE.Vector3(x, h - 0.4, z), quat, um))
-    adicionarCaixa(x, z, l / 2, p / 2, 0)
+  const L = cfg.galpaoComprimento
+  const P = cfg.galpaoLargura
+  const modelos = new Map()
+  const modelo = (tipo, var_) => {
+    const k = `${tipo}:${var_}`
+    if (!modelos.has(k)) modelos.set(k, geometriaGalpao(L, P, cfg.alturaBeiral, cfg.alturaGalpao, tipo, cfg.ferrugem, 31 + var_ * 7 + tipo.length))
+    return modelos.get(k)
   }
-  instanciarEmBlocos(cena, geometriaGalpao(gl, gp, cfg.alturaGalpao), mat, galpoes, null, { nome: 'urubu-galpoes' })
-
-  // ---- as 20 tarefas: terra cercada com arame ----
-  const cercas = []
-  const chaos = []
-  let tl = 0
-  let tp = 0
-  for (const t of CAMPO_URUBU.tarefas) {
-    const [x, z] = t.ponto
-    const l = t.largura / escala.x
-    const p = t.profundidade / escala.z
-    tl = l
-    tp = p
-    // a tarefa aponta para fora do centro do campo
-    const ang = Math.atan2(x - cx, z - cz)
-    const h = alturaTerreno(x, z)
-    quat.setFromAxisAngle(eixoY, ang)
-    cercas.push(new THREE.Matrix4().compose(new THREE.Vector3(x, h, z), quat, um))
-    chaos.push(chaoDaTarefa(x, z, l, p, ang, escala))
-    // o arame barra: uma caixa por lado da tarefa
-    const c = Math.cos(ang)
-    const s = Math.sin(ang)
-    for (const [lx, lz, hx, hz] of [[0, p / 2, l / 2, 0.3], [0, -p / 2, l / 2, 0.3], [l / 2, 0, 0.3, p / 2], [-l / 2, 0, 0.3, p / 2]]) {
-      adicionarCaixa(x + lx * c + lz * s, z - lx * s + lz * c, hx, hz, ang)
+  const vagas = vagasDeRede(L, P, cfg.redePasso)
+  const redes = { aberta: [], ocupada: [], enrolada: [] }
+  const coresRede = { aberta: [], ocupada: [], enrolada: [] }
+  const trouxas = []
+  const coresTrouxa = []
+  const potes = []
+  const latas = []
+  const varais = []
+  for (const g of planta.galpoes) {
+    const base = alturaMedia(q, g.u, g.w, L, P)
+    g.y = base
+    poe(modelo(g.tipo, planta.galpoes.indexOf(g) % 3).clone(), g.x, base, g.z)
+    // os esteios barram o passo (a colisão é 2D); as paredes de tábua, uma caixa por lado
+    for (let lx = -L / 2; lx <= L / 2 + 0.01; lx += 4) {
+      for (let lz = -P / 2; lz <= P / 2 + 0.01; lz += 4) adicionarCirculo(...q.mundo(g.u + lx, g.w + lz), 0.14)
+    }
+    adicionarCaixa(...q.mundo(g.u, g.w - P / 2 - 0.1), L / 2, 0.12, q.rot)
+    if (g.tipo !== 'aberto') for (const lx of [-L / 2, L / 2]) adicionarCaixa(...q.mundo(g.u + lx, g.w), 0.12, P / 2, q.rot)
+    else adicionarCaixa(...q.mundo(g.u - L / 2, g.w), 0.12, P / 2, q.rot)
+    if (g.tipo === 'fechado') {
+      adicionarCaixa(...q.mundo(g.u - L / 4 - 0.6, g.w + P / 2 + 0.1), L / 4 - 0.6, 0.12, q.rot)
+      adicionarCaixa(...q.mundo(g.u + L / 4 + 0.6, g.w + P / 2 + 0.1), L / 4 - 0.6, 0.12, q.rot)
+    }
+    // as redes: de dia muitas saíram (para a fila, a turma, a água) e ficam vazias ou enroladas;
+    // no galpão dos fundos ficam os doentes (conceito, ato 2)
+    const ocupadas = g.tipo === 'fechado' ? 0.7 : cfg.redesOcupadasDia
+    for (const v of vagas) {
+      const r = rnd.proximo()
+      const forma = r < ocupadas ? 'ocupada' : r < ocupadas + cfg.redesEnroladasDia ? 'enrolada' : 'aberta'
+      const [x, z] = q.mundo(g.u + v.x, g.w + v.z)
+      redes[forma].push(matriz(x, base, z, q.rot + rnd.entre(-0.04, 0.04)))
+      coresRede[forma].push(rnd.chance(0.07) ? rnd.escolha(CORES_REDE.slice(-3)) : rnd.escolha(CORES_REDE.slice(0, -3)))
+      // os pertences no chão, encostados na linha de esteios
+      if (rnd.chance(0.42)) {
+        const lado = rnd.chance(0.5) ? 1 : -1
+        const [tx, tz] = q.mundo(g.u + v.x + rnd.entre(-0.3, 0.3), g.w + v.z + lado * rnd.entre(1.5, 1.85))
+        trouxas.push(matriz(tx, alturaTerreno(tx, tz), tz, rnd.entre(0, 6.3), rnd.entre(0.8, 1.15)))
+        coresTrouxa.push(rnd.escolha(CORES_REDE))
+      }
+      if (rnd.chance(0.07)) {
+        const [px, pz] = q.mundo(g.u + v.x + 0.4, g.w + v.z + (rnd.chance(0.5) ? 1.8 : -1.8))
+        potes.push(matriz(px, alturaTerreno(px, pz), pz, rnd.entre(0, 6.3)))
+      }
+      if (rnd.chance(0.05)) {
+        const [px, pz] = q.mundo(g.u + v.x - 0.3, g.w + v.z + (rnd.chance(0.5) ? 1.7 : -1.7))
+        latas.push(matriz(px, alturaTerreno(px, pz), pz, rnd.entre(0, 6.3)))
+      }
+    }
+    // dois varais na rua da frente do galpão (a roupa de saco de mantimento lavada: o cuidado)
+    for (const lu of [-L / 4, L / 4 + rnd.entre(-3, 3)]) {
+      if (!rnd.chance(0.65)) continue
+      const [vx, vz] = q.mundo(g.u + lu, g.w + P / 2 + 2.6)
+      varais.push({ x: vx, z: vz })
     }
   }
-  instanciarEmBlocos(cena, geometriaCerca(tl, tp, cfg.alturaCerca), mat, cercas, null, { nome: 'urubu-cercas' })
-  // a terra das 20 tarefas é uma malha só, já no lugar do mundo, com o material do chão
-  const terra = new THREE.Mesh(mergeGeometries(chaos), materialChao() || mat)
-  terra.name = 'urubu-terra'
-  terra.receiveShadow = true
-  cena.add(congelar(terra))
+  const coresVaral = [['#d9cbb0', '#cdbf9f', '#b0a48c'], ['#c2412d', '#e4dccb', '#9fa9b5'], ['#cdbf9f', '#a08968', '#e9dfcc'], ['#d6a64a', '#d9cbb0', '#8e8a7d']]
+  const modelosVaral = coresVaral.map((c) => geometriaVaral(c))
+  for (const v of varais) poe(rnd.escolha(modelosVaral).clone(), v.x, alturaTerreno(v.x, v.z), v.z, q.rot + rnd.entre(-0.05, 0.05))
 
-  // ---- cozinha, posto e capela ----
-  for (const c of CAMPO_URUBU.construcoes) {
-    const [x, z] = c.ponto
-    const r = c.raio / escala.x
-    const h = alturaTerreno(x, z)
-    quat.setFromAxisAngle(eixoY, 0)
-    const matriz = new THREE.Matrix4().compose(new THREE.Vector3(x, h - 0.2, z), quat, um)
-    const geo = geometriaConstrucao(c.nome.split(' ')[0], r)
-    instanciarEmBlocos(cena, geo, mat, [matriz], null, { nome: `urubu-${c.nome}` })
-    adicionarCaixa(x, z, r * 0.9, r * 0.7, 0)
+  // ---- a cozinha ----
+  const k = planta.cozinha
+  const yK = alturaMedia(q, k.u, k.w, k.l, k.p)
+  const fogosLocais = k.fogos.map((f) => [f.u - k.u, f.w - k.w])
+  poe(geometriaCozinha(k.l, k.p, fogosLocais, [k.mesa.u - k.u, k.mesa.w - k.w]), k.x, yK, k.z)
+  adicionarCaixa(...q.mundo(k.u - k.l / 2 - 0.1, k.w), 0.15, k.p / 2, q.rot)
+  for (const f of k.fogos) adicionarCirculo(f.x, f.z, 0.75)
+  adicionarCaixa(k.mesa.x, k.mesa.z, 0.45, 1.85, q.rot)
+  // ---- a água ----
+  const pipa = planta.agua.pipa
+  poe(geometriaPipa(), pipa.x, alturaTerreno(pipa.x, pipa.z), pipa.z)
+  adicionarCirculo(pipa.x, pipa.z, 0.85)
+  for (const b of planta.agua.lavagem) latas.push(matriz(b.x + 0.5, alturaTerreno(b.x, b.z), b.z, rnd.entre(0, 6)))
+  // ---- posto médico e capela ----
+  for (const [c, tipo, h] of [[planta.posto, 'posto', 2.9], [planta.capela, 'capela', 3.4]]) {
+    poe(geometriaCasinha(c.l, c.p, h, tipo), c.x, alturaMedia(q, c.u, c.w, c.l, c.p) - 0.1, c.z)
+    adicionarCaixa(c.x, c.z, c.l / 2, c.p / 2, q.rot)
+  }
+  // ---- o portão, a guarita e o registro ----
+  const pt = planta.portao
+  poe(geometriaPorteira(pt.largura, true), pt.x, alturaTerreno(pt.x, pt.z), pt.z)
+  const gu = planta.guarita
+  poe(geometriaGuarita(gu.l, gu.p), gu.x, alturaTerreno(gu.x, gu.z) - 0.05, gu.z)
+  adicionarCaixa(gu.x, gu.z, gu.l / 2, gu.p / 2, q.rot)
+  const rg = planta.registro
+  poe(geometriaRegistro(rg.l, rg.p), rg.x, alturaTerreno(rg.x, rg.z) - 0.03, rg.z)
+  adicionarCaixa(rg.mesa.x, rg.mesa.z, 0.42, 0.78, q.rot)
+  // ---- as latrinas, longe ----
+  const lt = planta.latrinas
+  if (lt) {
+    poe(geometriaLatrinas(lt.l, lt.p, lt.cabines), lt.x, alturaTerreno(lt.x, lt.z) - 0.05, lt.z)
+    adicionarCaixa(lt.x, lt.z, lt.l / 2, lt.p / 2, q.rot)
+  }
+  // ---- a cerca e a linha do trem ----
+  const perto = (x, z) => noNucleo(planta, x, z, 30)
+  obra.push(...pecasCerca(planta, { altura: cfg.alturaCerca, perto }))
+  obra.push(...pecasTrilho(planta))
+  const vg = planta.trilho.vagao
+  poe(mergeGeometries(geometriaVagao()), vg.x, alturaTerreno(vg.x, vg.z) + 0.2, vg.z)
+  adicionarCaixa(vg.x, vg.z, 3.7, 1.3, q.rot)
+
+  const malhasObra = juntarPorBloco(cena, obra, mat, 'urubu-obra')
+
+  // ---- as tarefas de terra que ficam fora do núcleo (terra trabalhada, como no conceito) ----
+  const tarefas = cfg.tarefas ? CAMPO_URUBU.tarefas.filter((t) => !noNucleo(planta, t.ponto[0], t.ponto[1], Math.max(t.largura, t.profundidade) / 2 + 10)) : []
+  if (tarefas.length) {
+    const cercas = []
+    const chaos = []
+    let cx = 0
+    let cz = 0
+    for (const t of CAMPO_URUBU.tarefas) { cx += t.ponto[0] / CAMPO_URUBU.tarefas.length; cz += t.ponto[1] / CAMPO_URUBU.tarefas.length }
+    for (const t of tarefas) {
+      const [x, z] = t.ponto
+      const ang = Math.atan2(x - cx, z - cz)
+      cercas.push(matriz(x, alturaTerreno(x, z), z, ang))
+      chaos.push(chaoDaTarefa(x, z, t.largura, t.profundidade, ang))
+      const c = Math.cos(ang)
+      const s = Math.sin(ang)
+      const l = t.largura
+      const p = t.profundidade
+      for (const [lx, lz, hx, hz] of [[0, p / 2, l / 2, 0.3], [0, -p / 2, l / 2, 0.3], [l / 2, 0, 0.3, p / 2], [-l / 2, 0, 0.3, p / 2]]) {
+        adicionarCaixa(x + lx * c + lz * s, z - lx * s + lz * c, hx, hz, ang)
+      }
+    }
+    const t0 = tarefas[0]
+    instanciarEmBlocos(cena, geometriaCercaTarefa(t0.largura, t0.profundidade, cfg.alturaCerca), mat, cercas, null, { nome: 'urubu-cercas' })
+    const terra = new THREE.Mesh(mergeGeometries(chaos), materialChao() || mat)
+    terra.name = 'urubu-terra'
+    terra.receiveShadow = true
+    cena.add(congelar(terra))
   }
 
-  // ---- o portão da triagem e a casa da guarda ----
-  const poligono = CAMPO_URUBU.poligono
-  const cerca = cercaDoCampo(poligono, { lado: 2, de: 2, ate: 5 })
-  instanciarEmBlocos(cena, cerca, mat, [new THREE.Matrix4()], null, { nome: 'urubu-cerca' })
-  // a porteira fica no lado do campo que dá para a cidade
-  const [gx0, gz0] = poligono[2]
-  const [gx1, gz1] = poligono[3]
-  const gx = (gx0 + gx1) / 2
-  const gz = (gz0 + gz1) / 2
-  const guarda = geometriaConstrucao('posto', 1.6)
-  quat.setFromAxisAngle(eixoY, Math.atan2(gx1 - gx0, gz1 - gz0))
-  instanciarEmBlocos(cena, guarda, mat, [new THREE.Matrix4().compose(new THREE.Vector3(gx, alturaTerreno(gx, gz) - 0.2, gz), quat, um)], null, { nome: 'urubu-guarda' })
-  adicionarCaixa(gx, gz, 2.4, 1.6, 0)
+  // ---- as cópias: redes, trouxas, potes, latas ----
+  for (const forma of Object.keys(redes)) {
+    instanciarEmBlocos(cena, geometriaRede(forma), matPano, redes[forma], coresRede[forma], { nome: `urubu-redes-${forma}` })
+  }
+  instanciarEmBlocos(cena, geometriaTrouxa(), mat, trouxas, coresTrouxa, { nome: 'urubu-trouxas' })
+  instanciarEmBlocos(cena, geometriaPote(), mat, potes, null, { nome: 'urubu-potes' })
+  instanciarEmBlocos(cena, geometriaLata(), mat, latas, null, { nome: 'urubu-latas' })
 
-  // ---- a gente do campo ----
-  // a fila da cozinha, a fila do portão e quem trabalha na terra
-  const roupas = [CAL.calVelha, CAL.piuba, '#b0a48c', '#9a9280']
+  // ---- a gente do campo (provisório: as figuras antigas, na fila da cozinha e da água) ----
+  const roupas = ['#d9cbb0', '#a08968', '#b0a48c', '#9a9280']
   const figuras = roupas.map((roupa) => ({ geo: geometriaRetirante(roupa), lista: [] }))
-  const cozinha = CAMPO_URUBU.construcoes.find((c) => c.nome.includes('cozinha'))
-  const [kz, kzz] = cozinha ? cozinha.ponto : [cx, cz]
-  const filaCozinha = Math.round(cfg.gente * 0.42)
-  const filaPortao = Math.round(cfg.gente * 0.33)
-  const noCampo = Math.max(0, cfg.gente - filaCozinha - filaPortao)
-  for (let i = 0; i < filaCozinha; i++) {
-    const t = figuras[i % figuras.length]
-    const x = kz - 3.4 - i * 0.85
-    const z = kzz + 2.6 + rnd.entre(-0.3, 0.3)
-    quat.setFromAxisAngle(eixoY, Math.PI / 2 + rnd.entre(-0.2, 0.2))
-    t.lista.push(new THREE.Matrix4().compose(new THREE.Vector3(x, alturaTerreno(x, z), z), quat, um))
-  }
-  for (let i = 0; i < filaPortao; i++) {
-    const t = figuras[i % figuras.length]
-    const x = gx + 2 + rnd.entre(-0.4, 0.4)
-    const z = gz - 1.2 + i * 0.9
-    quat.setFromAxisAngle(eixoY, Math.PI)
-    t.lista.push(new THREE.Matrix4().compose(new THREE.Vector3(x, alturaTerreno(x, z), z), quat, um))
-  }
-  // quem trabalha nas tarefas
-  for (let i = 0; i < noCampo; i++) {
-    const t = figuras[i % figuras.length]
-    const tarefa = CAMPO_URUBU.tarefas[Math.floor(rnd.entre(0, CAMPO_URUBU.tarefas.length))]
-    const [tx, tz] = tarefa.ponto
-    const x = tx + rnd.entre(-4, 4)
-    const z = tz + rnd.entre(-3, 3)
-    quat.setFromAxisAngle(eixoY, rnd.entre(0, Math.PI * 2))
-    t.lista.push(new THREE.Matrix4().compose(new THREE.Vector3(x, alturaTerreno(x, z), z), quat, um))
+  const filas = [...planta.cozinha.fila, ...planta.agua.fila]
+  for (let i = 0; i < cfg.gente; i++) {
+    const p = filas[i % filas.length]
+    const off = Math.floor(i / filas.length) * 1.2
+    const [x, z] = q.mundo(p.u + off, p.w)
+    figuras[i % figuras.length].lista.push(matriz(x, alturaTerreno(x, z), z, q.rot + Math.PI))
   }
   for (const f of figuras) instanciarEmBlocos(cena, f.geo, mat, f.lista, null, { nome: 'urubu-gente' })
 
-  return { centro: [cx, cz], escala, galpao: [gl, gp], tarefa: [tl, tp] }
+  return { centro: planta.cozinha ? [planta.cozinha.x, planta.cozinha.z] : planta.quadro.origem, planta, malhasObra }
+}
+
+// gente do campo (provisória): figura de caixas com chapéu de palha
+function geometriaRetirante (roupa) {
+  const partes = []
+  const pele = '#b08968'
+  const calca = '#8e8a7d'
+  const cx = (l, a, p, x, y, z, cor) => partes.push(colorir(new THREE.BoxGeometry(l, a, p).translate(x, y, z), cor))
+  cx(0.34, 0.72, 0.22, 0, 1.06, 0, roupa)
+  cx(0.3, 0.28, 0.22, 0, 1.52, 0, pele)
+  partes.push(colorir(new THREE.CylinderGeometry(0.3, 0.34, 0.12, 8).translate(0, 1.72, 0), '#c8a86a'))
+  for (const x of [-0.11, 0.11]) cx(0.12, 0.72, 0.14, x, 0.36, 0, calca)
+  for (const x of [-0.24, 0.24]) cx(0.11, 0.6, 0.12, x, 1.08, 0, roupa)
+  return mergeGeometries(partes)
 }

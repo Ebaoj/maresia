@@ -375,9 +375,32 @@ export const PADRAO = {
       corEsfinge: '#d9cbb0', // pedra artificial lisa, de uma cor só (nota do Joabe nos conceitos)
     },
     urubu: {
-      alturaGalpao: 5.2,    // altura da parede do galpão de folha de zinco (src/mundo/urubu1932.js)
       alturaCerca: 1.8,     // altura do arame que cerca as tarefas de terra
-      gente: 24,            // gente no campo: fila da cozinha, fila do portão e trabalho na terra
+      gente: 48,            // gente nas filas da comida e da água, de dia (o resto do campo é `povo`)
+      povo: 650,            // o resto da gente do campo de dia: cozinhando, lavando, remendando, na sombra, crianças
+      // a planta (src/mundo/urubu-planta.js; tudo H, sem planta nem foto livre): galpão, ruas, largo, portão, trilho
+      galpaoComprimento: 48, // m, ao longo da cerca do portão
+      galpaoLargura: 12,    // m: três vãos de 4 m entre os esteios, com as redes atravessadas
+      ruaEntreGalpoes: 8,   // m entre as cabeceiras de dois galpões da mesma fileira
+      ruaEntreFileiras: 12, // m entre duas fileiras de galpões
+      larguraAvenida: 10,   // m: o caminho do portão até o fundo
+      colunasPorLado: 3,    // galpões de cada lado da avenida, por fileira
+      fileirasAntes: 4,     // fileiras entre o portão e o largo da cozinha
+      fileirasDepois: 3,    // fileiras depois do largo
+      recuoPortao: 34,      // m do portão até a primeira fileira (a guarita e o registro ficam no meio)
+      larguraLargo: 50,     // m: o largo da cozinha, da água, do posto e da capela
+      larguraPortao: 4,     // m: o vão da porteira
+      trilhoRecuo: 22,      // m da cerca até a linha do trem, por fora
+      trilhoAlem: 120,      // m de linha além das pontas do lado do portão
+      alturaBeiral: 3.0,    // m: o beiral do galpão (a rede fica a ~0,7 m do chão)
+      alturaGalpao: 4.4,    // m: a cumeeira do telhado de zinco (a chave é a antiga altura do galpão)
+      redePasso: 1.1,       // m entre duas redes no mesmo vão
+      redesOcupadasDia: 0.18, // fração das redes com alguém deitado de dia (o resto saiu ou está enrolada)
+      redesEnroladasDia: 0.35, // fração das redes enroladas de dia
+      redesOcupadasNoite: 0.86, // fração das redes com alguém de noite
+      genteNoite: 30,       // gente sentada em volta das fogueiras à noite
+      ferrugem: 0.1,        // fração das folhas de zinco com ferrugem
+      tarefas: true,        // as tarefas de terra cercadas de arame (as que não caem no núcleo construído)
     },
   },
   // Os marcos do centro de 1932 (src/mundo/marcos1932/; fontes no dossiê ~/Projetos/marcos-1932-pesquisa).
@@ -471,6 +494,8 @@ export const PADRAO_MUDOU = [
   ['mundo.marcosNorte.corSe', '#cddbd6', '#bccfc6'], // 21/10/2026: reboco dos marcos, cores refeitas pelos conceitos
   ['mundo.marcosNorte.corSe', '#b7cbc1', '#bccfc6'],
   ['mundo.marcosNorte.corEstacao', '#efe6d2', '#ebdcba'],
+  ['mundo.urubu.gente', 24, 48], // 22/10/2026: o campo montado; gente = as filas, o resto é povo
+  ['mundo.urubu.alturaGalpao', 5.2, 4.4], // 22/10/2026: o galpão de 240 m virou o de 48 m; a chave é a cumeeira
 ]
 
 export function migrarPadroes(salvo) {
