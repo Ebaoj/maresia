@@ -11,7 +11,7 @@ import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
 import { criarRenderizador, prepararCenaWebgpu, preaquecerWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
 import { ligarMotorPlaca, prepararMotorPlaca } from './render/motor-placa.js'
-import { definirTamBloco } from './mundo/blocos.js'
+import { definirTamBloco, atualizarBlocosLonge } from './mundo/blocos.js'
 import { definirMuitoLonge } from './mundo/muito-longe.js'
 import { alturaChao } from './mundo/colisao.js'
 import { criarCeu } from './mundo/ceu.js'
@@ -399,6 +399,7 @@ async function iniciar() {
     globais.uVentoPalm.value = cfg.interacao.ventoCoqueiros
     atualizarVento(cfg) // o vento das árvores (o painel muda ao vivo)
     atualizarLodArvores(camera, cfg) // perto: corpo e cartões de folha; longe: a copa simples
+    atualizarBlocosLonge(camera, cfg) // os blocos sem LOD, juntos por célula grande quando todos estão longe
     interacoes.atualizar()
     fisica.atualizar(dt, jogador)
     toque.atualizar(dt, pj)

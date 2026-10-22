@@ -102,7 +102,8 @@ export class MuitoLonge {
       const familias = new Map()
       for (const u of c.unidades) {
         for (const m of u.longe) {
-          const chave = (m.isInstancedMesh ? m.geometry.uuid : 'malha') + ':' + m.material.uuid
+          // a mesma geometria e o mesmo material, debaixo do mesmo pai (as matrizes das cópias são do espaço dele)
+          const chave = (m.isInstancedMesh ? m.geometry.uuid : 'malha') + ':' + m.material.uuid + ':' + (m.parent?.uuid ?? '')
           if (!familias.has(chave)) familias.set(chave, [])
           familias.get(chave).push(m)
         }
@@ -153,5 +154,84 @@ export class MuitoLonge {
     let juntas = 0, suspensas = 0
     for (const c of this.lista) if (c.junta) { juntas++; suspensas += c.unidades.length }
     return { celulas: this.lista.length, juntas, unidadesSuspensas: suspensas }
+  }
+}
+
+// Longe mascarado (22/10/2026): para as espécies de árvore e as palhoças, que têm 3 ou 4 formas (cada forma é uma
+// geometria) e poucas cópias espalhadas pelo mapa todo. A junção de blocos (blocos.js) já faz blocos de até 768 m
+// para elas, e a célula de muito longe não tinha o que juntar: sobrava um objeto por bloco e por forma (na Coluna da
+// Hora, ~260 copas simples de árvore e 36 palhoças por quadro). Aqui a versão de longe de cada forma vira UMA malha
+// para o mapa inteiro, com todas as cópias; a unidade que não está "longe" tem as cópias dela zeradas (escala 0) na
+// malha grande, e a malha de longe original dela nunca mais é desenhada. Mesmas cópias, geometria e material: o
+// desenho é o mesmo. Uma unidade que troca de estado regrava só o trecho dela (addUpdateRange).
+// Unidade: { longe: [malhas de longe] }; o sistema chama mostrar(u, sim) onde antes fazia u.longe[i].visible = sim.
+
+export class LongeMascarado {
+  constructor({ nome = 'longe-mascarado' } = {}) {
+    this.nome = nome
+    this.unidades = []
+    this.malhas = []
+    this.montada = false
+    this.ligadoAntes = null
+  }
+
+  adicionar(u) { u.visivelLonge = false; this.unidades.push(u) }
+
+  montar() {
+    const familias = new Map()
+    for (const u of this.unidades) {
+      u.faixas = []
+      for (const m of u.longe) {
+        const chave = m.geometry.uuid + ':' + m.material.uuid + ':' + (m.parent?.uuid ?? '')
+        if (!familias.has(chave)) familias.set(chave, { lista: [], total: 0 })
+        const f = familias.get(chave)
+        u.faixas.push({ f, inicio: f.total, n: m.count, original: m })
+        f.lista.push(m)
+        f.total += m.count
+      }
+    }
+    for (const f of familias.values()) {
+      const j = juntarCopias(f.lista, `${f.lista[0].name}-mascarado`)
+      j.computeBoundingSphere() // com todas as cópias: a esfera cobre o mapa
+      j.frustumCulled = false
+      j.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+      f.malha = j
+      f.cheia = j.instanceMatrix.array.slice() // as matrizes de verdade
+      for (let k = 0; k < f.total; k++) j.instanceMatrix.array.fill(0, k * 16, k * 16 + 12) // tudo escondido até o sistema dizer quem está longe
+      ;(f.lista[0].parent).add(congelar(j))
+      if (j.castShadow) registrarEstatico(j)
+      this.malhas.push(j)
+    }
+    this.montada = true
+    return this
+  }
+
+  // a unidade passa a mostrar (ou não) a versão de longe
+  mostrar(u, sim) {
+    if (u.visivelLonge === sim && this.montada) return
+    u.visivelLonge = sim
+    if (!this.montada || !ligado()) { for (const m of u.longe) m.visible = sim; return }
+    for (const fx of u.faixas) {
+      const a = fx.f.malha.instanceMatrix
+      const de = fx.inicio * 16
+      a.array.set(fx.f.cheia.subarray(de, de + fx.n * 16), de)
+      // escondida: escala 0 no lugar dela (a translação fica, sem w = 0 nem matriz nula no shader)
+      if (!sim) for (let k = 0; k < fx.n; k++) a.array.fill(0, de + k * 16, de + k * 16 + 12)
+      a.addUpdateRange(de, fx.n * 16)
+      a.needsUpdate = true
+    }
+  }
+
+  // todo quadro: a chave do painel (cfg.desempenho.muitoLonge) troca ao vivo entre a malha grande e as de sempre
+  atualizar() {
+    if (!this.montada) return
+    const lig = ligado()
+    if (lig === this.ligadoAntes) return
+    this.ligadoAntes = lig
+    for (const j of this.malhas) j.visible = lig
+    for (const u of this.unidades) {
+      for (const m of u.longe) m.visible = lig ? false : u.visivelLonge
+      if (lig) { const s = u.visivelLonge; u.visivelLonge = !s; this.mostrar(u, s) }
+    }
   }
 }

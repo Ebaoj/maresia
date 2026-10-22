@@ -4,7 +4,7 @@
 // abre de novo no mesmo quadro em que alguma chega perto; desligada no painel, tudo volta ao LOD de sempre.
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { MuitoLonge, definirMuitoLonge, juntarCopias } from '../../src/mundo/muito-longe.js'
+import { MuitoLonge, LongeMascarado, definirMuitoLonge, juntarCopias } from '../../src/mundo/muito-longe.js'
 import { criarAleatorio } from '../../src/utils.js'
 
 function blocoDeCopias(geo, mat, x, z, n, rnd) {
@@ -115,5 +115,66 @@ describe('camada de muito longe', () => {
     expect(j.castShadow).toBe(true)
     expect(j.name).toBe('x-muito-longe')
     expect(j.userData.muitoLonge).toBe(true)
+  })
+})
+
+// a versão de longe mascarada (árvores e palhoças): uma malha por forma para o mapa todo
+describe('longe mascarado', () => {
+  const visiveis = (malhas) => malhas.flatMap((im) => Array.from({ length: im.count }, (_, j) => {
+    const m = new THREE.Matrix4(); const c = new THREE.Color()
+    im.getMatrixAt(j, m); im.getColorAt(j, c)
+    if (m.elements[0] === 0 && m.elements[5] === 0 && m.elements[10] === 0) return null
+    return `${m.elements[12].toFixed(3)},${m.elements[14].toFixed(3)}:${c.getHexString()}`
+  })).filter(Boolean).sort()
+
+  function cenario() {
+    definirMuitoLonge({ desempenho: { muitoLonge: true } })
+    const rnd = criarAleatorio(5)
+    const cena = new THREE.Scene()
+    const mat = new THREE.MeshBasicMaterial()
+    const formas = [new THREE.BoxGeometry(), new THREE.SphereGeometry(), new THREE.ConeGeometry()]
+    const unidades = []
+    for (let i = 0; i < 12; i++) {
+      const longe = blocoDeCopias(formas[i % 3], mat, rnd.entre(0, 3000), rnd.entre(0, 2000), 3, rnd)
+      longe.visible = false
+      cena.add(longe)
+      unidades.push({ longe: [longe] })
+    }
+    const ml = new LongeMascarado()
+    for (const u of unidades) ml.adicionar(u)
+    ml.montar()
+    ml.atualizar()
+    return { ml, unidades }
+  }
+
+  it('uma malha por forma; mostra exatamente as cópias das unidades longe', () => {
+    const { ml, unidades } = cenario()
+    expect(ml.malhas.length).toBe(3)
+    expect(visiveis(ml.malhas)).toEqual([])
+    const longe = unidades.filter((_, i) => i % 4 !== 1)
+    for (const u of unidades) ml.mostrar(u, longe.includes(u))
+    expect(visiveis(ml.malhas)).toEqual(copias(longe.flatMap((u) => u.longe)))
+    // as originais nunca mais aparecem
+    expect(unidades.every((u) => u.longe.every((m) => !m.visible))).toBe(true)
+    // volta uma para perto
+    ml.mostrar(longe[0], false)
+    expect(visiveis(ml.malhas)).toEqual(copias(longe.slice(1).flatMap((u) => u.longe)))
+  })
+
+  it('desligada no painel, as malhas de sempre voltam no estado de cada unidade', () => {
+    const { ml, unidades } = cenario()
+    ml.mostrar(unidades[0], true)
+    const cfg = { desempenho: { muitoLonge: false } }
+    definirMuitoLonge(cfg)
+    ml.atualizar()
+    expect(ml.malhas.every((m) => !m.visible)).toBe(true)
+    expect(unidades[0].longe[0].visible).toBe(true)
+    expect(unidades[1].longe[0].visible).toBe(false)
+    ml.mostrar(unidades[1], true)
+    expect(unidades[1].longe[0].visible).toBe(true)
+    cfg.desempenho.muitoLonge = true
+    ml.atualizar()
+    expect(unidades.every((u) => u.longe.every((m) => !m.visible))).toBe(true)
+    expect(visiveis(ml.malhas)).toEqual(copias([unidades[0].longe[0], unidades[1].longe[0]]))
   })
 })

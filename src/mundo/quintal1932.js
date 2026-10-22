@@ -152,8 +152,8 @@ export function criarQuintal1932(cena, cfg, pecas) {
   // o coqueiro: a mesma geometria e o mesmo material dos coqueiros das vilas
   // (as folhas balançam com o vento)
   if (ESP.coqueiro.length && pecas) {
-    guardar(instanciarEmBlocos(cena, pecas.geoTronco, pecas.matTronco, ESP.coqueiro, null, { nome: 'quintal-coqueiro', placa: true }))
-    guardar(instanciarEmBlocos(cena, pecas.geoCopa, pecas.matCopa, ESP.coqueiro, null, { nome: 'quintal-copa', semNormal: true, placa: true }))
+    guardar(instanciarEmBlocos(cena, pecas.geoTronco, pecas.matTronco, ESP.coqueiro, null, { nome: 'quintal-coqueiro', placa: true, semJuntarLonge: true }))
+    guardar(instanciarEmBlocos(cena, pecas.geoCopa, pecas.matCopa, ESP.coqueiro, null, { nome: 'quintal-copa', semNormal: true, placa: true, semJuntarLonge: true }))
   }
   // Longe, o coqueiro do quintal some como as outras árvores dele (21/10/2026, orçamento da cidade cheia; a
   // mangueira e o cajueiro fazem o mesmo pelo LOD das árvores pintadas): a árvore fica atrás da casa, e além

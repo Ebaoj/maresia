@@ -16,7 +16,7 @@ import { alturaTerreno } from './terreno.js'
 import { texturizar, toonVertice } from '../materiais.js'
 import { adicionarCaixa } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
-import { MuitoLonge } from './muito-longe.js'
+import { LongeMascarado } from './muito-longe.js'
 import { instanciarEmBlocos, TAM_LOD } from './blocos.js'
 import { trechosJogo, VILAS } from './fortaleza1932.js'
 import { criarAleatorio } from '../utils.js'
@@ -392,31 +392,22 @@ export function criarVilas(cena) {
       longe[i].visible = false
     }
   }
-  // de muito longe, as palhoças simples dos blocos se juntam por célula grande (muito-longe.js): eram 236 objetos
-  const muitoLonge = new MuitoLonge(cena, { nome: 'palhocas' })
-  for (const p of pares) {
-    p.unidade = {
-      x: p.esfera.center.x, z: p.esfera.center.z, r: p.esfera.radius, longe: [p.longe], todas: [p.perto, p.longe],
-      distancia: (camera) => Math.max(0, Math.hypot(camera.position.x - p.esfera.center.x, camera.position.z - p.esfera.center.z) - p.esfera.radius),
-      retomar: () => { p.perto.visible = false; p.longe.visible = true }, // o laço abaixo corrige quem estiver perto
-    }
-    muitoLonge.adicionar(p.unidade)
-  }
-  muitoLonge.montar()
-  casas.muitoLonge = muitoLonge
+  // a palhoça simples de cada tipo é UMA malha para o mapa todo (muito-longe.js, LongeMascarado): o bloco perto tem
+  // as cópias dele zeradas nela. Eram 236 blocos de 96 m com 2 ou 3 palhoças cada, um objeto por bloco e por tipo
+  const mascara = new LongeMascarado({ nome: 'palhocas' })
+  for (const p of pares) { p.unidade = { longe: [p.longe] }; mascara.adicionar(p.unidade) }
+  mascara.montar()
+  casas.mascaraLonge = mascara
   let ultimoLod = 0
   casas.atualizarLonge = (camera, dist) => {
-    if (!camera) return
+    mascara.atualizar()
     const agora = performance.now()
-    // a célula abre no quadro em que precisa (retomar põe a de longe); o laço de perto e longe segue a cada 400 ms
-    muitoLonge.atualizar(camera, dist)
-    if (agora - ultimoLod < 400) return
+    if (!camera || agora - ultimoLod < 400) return
     ultimoLod = agora
     for (const p of pares) {
-      if (p.unidade.suspenso) continue
       const d = Math.max(0, Math.hypot(camera.position.x - p.esfera.center.x, camera.position.z - p.esfera.center.z) - p.esfera.radius)
       const perto = d < dist
-      if (p.perto.visible !== perto) { p.perto.visible = perto; p.longe.visible = !perto }
+      if (p.perto.visible !== perto || p.unidade.visivelLonge === perto) { p.perto.visible = perto; mascara.mostrar(p.unidade, !perto) }
     }
   }
   if (varas.length) instanciarEmBlocos(cena, geometriaVara(), mat, varas, null, { nome: 'cercas', sombra: true })

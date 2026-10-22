@@ -9,7 +9,7 @@ import * as THREE from 'three'
 import { instanciarEmBlocos } from './blocos.js'
 import { materiaisArvores } from './vento-arvores.js'
 import { formaArvores } from './especies.js'
-import { MuitoLonge } from './muito-longe.js'
+import { LongeMascarado } from './muito-longe.js'
 
 const grupos = []
 const c = new THREE.Color()
@@ -31,6 +31,7 @@ export function instanciarArvores(cena, pecas, matrizes, { nome = 'arvore', vari
   const p = new THREE.Vector3()
   const cores = matrizes.map((m) => { p.setFromMatrixPosition(m); return corDaCopia(p.x, p.z, variacao) })
   const { placa: _placa, ...op } = opcoes // o vento é código de vértice: fica nos blocos, não vai para a vg
+  op.semJuntarLonge = true // o LOD daqui tem a versão de longe mascarada (montarMascara)
   const perto = instanciarEmBlocos(cena, pecas.corpo, corpo, matrizes, cores, { ...op, nome })
   const longe = instanciarEmBlocos(cena, pecas.longe, corpo, matrizes, cores, { ...op, nome: nome + '-longe' })
   const cart = pecas.cartoes ? instanciarEmBlocos(cena, pecas.cartoes, cartoes, matrizes, cores, { ...op, nome: nome + '-folhas' }) : null
@@ -61,42 +62,37 @@ export function estadoDoBloco(d, distancia, ate, antes) {
   return nivelDoBloco(d, distancia, antes === 'perto') ? 'perto' : 'longe'
 }
 
-// de muito longe, as copas simples dos blocos se juntam por célula grande (muito-longe.js). Fica de fora quem some
-// por inteiro longe (ate: as árvores dos quintais), porque a célula junta mostraria o que já devia ter sumido
-let muitoLonge = null
-function montarMuitoLonge(cena) {
-  muitoLonge = new MuitoLonge(cena, { nome: 'arvores' })
+// A copa simples de cada forma de cada espécie é UMA malha para o mapa todo (muito-longe.js, LongeMascarado): o bloco
+// que não está longe tem as cópias dele zeradas nela. As espécies são espalhadas e têm 3 ou 4 formas; mesmo com a
+// junção de blocos sobrava um objeto de longe por bloco e por forma (~260 por quadro na Coluna da Hora). Vale também
+// para quem some por inteiro longe (ate, as árvores dos quintais): fora é só não mostrar a de longe.
+let mascara = null
+function montarMascara() {
+  mascara = new LongeMascarado({ nome: 'arvores' })
   for (const g of grupos) {
-    if (g.ate) continue
-    g.unidade = {
-      x: g.c.x, z: g.c.z, r: g.r,
-      longe: [g.longe, g.cartLonge].filter(Boolean), todas: [g.perto, g.longe, g.cart, g.cartLonge].filter(Boolean),
-      distancia: (camera) => camera.position.distanceTo(g.c) - g.r,
-      retomar: () => { g.estado = null }, // o laço decide de novo neste quadro
-    }
-    muitoLonge.adicionar(g.unidade)
+    g.unidade = { longe: [g.longe, g.cartLonge].filter(Boolean) }
+    mascara.adicionar(g.unidade)
   }
-  muitoLonge.montar()
+  mascara.montar()
 }
 
 export function atualizarLodArvores(camera, cfg) {
   const D = cfg.arvores.lodBloco
   const cp = camera.position
   // na primeira vez: todas as espécies já registraram os blocos
-  if (!muitoLonge && grupos.length) montarMuitoLonge(grupos[0].longe.parent)
-  muitoLonge?.atualizar(camera, D + 10)
+  if (!mascara && grupos.length) montarMascara()
+  mascara?.atualizar()
   for (const g of grupos) {
-    if (g.unidade?.suspenso) continue
     const d = cp.distanceTo(g.c) - g.r
     const nivel = estadoDoBloco(d, D, g.ate ? g.ate() : null, g.estado)
     if (nivel === g.estado) continue
     g.estado = nivel
     g.perto.visible = nivel === 'perto'
     if (g.cart) g.cart.visible = nivel === 'perto'
-    g.longe.visible = nivel === 'longe'
-    if (g.cartLonge) g.cartLonge.visible = nivel === 'longe'
+    if (g.unidade) mascara.mostrar(g.unidade, nivel === 'longe')
+    else { g.longe.visible = nivel === 'longe'; if (g.cartLonge) g.cartLonge.visible = nivel === 'longe' } // registrado depois da máscara
   }
 }
 
 export function gruposLod() { return grupos }
-export function muitoLongeArvores() { return muitoLonge }
+export function mascaraArvores() { return mascara }
