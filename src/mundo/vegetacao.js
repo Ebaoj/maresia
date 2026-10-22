@@ -17,6 +17,7 @@ import { globais } from '../globais.js'
 import { ref } from '../render/gpu/comum.js'
 import { instanciarEmBlocos } from './blocos.js'
 import { VARIANTES_SOMBRA, desenharMascaraSombra, tamanhoMascaraSombra } from './sombra-copa.js'
+import { ventoPalmeira } from './vento-arvores.js'
 
 const rnd = criarAleatorio(99)
 
@@ -190,11 +191,12 @@ function posicoes() {
 // O vento balança as folhas: mais na ponta, quase nada perto do tronco.
 // Cada coqueiro tem sua fase (pela posição), para não balançarem todos juntos.
 function balancarCopa(mat, cfg) {
-  const u = { uTempoV: globais.uTempo, uVentoPalm: globais.uVentoPalm }
+  // a força do vento das árvores (cfg.vento.forca, vento-arvores.js) também pesa nas folhas: um vento só
+  const u = { uTempoV: globais.uTempo, uVentoPalm: globais.uVentoPalm, uVentoForcaC: globais.uVentoForca }
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u)
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTempoV; uniform float uVentoPalm;')
+      .replace('#include <common>', '#include <common>\nuniform float uTempoV; uniform float uVentoPalm; uniform float uVentoForcaC;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
         vec3 baseV = vec3(0.0);
         #ifdef USE_INSTANCING
@@ -202,7 +204,7 @@ function balancarCopa(mat, cfg) {
         #endif
         float ponta = max(0.0, length(transformed.xz - vec2(1.9, 0.0)) - 0.6);
         float fase = baseV.x * 0.13 + baseV.z * 0.07;
-        float rajada = 0.6 + 0.4 * sin(uTempoV * 0.35 + baseV.x * 0.01);
+        float rajada = (0.6 + 0.4 * sin(uTempoV * 0.35 + baseV.x * 0.01)) * uVentoForcaC;
         transformed.y += sin(uTempoV * 1.7 + fase + ponta * 0.6) * 0.07 * ponta * rajada * uVentoPalm;
         transformed.x += sin(uTempoV * 1.3 + fase) * 0.05 * ponta * rajada * uVentoPalm;
         transformed.z += cos(uTempoV * 1.1 + fase) * 0.05 * ponta * rajada * uVentoPalm;`)
@@ -212,7 +214,7 @@ function balancarCopa(mat, cfg) {
     nome: 'copa-vento',
     posicao({ W, instancia }) {
       const { vec2, vec3, max, length, sin, cos, positionLocal } = W
-      const t = ref(u.uTempoV), vento = ref(u.uVentoPalm)
+      const t = ref(u.uTempoV), vento = ref(u.uVentoPalm).mul(ref(u.uVentoForcaC))
       const p = positionLocal
       const baseV = instancia ? instancia.element(3).xyz : vec3(0.0)
       const ponta = max(0.0, length(p.xz.sub(vec2(1.9, 0.0))).sub(0.6))
@@ -248,7 +250,8 @@ export function pecasDoCoqueiro(cfg) {
   const { geo: geoTronco, topo } = geometriaTronco()
   const geoCopa = geometriaCopa(topo)
   // casca pintada com os anéis (visual Arcane)
-  const matTronco = texturizar(pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 'toon-pintado'), { topo: 'tronco', lado: 'tronco', tam: 1.4, contraste: 1.3 })
+  // o estipe balança no vento das árvores (vento-arvores.js), mais na ponta; a copa vai junto pela mesma conta
+  const matTronco = texturizar(pintar(ventoPalmeira(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), 8.2), 'coqueiro-tronco'), { topo: 'tronco', lado: 'tronco', tam: 1.4, contraste: 1.3 })
   const matCopa = balancarCopa(new THREE.MeshToonMaterial({
     vertexColors: true,
     gradientMap: gradienteToon(),
@@ -256,6 +259,7 @@ export function pecasDoCoqueiro(cfg) {
     alphaTest: 0.5,
     side: THREE.DoubleSide,
   }), cfg)
+  ventoPalmeira(matCopa, 8.2)
   pintar(matCopa, 'copa-pintada')
   // a sombra da copa sai de uma máscara própria (sombra-copa.js): lida pelo passe de sombra do WebGL (sombraDaCopa,
   // em onBeforeShadow) e pelo do WebGPU (render/renderizador.js, sombraComoWebgl). Decidido ao criar (recarregar)
