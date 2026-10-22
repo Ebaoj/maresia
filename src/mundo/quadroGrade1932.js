@@ -20,8 +20,15 @@
 
 import { pchip } from './pchip1932.js'
 
-// a grade de Herbster: as ruas do centro correm a 72,5 graus do norte
-export const ANGULO_GRADE = (72.5 * Math.PI) / 180
+// A grade de Herbster: as ruas do Centro correm a 107,8 graus de azimute
+// (lés-sudeste) e a 17,8 (nor-nordeste). O número sai da planta oficial: a
+// média das testadas a menos de 600 m da Praça do Ferreira, ponderada pelo
+// comprimento, com as duas famílias dobradas em 90 graus (19,7 km de testada;
+// testes/unidade/ruas-reais-retas.test.js confere). O ângulo guardado é o
+// complemento, 90 - 17,81 = 72,19 graus, na convenção de sempre do código
+// (rotation.y = -(90 - ANGULO_GRADE) leva o x local para a rua lés-sudeste).
+// Era 72,5: o valor redondo do traçado de Silva Paulet, 0,3 grau fora da planta.
+export const ANGULO_GRADE = (72.19 * Math.PI) / 180
 
 // metros por grau (a projeção plana local serve)
 export const METRO_POR_GRAU_LAT = 110574
@@ -32,8 +39,11 @@ const PRACA_LAT = -3.7274448
 const M_LON = 111320 * Math.cos((PRACA_LAT * Math.PI) / 180)
 const M_LAT = METRO_POR_GRAU_LAT
 
-// o eixo u corre ao longo da rua da grade; o v, de travessia
-const PSI = Math.PI / 2 - ANGULO_GRADE
+// o eixo u corre ao longo da rua da grade (azimute 90 + 17,8: lés-sudeste); o
+// v, de travessia (nor-nordeste). O sinal importa: com PSI = 90 - ANGULO_GRADE
+// (06f9525) o eixo u apontava para lés-nordeste, o espelho da rua de verdade, e
+// a compressão endireitava retas que a cidade não tem
+const PSI = ANGULO_GRADE - Math.PI / 2
 export const CU = Math.cos(PSI)
 export const SU = Math.sin(PSI)
 

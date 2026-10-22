@@ -11,10 +11,10 @@
 // retângulo local [x0, x1] x [z0, z1] (z local cresce para o sul da malha). O "largo" opcional é só
 // chão de cidade (terra batida em vez de capim: a Praça da Estação, a Praça da Sé), sem tirar casa.
 
-import { ll } from './fortaleza1932.js'
+import { ll, ANGULO_GRADE } from './fortaleza1932.js'
 
-// a malha de Herbster: as ruas do centro correm a 72,5 graus do leste
-export const ROT_MALHA = (72.5 * Math.PI) / 180 - Math.PI / 2
+// a malha de Herbster (o ângulo medido na planta, src/mundo/quadroGrade1932.js): o x local é a rua lés-sudeste
+export const ROT_MALHA = ANGULO_GRADE - Math.PI / 2
 const EX = [Math.cos(ROT_MALHA), -Math.sin(ROT_MALHA)] // leste da malha, no mundo
 const EZ = [Math.sin(ROT_MALHA), Math.cos(ROT_MALHA)] // sul da malha, no mundo
 

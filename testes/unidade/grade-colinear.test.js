@@ -2,7 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { ll, ANGULO_GRADE } from '../../src/mundo/fortaleza1932.js';
 import lotes from '../../src/mundo/mapa1932-lotes.json';
 
-// A grade de Herbster: as ruas do centro de 1932 correm a 72,5 graus do norte.
+// A grade de Herbster: as ruas do centro de 1932 correm a 107,8 graus de azimute
+// (lés-sudeste; ANGULO_GRADE guarda o complemento, 72,19).
+//
+// Corrigido em 21/10/2026: este teste nasceu (06f9525) medindo a reta de azimute
+// ANGULO_GRADE (72,5, lés-nordeste), o espelho da rua de verdade, e por isso
+// prendia o defeito do eixo do quadro da grade em vez da correção. Na planta, a
+// menos de 600 m da praça, há 12,6 km de testada a 107,5 graus, 3,0 km a 17,5 e
+// só ~0,5 km perto de 72,5. A tolerância não mudou; mudou a direção medida, que
+// agora é a da rua (azimute 180 - ANGULO_GRADE).
 // A compressao do mapa e separavel (em u, ao longo da rua, e em v, de
 // travessia), e por isso uma reta da grade continua reta no jogo: a rua nao
 // torce e as ruas nao abrem leque.
@@ -41,8 +49,9 @@ function angulo(pontos) {
 
 // uma reta de verdade (em lon/lat) que passa por um ponto, na direcao da grade
 function linhaDaGrade(lon, lat, comprimento = 400, passo = 20) {
-  const ux = Math.sin(ANGULO_GRADE);
-  const uy = Math.cos(ANGULO_GRADE);
+  // a rua lés-sudeste: azimute 180 - ANGULO_GRADE
+  const ux = Math.sin(Math.PI - ANGULO_GRADE);
+  const uy = Math.cos(Math.PI - ANGULO_GRADE);
   const n = Math.round(comprimento / passo);
   const pontos = [];
   for (let i = -Math.floor(n / 2); i <= Math.floor(n / 2); i++) {
@@ -66,8 +75,8 @@ describe('a grade de Herbster no jogo', () => {
       const pontos = linhaDaGrade(lon, lat);
       // a barriga: a rua nao pode curvar (0,5 un de folga no mundo todo)
       expect(barriga(pontos), `barriga da rua em ${nome}`).toBeLessThan(0.5);
-      // e o angulo e o da grade: -17,5 graus no jogo (a grade corre a 72,5 do norte)
-      expect(Math.abs(angulo(pontos) + 17.5), `angulo da rua em ${nome}`).toBeLessThan(0.5);
+      // e o angulo e o da grade: +17,8 graus no jogo (o z do jogo cresce para o sul: a rua desce para lés-sudeste)
+      expect(Math.abs(angulo(pontos) - (90 - (ANGULO_GRADE * 180) / Math.PI)), `angulo da rua em ${nome}`).toBeLessThan(0.5);
     }
   });
 
@@ -84,7 +93,7 @@ describe('a grade de Herbster no jogo', () => {
       .sort((a, b) => b.comp - a.comp);
     // as que correm na direcao da grade (as ruas da cidade)
     const daGrade = frentes.filter((o) => {
-      const dif = Math.abs(((o.ang - ANGULO_GRADE + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+      const dif = Math.abs(((o.ang - (Math.PI - ANGULO_GRADE) + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
       return dif < 0.06; // uns 3,4 graus
     });
     expect(daGrade.length).toBeGreaterThan(5);
