@@ -56,6 +56,13 @@ export function geometriaCadeira(hex) {
   return mergeGeometries(partes)
 }
 
+// metros por pixel do mapa de luz para uma caixa de largura x altura (m): 0,5, ou mais grosso se a
+// textura passar de MAX_PIXELS_LUZ (testes/unidade/mapa-de-luz.test.js)
+export const MAX_PIXELS_LUZ = 8e6
+export function resolucaoMapaDeLuz(largura, altura) {
+  return Math.max(0.5, Math.sqrt((largura * altura) / MAX_PIXELS_LUZ))
+}
+
 // Mapa da luz dos lampiões visto de cima, 0,5 m por pixel: cada lampião espalha uma poça que cai
 // com a distância. Os materiais toon (pintar) somam essa luz à noite. G guarda a altura do lampião.
 function mapaDeLuz(lampioes) {
@@ -64,7 +71,10 @@ function mapaDeLuz(lampioes) {
   const R = 6.5
   const min = new THREE.Vector2(Math.min(...pos.map((p) => p.x)) - R, Math.min(...pos.map((p) => p.z)) - R)
   const max = new THREE.Vector2(Math.max(...pos.map((p) => p.x)) + R, Math.max(...pos.map((p) => p.z)) + R)
-  const RES = 0.5
+  // 0,5 m por pixel, a não ser que a caixa dos lampiões fique grande demais: a textura (RGBA float,
+  // 16 bytes por pixel) passa do limite de buffer do WebGPU (256 MB) quando o mundo cresce (o Campo do
+  // Urubu em tamanho real levou a caixa a 18 milhões de pixels, 290 MB). Teto de 8 milhões de pixels.
+  const RES = resolucaoMapaDeLuz(max.x - min.x, max.y - min.y)
   const W = Math.ceil((max.x - min.x) / RES)
   const H = Math.ceil((max.y - min.y) / RES)
   const dados = new Float32Array(W * H * 4)
