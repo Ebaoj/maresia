@@ -204,6 +204,12 @@ export class Animador {
     // logo depois de desistir de um giro, nada de outra volta do mocap (lenta, ~1 s): o controle vira rápido
     mm.semGiro = Math.max(0, (mm.semGiro || 0) - DT)
     const faltaGiro = s.yawPedido != null ? Math.abs(angulo(s.yawPedido - s.yaw)) : Math.PI
+    // o pedido mudou (outra direção, andar/correr, parar): procura já, sem esperar a próxima das 10 buscas por
+    // segundo (até 100 ms de atraso no começo da curva, da freada e da arrancada; 22/10/2026)
+    const ped = (mm.pedido ??= { yaw: null, vel: 0 })
+    const yp = s.yawPedido ?? null, vp = s.velPedida || 0
+    if (this.opcoes.buscaNaHora !== false && ((yp == null) !== (ped.yaw == null) || (yp != null && Math.abs(angulo(yp - ped.yaw)) > 0.35) || Math.abs(vp - ped.vel) > 0.8)) mm.espera = 0
+    ped.yaw = yp; ped.vel = vp
     if (!travado && (!atual || mm.espera <= 0 || fimDoClipe)) {
       mm.espera = 0.1 // procura 10 vezes por segundo
       const pose = atual ? this.banco.linha(atual.userData.e, fAtual) : this.banco.linha(0, 0)
@@ -213,8 +219,10 @@ export class Animador {
       const correndo = (s.velPedida || 0) > 3 || (vinhaCorrendo && s.vel > 0.8 && (s.velPedida || 0) < 0.5)
       const r = this.banco.buscar(pose, s.traj, (e) => {
         const ent = this.banco.entradas[e]
-        // meia-volta só quando falta girar perto de meia volta (a menos que isso o giro passava do ponto)
-        if (/volta/.test(ent.nome) && faltaGiro < 2.2) return false
+        // giro gravado (meia-volta, virar no lugar) só quando falta girar perto de meia volta: a menos que isso
+        // o giro passava do ponto, e o virar no lugar (93°, ~1 s) parava o corpo numa curva de 90° andando, que
+        // o controle faz sozinho em ~0,25 s (cfg.personagem.giroClipeMin, 22/10/2026)
+        if (/volta|virar/.test(ent.nome) && faltaGiro < (this.opcoes.giroClipeMin ?? 2.2)) return false
         if (/volta|virar/.test(ent.nome) && mm.semGiro > 0) return false
         const rit = ent.ritmo
         return rit === 'livre' || (correndo ? rit === 'corrida' : rit === 'andar')
@@ -229,6 +237,8 @@ export class Animador {
         const a = this.acoes[chave]
         a.reset()
         a.time = r.f / FPSB
+        // o giro gravado toca mais depressa (cfg.personagem.ritmoGiro): as mesmas poses do mocap, em menos tempo
+        a.timeScale = /volta|virar/.test(this.banco.entradas[r.e].nome) ? (this.opcoes.ritmoGiro ?? 1) : 1
         a.play()
         mm.chave = chave
         mm.tocando = true
@@ -306,6 +316,11 @@ export class Animador {
   get girando() { return !!(this.mm?.trava && this.mm.trava.chave === this.mm.chave) }
   // desistiu de um giro no meio (frente, trás, frente...): o controle vira depressa para o pedido
   get virarRapido() { return (this.mm?.semGiro || 0) > 0 }
+
+  // este quadro vai sair pose nova? O controle gira a raiz no mesmo quadro em que a pose muda: com o
+  // relógio dele (12/s) e o do animador (24/s no Arcane) soltos, o corpo virava só a cada 1/12 s e fora
+  // do tempo da pose (22/10/2026, docs/controle-22-10.md)
+  vaiPosar(dt) { return !this.opcoes.em2 || this.acumulado + dt >= 1 / Math.max(1, this.opcoes.fps) }
 
   // o controle lê e zera o giro acumulado
   consumirGiro() {

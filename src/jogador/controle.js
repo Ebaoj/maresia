@@ -67,6 +67,7 @@ export class Jogador {
       // visual Arcane: personagem a 24 poses por segundo sempre (o "em 2" é linguagem do Aranhaverso)
       fps: acao || this.cfg.estilo.visual === 'arcane' ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
       mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0, clavicula: cfg.clavicula, joelhos: cfg.joelhos,
+      giroClipeMin: cfg.giroClipeMin, ritmoGiro: cfg.ritmoGiro, buscaNaHora: cfg.mmBuscaNaHora,
     })
     // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo
     const forca = Math.max(clamp((this.velHoriz - cfg.corridaNova * 0.8) / (cfg.corridaNova * 0.3), 0, 1), this.noChao || this.nadando ? 0 : 0.5)
@@ -220,14 +221,23 @@ export class Jogador {
     if (this.naAreiaSeca) alvoVel *= 0.86
     if (this.nadando) alvoVel = teclas.correr ? 4 : 2.6
     else if (profAqui > 0.35 && this.pos.y < 0.2) alvoVel *= 0.6 // água pela canela
-    // girando (meia-volta): quase para enquanto vira, em vez de sair andando de costas para a nova direção
-    if (this.animador?.girando) alvoVel *= 0.3
+    // girando (meia-volta gravada, que é no lugar): a raiz já freia e sai para o lado pedido no primeiro quadro,
+    // mas só ganha velocidade conforme o corpo encara a direção (cfg.velNoGiro de costas, inteira de frente).
+    // Até 22/10/2026 ficava a 30% o giro todo (~0,8 s), esperando a animação acabar
+    if (this.animador?.girando && n > 0) {
+      const falta = Math.abs(Math.atan2(Math.sin(Math.atan2(dx, dz) - this.yawVisual), Math.cos(Math.atan2(dx, dz) - this.yawVisual)))
+      alvoVel *= Math.max(cfg.velNoGiro, Math.cos(Math.min(falta, Math.PI / 2)))
+    }
     alvoVel *= devagar
 
-    const acel = this.noChao || this.nadando ? 10 : 3
+    // soltou a tecla: freia mais forte do que acelera (cfg.frenagem). Com os dois a 10/s, a raiz levava 0,3 s
+    // deslizando até parar e o corpo parecia escorregar no fim do passo (22/10/2026)
+    // a aproximação é exponencial no tempo (antes, dt × taxa: mudava com o FPS)
+    const acel = this.noChao || this.nadando ? (n > 0 || this.indoSentar ? cfg.aceleracao : cfg.frenagem) : 3
+    const ka = 1 - Math.exp(-dt * acel)
     this.velDesejada.set(dx * alvoVel, 0, dz * alvoVel) // o motion matching lê para prever a trajetória
-    this.vel.x += (dx * alvoVel - this.vel.x) * Math.min(1, dt * acel)
-    this.vel.z += (dz * alvoVel - this.vel.z) * Math.min(1, dt * acel)
+    this.vel.x += (dx * alvoVel - this.vel.x) * ka
+    this.vel.z += (dz * alvoVel - this.vel.z) * ka
 
     if (this.pediuPulo && this.noChao && !this.nadando) {
       this.vel.y = cfg.pulo
@@ -308,7 +318,10 @@ export class Jogador {
       this.eventos.push({ tipo: 'pisada', pos: new THREE.Vector3(this.pos.x + rx * 0.12 * lado, this.pos.y, this.pos.z + rz * 0.12 * lado), yaw: this.yawVisual, lado })
     }
     this.ultimoLado = ladoAtual
-    if (this.velHoriz > 0.4) this.yawAlvo = Math.atan2(this.vel.x, this.vel.z)
+    // para onde o corpo quer olhar: a direção pedida (a tecla), não a da velocidade. A velocidade leva ~0,2 s
+    // para virar, e o corpo seguindo a velocidade somava esse atraso ao dele (22/10/2026)
+    if (this.velDesejada.lengthSq() > 0.09) this.yawAlvo = Math.atan2(this.velDesejada.x, this.velDesejada.z)
+    else if (this.velHoriz > 0.4) this.yawAlvo = Math.atan2(this.vel.x, this.vel.z)
 
     // mola do estica e amassa
     const k = 220
@@ -318,26 +331,33 @@ export class Jogador {
 
     // pose "em 2"
     this.acPose += dt
+    this.dtGiro = (this.dtGiro || 0) + dt
     const passo = 1 / Math.max(1, cfg.fpsPose)
-    if (this.acPose >= passo) {
+    // o corpo novo gira no quadro em que o animador desenha a pose (24/s no Arcane), o antigo no relógio dele
+    const posa = this.animador ? this.animador.vaiPosar(dt) : this.acPose >= passo
+    if (posa) {
       this.acPose %= passo
+      const dg = this.dtGiro // tempo desde o último giro: as taxas valem em qualquer ritmo de pose
+      this.dtGiro = 0
       if (this.animador?.mmAtivo && this.noChao && !this.nadando) {
         // motion matching: o corpo gira o que o movimento escolhido gira (meia-volta, curva, virar no
-        // lugar), e o controle só corrige o desvio aos poucos
+        // lugar), e o controle corrige o desvio. Andando, a correção é rápida (cfg.giroAndando): a 3/s,
+        // até 22/10/2026, encarar uma curva de 45° levava 0,7 s e o controle parecia travado
         const giro = this.animador.consumirGiro()
         this.yawVisual += giro
         if (this.animador.virarRapido) {
-          // desistiu do giro no meio: vira depressa, mas no máximo ~45° por desenho (sem estalo)
+          // desistiu do giro no meio: vira depressa, mas no máximo ~45° a cada 1/12 s (sem estalo)
           const d = Math.atan2(Math.sin(this.yawAlvo - this.yawVisual), Math.cos(this.yawAlvo - this.yawVisual))
-          this.yawVisual += THREE.MathUtils.clamp(d * (1 - Math.exp(-passo * 8)), -0.8, 0.8)
-        } else if (!this.animador.girando) this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * 3))
+          const lim = 9.6 * dg
+          this.yawVisual += THREE.MathUtils.clamp(d * (1 - Math.exp(-dg * 8)), -lim, lim)
+        } else if (!this.animador.girando) this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-dg * cfg.giroAndando))
       } else {
         this.animador?.consumirGiro()
         // meia-volta saindo do parado: o motion matching ainda não assumiu (está entrando na mistura);
         // girar rápido aqui fazia o corpo estalar 120° em 0,1 s antes da animação de volta começar
         const d = this.yawAlvo - this.yawVisual
         const meiaVolta = this.animador?.mm && this.animador.opcoes.mm && !this.carregando && this.noChao && !this.nadando && Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) > 1.6
-        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-passo * (meiaVolta ? 2 : 14)))
+        this.yawVisual = lerpAngulo(this.yawVisual, this.yawAlvo, 1 - Math.exp(-dg * (meiaVolta ? 2 : 14)))
       }
       if (!this.animador) {
         aplicarPose(this.p, {
