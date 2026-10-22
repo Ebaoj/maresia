@@ -105,6 +105,13 @@ export const LUGARES_RESERVADOS = [
   ['parqueLiberdade', 16], ['favela1932', 8], ['mercadoFerro', 16],
 ].map(([chave, raio]) => [chave, raio * esticamento(...LUGARES[chave])])
 
+// Os círculos que continuam só como chão (terra de cidade em vez de mato) e não tiram mais casa: o
+// lugar ganhou o chão exato do marco (marcos1932/pegadas.js, lotes-marcos.js) ou o contorno da praça
+// (praca1932.js), e o círculo, maior que o marco, deixava a praça sem as fachadas em volta (21/10/2026:
+// 13 fachadas da Praça do Ferreira). O "mercado" é o Mercado Público de depois de 1937: em 1932 ali
+// havia casa (a planta tem os lotes), o Mercado de Ferro é o "mercadoFerro".
+export const RESERVA_SO_CHAO = new Set(['pracaFerreira', 'pracaLeoes', 'mercadoFerro', 'se', 'estacao', 'passeioPublico', 'mercado'])
+
 // bairros (para o nome na tela): o mais perto vence. O 4º número (opcional) encurta o alcance de um
 // lugar pequeno: a distância até ele conta multiplicada (o Poço da Draga é a vila junto da Ponte Velha,
 // não pode tomar o Passeio Público do Centro: testes/unidade/bairros.test.js).

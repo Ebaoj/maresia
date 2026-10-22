@@ -18,8 +18,9 @@ import { criarCasas } from './quarteirao.js'
 import { casaNoMarco } from './marcos1932/pegadas.js'
 import { criarAleatorio } from '../utils.js'
 import { criarMuros1932 } from './muro1932.js'
-import { lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha, FATOR_PRACA, metrosPorUn } from './fortaleza1932.js'
+import { RESERVA_SO_CHAO, lugaresJogo, lagoasJogo, ANGULO_GRADE, pajeuJogo, distPolilinha, FATOR_PRACA, metrosPorUn } from './fortaleza1932.js'
 import { preencheVaus, FRENTE } from './frente1932.js'
+import { dentroDaPraca } from './praca1932.js'
 
 const rnd = criarAleatorio(42)
 
@@ -79,7 +80,7 @@ const [PFX, PFZ] = lugaresJogo.pracaFerreira
 export const GRADE = { rot: ROT, ex: EX, ez: EZ, w: QUADRA_W, d: QUADRA_D, rua: RUA, origem: [PFX, PFZ] }
 
 // os lugares que a cidade nao pode cobrir (a reconstituicao de cada um entra por cima)
-const reservas = RESERVADOS.map(([chave, raio]) => {
+const reservas = RESERVADOS.filter(([chave]) => !RESERVA_SO_CHAO.has(chave)).map(([chave, raio]) => {
   const [x, z] = lugaresJogo[chave]
   return { x, z, r2: raio * raio }
 })
@@ -93,10 +94,24 @@ function reservado(x, z) {
   return false
 }
 
+// algum canto (ou o meio) da casa cai dentro da Praça do Ferreira? (o círculo da praça não tira mais
+// casa: o contorno de 1932 é quem diz onde a praça acaba)
+function cantoNaPraca(f) {
+  const c = Math.cos(f.rot)
+  const s = Math.sin(f.rot)
+  for (const [a, b] of [[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const lx = (a * f.w) / 2
+    const lz = (b * f.d) / 2
+    if (dentroDaPraca(f.x + lx * c + lz * s, f.z - lx * s + lz * c)) return true
+  }
+  return false
+}
+
 // A fachada cai num lugar que a cidade não cobre? 'reservada' (o círculo do lugar histórico) ou 'marco' (o chão
 // de um marco de 1932 que tem obra própria: Excelsior, cinemas, Leões, Mercado; marcos1932/pegadas.js)
 export function lugarRecusado(f) {
   if (reservado(f.x, f.z)) return 'reservada'
+  if (cantoNaPraca(f)) return 'reservada'
   if (casaNoMarco(f.x, f.z, f.w, f.d, f.rot)) return 'marco'
   return null
 }
