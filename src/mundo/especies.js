@@ -76,6 +76,34 @@ export function ficus(rnd) {
   return montar(est)
 }
 
+// MANGUEIRA dos quintais (quintal1932.js): tronco grosso e curto, pernadas subindo e abrindo, copa grande, densa e
+// redonda, verde muito escuro (o mais escuro das copas do jogo, nunca preto), folha comprida e pontuda, um pouco de
+// folha nova cor de bronze no alto. É a maior árvore do quintal: a sombra funda de que fala a planta
+export function mangueira(rnd) {
+  const est = novaEstrutura(rnd, op(FOLHAGEM.mangueira, { tam: 1.1, quadrantes: [Q.media], dens: 0.45 }))
+  const H = rnd.entre(2.6, 3.4)
+  const topo = V(rnd.entre(-0.25, 0.25), H, rnd.entre(-0.25, 0.25))
+  galhoPts(est, [V(0, 0, 0), V(topo.x * 0.3, H * 0.55, topo.z * 0.3), topo], 0.5, 0.36, { raiz: true, peso1: 0 })
+  const bronze = est.pal.acento
+  const n = 5 + (rnd.chance(0.5) ? 1 : 0)
+  for (let i = 0; i < n; i++) {
+    const a = volta(rnd, i, n, 0.35)
+    const f = fase(rnd)
+    const pts = galho(est, topo, V(Math.cos(a), 0.8, Math.sin(a)), rnd.entre(2.6, 3.4), 0.22, 0.08, { sobe: 0.15, cai: 0.1, torce: 0.18, peso1: 0.65, fase: f })
+    for (let j = 0; j < 2; j++) {
+      const b = a + (j ? 0.75 : -0.75) + rnd.entre(-0.25, 0.25)
+      const p2 = galho(est, pts[2 + j], V(Math.cos(b), 0.75, Math.sin(b)), rnd.entre(1.3, 1.9), 0.09, 0.035, { peso0: 0.4, fase: f })
+      cacho(est, p2[p2.length - 1].clone().add(V(0, 0.3, 0)), rnd.entre(1.05, 1.4), { fase: f, forca: 0.45, topo: rnd.chance(0.25) ? bronze : null })
+    }
+    cacho(est, pts[pts.length - 1].clone().add(V(0, 0.4, 0)), rnd.entre(1.2, 1.5), { fase: f, forca: 0.45 })
+  }
+  for (let i = 0; i < 3; i++) {
+    const a = volta(rnd, i, 3, 0.8)
+    cacho(est, topo.clone().add(V(Math.cos(a) * 1.0, rnd.entre(3.0, 3.6), Math.sin(a) * 1.0)), rnd.entre(1.3, 1.6), { fase: fase(rnd), peso: 0.8, forca: 0.45, topo: bronze })
+  }
+  return montar(est)
+}
+
 // CAJUEIRO: tronco curto e torto que logo se abre em galhos grossos quase horizontais, caindo na ponta; copa baixa
 // e larga, verde escuro brilhante, folha grande, com folha nova acobreada no topo
 export function cajueiro(rnd) {

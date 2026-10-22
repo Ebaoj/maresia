@@ -12,8 +12,8 @@
 // porte também acompanha a escala local, para a árvore ter o tamanho do
 // quintal que ela sombreia.
 //
-// São poucas, de propósito: cada mangueira é uma copa de milhares de
-// triângulos, e o jogo pesa na tela.
+// São as árvores pintadas do jogo (especies.js, 22/10/2026): perto, corpo e cartões de folha; longe, a copa
+// simples (lod-arvores.js); além de cfg.casario.quintal.ate o bloco sai do desenho e da sombra.
 
 import * as THREE from 'three'
 import { FACHADAS } from './casario1932.js'
@@ -21,12 +21,12 @@ import { FRENTES, emLonLat } from './casarioPlanta1932.js'
 import { ll, metrosPorUn, LUGARES_RESERVADOS, lugaresJogo } from './fortaleza1932.js'
 import { alturaTerreno, inclinacao } from './terreno.js'
 import { distCosta, larguraPraia } from './mapa.js'
-import { toonVertice } from '../materiais.js'
 import { adicionarCirculo } from './colisao.js'
 import { ocupacao } from './ocupacao.js'
 import { criarAleatorio } from '../utils.js'
 import { instanciarEmBlocos } from './blocos.js'
-import { cajueiro, mangueira } from './especies-quintal.js'
+import { cajueiro, mangueira } from './especies.js'
+import { instanciarArvores } from './lod-arvores.js'
 
 // onde o coqueiro faz sentido: a palmeira é da praia
 // (docs/referencias-fotos-1932.md); os outros são da cidade
@@ -94,14 +94,12 @@ function gradeDasCasas() {
 export function criarQuintal1932(cena, cfg, pecas) {
   const rnd = criarAleatorio(1932)
   const cfgQ = cfg.casario.quintal
-  // a árvore de cada espécie: poucas variantes, com semente própria. A folhagem
-  // do quintal sai com menos faces (elas ficam atrás das casas, longe de quem
-  // olha, e a conta de triângulos da tela importa).
+  // a árvore de cada espécie: poucas variantes, com semente própria (o barato de longe é a copa simples do LOD)
   const rndE = criarAleatorio(1933)
-  const variantes = (fn, n) => Array.from({ length: n }, () => ({ geo: fn(rndE), mats: [] }))
+  const variantes = (fn, n) => Array.from({ length: n }, () => ({ pecas: fn(rndE), mats: [] }))
   const ESP = {
-    mangueira: variantes((r) => mangueira(r, { barato: true }), 3),
-    cajueiro: variantes((r) => cajueiro(r, { barato: true }), 3),
+    mangueira: variantes(mangueira, 3),
+    cajueiro: variantes(cajueiro, 3),
     coqueiro: [],
   }
   const grade = gradeDasCasas()
@@ -146,22 +144,19 @@ export function criarQuintal1932(cena, cfg, pecas) {
     if (plantar(cand)) plantadas++
   }
 
-  const mat = toonVertice()
+  // mangueira e cajueiro: árvores pintadas com vento; o corte de distância é o do LOD delas
+  const ate = () => cfg.casario.quintal.ate
+  for (const esp of ['mangueira', 'cajueiro']) for (const v of ESP[esp]) instanciarArvores(cena, v.pecas, v.mats, { nome: `quintal-${esp}`, ate })
   const blocos = []
   const guardar = (r) => { if (Array.isArray(r)) blocos.push(...r) }
-  for (const esp of ['mangueira', 'cajueiro']) {
-    for (const v of ESP[esp]) {
-      if (!v.mats.length) continue
-      guardar(instanciarEmBlocos(cena, v.geo, mat, v.mats, null, { nome: `quintal-${esp}`, placa: true }))
-    }
-  }
   // o coqueiro: a mesma geometria e o mesmo material dos coqueiros das vilas
   // (as folhas balançam com o vento)
   if (ESP.coqueiro.length && pecas) {
     guardar(instanciarEmBlocos(cena, pecas.geoTronco, pecas.matTronco, ESP.coqueiro, null, { nome: 'quintal-coqueiro', placa: true }))
     guardar(instanciarEmBlocos(cena, pecas.geoCopa, pecas.matCopa, ESP.coqueiro, null, { nome: 'quintal-copa', semNormal: true, placa: true }))
   }
-  // Longe, o quintal some (21/10/2026, orçamento da cidade cheia): a árvore fica atrás da casa, e além
+  // Longe, o coqueiro do quintal some como as outras árvores dele (21/10/2026, orçamento da cidade cheia; a
+  // mangueira e o cajueiro fazem o mesmo pelo LOD das árvores pintadas): a árvore fica atrás da casa, e além
   // de cfg.casario.quintal.ate (m) a copa já não aparece por cima do telhado; o bloco inteiro de 96 m
   // sai do desenho e da sombra. Na vista mais cheia (a Coluna da Hora) os quintais custavam ~2,5 ms.
   const esferas = blocos.map((m) => { m.updateMatrixWorld(true); return m.boundingSphere ? m.boundingSphere.clone().applyMatrix4(m.matrixWorld) : null })

@@ -22,7 +22,9 @@ export function corDaCopia(x, z, variacao = 1) {
 }
 
 // as três malhas de uma espécie (pecas = { corpo, longe, cartoes }) nas mesmas matrizes
-export function instanciarArvores(cena, pecas, matrizes, { nome = 'arvore', variacao = formaArvores().variacao, ...opcoes } = {}) {
+// ate: função que devolve a distância (m) além da qual o bloco inteiro sai do desenho e da sombra (as árvores dos
+// quintais somem atrás dos telhados, cfg.casario.quintal.ate); sem ela, de longe fica a copa simples
+export function instanciarArvores(cena, pecas, matrizes, { nome = 'arvore', variacao = formaArvores().variacao, ate = null, ...opcoes } = {}) {
   if (!matrizes.length) return null
   const { corpo, cartoes } = materiaisArvores()
   const p = new THREE.Vector3()
@@ -33,15 +35,15 @@ export function instanciarArvores(cena, pecas, matrizes, { nome = 'arvore', vari
   const cart = pecas.cartoes ? instanciarEmBlocos(cena, pecas.cartoes, cartoes, matrizes, cores, { ...op, nome: nome + '-folhas' }) : null
   // peças que a espécie não pode perder de longe (os leques da carnaúba), na versão simples
   const cartLonge = pecas.cartoesLonge ? instanciarEmBlocos(cena, pecas.cartoesLonge, cartoes, matrizes, cores, { ...op, nome: nome + '-folhas-longe' }) : null
-  registrarLod(perto, longe, cart, cartLonge)
+  registrarLod(perto, longe, cart, cartLonge, ate)
   return { perto, longe, cartoes: cart, cartoesLonge: cartLonge }
 }
 
-export function registrarLod(perto, longe, cartoes, cartoesLonge = null) {
+export function registrarLod(perto, longe, cartoes, cartoesLonge = null, ate = null) {
   if (!Array.isArray(perto) || !Array.isArray(longe) || perto.length !== longe.length) return
   for (let i = 0; i < perto.length; i++) {
     const s = perto[i].boundingSphere || (perto[i].computeBoundingSphere(), perto[i].boundingSphere)
-    grupos.push({ c: s.center.clone().applyMatrix4(perto[i].matrixWorld), r: s.radius, perto: perto[i], longe: longe[i], cart: cartoes ? cartoes[i] : null, cartLonge: cartoesLonge ? cartoesLonge[i] : null, estado: null })
+    grupos.push({ c: s.center.clone().applyMatrix4(perto[i].matrixWorld), r: s.radius, perto: perto[i], longe: longe[i], cart: cartoes ? cartoes[i] : null, cartLonge: cartoesLonge ? cartoesLonge[i] : null, ate, estado: null })
     longe[i].visible = false
     if (cartoesLonge) cartoesLonge[i].visible = false
   }
@@ -52,17 +54,24 @@ export function nivelDoBloco(d, distancia, estadoAntes) {
   return estadoAntes === true ? d < distancia + 10 : d < distancia
 }
 
+// 'perto', 'longe' ou 'fora' (além de "ate", se houver), com a mesma folga de 10 m nas duas divisas
+export function estadoDoBloco(d, distancia, ate, antes) {
+  if (ate !== null && ate !== undefined && (antes === 'fora' ? d > ate - 10 : d > ate)) return 'fora'
+  return nivelDoBloco(d, distancia, antes === 'perto') ? 'perto' : 'longe'
+}
+
 export function atualizarLodArvores(camera, cfg) {
   const D = cfg.arvores.lodBloco
   const cp = camera.position
   for (const g of grupos) {
-    const perto = nivelDoBloco(cp.distanceTo(g.c) - g.r, D, g.estado)
-    if (perto === g.estado) continue
-    g.estado = perto
-    g.perto.visible = perto
-    if (g.cart) g.cart.visible = perto
-    if (g.cartLonge) g.cartLonge.visible = !perto
-    g.longe.visible = !perto
+    const d = cp.distanceTo(g.c) - g.r
+    const nivel = estadoDoBloco(d, D, g.ate ? g.ate() : null, g.estado)
+    if (nivel === g.estado) continue
+    g.estado = nivel
+    g.perto.visible = nivel === 'perto'
+    if (g.cart) g.cart.visible = nivel === 'perto'
+    g.longe.visible = nivel === 'longe'
+    if (g.cartLonge) g.cartLonge.visible = nivel === 'longe'
   }
 }
 

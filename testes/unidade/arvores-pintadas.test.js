@@ -5,12 +5,12 @@
 
 import { describe, it, expect } from 'vitest'
 import * as THREE from 'three'
-import { oiti, ficus, cajueiro, carnauba, mangueVermelho, murici, guajiru } from '../../src/mundo/especies.js'
+import { oiti, ficus, mangueira, cajueiro, carnauba, mangueVermelho, murici, guajiru } from '../../src/mundo/especies.js'
 import { criarAleatorio } from '../../src/utils.js'
 import { direcaoVento } from '../../src/mundo/vento-arvores.js'
-import { nivelDoBloco, corDaCopia } from '../../src/mundo/lod-arvores.js'
+import { nivelDoBloco, estadoDoBloco, corDaCopia } from '../../src/mundo/lod-arvores.js'
 
-const ESPECIES = { oiti, ficus, cajueiro, carnauba, mangueVermelho, murici, guajiru }
+const ESPECIES = { oiti, ficus, mangueira, cajueiro, carnauba, mangueVermelho, murici, guajiru }
 const tris = (g) => (g ? g.index.count / 3 : 0)
 const lum = (c, i) => 0.3 * c.getX(i) + 0.59 * c.getY(i) + 0.11 * c.getZ(i)
 
@@ -60,7 +60,7 @@ describe('árvores pintadas: forma', () => {
   }
 
   it('copa lida como um volume: no alto a normal aponta para cima e a cor é mais clara que embaixo', () => {
-    for (const fn of [oiti, ficus, cajueiro, mangueVermelho]) {
+    for (const fn of [oiti, ficus, mangueira, cajueiro, mangueVermelho]) {
       const g = fn(criarAleatorio(3)).corpo
       const pos = g.attributes.position, n = g.attributes.normal, c = g.attributes.color, ta = g.attributes.aTexAlt
       let y0 = Infinity, y1 = -Infinity
@@ -139,6 +139,15 @@ describe('vento e distância', () => {
     expect(nivelDoBloco(95, 90, true)).toBe(true)
     expect(nivelDoBloco(95, 90, false)).toBe(false)
     expect(nivelDoBloco(101, 90, true)).toBe(false)
+  })
+
+  it('bloco com corte de distância (quintal): some além dele, com folga na volta', () => {
+    expect(estadoDoBloco(50, 90, 320, null)).toBe('perto')
+    expect(estadoDoBloco(200, 90, 320, 'perto')).toBe('longe')
+    expect(estadoDoBloco(330, 90, 320, 'longe')).toBe('fora')
+    expect(estadoDoBloco(315, 90, 320, 'fora')).toBe('fora')
+    expect(estadoDoBloco(305, 90, 320, 'fora')).toBe('longe')
+    expect(estadoDoBloco(5000, 90, null, 'longe')).toBe('longe')
   })
 
   it('cor por cópia: fixa pela posição e perto de 1', () => {

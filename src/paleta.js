@@ -86,6 +86,7 @@ export const MARCOS = {
 export const FOLHAGEM = {
   oiti: { luz: '#b4b852', meio: '#6c8a42', sombra: '#4a6e66', casca: '#6a5848' },
   ficus: { luz: '#bab95a', meio: '#728f46', sombra: '#4d7069', casca: '#9a9080' },
+  mangueira: { luz: '#8c9c46', meio: '#4e7239', sombra: '#3b605b', casca: '#6a5647', acento: '#9a6440' },
   cajueiro: { luz: '#b0b64e', meio: '#6a8a3e', sombra: '#4a6d62', casca: '#6a5040', acento: '#b8703f' },
   mangue: { luz: '#b0c058', meio: '#668e42', sombra: '#476e64', casca: '#7a6250' },
   carnauba: { luz: '#c6d2ac', meio: '#8eab82', sombra: '#6a8a7e', casca: '#8a7a6a' },
