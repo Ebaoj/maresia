@@ -121,6 +121,7 @@ export function criarCeu(cena, cfg = null) {
   const corDouradaSombra = new THREE.Color()
   const dirContinua = new THREE.Vector3(0, 1, 0) // direção da luz sem passos (mapa de sombra de perto)
   const corAzul = new THREE.Color()
+  let ancoraLonge = null // centro da pose anterior do mapa de longe: a grade de texels passa por ele (sombra-luz.js)
   let cache = null // CacheSombra (F4): com ele ligado, a pose da luz fica congelada enquanto o mapa dos parados vale
 
   function atualizar(hora, centro, dt, cfg) {
@@ -188,10 +189,13 @@ export function criarCeu(cena, cfg = null) {
     // do mapa de sombra, medidos no plano da luz. Assim a borda das sombras não "ferve"
     // quando o jogador anda.
     const texel = (sc.right - sc.left) / sol.shadow.mapSize.x
-    const alinhado = alinharAoTexel(centro, dirLuz, texel, new THREE.Vector3())
+    // grade presa à pose anterior, não à origem do mundo (pisca 22/10/2026, sombra-luz.js): o mapa refeito porque o
+    // sol andou 0,05° saía com a grade deslocada uma fração de texel qualquer e as bordas davam um tranco
+    const alinhado = alinharAoTexel(centro, dirLuz, texel, new THREE.Vector3(), ancoraLonge)
     // F4 (KAN-74): com o cache ligado, a pose é a do mapa guardado (congelada) até a política mandar refazer
     const pose = cache ? cache.pose(alinhado, dirLuz) : null
     const centroLuz = pose ? pose.centro : alinhado
+    ;(ancoraLonge ||= new THREE.Vector3()).copy(centroLuz)
     sol.position.copy(centroLuz).addScaledVector(pose ? pose.dir : dirLuz, 250)
     sol.target.position.copy(centroLuz)
     sol.castShadow = cfg.mundo.sombras

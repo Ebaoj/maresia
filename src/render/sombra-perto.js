@@ -66,6 +66,7 @@ export class SombraPerto {
     luz.shadow.mapSize.set(cfg.mundo.sombraPertoResolucao ?? 2048, cfg.mundo.sombraPertoResolucao ?? 2048)
     this.luz = luz
     this._centro = new THREE.Vector3()
+    this._ancora = null // centro alinhado do quadro anterior: a grade de texels passa por ele
     this._dir = new THREE.Vector3(0, 1, 0)
     this.stats = { texelCm: 0, ligado: false }
     if (W) {
@@ -115,7 +116,9 @@ export class SombraPerto {
     }
     const texel = texelM(tam, res)
     this._dir.copy(dirLuz).normalize()
-    alinharAoTexel(centro, this._dir, texel, this._centro)
+    // grade presa ao centro do quadro anterior (sombra-luz.js): o sol girando não faz a borda piscar (pisca 22/10/2026)
+    alinharAoTexel(centro, this._dir, texel, this._centro, this._ancora)
+    ;(this._ancora ||= new THREE.Vector3()).copy(this._centro)
     luz.position.copy(this._centro).addScaledVector(this._dir, DIST_LUZ)
     luz.target.position.copy(this._centro)
     luz.updateMatrixWorld()
