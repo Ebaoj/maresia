@@ -10,7 +10,8 @@
 
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { alturaTerreno } from './terreno.js'
+import { alturaTerreno, alturas, NX, NZ } from './terreno.js'
+import { LIMITES } from './mapa.js'
 import { toon, texturaCanvas } from '../materiais.js'
 import { instanciarEmBlocos } from './blocos.js'
 import { rotasDosBondes } from './bondes.js'
@@ -22,13 +23,85 @@ const BITOLA = 0.7
 // o trilho: a chapa de aco do trilho (7 cm de largura, 5 de altura)
 const LARGURA_TRILHO = 0.07
 const ALTURA_TRILHO = 0.05
-// a travessa: a madeira sob o trilho (12 de altura, 25 de largura)
-const ALTURA_TRAVESSA = 0.12
+// a travessa: a madeira sob o trilho (12 de altura, 25 de largura). Fica enterrada no calçamento, com o topo
+// rente ao chão (FOLGA_TRAVESSA acima dele, só para não piscar contra o chão). Até 22/10/2026 ficava 14 cm
+// acima do chão, sobre a altura interpolada (bilinear), que não é a da malha desenhada.
+export const ALTURA_TRAVESSA = 0.12
 const LARGURA_TRAVESSA = 0.25
-// o conjunto fica logo acima do calco (a grade do terreno, de 3 m, pode cortar o
-// chao uns 15 cm: o trilho sobe o suficiente para nao sumir). O topo do aco fica
-// 5 cm acima da travessa, senao o trilho some entre as madeiras.
-const ALTURA_VIA = 0.19
+export const FOLGA_TRAVESSA = 0.015
+// o aço assenta na travessa: o topo dele fica ALTURA_TRILHO acima dela
+export const TOPO_TRILHO = FOLGA_TRAVESSA + ALTURA_TRILHO
+export { BITOLA }
+
+// A altura do chão como a malha desenhada a tem (terreno.js): dois triângulos por célula, com a diagonal de
+// (i+1, j) a (i, j+1). A bilinear (alturaTerreno) passa centímetros acima ou abaixo dela no meio da célula, e
+// o que fica rente ao chão some ou flutua. Fora da grade, a do terreno.
+export function alturaMalha(x, z) {
+  const { x0, z0, passo } = LIMITES
+  const fx = (x - x0) / passo
+  const fz = (z - z0) / passo
+  if (!(fx >= 0 && fz >= 0 && fx <= NX - 1 && fz <= NZ - 1)) return alturaTerreno(x, z)
+  const i = Math.min(NX - 2, Math.floor(fx))
+  const j = Math.min(NZ - 2, Math.floor(fz))
+  const tx = fx - i
+  const tz = fz - j
+  const a = alturas[j * NX + i]
+  const b = alturas[j * NX + i + 1]
+  const c = alturas[(j + 1) * NX + i]
+  const d = alturas[(j + 1) * NX + i + 1]
+  if (tx + tz <= 1) return a + (b - a) * tx + (c - a) * tz
+  return d + (c - d) * (1 - tx) + (b - d) * (1 - tz)
+}
+
+// A rota da linha (bondes.js) vem com idas e voltas: pontos a menos de um metro um do outro e espetos (a rota
+// vai e volta em poucos metros, como na ponta da linha em frente à Estação, que entrava 5 m no prédio e voltava
+// em zigue-zague). A travessa seguia cada trechinho torto e o aço virava pedacinhos soltos: aquele ramal ficava
+// com travessa e sem trilho. Aqui sai o ponto colado e a ponta de todo espeto (virada de mais de 120 graus com
+// uma das pernas menor que 12 m), passada a passada, sem mexer no resto: a volta longa pela mesma rua (a linha
+// vai ao fim e volta) fica, desenhada por cima de si mesma.
+const MINIMO = 0.8
+const ESPETO = (120 * Math.PI) / 180
+const PERNA = 12
+const virada = (a, b, c) => {
+  const ux = b[0] - a[0]
+  const uz = b[1] - a[1]
+  const vx = c[0] - b[0]
+  const vz = c[1] - b[1]
+  return Math.atan2(ux * vz - uz * vx, ux * vx + uz * vz)
+}
+const longe = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1])
+export function limparLinha(pontos) {
+  let k = []
+  for (const p of pontos) if (!k.length || longe(p, k[k.length - 1]) >= MINIMO) k.push(p)
+  for (let passada = 0; passada < 40; passada++) {
+    let mudou = false
+    const n = []
+    for (let i = 0; i < k.length; i++) {
+      if (n.length && i < k.length - 1) {
+        const a = n[n.length - 1]
+        if (Math.abs(virada(a, k[i], k[i + 1])) > ESPETO && Math.min(longe(a, k[i]), longe(k[i], k[i + 1])) < PERNA) { mudou = true; continue }
+      }
+      if (n.length && longe(k[i], n[n.length - 1]) < MINIMO) { mudou = true; continue }
+      n.push(k[i])
+    }
+    k = n
+    if (!mudou) break
+  }
+  return k.length >= 2 ? k : []
+}
+
+// o aço segue o chão: o trecho é cortado em pedaços de até 3 m (a célula do chão), e mais finos onde o meio
+// do pedaço fica mais de 8 mm fora da reta entre as pontas
+function seguirChao(a, b, saida, nivel = 0) {
+  const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+  const curva = Math.abs(alturaMalha(m[0], m[1]) - (alturaMalha(a[0], a[1]) + alturaMalha(b[0], b[1])) / 2)
+  if (nivel < 6 && (longe(a, b) > 3 || curva > 0.008)) {
+    seguirChao(a, m, saida, nivel + 1)
+    seguirChao(m, b, saida, nivel + 1)
+    return
+  }
+  saida.push(b)
+}
 
 // dois trilhos de aco assentados no paralelepipedo, no caminho da linha.
 // A geometria e montada na mao (um quad no topo e dois de lado por trecho): uma
@@ -42,6 +115,7 @@ function geometriaTrilho(linhas) {
     idx.push(base, base + 2, base + 1, base, base + 3, base + 2)
     base += 4
   }
+  const e = LARGURA_TRILHO / 2
   for (const pontos of linhas) {
     for (let i = 0; i < pontos.length - 1; i++) {
       const [x0, z0] = pontos[i]
@@ -52,32 +126,39 @@ function geometriaTrilho(linhas) {
       if (comp < 0.01) continue
       const nx = -dz / comp
       const nz = dx / comp
-      const y0 = alturaTerreno(x0, z0) + ALTURA_VIA
-      const y1 = alturaTerreno(x1, z1) + ALTURA_VIA
       for (const lado of [-1, 1]) {
         const ox = (nx * BITOLA * lado) / 2
         const oz = (nz * BITOLA * lado) / 2
-        const e = LARGURA_TRILHO / 2
-        // o topo do trilho
-        quad(
-          [x0 + ox - nx * e, y0, z0 + oz - nz * e],
-          [x1 + ox - nx * e, y1, z1 + oz - nz * e],
-          [x1 + ox + nx * e, y1, z1 + oz + nz * e],
-          [x0 + ox + nx * e, y0, z0 + oz + nz * e]
-        )
-        // as duas laterais, para o trilho ter volume de um ponto de vista baixo
-        quad(
-          [x0 + ox - nx * e, y0, z0 + oz - nz * e],
-          [x1 + ox - nx * e, y1, z1 + oz - nz * e],
-          [x1 + ox - nx * e, y1 - ALTURA_TRILHO, z1 + oz - nz * e],
-          [x0 + ox - nx * e, y0 - ALTURA_TRILHO, z0 + oz - nz * e]
-        )
-        quad(
-          [x0 + ox + nx * e, y0, z0 + oz + nz * e],
-          [x0 + ox + nx * e, y0 - ALTURA_TRILHO, z0 + oz + nz * e],
-          [x1 + ox + nx * e, y1 - ALTURA_TRILHO, z1 + oz + nz * e],
-          [x1 + ox + nx * e, y1, z1 + oz + nz * e]
-        )
+        // o aço desta banda, cortado onde o chão dobra, com o topo TOPO_TRILHO acima da malha
+        const a0 = [x0 + ox, z0 + oz]
+        const cortes = [a0]
+        seguirChao(a0, [x1 + ox, z1 + oz], cortes)
+        for (let k = 0; k < cortes.length - 1; k++) {
+          const [ax, az] = cortes[k]
+          const [bx, bz] = cortes[k + 1]
+          const ya = alturaMalha(ax, az) + TOPO_TRILHO
+          const yb = alturaMalha(bx, bz) + TOPO_TRILHO
+          // o topo do trilho
+          quad(
+            [ax - nx * e, ya, az - nz * e],
+            [bx - nx * e, yb, bz - nz * e],
+            [bx + nx * e, yb, bz + nz * e],
+            [ax + nx * e, ya, az + nz * e]
+          )
+          // as duas laterais, para o trilho ter volume de um ponto de vista baixo
+          quad(
+            [ax - nx * e, ya, az - nz * e],
+            [bx - nx * e, yb, bz - nz * e],
+            [bx - nx * e, yb - ALTURA_TRILHO, bz - nz * e],
+            [ax - nx * e, ya - ALTURA_TRILHO, az - nz * e]
+          )
+          quad(
+            [ax + nx * e, ya, az + nz * e],
+            [ax + nx * e, ya - ALTURA_TRILHO, az + nz * e],
+            [bx + nx * e, yb - ALTURA_TRILHO, bz + nz * e],
+            [bx + nx * e, yb, bz + nz * e]
+          )
+        }
       }
     }
   }
@@ -197,7 +278,10 @@ function geometriaLetreiros(paradas, faixaDe) {
 // ---------- o desenho ----------
 
 export function criarBondes(cena) {
-  const { linhas, paradas, relatorio } = rotasDosBondes()
+  const rotas = rotasDosBondes()
+  const { paradas, relatorio } = rotas
+  // a rota limpa (sem ponto colado, espeto nem grampo): travessa e aço seguem a mesma linha
+  const linhas = rotas.linhas.map(limparLinha).filter((l) => l.length >= 2)
 
   // as travessas de madeira, atravessadas na via
   const matrizesTravessa = []
@@ -218,8 +302,9 @@ export function criarBondes(cena) {
         const t = d / comp
         const x = x0 + (x1 - x0) * t
         const z = z0 + (z1 - z0) * t
+        // enterrada: o topo rente ao chão desenhado
         matrizesTravessa.push(m4.clone().compose(
-          new THREE.Vector3(x, alturaTerreno(x, z) + 0.02, z), q, new THREE.Vector3(1, 1, 1)
+          new THREE.Vector3(x, alturaMalha(x, z) - ALTURA_TRAVESSA + FOLGA_TRAVESSA, z), q, new THREE.Vector3(1, 1, 1)
         ))
       }
     }
