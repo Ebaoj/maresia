@@ -76,6 +76,7 @@ export function secaoMundo(gui, cfg) {
   mn.addColor(cfg.mundo.marcosNorte, 'corSe').name(rec('fachada da Sé'))
   mn.addColor(cfg.mundo.marcosNorte, 'corEstacao').name(rec('parede da Estação'))
   mn.addColor(cfg.mundo.marcosNorte, 'corSombra').name('sombra do reboco')
+  mn.add(cfg.mundo.marcosNorte, 'noiteReboco', 0.1, 1, 0.01).name('reboco à noite')
   mn.addColor(cfg.mundo.marcosNorte, 'corFerro').name('ferro (gradil, poste)')
   mn.addColor(cfg.mundo.marcosNorte, 'corEsfinge').name('pedra das esfinges')
 

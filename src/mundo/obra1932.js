@@ -258,11 +258,13 @@ export function acenderVidros() {
 export const uPincelMarcos = { value: 0.1 }
 // a cor da sombra no reboco dos marcos: azul-violeta fria (os conceitos), não o cinza-azulado do resto
 export const uSombraMarcos = { value: new THREE.Color('#646fae') }
+// o quanto o reboco escurece à noite (a parede não recebe sombra da lua, então clareava mais que as casas)
+export const uNoiteReboco = { value: 0.55 }
 
 // O reboco caiado das casas (quarteirao.js): pinceladas de caiação, degradê, salitre subindo da base,
 // placas de cal caída mostrando a taipa, escorridos e o desgaste grande (desgaste.js), nos dois
-// renderizadores. Uma cópia só dos marcos (não reparte com as casas): leva a pincelada e a sombra próprias
-// (a cor de cada parede vai por vértice).
+// renderizadores. Uma cópia só dos marcos (não reparte com as casas): leva a pincelada e a sombra próprias,
+// e a cor do material é o escurecer da noite (a cor de cada parede vai por vértice).
 const _rebocos = {}
 function rebocoMarcos(gasto) {
   const k = gasto ? 'gasto' : 'novo'
@@ -273,6 +275,10 @@ function rebocoMarcos(gasto) {
     _rebocos[k] = m
   }
   return _rebocos[k]
+}
+export function escurecerRebocoNoite() {
+  const k = 1 - (1 - uNoiteReboco.value) * globais.uNoite.value
+  for (const m of Object.values(_rebocos)) m.color.setScalar(k)
 }
 
 // Monta a tabela de materiais de um marco a partir de uma tabela simples:

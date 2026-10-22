@@ -297,6 +297,7 @@ export const PADRAO = {
       corSe: '#bccfc6',     // fachada verde-acinzentada da aquarela de 1859 e do conceito: a caiação #cddbd6 da paleta com 15% do verde de esquadria #5e8a6e
       corEstacao: '#ebdcba', // creme quente (a meia entre a cal #efe6d2 e o creme #e7d3a3 da paleta): a cor original não tem fonte
       corSombra: '#646fae', // sombra do reboco deles: azul-violeta fria (os conceitos), no lugar do cinza-azulado
+      noiteReboco: 0.55,    // quanto do reboco fica à noite (a parede não recebe a sombra da lua e clareava mais que as casas)
       corFerro: '#2b2f2c',  // gradil, poste e grade: ferro escuro (verde quase preto, hipótese)
       corEsfinge: '#d9cbb0', // pedra artificial lisa, de uma cor só (nota do Joabe nos conceitos)
     },

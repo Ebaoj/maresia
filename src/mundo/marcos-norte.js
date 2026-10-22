@@ -6,7 +6,7 @@
 import { criarEstacao } from './estacao.js'
 import { criarSe } from './se1932.js'
 import { criarPasseio } from './passeio1932.js'
-import { acenderVidros, uPincelMarcos, uSombraMarcos } from './obra1932.js'
+import { acenderVidros, uPincelMarcos, uSombraMarcos, uNoiteReboco, escurecerRebocoNoite } from './obra1932.js'
 
 export function criarMarcosNorte(cena, cfg) {
   const c = cfg.mundo.marcosNorte
@@ -30,6 +30,8 @@ export function criarMarcosNorte(cena, cfg) {
       acenderVidros()
       uPincelMarcos.value = c.pincel
       uSombraMarcos.value.set(c.corSombra)
+      uNoiteReboco.value = c.noiteReboco
+      escurecerRebocoNoite()
       for (const [nome, m] of Object.entries(marcos)) m.atualizar(camera, c[nome] !== false, c.detalheAte)
       for (const item of materiais) {
         const hex = c[item[1]]
