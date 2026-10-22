@@ -12,6 +12,7 @@ import { ref, funcoes, modulo, amostraAlvo } from '../render/gpu/comum.js'
 import { fragTensorGpu, fragKuwaharaGpu } from './pintura-gpu.js'
 import { amostrasPintura } from './pintura.js'
 import { aplicarFx2dTsl } from './fx2d.js'
+import { ProfundidadeGpu } from './profundidade-gpu.js'
 
 export class AranhaversoGpu {
   constructor(renderer, cena, camera, cfg, globais) {
@@ -67,10 +68,15 @@ export class AranhaversoGpu {
     this.fonteTela = { value: this.rtCor.textures[0] }
     const Ttela = { ...T, cor: (q) => amostraAlvo(this.fonteTela, q), corN: (q) => amostraAlvo(this.fonteTela, q).level(0) }
     this.matTela = this.material(fragTela(W, b.uTela, Ttela, uvGL))
-    this.matTensor = this.material(fragTensorGpu(W, b.uPintura.tensor, amostraN(this.rtCor.textures[0]), uvGL))
+    // a pincelada lê a cor da cena ou a já desfocada (profundidade de campo antes dela): troca pelo objeto { value }
+    this.fontePintura = { value: this.rtCor.textures[0] }
+    const fontePintura = (q) => amostraAlvo(this.fontePintura, q).level(0)
+    this.matTensor = this.material(fragTensorGpu(W, b.uPintura.tensor, fontePintura, uvGL))
     // um material por grade de amostras (4, 5 ou 7), montado na primeira vez que o painel pede
     this.matsKuwahara = {}
-    this.kuwahara = (n) => (this.matsKuwahara[n] ||= this.material(fragKuwaharaGpu(W, b.uPintura.kuwahara, n, amostraN(this.rtCor.textures[0]), amostraN(this.rtTensor.texture), uvGL)))
+    this.kuwahara = (n) => (this.matsKuwahara[n] ||= this.material(fragKuwaharaGpu(W, b.uPintura.kuwahara, n, fontePintura, amostraN(this.rtTensor.texture), uvGL)))
+    // profundidade de campo (profundidade-gpu.js): os mesmos uniforms da base
+    this.dof = new ProfundidadeGpu(W, b.uDof, (no) => this.material(no), T.prof, uvGL)
     this.quad = new W.QuadMesh()
   }
 
@@ -84,6 +90,8 @@ export class AranhaversoGpu {
 
   coletarExcecoes() {}
 
+  focarEm(alvo) { this.base.focarEm(alvo) }
+
   tamanho(largura, altura, pixelRatio) {
     this.base.tamanho(largura, altura, pixelRatio)
     const w = Math.max(1, Math.floor(largura * pixelRatio))
@@ -94,6 +102,7 @@ export class AranhaversoGpu {
     this.rtBrilhoA.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtBrilhoB.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
+    this.dof.tamanho(w, h)
     this.base.rtPinturaAlvo = this.rtPintura // o tamanho (cheio ou meio) sai em atualizar() da base
     this.base.meiaPintura = null
     const tb = this.base.tamBrilho
@@ -144,12 +153,20 @@ export class AranhaversoGpu {
     this.passo(this.matClaro, this.rtBrilhoA)
     for (let k = 0; k < 4; k++) this.passo(this.matDesfoque[k], k % 2 ? this.rtBrilhoA : this.rtBrilhoB)
 
-    // 4b. pincelada na tela (pintura.js)
+    // 4b. profundidade de campo (profundidade-gpu.js), antes ou depois da pincelada (cfg.estilo.dofOrdem)
+    let fonte = this.rtCor.textures[0]
+    const dofAntes = e.dofOrdem !== 'depois'
+    if (b.dofLigado && dofAntes) fonte = this.dof.desenhar(this, fonte)
+
+    // 4c. pincelada na tela (pintura.js)
     if (b.pinturaLigada) {
+      this.fontePintura.value = fonte
       this.passo(this.matTensor, this.rtTensor)
       this.passo(this.kuwahara(amostrasPintura(e)), this.rtPintura)
+      fonte = this.rtPintura.texture
     }
-    this.fonteTela.value = b.pinturaLigada ? this.rtPintura.texture : this.rtCor.textures[0]
+    if (b.dofLigado && !dofAntes) fonte = this.dof.desenhar(this, fonte)
+    this.fonteTela.value = fonte
 
     // 5. tela: o filtro já entrega a cor final em sRGB; o three não pode converter de novo
     const espaco = r.outputColorSpace
@@ -241,6 +258,13 @@ function fragTela(W, u, T, uvGL) {
   const distancia = (q) => {
     const d = T.prof(q).x
     return U.uNear.mul(U.uFar).negate().div(U.uFar.sub(U.uNear).mul(d).sub(U.uFar))
+  }
+  // profundidade de campo: o traço e a quina clara somem onde o fundo já está desfocado (dofTraco do GLSL)
+  const dofTraco = (d) => {
+    const t = clamp(d.sub(U.uDofLongeIni).div(max(U.uDofLongeCheio.sub(U.uDofLongeIni), 1.0)), 0.0, 1.0)
+    const um = float(1.0).sub(t)
+    const r = clamp(float(1.0).sub(um.mul(um)).mul(U.uDofLonge), 0.0, 1.0).mul(U.uDofRaio)
+    return U.uDofLiga.lessThan(0.5).select(float(1.0), float(1.0).sub(smoothstep(0.5, 1.5, r)))
   }
   const paraSRGB = (c0) => {
     const c = clamp(c0, 0.0, 1.0)
@@ -450,7 +474,7 @@ function fragTela(W, u, T, uvGL) {
     const bordaN = smoothstep(U.uLimNormal, U.uLimNormal.add(0.4), max(gx, gy)).mul(0.8)
     const dmin = min(d0, min(min(dl, dr), min(du, dd)))
     const alcance = mix(U.uDistLinha, U.uDistLinha.mul(3.0), step(0.9, peso))
-    const perto = float(1.0).sub(smoothstep(alcance.mul(0.5), alcance, dmin))
+    const perto = float(1.0).sub(smoothstep(alcance.mul(0.5), alcance, dmin)).mul(dofTraco(d0))
     const forca = mix(U.uPesoCenario, 1.0, smoothstep(0.3, 1.0, peso))
     const borda = max(bordaP, bordaN).mul(perto).mul(forca)
     If(U.uArcane.greaterThan(0.5), () => {
@@ -458,7 +482,7 @@ function fragTela(W, u, T, uvGL) {
       cor.assign(mix(cor, tintaLocal, bordaP.mul(perto).mul(forca).mul(U.uArcLinha)))
       // ARESTA CLARA (item 4): quina que se projeta para a câmera ganha a borda gasta e clara do reboco
       const convexo = smoothstep(0.002, 0.02, dl.add(dr).add(du).add(dd).mul(0.25).sub(d0).div(max(d0, 0.001)))
-      const aresta = bordaN.mul(convexo).mul(float(1.0).sub(smoothstep(25.0, 45.0, d0))).mul(step(0.95, alfa)).mul(float(1.0).sub(ceu))
+      const aresta = bordaN.mul(convexo).mul(float(1.0).sub(smoothstep(25.0, 45.0, d0))).mul(step(0.95, alfa)).mul(float(1.0).sub(ceu)).mul(dofTraco(d0))
       cor.assign(mix(cor, cor.mul(1.22).add(vec3(0.05, 0.045, 0.035)), clamp(aresta.mul(U.uArcAresta), 0.0, 1.0)))
     }).Else(() => {
       cor.assign(mix(cor, U.uCorTinta, borda.mul(U.uIntTinta)))

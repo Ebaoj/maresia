@@ -138,6 +138,22 @@ export function secaoVisual(gui, cfg) {
   nevoa.add(cfg.mundo, 'nevoaPerto', 10, 600, 1).name('névoa começa (m)')
   nevoa.add(cfg.mundo, 'nevoaLonge', 100, 2000, 1).name('névoa total (m)')
 
+  // profundidade de campo (src/pos/profundidade.js): vale nos dois estilos e nos dois renderizadores
+  const dof = visual.addFolder('Profundidade de campo')
+  dof.add(e, 'dof').name('ligada')
+  dof.add(e, 'dofAutoFoco').name('foco no jogador (automático)')
+  dof.add(e, 'dofFocoManual', 0.5, 300, 0.1).name('foco manual (m)')
+  dof.add(e, 'dofFocoAjuste', -10, 30, 0.1).name('ajuste do foco (m)')
+  dof.add(e, 'dofFocoSuave', 0, 2, 0.01).name('foco acompanha em (s)')
+  dof.add(e, 'dofAbertura', 0, 1.5, 0.01).name('abertura (força geral)')
+  dof.add(e, 'dofPerto', 0, 1, 0.01).name('desfoque da frente')
+  dof.add(e, 'dofPertoMargem', 0, 10, 0.1).name('nítido antes do foco (m)')
+  dof.add(e, 'dofLongeInicio', 0, 200, 0.5).name('fundo começa depois do foco (m)')
+  dof.add(e, 'dofLongeCheio', 50, 3000, 10).name('fundo no máximo em (m)')
+  dof.add(e, 'dofLonge', 0, 1, 0.01).name('desfoque máximo do fundo')
+  dof.add(e, 'dofRaio', 1, 24, 0.5).name('raio máximo (px em 720p)')
+  dof.add(e, 'dofOrdem', ['antes', 'depois']).name('antes ou depois da pincelada')
+
   // fase A: pontos na luz e hachura na sombra, decididos pela luz recebida
   const mask = visual.addFolder('Luz como máscara')
   mask.add(e, 'pontosNaLuz').name('pontos na luz, hachura na sombra')
