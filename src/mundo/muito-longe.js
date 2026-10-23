@@ -206,6 +206,7 @@ export class LongeMascarado {
       f.matrizes = j.instanceMatrix.array.slice() // todas as cópias, na ordem das faixas
       f.cores = j.instanceColor ? j.instanceColor.array.slice() : null
       j.count = 0 // nada à vista até o sistema dizer quem está longe
+      j.userData.contagemViva = true // o count é o de verdade: o WebGPU não troca o resto por escala zero (renderizador.js)
       ;(f.lista[0].parent).add(congelar(j))
       if (j.castShadow) registrarEstatico(j)
       this.malhas.push(j)

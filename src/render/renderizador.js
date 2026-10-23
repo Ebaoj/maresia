@@ -530,6 +530,10 @@ const ZERO = new THREE.Matrix4().makeScale(0, 0, 0)
 function quantidadeFixa(o) {
   const cap = o.instanceMatrix.count
   if (cap <= 1 || o.count >= cap) return
+  // quem grava o count de verdade (a malha de longe mascarada, muito-longe.js) fica de fora: no three 0.186 o buffer
+  // de matrizes do shader já é do tamanho da capacidade (nodes/accessors/Instance.js) e count 0 não desenha; a
+  // escala zero aqui fazia o vértice rodar em todas as cópias do mapa (fluido, 22/10/2026)
+  if (o.userData.contagemViva) return
   let real = o.count
   for (let i = real; i < cap; i++) o.setMatrixAt(i, ZERO)
   o.instanceMatrix.needsUpdate = true
