@@ -260,11 +260,19 @@ async function iniciar() {
 
   // R1: resolução dinâmica guiada pelo tempo de quadro (cfg.desempenho.resolucaoDinamica, desligada por padrão).
   // O teto é a resolução do painel; a escala viva fica em dinamica.escala
+  // o teto é o que a tela usa de fato (resolução do painel limitada pelo devicePixelRatio: num monitor de 1x, 1,25 vira
+  // 1,0 e as primeiras descidas não mudavam nada); a guarda de eficácia desfaz a descida que não melhorou o quadro
+  const tetoResolucao = () => Math.min(cfg.desempenho.resolucao, devicePixelRatio || 1)
   const dinamica = new ResolucaoDinamica({
-    alvo: cfg.desempenho.resolucao,
+    alvo: tetoResolucao(),
     minimo: cfg.desempenho.resolucaoMin,
     orcamentoMs: cfg.desempenho.orcamentoQuadroMs,
+    eficacia: true,
   })
+  // custo do quadro para a resolução dinâmica (WebGPU): do começo do passo até a placa terminar o que ele mandou. O
+  // intervalo do requestAnimationFrame anda em degraus do vsync (16,7 / 33,3 ms) e não mostra o ganho de uma descida
+  let custoQuadroMs = 0
+  let medindoCusto = false
   let resolucaoDoPainel = cfg.desempenho.resolucao // para notar quando o usuário mexe nela
   let dinamicaLigada = false
   let tamanhoTravado = false // a foto justa fixa o tamanho (tamanhoFixo): a resolução dinâmica não roda nesse tempo
@@ -445,15 +453,20 @@ async function iniciar() {
     if (cfg.desempenho.resolucao !== resolucaoDoPainel || cfg.desempenho.resolucaoDinamica !== dinamicaLigada) {
       resolucaoDoPainel = cfg.desempenho.resolucao
       dinamicaLigada = cfg.desempenho.resolucaoDinamica
-      dinamica.redefinir(resolucaoDoPainel)
+      dinamica.redefinir(tetoResolucao())
     }
     if (dinamicaLigada && !tamanhoTravado) {
       dinamica.minimo = cfg.desempenho.resolucaoMin
       dinamica.orcamentoMs = cfg.desempenho.orcamentoQuadroMs
-      dinamica.quadro(real * 1000)
+      dinamica.quadro(webgpu && custoQuadroMs > 0 ? custoQuadroMs : real * 1000)
     }
     if (Math.min(escalaAtual(), devicePixelRatio || 1) !== resolucao) redimensionar()
+    const t0Quadro = performance.now()
     passo(Math.min(real, 1 / 20))
+    if (webgpu && dinamicaLigada && !medindoCusto && renderer.backend?.device) {
+      medindoCusto = true
+      renderer.backend.device.queue.onSubmittedWorkDone().then(() => { custoQuadroMs = performance.now() - t0Quadro; medindoCusto = false })
+    }
     // tempo até o primeiro quadro desenhado de verdade (com os shaders montados), para comparar renderizadores
     if (window.__primeiroQuadroMs === undefined) window.__primeiroQuadroMs = Math.round(performance.now())
   }

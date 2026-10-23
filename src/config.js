@@ -534,8 +534,8 @@ export const PADRAO = {
     atoresVat: true,       // KAN-74 fase 2b: atores de fundo como cópias com a pose em textura de ossos; só vale no WebGPU; recarregar
     cortePequenos: true,   // fluido 22/10/2026 (render/corte-tela.js): a peça que fica menor que cortePx na tela sai do desenho (lampião, vaso, dormente de longe, o campo do Urubu a 2 km)
     cortePx: 3,            // tamanho (px numa tela de 900 de altura) abaixo do qual a peça sai
-    resolucaoDinamica: false, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Desligada até passar na medição
-    resolucaoMin: 0.6,     // R1: menor escala que a resolução dinâmica aceita
+    resolucaoDinamica: true, // R1 (robustez no M1): a resolução segue o custo do quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao limitada pelo devicePixelRatio. Ligada em 23/10/2026 (fluido): com a guarda de eficácia, a descida que não ajuda volta
+    resolucaoMin: 0.9,     // R1: menor escala que a resolução dinâmica aceita (0,9 = 72% da linha de 1,25; abaixo disso a retícula e o papel engrossam, docs/capturas/fluido/res-*.jpg)
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
   },
   laboratorioFisica: {
@@ -578,6 +578,8 @@ export const PADRAO_MUDOU = [
   ['estilo.dofFocoSuave', 0.35, 0], // 22/10/2026: a profundidade de campo não acompanhava o zoom (docs/profundidade-camera.md)
   ['estilo.dofPertoMargem', 1.5, 1.0], // a faixa da frente passou a ser relativa ao foco; isto virou o mínimo
   ['estilo.dofLongeInicio', 8, 2], // idem para o fundo
+  ['desempenho.resolucaoDinamica', false, true], // 23/10/2026 (fluido): ligada, com a guarda de eficácia
+  ['desempenho.resolucaoMin', 0.6, 0.9], // o piso de 0,6 amolecia a retícula e o papel
 ]
 
 export function migrarPadroes(salvo) {

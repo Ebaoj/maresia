@@ -127,3 +127,28 @@ describe('ResolucaoDinamica', () => {
     expect(d.escala).toBe(1.0)
   })
 })
+
+// fluido, 22/10/2026: com o quadro preso no processador (ou no vértice), menos pixels não ajudam e a regra pura levava
+// a escala até o piso à toa. Com eficacia: true, a descida que não baixa o p75 em 4% é desfeita e a escala fica 10 s
+// sem descer; a que ajuda fica.
+describe('ResolucaoDinamica com guarda de eficácia', () => {
+  it('descida que não melhora volta e bloqueia novas descidas por 10 s', () => {
+    const d = new ResolucaoDinamica({ alvo: 1.25, minimo: 0.6, orcamentoMs: 16.7, janela: 30, eficacia: true })
+    const mud = alimentar(d, 120, 25) // 25 ms sempre, não importa a escala
+    expect(mud.map((m) => m.nova)).toEqual([1.15, 1.25])
+    expect(d.revertidas).toBe(1)
+    expect(alimentar(d, 300, 25)).toEqual([]) // 7,5 s: ainda bloqueado
+    expect(d.escala).toBe(1.25)
+  })
+
+  it('descida que melhora fica, e a próxima pode vir', () => {
+    const d = new ResolucaoDinamica({ alvo: 1.25, minimo: 0.6, orcamentoMs: 16.7, janela: 30, eficacia: true })
+    // o custo cai com a escala (preso nos pixels): 25 ms em 1,25, 20 ms em 1,15, 19 em 1,05...
+    const custo = () => (d.escala >= 1.25 ? 25 : d.escala >= 1.15 ? 21 : 18)
+    const mud = []
+    for (let k = 1; k <= 200; k++) { const n = d.quadro(custo()); if (n !== null) mud.push(n) }
+    expect(mud[0]).toBeCloseTo(1.15, 6)
+    expect(mud[1]).toBeCloseTo(1.05, 6)
+    expect(d.revertidas).toBe(0)
+  })
+})

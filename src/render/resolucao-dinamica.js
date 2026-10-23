@@ -17,11 +17,18 @@ const INTERVALO_DESCIDA_MS = 500 // no máximo uma descida a cada 0,5 s de quadr
 const FOLGA_PARA_SUBIR_MS = 2000 // folga contínua antes de subir
 const ESPERA_APOS_SUBIR_MS = 1000 // depois de subir, não desce por 1 s (evita oscilar)
 const DT_MAXIMO_MS = 250 // acima disso é troca de aba ou pausa, não custo de desenho
+// Guarda de eficácia (fluido, 22/10/2026; opção eficacia: true): o quadro preso no processador (ou no vértice, que
+// não muda com a resolução) não melhora com menos pixels, e a regra pura levava a escala até o piso à toa. Depois de
+// cada descida, com a janela de novo cheia, o p75 precisa ter caído GANHO_MINIMO; senão a escala volta ao que era e
+// fica BLOQUEIO_MS sem descer.
+const GANHO_MINIMO = 0.04
+const BLOQUEIO_MS = 10000
 
 const arredondar = (v) => Math.round(v * 1000) / 1000 // 0,05 em ponto flutuante acumula erro
 
 export class ResolucaoDinamica {
-  constructor({ alvo = 1.25, minimo = 0.6, orcamentoMs = 16.7, janela = 30 } = {}) {
+  constructor({ alvo = 1.25, minimo = 0.6, orcamentoMs = 16.7, janela = 30, eficacia = false } = {}) {
+    this.eficacia = eficacia
     this.alvo = alvo
     this.minimo = minimo
     this.orcamentoMs = orcamentoMs
@@ -41,6 +48,9 @@ export class ResolucaoDinamica {
     this.msDesdeDescida = Infinity
     this.msFolga = 0
     this.msEspera = 0
+    this.conferir = null // { p75, escala, quadros }: a descida que ainda precisa provar que ajudou
+    this.msBloqueio = 0
+    this.revertidas = 0
   }
 
   // Menor escala permitida; se o usuário pediu um alvo abaixo do mínimo, vale o alvo.
@@ -71,6 +81,8 @@ export class ResolucaoDinamica {
     if (this.n < this.janela) this.n++
     this.msDesdeDescida += dtMs
     this.msEspera = Math.max(0, this.msEspera - dtMs)
+    this.msBloqueio = Math.max(0, this.msBloqueio - dtMs)
+    if (this.conferir) this.conferir.quadros++
 
     // o mínimo foi subido no painel por cima da escala atual
     if (this.escala < this.piso) {
@@ -81,9 +93,22 @@ export class ResolucaoDinamica {
     if (this.n < this.janela) return null // julga só com a janela cheia
     const p75 = this.p75()
 
+    // a última descida ajudou? (só com a janela inteira de quadros depois dela)
+    if (this.conferir && this.conferir.quadros >= this.janela) {
+      const c = this.conferir
+      this.conferir = null
+      if (p75 > c.p75 * (1 - GANHO_MINIMO)) {
+        this.escala = c.escala
+        this.msBloqueio = BLOQUEIO_MS
+        this.revertidas++
+        return this.escala
+      }
+    }
+
     if (p75 > this.orcamentoMs * DESCE_FATOR) {
       this.msFolga = 0
-      if (this.escala > this.piso && this.msEspera <= 0 && this.msDesdeDescida >= INTERVALO_DESCIDA_MS) {
+      if (this.escala > this.piso && this.msEspera <= 0 && this.msDesdeDescida >= INTERVALO_DESCIDA_MS && this.msBloqueio <= 0 && !this.conferir) {
+        if (this.eficacia) this.conferir = { p75, escala: this.escala, quadros: 0 }
         this.escala = arredondar(Math.max(this.piso, this.escala - PASSO_DESCE))
         this.msDesdeDescida = 0
         return this.escala
