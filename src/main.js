@@ -332,7 +332,7 @@ async function iniciar() {
     telhadosLonge.atualizar(camera, paleta)
     quintal1932.atualizar(camera)
     casasPalha.atualizarLonge?.(camera, cfg.mundo.palhaPerto)
-    pessoas.atualizar(dt, t, cfg.tempo.hora)
+    pessoas.atualizar(dt, t, cfg.tempo.hora, camera) // a câmera escolhe a figura de perto ou a de longe (multidao.js)
     urubu.atualizar(cfg.tempo.hora, camera) // o Campo do Urubu: a gente do dia, a da noite, os miúdos de longe somem
     atores?.atualizar(dt, jogador.pos)
     const fpsAvo = cfg.estilo.visual === 'arcane' ? cfg.personagem.fpsAcao : cfg.personagem.fpsPose // Arcane: 24 poses

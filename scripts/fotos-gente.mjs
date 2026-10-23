@@ -76,6 +76,7 @@ try {
       for (const [g, v] of Object.entries(extra)) a[g] = typeof v === 'object' ? { ...(a[g] || {}), ...v } : v
       localStorage.setItem(k, JSON.stringify(a)) } catch (e) { console.error(e) } })()`,
   })
+  if (process.env.PRE_JS) await cmd('Page.addScriptToEvaluateOnNewDocument', { source: process.env.PRE_JS })
   await cmd('Page.navigate', { url })
   let pronto = false
   for (let t0 = Date.now(); Date.now() - t0 < 300000;) {
@@ -87,6 +88,22 @@ try {
   await avaliar('window.maresia.pronto')
   console.log('renderizador:', (await avaliar('String(window.maresia.webgpu)')).valor === 'true' ? 'webgpu' : 'webgl')
   for (const l of plano) {
+    // perfil de CPU: roda o código com o profiler do Chrome ligado e lista as funções que mais gastaram (tempo próprio)
+    if (l.perfil) {
+      await cmd('Profiler.enable')
+      await cmd('Profiler.setSamplingInterval', { interval: 200 })
+      await cmd('Profiler.start')
+      const r = await avaliar(`(async () => JSON.stringify(await (async () => { ${l.perfil} })()))()`)
+      const p = (await cmd('Profiler.stop')).result.profile
+      const dt = (p.endTime - p.startTime) / 1000 / p.samples.length
+      const proprio = new Map()
+      const porId = new Map(p.nodes.map((n) => [n.id, n]))
+      for (const id of p.samples) { const n = porId.get(id); const k = `${n.callFrame.functionName || '(anon)'} ${n.callFrame.url.split('/').slice(-2).join('/')}:${n.callFrame.lineNumber}`; proprio.set(k, (proprio.get(k) || 0) + dt) }
+      const top = [...proprio].sort((a, b) => b[1] - a[1]).slice(0, l.top || 25).map(([k, v]) => `${v.toFixed(0).padStart(6)} ms  ${k}`)
+      console.log(`perfil ${l.nome}:`, r.valor || r.erro)
+      console.log(top.join('\n'))
+      continue
+    }
     if (l.avaliar) {
       const r = await avaliar(`(async () => JSON.stringify(await (async () => { ${l.avaliar} })()))()`)
       console.log(`conta ${l.nome}:`, r.valor || r.erro)
@@ -153,6 +170,7 @@ try {
       m.jogador.p.raiz.visible = false
       for (const o of m.jogador.multiplos?.raizes || []) o.visible = false
       m.cam.pitch = l.pitch ?? 0.1
+      if (l.js) await (async () => { eval(l.js) })()
       m.cfg.camera.distancia = l.recuo ? 3 : (l.dist ?? 5)
       m.cam.iniciado = false
       if (document.querySelector('.lil-gui') && getComputedStyle(document.querySelector('.lil-gui')).display !== 'none') dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH' }))
@@ -174,6 +192,7 @@ try {
   console.log('FALHOU:', e.message)
   codigo = 1
 } finally {
+  try { writeFileSync(join(PASTA, 'console.txt'), logs.join('\n')) } catch { /* pasta */ }
   const ruins = logs.filter((s) => /sem saída de luz|não compilaram|ERRO|\[error\]/i.test(s))
   console.log('--- console: avisos de luz, shader e erro ---')
   console.log(ruins.slice(0, 30).join('\n') || '(nenhum)')

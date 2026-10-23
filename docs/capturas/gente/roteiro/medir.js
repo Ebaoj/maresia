@@ -10,12 +10,16 @@ const variantes = {
   base: () => {},
   semGente: (mm) => {
     const esc = []
+    // a multidão (depois de 22/10) religa as próprias malhas: congela enquanto mede sem a gente
+    const md = mm.pessoas.multidao
+    const mdA = md && md.atualizar
+    if (md) md.atualizar = () => false
     mm.cena.traverse((o) => { if (RE.test(o.name) && o.visible) { o.visible = false; esc.push(o) } })
     const at = mm.atores()
     const ant = at && at.atualizar
     if (at) { at.atualizar = () => {}; for (const a of at.atores) if (a.raiz) { a.raizVis = a.raiz.visible; a.raiz.visible = false } }
     mm.urubu.parado = true
-    return () => { for (const o of esc) o.visible = true; if (at) { at.atualizar = ant; for (const a of at.atores) if (a.raiz) a.raiz.visible = a.raizVis } mm.urubu.parado = false; mm.urubu.reavaliar() }
+    return () => { if (md) md.atualizar = mdA; for (const o of esc) o.visible = true; if (at) { at.atualizar = ant; for (const a of at.atores) if (a.raiz) a.raiz.visible = a.raizVis } mm.urubu.parado = false; mm.urubu.reavaliar() }
   },
 }
 return await m.medir({ lugares, variantes, repeticoes: 5 })

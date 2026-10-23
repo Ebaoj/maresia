@@ -31,6 +31,7 @@ import { geometriaCercaTarefa, chaoDaTarefa } from './urubu-tarefas.js'
 import { modelosDoCampo, vagasDeGente } from './urubu-gente.js'
 import { criarNoiteDoCampo } from './urubu-noite.js'
 import { lugaresDoCampo } from './urubu-lugares.js'
+import { criarMultidao } from './multidao.js'
 
 // quantos metros de verdade vale uma unidade de jogo aqui (desde 21/10/2026 o campo é 1:1)
 export function escalaNoCampo (x, z) {
@@ -82,6 +83,8 @@ function alturaMedia (q, cu, cw, l, p) {
 // cfg: o config do jogo (o painel mexe nele; vale ao recarregar). Sem ele, o padrão
 export function criarUrubu1932 (cena, cfgJogo = null) {
   const cfg = { ...PADRAO.mundo.urubu, ...(cfgJogo?.mundo?.urubu || {}) }
+  multidoes.length = 0
+  lodGente = { lodPerto: cfgJogo?.pessoas?.lodPerto ?? 20, ate: cfgJogo?.pessoas?.ate ?? 400 }
   const planta = criarPlanta(cfg)
   const q = planta.quadro
   const rnd = criarAleatorio(1932)
@@ -268,9 +271,9 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
   const guarda = []
   {
     const [x, z] = q.mundo(planta.portao.u + planta.portao.largura / 2 + 1.0, 1.6)
-    guarda.push(...instanciarEmBlocos(cena, modelosGente.guarda, mat, [matriz(x, alturaTerreno(x, z), z, q.rot + Math.PI)], null, { nome: 'urubu-guarda' }))
+    guarda.push(...instanciarEmBlocos(cena, modelosGente.guarda.perto, matGente(), [matriz(x, alturaTerreno(x, z), z, q.rot + Math.PI)], null, { nome: 'urubu-guarda' }))
     const c = planta.registro.cadeira
-    dia.push(...instanciarEmBlocos(cena, modelosGente.funcionario, mat, [matriz(c.x, alturaTerreno(c.x, c.z) + 0.14, c.z, q.rot - Math.PI / 2)], null, { nome: 'urubu-funcionario' }))
+    dia.push(...instanciarEmBlocos(cena, modelosGente.funcionario.perto, matGente(), [matriz(c.x, alturaTerreno(c.x, c.z) + 0.14, c.z, q.rot - Math.PI / 2)], null, { nome: 'urubu-funcionario' }))
   }
   miudos.push(...guarda)
   // a noite (urubu-noite.js): as fogueiras, as lamparinas, a gente em volta do fogo e as redes cheias
@@ -293,8 +296,12 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
     reavaliar () { agoraDia = null; ultima = null },
     // camera: some o miúdo de longe (confere a cada 4 m que a câmera anda, ou quando vira dia ou noite)
     parado: false, // o medidor esconde o campo inteiro e pede para ninguém mostrar de volta
+    // a figura de perto até (m): o painel (Mundo > Gente de 1932) muda ao vivo
+    gente: { set lodPerto (v) { for (const md of multidoes) md.lodPerto = v }, set ate (v) { for (const md of multidoes) md.ate = v } },
     atualizar (hora, camera = null) {
       if (this.parado) return
+      // perto e longe da gente: barato (só refaz quando a câmera anda 1,5 m)
+      if (camera) for (const md of multidoes) if (md.malhas[0]?.visible) md.atualizar(camera.position)
       const d = ehDia(hora)
       const c = camera?.position
       if (d === agoraDia && (!c || (ultima && ultima.distanceToSquared(c) < 16))) return
@@ -309,32 +316,44 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
   }
 }
 
-// as figuras nas vagas: um modelo por vaga (de pé ou sentado), criança em escala menor; o que a pessoa carrega
-// (a lata na mão ou na cabeça, o pano no colo) vai em cópias à parte
-const LATA_MAO = new THREE.Vector3(0.3, 0.42, 0.12)
+// as figuras nas vagas: um modelo por vaga (de pé ou sentado, adulto ou criança; quem leva a lata na cabeça tem o
+// modelo com a lata); o que a pessoa carrega na mão (a lata) ou no colo (o pano) vai em cópias à parte. A gente vai
+// numa multidão (multidao.js): uma malha por modelo e por nível (perto, longe), arrumada pela distância da câmera.
+// O modelo de criança já tem o tamanho de criança (1,13 m, gente-corpo.js), com variação de 0,9 a 1,1.
+const LATA_MAO = new THREE.Vector3(0.27, 0.36, 0.04) // a base da lata, com a alça na mão que cai ao lado do corpo
+const LATA_CHAO = new THREE.Vector3(0.36, 0, 0.12)
 function montarGente (cena, mat, matPano, modelos, vagas, nome) {
-  const listas = new Map()
+  const md = criarMultidao(cena, matGente(), { nome, ...lodGente })
+  const tipos = new Map()
+  const tipoDe = (lod) => { if (!tipos.has(lod)) tipos.set(lod, md.tipo(lod)); return tipos.get(lod) }
   const latas = []
   const panos = []
   const v3 = new THREE.Vector3()
   vagas.forEach((v, i) => {
-    const grupo = v.sentado ? modelos.sentado : modelos.pe
-    const geo = grupo[(i * 7 + Math.round(v.x * 3)) % grupo.length]
-    const esc = v.crianca ? 0.62 : 1
+    const grupo = v.crianca ? (v.sentado ? modelos.criancaSentada : modelos.crianca) : (v.sentado ? modelos.sentado : modelos.pe)
+    const k = (i * 7 + Math.round(v.x * 3)) % grupo.length
+    const lod = v.carrega === 'latacabeca' && !v.crianca && !v.sentado ? modelos.latacabeca : grupo[k]
+    const esc = v.crianca ? 0.9 + ((i * 13) % 5) * 0.05 : 1
     const m = matriz(v.x, v.y + (v.assento || 0), v.z, v.yaw, esc)
-    if (!listas.has(geo)) listas.set(geo, [])
-    listas.get(geo).push(m)
-    if (v.carrega === 'lata') latas.push(new THREE.Matrix4().makeTranslation(v3.copy(LATA_MAO).multiplyScalar(esc).applyMatrix4(new THREE.Matrix4().makeRotationY(v.yaw)).add(new THREE.Vector3(v.x, v.y + (v.sentado ? 0 : 0.18) * esc, v.z))).multiply(new THREE.Matrix4().makeScale(esc, esc, esc)))
-    if (v.carrega === 'latacabeca') latas.push(matriz(v.x, v.y + 2.0 * esc, v.z, v.yaw, esc))
+    md.adicionar(tipoDe(lod), m)
+    const tam = esc * (v.crianca ? 0.66 : 1)
+    if (v.carrega === 'lata') {
+      latas.push(new THREE.Matrix4().makeTranslation(v3.copy(v.sentado ? LATA_CHAO : LATA_MAO).multiplyScalar(tam).applyMatrix4(new THREE.Matrix4().makeRotationY(v.yaw)).add(new THREE.Vector3(v.x, v.y, v.z))).multiply(new THREE.Matrix4().makeRotationY(v.yaw)).multiply(new THREE.Matrix4().makeScale(tam, tam, tam)))
+    }
     if (v.carrega === 'pano') panos.push(m)
   })
-  const malhas = []
+  md.montar()
+  const malhas = [...md.malhas]
+  malhas.multidao = md
   // peso do traço da gente: alfa 0,85 (CLAUDE.md), como em pessoas.js
-  for (const [geo, lista] of listas) malhas.push(...instanciarEmBlocos(cena, geo, matGente(), lista, null, { nome }))
   if (latas.length) malhas.push(...instanciarEmBlocos(cena, geometriaLata(), mat, latas, null, { nome: nome + '-latas' }))
   if (panos.length) malhas.push(...instanciarEmBlocos(cena, geometriaPano(), matPano, panos, ['#d9cbb0', '#c2412d', '#cdbf9f', '#9fa9b5'].flatMap((c) => Array(Math.ceil(panos.length / 4)).fill(c)).slice(0, panos.length), { nome: nome + '-panos' }))
+  multidoes.push(md)
   return malhas
 }
+// as multidões do campo (de dia, da noite), para o atualizar arrumar perto e longe; lodGente vem do cfg.pessoas
+const multidoes = []
+let lodGente = {}
 let _matGente = null
 function matGente () {
   if (!_matGente) _matGente = toonVertice({ opacity: 0.85, blending: THREE.NoBlending })

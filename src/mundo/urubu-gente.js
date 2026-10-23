@@ -13,7 +13,8 @@
 // 'urubu-gente', o teste de urubu1932.test.js conta essas); `povo` = o resto (malhas 'urubu-povo').
 // Cada vaga tem uma prioridade: com pouca gente pedida, ficam as cenas que contam (a cozinha, a água).
 
-import { figura } from './pessoas.js'
+import { figuraLod } from './gente-figurino.js'
+import { GENTE } from '../paleta.js'
 import { criarAleatorio } from '../utils.js'
 import { alturaTerreno } from './terreno.js'
 
@@ -25,18 +26,50 @@ export const PALETA_CAMPO = {
   chapeus: ['#d9bf86', '#c8a86a', '#b89a62', '#c8a86a'],
   lencos: ['#e9dfcc', '#d9cbb0', '#cdbf9f', '#c2412d', '#9fa9b5', '#e9dfcc'],
 }
-const FARDA = { roupas: ['#7d7a5c'], baixos: ['#6f6c52'], chapeus: ['#4a4636'], vestidos: ['#7d7a5c'] }
-const PALETO = { roupas: ['#5a5a5e'], baixos: ['#4a4a4e'], chapeus: ['#3b3330'], vestidos: ['#5a5a5e'] }
 
-// os modelos de figura: de pé (homem, mulher) e sentados, na versão simples (o campo põe centenas)
-export function modelosDoCampo (semente = 3201) {
-  const rnd = criarAleatorio(semente)
-  const o = (paleta = PALETA_CAMPO) => ({ rnd, paleta, simples: true, descalco: true })
+// As fichas do campo (docs/figurino.md, seção 3): o homem de camisa clara de manga comprida, calça clara larga e
+// chapéu de palha de aba larga (foto do Patu, 1932), às vezes o pano branco amarrado na cabeça (Pirambu, 1932) ou o
+// bornal a tiracolo; a mulher de saia até o tornozelo e o pano claro cobrindo cabeça e ombros, ou o lenço; a criança
+// de camisolão curto, ou camisa e calção, cabeça descoberta, descalça. Roupa lavada e remendada com cuidado, o pó do
+// chão na barra. O chapéu de couro liso é raro (o ornamentado de cangaceiro não é do retirante comum). Corpo de
+// gente inteira, sem magreza de espetáculo (docs/direcao-de-arte.md, seção 8).
+export function fichasDoCampo (semente = 3201) {
+  const r = criarAleatorio(semente)
+  const P = PALETA_CAMPO
+  const de = (l) => r.escolha(l)
+  const pele = () => de(GENTE.peles)
+  const cab = () => de(GENTE.cabelo)
+  const homem = (extra = {}) => ({ corpo: 'homem', roupa: 'camisa', manga: 'longa', chapeu: 'palha', pes: 'descalco', calcaLarga: true, poeira: 0.7, ...extra, cores: { pele: pele(), camisa: de(P.roupas), listra: '#e9dfcc', calca: de(P.baixos), chapeu: de(P.chapeus), cabelo: cab(), remendo: de(P.roupas), ...(extra.cores || {}) } })
+  const mulher = (extra = {}) => ({ corpo: 'mulher', roupa: 'saia', manga: 'longa', chapeu: 'xale', cabelo: 'coque', pes: 'descalco', poeira: 0.7, ...extra, cores: { pele: pele(), camisa: de(P.roupas), listra: de(P.lencos), calca: de(P.vestidos), chapeu: de(P.chapeus), cabelo: cab(), ...(extra.cores || {}) } })
+  const crianca = (corpo, extra = {}) => ({ corpo, roupa: corpo === 'menina' ? 'vestido' : 'calcao', manga: 'curta', chapeu: null, pes: 'descalco', cabelo: corpo === 'menina' ? 'coque' : 'raspado', poeira: 0.5, ...extra, cores: { pele: pele(), camisa: de(P.roupas), listra: '#e9dfcc', calca: corpo === 'menina' ? de(P.vestidos) : de(P.baixos), chapeu: de(P.chapeus), cabelo: cab(), ...(extra.cores || {}) } })
   return {
-    pe: [figura(false, false, o()), figura(false, true, o()), figura(false, false, o()), figura(false, true, o()), figura(false, true, o()), figura(false, false, o())],
-    sentado: [figura(true, true, o()), figura(true, false, o()), figura(true, true, o()), figura(true, true, o())],
-    guarda: figura(false, false, { rnd, paleta: FARDA, simples: true }),
-    funcionario: figura(true, false, { rnd, paleta: PALETO, simples: true }),
+    pe: [
+      homem({ remendo: true }), mulher(), homem({ chapeu: 'pano', cores: { listra: '#efe9dc' } }), mulher({ chapeu: 'lenco' }),
+      mulher({ manga: 'curta' }), homem({ bornal: true, roupa: 'camisaFora' }), mulher(), homem({ arregacada: true, manga: 'arregacada' }),
+      homem({ chapeu: 'couro', cores: { chapeu: GENTE.couroChapeu } }), mulher({ chapeu: 'lenco', roupa: 'vestidoLongo', cores: { listra: '#c2412d' } }),
+    ],
+    sentado: [mulher(), homem({ remendo: false }), mulher({ chapeu: 'lenco' }), mulher({ roupa: 'vestidoLongo' }), homem({ chapeu: 'pano', cores: { listra: '#efe9dc' } })],
+    criancas: [crianca('menino'), crianca('menina'), crianca('menino', { roupa: 'camisolao', cores: { camisa: '#e4dccb' } }), crianca('menina', { cores: { camisa: '#b78a6e', calca: '#b78a6e' } })],
+    criancasSentadas: [crianca('menino'), crianca('menina')],
+    // a lata d'água na cabeça, na rodilha (as mulheres da fila da água e das ruas do campo)
+    latacabeca: mulher({ chapeu: 'lenco', carga: 'lata', cores: { listra: '#e9dfcc', calca: '#a9a08c' } }),
+    // o soldado do portão: brim verde-oliva (decreto de 4/12/1931, docs/figurino.md); o funcionário de paletó
+    guarda: { corpo: 'homem', roupa: 'camisa', manga: 'longa', chapeu: 'feltro', pes: 'sapato', cores: { pele: '#8a5235', camisa: '#7d7a5c', listra: '#7d7a5c', calca: '#6f6c52', chapeu: '#4a4636', cabelo: '#1d1411' } },
+    funcionario: { corpo: 'homem', roupa: 'terno', chapeu: 'feltro', pes: 'sapato', cores: { pele: '#c98e62', camisa: '#5a5a5e', listra: '#efe9dc', calca: '#4a4a4e', chapeu: '#3b3330', cabelo: '#1d1411' } },
+  }
+}
+
+// os modelos de figura (perto e longe) de cada ficha: de pé, sentados, crianças, a lata na cabeça, o portão
+export function modelosDoCampo (semente = 3201) {
+  const f = fichasDoCampo(semente)
+  return {
+    pe: f.pe.map((x) => figuraLod(x)),
+    sentado: f.sentado.map((x) => figuraLod(x, { sentado: true })),
+    crianca: f.criancas.map((x) => figuraLod(x)),
+    criancaSentada: f.criancasSentadas.map((x) => figuraLod(x, { sentado: true })),
+    latacabeca: figuraLod(f.latacabeca),
+    guarda: figuraLod(f.guarda),
+    funcionario: figuraLod(f.funcionario, { sentado: true }),
   }
 }
 

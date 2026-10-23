@@ -93,3 +93,20 @@ export const FOLHAGEM = {
   murici: { luz: '#b0b95a', meio: '#76944a', sombra: '#557a62', casca: '#7a604c', acento: '#dcb24c' },
   guajiru: { luz: '#b6c46a', meio: '#82a054', sombra: '#5f8366', casca: '#7a604c', acento: '#6a3a5a' },
 }
+
+// A gente de 1932 (docs/figurino.md; docs/gente-22-10.md). Branco e cru dominam a rua; a classe se lê no chapéu,
+// no calçado e no acabamento, não na cor. Cor forte só num pano (lenço, saia de chita) ou na fruta do cesto.
+export const GENTE = {
+  peles: ['#e8bf9a', '#c98e62', '#a8693f', '#8a5235', '#6b3f26', '#4e2c1a'],
+  linho: ['#efe9dc', '#efe9dc', '#e4dccb', '#d9cbb0', '#e9e2d0'], // terno e camisa de linho branco ou creme
+  couro: ['#8a5a3c', '#a5764f', '#7a5236'], // algodãozinho tinto de mangue e murici (jangadeiro)
+  cinzas: ['#9aa0a3', '#6f7f8f', '#5a5a5e'],
+  vestidos: ['#efe9dc', '#e2d3bd', '#c9b6c0', '#b9c4c9', '#d8c48f', '#a9b49a', '#d49a8a'],
+  chitas: ['#c2412d', '#b78a6e', '#9fa9b5', '#d8c48f', '#a9b49a'], // saia de chita (um acento por quadro)
+  palha: ['#d9bf86', '#c8a86a', '#e9dcc0', '#b89a62'],
+  feltro: ['#3b3330', '#5a4a3e', '#6b6058'],
+  couroChapeu: '#6b4a2e',
+  cabelo: ['#1d1411', '#2a1c14', '#3a2418', '#1d1411'],
+  sapato: '#1a1a22',
+  fruta: ['#e9b23a', '#c2412d', '#4e8f3a'],
+}
