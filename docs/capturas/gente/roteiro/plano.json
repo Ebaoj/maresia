@@ -1,0 +1,131 @@
+[
+{
+"nome": "praca-3m",
+"cena": "colunaHora",
+"avanco": 8,
+"estado": "parado",
+"dist": 3,
+"pitch": 0.05,
+"yawExtra": -1.2,
+"recuo": false
+},
+{
+"nome": "praca-10m",
+"cena": "colunaHora",
+"avanco": 8,
+"estado": "parado",
+"dist": 10,
+"pitch": 0.04,
+"yawExtra": -1.2,
+"recuo": true
+},
+{
+"nome": "praca-40m",
+"cena": "colunaHora",
+"avanco": 8,
+"estado": "parado",
+"dist": 40,
+"pitch": 0.03,
+"yawExtra": -1.2,
+"recuo": true
+},
+{
+"nome": "mercado-3m",
+"cena": "mercado",
+"avanco": 4,
+"estado": "parado",
+"dist": 3,
+"pitch": 0.05,
+"yawExtra": 0.6
+},
+{
+"nome": "mercado-10m",
+"cena": "mercado",
+"avanco": 4,
+"estado": "parado",
+"dist": 10,
+"pitch": 0.04,
+"yawExtra": 0.6,
+"recuo": true
+},
+{
+"nome": "mercado-40m",
+"cena": "mercado",
+"avanco": 4,
+"estado": "parado",
+"dist": 40,
+"pitch": 0.15,
+"yawExtra": 0.6
+},
+{
+"nome": "estacao-3m",
+"cena": "estacao",
+"avanco": 10,
+"estado": "parado",
+"dist": 3,
+"pitch": 0.05,
+"recuo": false
+},
+{
+"nome": "estacao-10m",
+"cena": "estacao",
+"avanco": 10,
+"estado": "parado",
+"dist": 10,
+"pitch": 0.04,
+"recuo": true
+},
+{
+"nome": "estacao-40m",
+"cena": "estacao",
+"avanco": 10,
+"estado": "parado",
+"dist": 40,
+"pitch": 0.03,
+"recuo": true
+},
+{
+"nome": "cozinha-3m",
+"cena": "cozinha",
+"fonte": "campo",
+"adulto": true,
+"dist": 3,
+"pitch": 0.05,
+"yawExtra": 3.1416
+},
+{
+"nome": "cozinha-10m",
+"cena": "cozinha",
+"fonte": "campo",
+"adulto": true,
+"dist": 10,
+"pitch": 0.04,
+"yawExtra": 3.1416,
+"recuo": true
+},
+{
+"nome": "cozinha-40m",
+"cena": "cozinha",
+"fonte": "campo",
+"adulto": true,
+"dist": 40,
+"pitch": 0.1,
+"yawExtra": 0,
+"recuo": true
+},
+{
+"nome": "galpao-3m",
+"cena": "galpao",
+"fonte": "campo",
+"dist": 3,
+"pitch": 0.08
+},
+{
+"nome": "galpao-10m",
+"cena": "galpao",
+"fonte": "campo",
+"dist": 10,
+"pitch": 0.08,
+"recuo": true
+}
+]
