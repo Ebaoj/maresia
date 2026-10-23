@@ -17,6 +17,8 @@ export function secaoDesempenho(gui, cfg) {
   des.add(d, 'chaoSoltoPerto').name('chão solto só perto (objetos)')
   des.add(d, 'muitoLonge').name('longe junto em células grandes')
   des.add(d, 'blocosJuntos').name('blocos sem LOD juntos de longe')
+  des.add(d, 'cortePequenos').name('peça pequena some de longe')
+  des.add(d, 'cortePx', 0, 12, 0.5).name('peça some abaixo de (px)')
   des.add(d, 'muitoLongeTam', [384, 768, 1536]).name(rec('célula de muito longe (m)'))
 
   const sombra = des.addFolder('Sombra')

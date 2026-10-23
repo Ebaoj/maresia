@@ -17,6 +17,7 @@ import { adicionarCaixa, adicionarCirculo } from './colisao.js'
 import { alturaTerreno, materialChao } from './terreno.js'
 import { congelar } from './congelar.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
+import { registrarCorte } from '../render/corte-tela.js'
 import { criarAleatorio } from '../utils.js'
 import { CAMPO_URUBU, llInverso } from './mapa1932.js'
 import { ll } from './fortaleza1932.js'
@@ -66,6 +67,10 @@ function juntarPorBloco (cena, pecas, material, nome, tam = TAM_LOD) {
     m.receiveShadow = true
     m.name = nome
     registrarEstatico(m)
+    // de longe o campo é uma faixa de peças de ~5 m de altura (galpão, cerca, trilho): sai do desenho quando fica
+    // menor que cortePx na tela (render/corte-tela.js; da Coluna da Hora, a 2 km, eram 716 mil triângulos)
+    m.geometry.computeBoundingBox()
+    registrarCorte(m, { tam: m.geometry.boundingBox.max.y - m.geometry.boundingBox.min.y })
     cena.add(congelar(m))
     malhas.push(m)
   }

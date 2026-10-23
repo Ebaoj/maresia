@@ -19,6 +19,7 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { congelar } from './congelar.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
+import { registrarCorte } from '../render/corte-tela.js'
 
 // cfg.desempenho.muitoLonge (liga e desliga ao vivo) e muitoLongeTam (lado da célula, recarregar)
 let CFG = null
@@ -114,6 +115,8 @@ export class MuitoLonge {
         j.visible = false
         ;(lista[0].parent || this.cena).add(congelar(j))
         if (j.castShadow) registrarEstatico(j)
+        // a célula de miúdos (lampião, vaso, dormente) sai do desenho quando a peça fica menor que cortePx na tela
+        if (j.isInstancedMesh) registrarCorte(j)
         c.malhas.push(j)
       }
     }

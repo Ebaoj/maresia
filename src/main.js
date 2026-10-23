@@ -68,6 +68,7 @@ import { carregarAvo } from './jogador/avo.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
 import { AranhaversoGpu } from './pos/aranhaverso-gpu.js'
 import { ResolucaoDinamica } from './render/resolucao-dinamica.js'
+import { atualizarCorte } from './render/corte-tela.js'
 import { criarHud } from './ui/hud.js'
 import { criarPainel } from './ui/painel.js'
 import { criarSom } from './audio.js'
@@ -408,6 +409,7 @@ async function iniciar() {
     atualizarVento(cfg) // o vento das árvores (o painel muda ao vivo)
     atualizarLodArvores(camera, cfg) // perto: corpo e cartões de folha; longe: a copa simples
     atualizarBlocosLonge(camera, cfg) // os blocos sem LOD, juntos por célula grande quando todos estão longe
+    atualizarCorte(camera, cfg) // a peça menor que cortePx na tela sai do desenho (render/corte-tela.js)
     interacoes.atualizar()
     fisica.atualizar(dt, jogador)
     toque.atualizar(dt, pj)

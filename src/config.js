@@ -531,6 +531,8 @@ export const PADRAO = {
     blocosJuntos: true,    // 22/10/2026: os blocos sem LOD (postes, cadeiras, vasos, cercas...) também se juntam por célula quando estão longe
     muitoLongeTam: 768,    // lado da célula de muito longe (m); recarregar  // 22/10/2026: o chão solto só vira objeto perto da câmera (eram 5.854 blocos na cena); false = como era, para medir
     atoresVat: true,       // KAN-74 fase 2b: atores de fundo como cópias com a pose em textura de ossos; só vale no WebGPU; recarregar
+    cortePequenos: true,   // fluido 22/10/2026 (render/corte-tela.js): a peça que fica menor que cortePx na tela sai do desenho (lampião, vaso, dormente de longe, o campo do Urubu a 2 km)
+    cortePx: 3,            // tamanho (px numa tela de 900 de altura) abaixo do qual a peça sai
     resolucaoDinamica: false, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Desligada até passar na medição
     resolucaoMin: 0.6,     // R1: menor escala que a resolução dinâmica aceita
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)

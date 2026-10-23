@@ -8,6 +8,7 @@ import { solidosCamera } from './solidos.js'
 import { motorPlacaLigado, materialServeNaPlaca, enviarAoMotor } from '../render/motor-placa.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { MuitoLonge } from './muito-longe.js'
+import { registrarCorte } from '../render/corte-tela.js'
 
 const p = new THREE.Vector3()
 
@@ -67,6 +68,7 @@ export function instanciarEmBlocos(cena, geo, material, matrizes, cores = null, 
     im.castShadow = sombra
     im.receiveShadow = recebe
     registrarEstatico(im) // matriz congelada: a sombra vai para o mapa em cache (F4)
+    registrarCorte(im) // a cópia menor que cortePx na tela sai do desenho (render/corte-tela.js)
     im.name = nome
     if (peso !== undefined) im.userData.peso = peso
     if (semNormal) im.userData.semNormal = true
