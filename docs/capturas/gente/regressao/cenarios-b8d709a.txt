@@ -1,0 +1,32 @@
+--- estado --- {"webgpu":true,"renderizador":"webgpu","quebrados":0}
+--- o jogo montou (WebGPU) ---
+PASSOU  semErros  
+        {"shadersQuebrados":0}
+PASSOU  pesParados  
+        {"esquerdo":0,"direito":0,"quadros":3}
+PASSOU  poseCongelada  
+        [{"nome":"parado","deriva":0,"quadros":155},{"nome":"andando","deriva":0.008,"quadros":153}]
+PASSOU  meiaVolta  
+        [{"giro":0.19,"virou":0.08,"assentado":0.019,"quadrosAteVirar":-1,"quadros":99},{"giro":3.2,"virou":3.12,"assentado":0.007,"quadrosAteVirar":44,"quadros":116},{"giro":3.19,"virou":3.12,"assentado":0.01,"quadrosAteVirar":30,"quadros":103},{"giro":3.34,"virou":3.14,"assentado":0.041,"quadrosAteVirar":
+PASSOU  meiaVoltaRapida  
+        [{"intervalo":300,"necessario":1.67,"giro":1.62,"excesso":-0.06,"erroFinal":0.01},{"intervalo":700,"necessario":0.79,"giro":0.95,"excesso":0.16,"erroFinal":0.01}]
+PASSOU  meiaVoltaInterrompida  
+        {"girando":false,"vel":1.8,"poseMudou":0.00234}
+PASSOU  sentarLevantar  
+        {"sentou":true,"maiorSaltoQuadril":0.101,"quadro":308,"quadros":395}
+PASSOU  copiasUnicas  
+        {"esquerda":156,"meio":143,"direita":147}
+PASSOU  copiasQueCrescem  
+        {"cima":[152,149,141],"baixo":[152,151,156]}
+PASSOU  sombrasCopias  
+        {"aceso":765,"sombras":[194,338,194],"soboFolha":765,"crescem":[207,202],"soboTampa":765}
+PASSOU  pegadasNaAreia  
+        {"texelsQueMudaram":1429,"naMarca":1404}
+PASSOU  propriedadeEmJogo  
+        {"r":0,"g":255,"b":0}
+PASSOU  programasReaproveitados  
+        {"programasNovos":0,"blocos":10}
+PASSOU  semRecompilarParado  
+        {"versoesNovas":0}
+--- console: limpo ---
+--- tudo passou ---

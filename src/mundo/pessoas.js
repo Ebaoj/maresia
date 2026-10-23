@@ -2,7 +2,8 @@
 // no calçadão. Quem caminha balança "em 2", como o resto da animação.
 
 import * as THREE from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { fichasDaCidade, figuraGeo } from './gente-figurino.js'
+import { criarMultidao } from './multidao.js'
 import { linhaCosta, larguraPraia, pesos, NIVEL_CIDADE, LARG_CALCADAO, rioX, RIO_MEIA_LARGURA } from './mapa.js'
 import { trechosJogo, VILAS } from './fortaleza1932.js'
 import { RUAS, comprimentoRua, pontoNaRua } from './casario1932.js'
@@ -21,75 +22,27 @@ import { noCorredor, pertoDeVista } from './frente1932.js'
 
 const rnd = criarAleatorio(808)
 
-// 1932 (fotos de 1925 a 1936 e docs/figurino.md): terno e camisa de linho branco ou creme,
-// algodãozinho "cor de couro" (mangue, murici), cinza, azul desbotado; vestidos claros e compridos;
-// chapéu de palha na maioria. Elenco diverso, como a Fortaleza da época.
-const PELES = ['#e8bf9a', '#c98e62', '#a8693f', '#8a5235', '#6b3f26', '#4e2c1a']
-const ROUPAS = ['#efe9dc', '#efe9dc', '#e4dccb', '#d9cbb0', '#8a5a3c', '#a5764f', '#9aa0a3', '#6f7f8f', '#c9b48a', '#efe9dc']
-const BAIXO = ['#efe9dc', '#d9cbb0', '#6b5a4a', '#8a5a3c', '#5a5a5e', '#9aa0a3']
-const VESTIDOS = ['#efe9dc', '#e2d3bd', '#c9b6c0', '#b9c4c9', '#d8c48f', '#a9b49a']
-const CHAPEUS = ['#d9bf86', '#d9bf86', '#c8a86a', '#e9dcc0', '#3b3330']
-const CABELO = ['#1d1411', '#2a1c14', '#3a2418', '#1d1411']
-
-function parte(geo, cor) {
-  const g = geo.toNonIndexed()
-  g.deleteAttribute('uv')
-  const c = new THREE.Color(cor)
-  const n = g.attributes.position.count
-  g.setAttribute('color', new THREE.Float32BufferAttribute(new Array(n).fill(0).flatMap(() => [c.r, c.g, c.b]), 3))
-  return g
-}
-
-// Uma figura de gente. Sem opções, é a da cidade (mesma sequência de sorteio de sempre: a cidade sai igual).
-// Opções (o Campo do Urubu, urubu-gente.js): rnd próprio, paleta própria (roupa de saco de mantimento, lenço),
-// simples = menos triângulos (o campo põe centenas)
-export function figura(sentada, mulher = false, o = {}) {
-  const r = o.rnd || rnd
-  const P = o.paleta || {}
-  const seg = o.simples ? { aba: 10, copa: 7, corpo: [3, 7], cabeca: [9, 6], cabelo: [7, 5], membro: [2, 5], vestido: 8 } : { aba: 12, copa: 10, corpo: [3, 8], cabeca: [10, 8], cabelo: [8, 6], membro: [3, 6], vestido: 10 }
-  const pele = r.escolha(P.peles || PELES)
-  const roupa = mulher ? r.escolha(P.vestidos || VESTIDOS) : r.escolha(P.roupas || ROUPAS)
-  const baixo = mulher ? roupa : r.escolha(P.baixos || BAIXO)
-  const partes = []
-  const quadril = sentada ? 0.32 : 0.9
-  // chapéu de palha (ou de feltro escuro) na maioria; mulheres às vezes com lenço
-  let chapeu = false
-  if (!mulher || r.chance(0.35)) {
-    chapeu = true
-    const cor = r.escolha(P.chapeus || CHAPEUS)
-    partes.push(parte(new THREE.CylinderGeometry(0.27, 0.29, 0.03, seg.aba).translate(0, quadril + 1.0, 0), cor))
-    partes.push(parte(new THREE.CylinderGeometry(0.14, 0.16, 0.13, seg.copa).translate(0, quadril + 1.07, 0), cor))
-  }
-  // vestido comprido até a canela
-  if (mulher && !sentada) partes.push(parte(new THREE.CylinderGeometry(0.2, 0.34, 0.75, seg.vestido).translate(0, 0.52, 0), roupa))
-  partes.push(parte(new THREE.CapsuleGeometry(0.2, 0.32, ...seg.corpo).scale(1.1, 1, 0.8).translate(0, quadril + 0.38, 0), roupa))
-  partes.push(parte(new THREE.SphereGeometry(0.17, ...seg.cabeca).translate(0, quadril + 0.83, 0), pele))
-  partes.push(parte(new THREE.SphereGeometry(0.18, ...seg.cabelo).scale(1, 0.75, 1).translate(0, quadril + 0.93, -0.03), r.escolha(CABELO)))
-  // o lenço amarrado na cabeça (só quem passa a paleta com lenços: o campo)
-  if (P.lencos && mulher && !chapeu) partes.push(parte(new THREE.SphereGeometry(0.19, ...seg.cabelo).scale(1.02, 0.72, 1.06).translate(0, quadril + 0.95, -0.02), r.escolha(P.lencos)))
-  for (const lado of [-1, 1]) {
-    partes.push(parte(new THREE.CapsuleGeometry(0.06, 0.42, ...seg.membro).translate(lado * 0.28, quadril + 0.3, 0).rotateZ(lado * 0.06), pele))
-    if (sentada) {
-      partes.push(parte(new THREE.CapsuleGeometry(0.08, 0.5, ...seg.membro).rotateX(Math.PI / 2).translate(lado * 0.11, 0.2, 0.35), baixo))
-    } else {
-      partes.push(parte(new THREE.CapsuleGeometry(0.08, 0.6, ...seg.membro).translate(lado * 0.11, 0.45, 0), lado < 0 ? baixo : baixo))
-      partes.push(parte(new THREE.BoxGeometry(0.12, 0.05, 0.24).translate(lado * 0.11, 0.03, 0.04), o.descalco ? pele : '#1a1a22'))
-    }
-  }
-  return mergeGeometries(partes)
-}
+// 1932 (fotos de 1925 a 1936 e docs/figurino.md): terno e camisa de linho branco ou creme, algodãozinho "cor de couro"
+// (mangue, murici), vestidos claros e compridos, chapéu de palha na maioria; elenco diverso, como a Fortaleza da época.
+// As fichas e o corpo: gente-figurino.js e gente-corpo.js (22/10/2026, docs/gente-22-10.md); cada ficha tem a figura de
+// média (o detalhe de perto é do ator animado, atores.js), e multidao.js arruma as cópias pela câmera (cfg.pessoas.ate).
 
 export function criarPessoas(cena, grade, cfg = null) {
-  const tipos = []
-  for (let i = 0; i < 12; i++) tipos.push({ geo: figura(false, i % 3 === 0), lista: [] })
-  for (let i = 0; i < 6; i++) tipos.push({ geo: figura(true, i % 3 === 0), lista: [], sentada: true })
-  const emPe = tipos.filter((t) => !t.sentada)
-  const sentadas = tipos.filter((t) => t.sentada)
+  // os sorteios das fichas saem do rnd da cidade na ordem da figura antiga: quem fica onde continua igual
+  const fichas = fichasDaCidade(rnd)
+  const mat = toonVertice({ opacity: 0.85, blending: THREE.NoBlending }) // alfa 0,85: o filtro reconhece gente
+  const multidao = criarMultidao(cena, mat, { nome: 'pessoas', ate: cfg?.pessoas?.ate ?? 400, controlaVisivel: true })
+  const novoTipo = (fig, sentada = false) => { const t = multidao.tipo(figuraGeo(fig, { sentado: sentada, detalhe: 'medio' })); t.fig = fig; t.sentada = sentada; return t }
+  const emPe = fichas.pe.map((f) => novoTipo(f))
+  const sentadas = fichas.sentadas.map((f) => novoTipo(f, true))
+  // criança só nos grupos parados: quem anda (e vira ator animado, que tem corpo de adulto) é adulto
+  const adultos = emPe.filter((t) => !t.fig.crianca)
+  const adulto = (t) => (t.fig.crianca ? adultos[emPe.indexOf(t) % adultos.length] : t)
   const andando = []
   // registro de todo mundo de pé (parado ou andando), para os atores animados (atores.js) ocuparem o
   // lugar dos mais próximos do jogador
   const registro = []
-  const deFigura = (t, m) => { registro.push({ tipo: t, idx: t.lista.length, matriz: m, estado: 'parado' }); t.lista.push(m) }
+  const deFigura = (t, m) => registro.push(multidao.adicionar(t, m, { estado: 'parado' }))
 
   const longeDoRio = (x, z) => Math.abs(x - rioX(z)) > RIO_MEIA_LARGURA * 2
   // gente nas vilas de jangadeiros e na Praia Formosa (perto do porto)
@@ -101,9 +54,10 @@ export function criarPessoas(cena, grade, cfg = null) {
     const x = xPraia()
     const z0 = linhaCosta(x) + larguraPraia(x)
     if (!longeDoRio(x, z0)) continue
-    const t = rnd.escolha(emPe)
-    registro.push(andando[andando.push({ tipo: t, idx: t.lista.length, x, faixa: rnd.entre(1.5, LARG_CALCADAO - 1.5), vel: rnd.entre(0.9, 1.5) * (rnd.chance(0.5) ? 1 : -1), ini: x - rnd.entre(15, 35), fim: x + rnd.entre(15, 35), fase: rnd.entre(0, 6), estado: 'andar', matriz: new THREE.Matrix4() }) - 1])
-    t.lista.push(andando[andando.length - 1].matriz)
+    const t = adulto(rnd.escolha(emPe))
+    const a = multidao.adicionar(t, new THREE.Matrix4(), { x, faixa: rnd.entre(1.5, LARG_CALCADAO - 1.5), vel: rnd.entre(0.9, 1.5) * (rnd.chance(0.5) ? 1 : -1), ini: x - rnd.entre(15, 35), fim: x + rnd.entre(15, 35), fase: rnd.entre(0, 6), estado: 'andar' })
+    andando.push(a)
+    registro.push(a)
   }
   // andando pelas calçadas: as ruas de verdade, a linha da frente dos lotes de 1932
   const [ox, oz] = grade.origem
@@ -118,9 +72,10 @@ export function criarPessoas(cena, grade, cfg = null) {
     const t = rnd.entre(0, comp)
     const [x, z, nx, nz] = pontoNaRua(rua, t)
     if (!ruaViva(x + nx * CALCADA, z + nz * CALCADA)) continue
-    const tp = rnd.escolha(emPe)
-    registro.push(andando[andando.push({ tipo: tp, idx: tp.lista.length, rua: true, r: rua, t, vel: rnd.entre(0.8, 1.4) * (rnd.chance(0.5) ? 1 : -1), ini: 0, fim: comp, fase: rnd.entre(0, 6), estado: 'andar', matriz: new THREE.Matrix4() }) - 1])
-    tp.lista.push(andando[andando.length - 1].matriz)
+    const tp = adulto(rnd.escolha(emPe))
+    const a = multidao.adicionar(tp, new THREE.Matrix4(), { rua: true, r: rua, t, vel: rnd.entre(0.8, 1.4) * (rnd.chance(0.5) ? 1 : -1), ini: 0, fim: comp, fase: rnd.entre(0, 6), estado: 'andar' })
+    andando.push(a)
+    registro.push(a)
     i++
   }
   // conversando na porta, em grupinhos
@@ -148,7 +103,7 @@ export function criarPessoas(cena, grade, cfg = null) {
   // registro dos atores. Quantidades: cfg.pessoas (painel Mundo > Gente de 1932, recarregar).
   const cp = cfg?.pessoas
   const diurnos = []
-  const deFiguraDia = (t, m) => { const r = { tipo: t, idx: t.lista.length, matriz: m, estado: 'parado', diurno: true }; registro.push(r); diurnos.push(r); t.lista.push(m) }
+  const deFiguraDia = (t, m) => { const r = multidao.adicionar(t, m, { estado: 'parado', diurno: true }); registro.push(r); diurnos.push(r) }
   if (cp) {
     const raioCentro = cp.raioCentro
     // andando nas calçadas do Centro
@@ -159,12 +114,11 @@ export function criarPessoas(cena, grade, cfg = null) {
       const [x, z, nx, nz] = pontoNaRua(rua, t)
       if (distRealDaPraca(x, z) > raioCentro) continue
       if (!eraRua1932(x + nx * CALCADA, z + nz * CALCADA)) continue
-      const tp = rnd.escolha(emPe)
-      const a = { tipo: tp, idx: tp.lista.length, rua: true, r: rua, t, vel: rnd.entre(0.8, 1.4) * (rnd.chance(0.5) ? 1 : -1), ini: 0, fim: comp, fase: rnd.entre(0, 6), estado: 'andar', matriz: new THREE.Matrix4(), diurno: true }
+      const tp = adulto(rnd.escolha(emPe))
+      const a = multidao.adicionar(tp, new THREE.Matrix4(), { rua: true, r: rua, t, vel: rnd.entre(0.8, 1.4) * (rnd.chance(0.5) ? 1 : -1), ini: 0, fim: comp, fase: rnd.entre(0, 6), estado: 'andar', diurno: true })
       andando.push(a)
       registro.push(a)
       diurnos.push(a)
-      tp.lista.push(a.matriz)
       i++
     }
     // grupinhos parados num lugar: n pessoas em roda, olhando para o meio
@@ -223,7 +177,7 @@ export function criarPessoas(cena, grade, cfg = null) {
     const z = linhaCosta(x) + rnd.entre(bw * 0.25, bw * 0.75)
     if (!longeDoRio(x, z) || !ocupacao.livre(x, z, 0.4, 0.4)) continue
     const yaw = Math.PI + rnd.entre(-0.6, 0.6) // olhando para o mar
-    rnd.escolha(sentadas).lista.push(new THREE.Matrix4().compose(new THREE.Vector3(x, alturaTerreno(x, z), z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(1, 1, 1)))
+    multidao.adicionar(rnd.escolha(sentadas), new THREE.Matrix4().compose(new THREE.Vector3(x, alturaTerreno(x, z), z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), new THREE.Vector3(1, 1, 1)))
   }
   // de pé conversando em grupinhos pela cidade e na praia
   for (let g = 0; g < 26; g++) {
@@ -244,62 +198,57 @@ export function criarPessoas(cena, grade, cfg = null) {
     }
   }
 
-  // alfa 0,85: o filtro reconhece como gente e dá traço médio
-  const mat = toonVertice({ opacity: 0.85, blending: THREE.NoBlending })
-  for (const t of tipos) {
-    if (!t.lista.length) continue
-    t.malha = new THREE.InstancedMesh(t.geo, mat, t.lista.length)
-    t.lista.forEach((mm, i) => t.malha.setMatrixAt(i, mm))
-    t.malha.castShadow = true
-    t.malha.userData.peso = 0.8
-    t.malha.name = 'pessoas'
-    cena.add(t.malha)
-  }
+  // a matriz de quem anda nasce no primeiro passo; até lá fica parada na origem e escondida
+  for (const a of andando) a.oculta = true
+  multidao.montar()
 
   const p = new THREE.Vector3()
   const q = new THREE.Quaternion()
   const um = new THREE.Vector3(1, 1, 1)
   const Y = new THREE.Vector3(0, 1, 0)
   let acumulado = 0
-  const ZERO = new THREE.Matrix4().makeScale(0, 0, 0)
   const registroNoite = registro.filter((r) => !r.diurno)
   let noite = false
   let escondido = false
+  let nasceu = false
+  // escondida: ocupada por um ator, ou do movimento do dia à noite (ou escondido pelo medidor)
+  const reavaliar = (r) => { r.oculta = !!r.ator || (!!r.diurno && (noite || escondido)) || (r.estado === 'andar' && !nasceu) }
   return {
+    multidao,
+    // as fichas que viram ator animado perto do jogador (atores.js veste o ator com a da pessoa): os adultos de pé
+    fichasAtor: adultos.map((t) => t.fig),
+    malhas: multidao.malhas,
     // para medir (src/debug/medidor.js): some com o movimento do dia sem mudar a hora
     esconderDia(sim) {
-      const mexidas = new Set()
-      for (const r of diurnos) { if (!r.ator) { r.tipo.malha.setMatrixAt(r.idx, sim || noite ? ZERO : r.matriz); mexidas.add(r.tipo.malha) } }
-      for (const m of mexidas) m.instanceMatrix.needsUpdate = true
       escondido = sim
+      for (const r of diurnos) reavaliar(r)
+      multidao.sujar()
     },
     // à noite as figuras do movimento do dia saem do registro (nenhum ator ocupa o lugar delas)
     get registro() { return noite ? registroNoite : registro },
     // um ator animado ocupa (ou devolve) o lugar desta pessoa: a figura simples some ou volta
     ocupar(r, ator) {
       r.ator = ator
-      r.tipo.malha.setMatrixAt(r.idx, ator ? ZERO : r.matriz)
-      r.tipo.malha.instanceMatrix.needsUpdate = true
+      reavaliar(r)
+      multidao.sujar()
     },
-    atualizar(dt, tempo, hora = 12) {
+    // camera: a câmera do jogo (a figura de perto ou de longe sai da distância dela)
+    atualizar(dt, tempo, hora = 12, camera = null) {
       // de dia o Centro enche; à noite o movimento do dia some
       const agoraNoite = hora < (cp?.diaDe ?? 6) || hora > (cp?.diaAte ?? 18.5)
       if (agoraNoite !== noite && diurnos.length) {
         noite = agoraNoite
-        const mexidas = new Set()
-        for (const r of diurnos) {
-          if (r.ator) continue
-          r.tipo.malha.setMatrixAt(r.idx, noite ? ZERO : r.matriz)
-          mexidas.add(r.tipo.malha)
-        }
-        for (const m of mexidas) m.instanceMatrix.needsUpdate = true
+        for (const r of diurnos) reavaliar(r)
+        multidao.sujar()
       }
+      const cam = camera && (camera.isCamera || camera.isVector3) ? camera : null
+      multidao.atualizar(cam)
       // só reposiciona 12 vezes por segundo: caminhada "em 2"
       acumulado += dt
       if (acumulado < 1 / 12) return
       const passo = acumulado
       acumulado = 0
-      const tocados = new Set()
+      if (!nasceu) { nasceu = true; for (const a of andando) reavaliar(a) }
       for (const a of andando) {
         if ((noite || escondido) && a.diurno) continue
         if (a.rua) {
@@ -317,8 +266,6 @@ export function criarPessoas(cena, grade, cfg = null) {
           const dz = (bz - az) * Math.sign(a.vel)
           q.setFromAxisAngle(Y, Math.atan2(dx, dz))
           a.matriz.compose(p, q, um)
-          a.tipo.malha.setMatrixAt(a.idx, a.ator ? ZERO : a.matriz)
-          tocados.add(a.tipo.malha)
           continue
         }
         a.x += a.vel * passo
@@ -328,10 +275,9 @@ export function criarPessoas(cena, grade, cfg = null) {
         p.set(a.x, NIVEL_CIDADE + 0.05 + balanco, z)
         q.setFromAxisAngle(Y, a.vel > 0 ? Math.PI / 2 : -Math.PI / 2)
         a.matriz.compose(p, q, um)
-        a.tipo.malha.setMatrixAt(a.idx, a.ator ? ZERO : a.matriz)
-        tocados.add(a.tipo.malha)
       }
-      for (const m of tocados) m.instanceMatrix.needsUpdate = true
+      if (andando.length) multidao.sujar()
+      multidao.atualizar(cam)
     },
   }
 }
