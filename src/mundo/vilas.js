@@ -400,7 +400,7 @@ export function criarVilas(cena) {
   casas.mascaraLonge = mascara
   let ultimoLod = 0
   casas.atualizarLonge = (camera, dist) => {
-    mascara.atualizar()
+    mascara.atualizar(camera)
     const agora = performance.now()
     if (!camera || agora - ultimoLod < 400) return
     ultimoLod = agora

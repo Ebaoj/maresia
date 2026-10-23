@@ -77,6 +77,15 @@ export function atualizarCorte(camera, cfg) {
   }
 }
 
+// pixels da peça de tamanho tam (m) a dist (m), na tela de referência, e se ela sai (para quem corta por conta
+// própria, como a malha de longe mascarada em muito-longe.js)
+export function pecaSai(tam, dist, fov, cfg) {
+  const d = cfg?.desempenho
+  if (!d || d.cortePequenos === false || !(dist > 1)) return false
+  const k = (ALTURA_REF / 2) / Math.tan((fov * Math.PI) / 360)
+  return (tam * k) / dist < (d.cortePx ?? 3)
+}
+
 export function statsCorte() {
   let fora = 0
   for (const e of lista) if (e.fora) fora++

@@ -19,7 +19,7 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { congelar } from './congelar.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
-import { registrarCorte } from '../render/corte-tela.js'
+import { registrarCorte, pecaSai } from '../render/corte-tela.js'
 
 // cfg.desempenho.muitoLonge (liga e desliga ao vivo) e muitoLongeTam (lado da célula, recarregar)
 let CFG = null
@@ -179,6 +179,8 @@ export class LongeMascarado {
     this.sujas = new Set()
     this.montada = false
     this.ligadoAntes = null
+    this.cameraAntes = null
+    this.corteAntes = null
   }
 
   adicionar(u) { u.visivelLonge = false; this.unidades.push(u) }
@@ -205,6 +207,23 @@ export class LongeMascarado {
       f.malha = j
       f.matrizes = j.instanceMatrix.array.slice() // todas as cópias, na ordem das faixas
       f.cores = j.instanceColor ? j.instanceColor.array.slice() : null
+      // corte por tamanho na tela (render/corte-tela.js) por faixa: o tamanho da peça (uma cópia) e o círculo das
+      // cópias de cada faixa; a faixa que fica menor que cortePx some da malha grande
+      if (!j.geometry.boundingBox) j.geometry.computeBoundingBox()
+      const bb = j.geometry.boundingBox
+      const a = f.matrizes
+      const esc = a.length ? Math.max(Math.hypot(a[0], a[1], a[2]), Math.hypot(a[4], a[5], a[6]), Math.hypot(a[8], a[9], a[10])) : 1
+      f.tam = Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z) * esc
+      for (const fx of f.faixas) {
+        let x = 0, y = 0, z = 0
+        for (let i = fx.inicio; i < fx.inicio + fx.n; i++) { x += a[i * 16 + 12]; y += a[i * 16 + 13]; z += a[i * 16 + 14] }
+        const n = Math.max(1, fx.n)
+        fx.cx = x / n; fx.cy = y / n; fx.cz = z / n
+        let r = 0
+        for (let i = fx.inicio; i < fx.inicio + fx.n; i++) r = Math.max(r, Math.hypot(a[i * 16 + 12] - fx.cx, a[i * 16 + 13] - fx.cy, a[i * 16 + 14] - fx.cz))
+        fx.r = r + f.tam / 2
+        fx.cortada = false
+      }
       j.count = 0 // nada à vista até o sistema dizer quem está longe
       j.userData.contagemViva = true // o count é o de verdade: o WebGPU não troca o resto por escala zero (renderizador.js)
       ;(f.lista[0].parent).add(congelar(j))
@@ -231,7 +250,7 @@ export class LongeMascarado {
       const c = f.cores ? f.malha.instanceColor.array : null
       let k = 0
       for (const fx of f.faixas) {
-        if (!fx.u.visivelLonge) continue
+        if (!fx.u.visivelLonge || fx.cortada) continue
         a.set(f.matrizes.subarray(fx.inicio * 16, (fx.inicio + fx.n) * 16), k * 16)
         if (c) c.set(f.cores.subarray(fx.inicio * 3, (fx.inicio + fx.n) * 3), k * 3)
         k += fx.n
@@ -243,10 +262,30 @@ export class LongeMascarado {
     this.sujas.clear()
   }
 
+  // corte por tamanho na tela, por faixa (só refaz a conta quando a câmera anda 8 m ou o painel muda): a faixa que
+  // muda de lado suja a família, e o aplicar() do mesmo quadro refaz a malha
+  cortar(camera) {
+    const d = CFG?.desempenho
+    const chave = d ? `${d.cortePequenos !== false}:${d.cortePx}:${camera.fov}` : ''
+    const p = camera.position
+    if (chave === this.corteAntes && this.cameraAntes && this.cameraAntes.distanceToSquared(p) < 64) return
+    this.corteAntes = chave
+    ;(this.cameraAntes ||= p.clone()).copy(p)
+    for (const f of this.familias) {
+      for (const fx of f.faixas) {
+        const corta = pecaSai(f.tam, Math.hypot(p.x - fx.cx, p.y - fx.cy, p.z - fx.cz) - fx.r, camera.fov, CFG)
+        if (corta === fx.cortada) continue
+        fx.cortada = corta
+        if (fx.u.visivelLonge) this.sujas.add(f)
+      }
+    }
+  }
+
   // todo quadro, antes do laço: a chave do painel (cfg.desempenho.muitoLonge) troca ao vivo entre a malha grande e as
-  // de sempre
-  atualizar() {
+  // de sempre; com a câmera, o corte por tamanho na tela
+  atualizar(camera = null) {
     if (!this.montada) return
+    if (camera && ligado()) this.cortar(camera)
     const lig = ligado()
     if (lig === this.ligadoAntes) return
     this.ligadoAntes = lig

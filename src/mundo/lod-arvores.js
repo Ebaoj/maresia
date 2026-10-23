@@ -81,7 +81,7 @@ export function atualizarLodArvores(camera, cfg) {
   const cp = camera.position
   // na primeira vez: todas as espécies já registraram os blocos
   if (!mascara && grupos.length) montarMascara()
-  mascara?.atualizar()
+  mascara?.atualizar(camera)
   for (const g of grupos) {
     const d = cp.distanceTo(g.c) - g.r
     const nivel = estadoDoBloco(d, D, g.ate ? g.ate() : null, g.estado)
