@@ -373,6 +373,7 @@ export const PADRAO = {
     sombraPerto: true,
     sombraPertoTamanho: 48,     // metros de lado (48 m em 2048 = 2,3 cm por texel; o de longe dá 8,5)
     sombraPertoResolucao: 2048,
+    sombraPertoRecorte: true,   // fluido 22/10/2026 (render/sombra-perto-recorte.js): o bloco grande de cópias entra no mapa de perto só com as cópias da janela (WebGPU)
     sombraPertoBorda: 0.12,     // fração da janela de perto em que ela se mistura com a de longe
     sombraPertoAFrente: 8,      // metros à frente do jogador (para onde a câmera olha) onde a janela de perto fica
     sombraVies: 0.03,           // metros: tira o "acne" (sombra de si mesmo); o de antes eram 0,86 m e a sombra descolava do pé

@@ -9,6 +9,7 @@
 // Limite conhecido: a sombra de folha que balança no vento é de "parado" e não balança até o próximo refazer.
 import { PoliticaCacheSombra } from './politica-sombra.js'
 import { BIT_ESTATICO, estaticosRegistrados, assinaturaEstaticos } from './sombra-estatica.js'
+import { RecortePerto } from './sombra-perto-recorte.js'
 
 const INSTALADO = Symbol.for('maresia.cacheSombraGpu.instalado')
 
@@ -27,6 +28,7 @@ export class CacheSombraGpu {
     this.refazer = null
     this.aplicado = false // os parados estão com castShadow desligado (o mapa em cache está valendo)
     this.stats = { refeitos: 0, quadros: 0, motivos: {}, msRefazer: 0, msQuadro: 0, parados: 0 }
+    this.recorte = new RecortePerto() // o mapa de perto recebe os blocos grandes só com as cópias da janela (sombra-perto-recorte.js)
     this._c = { x: 0, y: 0, z: 0 }
     this._d = { x: 0, y: 1, z: 0 }
     sol.userData.cacheSombraGpu = this
@@ -52,19 +54,39 @@ export class CacheSombraGpu {
       if (c) return c.sombra(this, frame, renderShadow)
       // a luz do mapa de perto (sombra-perto.js) desenha tudo, parados inclusive
       const v = ud && ud.cacheSombraVizinho
-      if (v) return v.comParados(() => renderShadow.call(this, frame))
+      if (v) return v.comParados(() => renderShadow.call(this, frame), this)
       return renderShadow.call(this, frame)
     }
   }
 
   // Enquanto o cache vale, os parados ficam com castShadow desligado (o passe dinâmico do sol não os desenha). Outro
   // mapa que precise deles inteiros (o de perto) desenha dentro desta função.
-  comParados(f) {
+  // no: o ShadowNode do mapa de perto. Com cfg.mundo.sombraPertoRecorte, o bloco grande entra só com as cópias que
+  // cruzam o volume da câmera de perto (sombra-perto-recorte.js): na Coluna da Hora o mapa de perto desenhava 2,1
+  // milhões de triângulos, quase tudo cópia de bloco de 192 a 768 m longe da janela
+  comParados(f, no = null) {
     const lista = this.aplicado ? estaticosRegistrados() : null
+    const recorte = lista && no && no.shadow && this.cfg.mundo.sombraPertoRecorte !== false ? this.recorte : null
+    let proxies = []
+    const grandes = []
     // as malhas juntas de muito longe (mundo/muito-longe.js) ficam fora: estão a mais de 90 m, e a esfera de uma célula
     // de 768 m sempre cruzaria a janela de perto (seriam desenhadas inteiras todo quadro sem pôr sombra nela)
-    if (lista) for (const o of lista) if (!o.userData.muitoLonge) o.castShadow = true
-    try { return f() } finally { if (lista) for (const o of lista) o.castShadow = false }
+    if (lista) {
+      for (const o of lista) {
+        if (o.userData.muitoLonge) continue
+        if (recorte && recorte.grande(o)) { if ((o.layers.mask & 1) && aparece(o)) grandes.push(o); continue }
+        o.castShadow = true
+      }
+    }
+    if (recorte) {
+      no.shadow.updateMatrices(no.light)
+      proxies = recorte.preparar(grandes, no.shadow, lista)
+      for (const p of proxies) p.visible = true
+    }
+    try { return f() } finally {
+      if (lista) for (const o of lista) o.castShadow = false
+      for (const p of proxies) p.visible = false
+    }
   }
 
   get ligado() { return !!this.cfg.mundo.cacheSombra }
@@ -167,4 +189,10 @@ export class CacheSombraGpu {
     r.autoClear = false // limpar apagaria os parados que acabaram de ser copiados
     try { original.call(no, frame) } finally { r.autoClear = autoLimpar }
   }
+}
+
+// visível de verdade (o objeto e os pais): o LOD esconde o bloco ou o grupo dele
+function aparece(o) {
+  for (let n = o; n; n = n.parent) if (n.visible === false) return false
+  return true
 }
