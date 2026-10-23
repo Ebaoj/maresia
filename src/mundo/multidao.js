@@ -17,8 +17,8 @@
 // WebGPU: o renderizador (src/render/renderizador.js, quantidadeFixa) faz toda malha de cópias cuja contagem muda ser
 // desenhada com a capacidade inteira (as cópias a mais viram escala zero), porque o instance() do three guardava a
 // lista de matrizes do primeiro desenho. O material da gente lê a matriz de um buffer por cópia (matrizInstancia,
-// arcane-tsl.js), que não depende do primeiro desenho; então a multidão marca a malha (userData.contagemViva, a
-// bandeira do renderizador no branch fluido) e, onde a bandeira ainda não existe, tira o envoltório (soltarContagem).
+// arcane-tsl.js), que não depende do primeiro desenho; então a multidão marca a malha (userData.contagemViva) e o
+// renderizador não põe o envoltório nela (um mecanismo só, o mesmo da malha de longe mascarada, muito-longe.js).
 // Cuida dos outros dois motivos dele: no WebGPU nunca contagem 1 (o three junta o objeto com outros do mesmo
 // material) nem 0 (ainda desenhava uma cópia): sobra vira cópia nula (escala zero).
 
@@ -28,17 +28,8 @@ const NULA = new THREE.Matrix4().makeScale(0, 0, 0).elements
 // o mínimo de 2 cópias é coisa do WebGPU; no Node (testes) a contagem é a de verdade
 const MINIMO = typeof navigator !== 'undefined' && navigator.gpu ? 2 : 0
 
-// tira o envoltório de quantidade fixa do renderizador do WebGPU (ver o começo do arquivo), se ele passou
-function soltarContagem(m) {
-  const d = Object.getOwnPropertyDescriptor(m, 'count')
-  if (!d || !d.get) return
-  delete m.count
-  delete m.userData.quantidadeReal
-  m.count = m.instanceMatrix.count
-}
 // grava a contagem: no mínimo MINIMO (as que faltam são nulas) e nunca além da capacidade
 function contar(m, n) {
-  soltarContagem(m)
   const cap = m.instanceMatrix.count
   const a = m.instanceMatrix.array
   for (let i = n; i < Math.min(MINIMO, cap); i++) a.set(NULA, i * 16)

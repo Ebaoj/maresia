@@ -91,3 +91,23 @@ describe('longe mascarado: corte por tamanho na tela', () => {
     expect(malha.count).toBe(8)
   })
 })
+
+// Junção com a gente (23/10/2026): a multidão (mundo/multidao.js) usa a mesma bandeira. Com o envoltório de
+// quantidade fixa, a cidade desenhava a multidão inteira na capacidade (3,3 M triângulos na Coluna da Hora) e o
+// corte por distância e por quadro dela não valia. Um mecanismo só: a bandeira, sem tirar o envoltório depois.
+import { criarMultidao } from '../../src/mundo/multidao.js'
+describe('multidão no WebGPU', () => {
+  it('a malha da multidão desenha só a contagem viva depois da conversão do WebGPU', () => {
+    const md = criarMultidao(new THREE.Scene(), new THREE.MeshBasicMaterial(), { nome: 'teste', ate: 60 })
+    const t = md.tipo(new THREE.BoxGeometry())
+    for (const x of [0, 10, 50, 100]) md.adicionar(t, new THREE.Matrix4().makeTranslation(x, 0, 0))
+    md.montar()
+    md.atualizar(new THREE.Vector3(0, 0, 0)) // a de 100 m fica de fora
+    expect(t.malha.userData.contagemViva).toBe(true)
+    converterObjeto(t.malha, (m) => m)
+    expect(Object.getOwnPropertyDescriptor(t.malha, 'count')?.get).toBeUndefined()
+    expect(t.malha.count).toBe(3)
+    md.atualizar(new THREE.Vector3(200, 0, 0)) // ninguém a menos de 60 m
+    expect(t.malha.count).toBeLessThan(3)
+  })
+})
