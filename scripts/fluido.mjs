@@ -34,6 +34,8 @@ for (;;) {
 
 // a porta do protocolo precisa estar livre: com ela ocupada por outro Chrome, o script falaria com a página DELE
 if (contar(`lsof -nP -iTCP:${PORTA} -sTCP:LISTEN | grep -c LISTEN`)) { console.error(`porta ${PORTA} ocupada por outro processo; troque PORTA_EXTRA`); process.exit(2) }
+// o servidor do jogo precisa estar de pé (em 22/10 ele caiu no meio da noite e quatro rodadas abriram página de erro)
+try { const r = await fetch(url); if (!r.ok) throw new Error(r.status) } catch (e) { console.error(`servidor ${url} fora do ar (${e.message})`); process.exit(3) }
 const perfil = mkdtempSync(join(tmpdir(), 'maresia-fluido-'))
 const chrome = spawn(CHROME, [
   '--headless=new', '--no-sandbox', '--enable-unsafe-webgpu', '--use-angle=metal',
@@ -91,7 +93,11 @@ try {
     await dormir(2000)
     if ((await avaliar('!!(window.__tempos && window.__tempos.fisica)')).valor) { pronto = true; break }
   }
-  if (!pronto) throw new Error('o jogo nao montou')
+  if (!pronto) {
+    const est = await avaliar(`JSON.stringify({ tempos: window.__tempos || null, url: location.href, carregando: document.getElementById('carregando')?.className, maresia: !!window.maresia })`)
+    console.log('nao montou', est.valor || est.erro, logs.slice(0, 20).join('\n'))
+    throw new Error('o jogo nao montou')
+  }
   await avaliar('Promise.race([window.maresia.pronto, new Promise((r) => setTimeout(r, 180000))]).then(() => true)')
   await dormir(4000)
   const st = await avaliar(`JSON.stringify({ webgpu: maresia.webgpu, abrir_s: ${(Date.now() - tAbre) / 1000}, primeiroQuadroMs: window.__primeiroQuadroMs, quebrados: (window.__shadersQuebrados || []).length, faltaPortar: (window.__faltaPortar || []).length, timestamp: !!maresia.renderer.backend?.device?.features?.has('timestamp-query'), w: innerWidth, h: innerHeight, dpr: devicePixelRatio })`)
