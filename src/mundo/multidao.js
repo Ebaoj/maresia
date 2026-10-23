@@ -1,61 +1,61 @@
-// Muita gente parada ou andando, barata (22/10/2026, docs/gente-22-10.md): cada ficha de figura tem duas malhas,
-// perto (o detalhe: rosto, mão, fita do chapéu) e longe (a mesma figura com menos lados); além de `ate` metros a pessoa
-// não é desenhada (no Centro ela já está atrás das casas). Um terceiro nível (silhueta, 250 vértices contra 360) foi
-// medido e saiu: poupava pouco vértice e somava uma malha por ficha (o custo de CPU do desenho). Cada pessoa é uma entrada;
-// a cada atualizar as entradas visíveis são arrumadas no começo da malha certa pela distância à câmera, e a contagem
-// da malha é o número delas (o que sobra no fim não é desenhado nem passa pelo vértice). Uma malha por ficha e por
-// nível em vez de uma por bloco: no Campo do Urubu eram ~100 malhas por quadro (9 blocos de 96 m x 12 fichas).
+// Muita gente parada ou andando, barata (22/10/2026, docs/gente-22-10.md): uma malha por ficha de figura, com todas
+// as pessoas dela; a cada atualizar as entradas visíveis (não ocultas e a menos de `ate` metros da câmera: no Centro,
+// além disso, já está atrás das casas) são arrumadas no começo da malha, e a contagem da malha é o número delas (o que
+// sobra no fim não é desenhado nem passa pelo vértice). No Campo do Urubu era uma malha por bloco de 96 m e por ficha.
+//
+// Por que um nível só por malha (medido em 22 e 23/10/2026 na Coluna da Hora): com perto e longe por ficha eram 48
+// malhas de gente, e neste renderizador cada malha custa no processador em cada passada (cor, sombra do sol, sombra de
+// perto) mais do que os vértices que o nível de longe poupava. O detalhe de perto fica com os atores (os 16 mais
+// perto do jogador, atores.js) e, no campo, com a fila da cozinha; o resto da gente usa a figura média (gente-corpo.js).
 //
 // Entrada: { matriz, oculta }. Quem mexe na matriz (quem anda) ou na oculta (ator ocupou, noite) chama sujar().
 //
-// WebGPU: o renderizador (src/render/renderizador.js, quantidadeFixa) faz toda malha de cópias cujo count muda ser
+// WebGPU: o renderizador (src/render/renderizador.js, quantidadeFixa) faz toda malha de cópias cuja contagem muda ser
 // desenhada com a capacidade inteira (as cópias a mais viram escala zero), porque o instance() do three guardava a
-// lista de matrizes do primeiro desenho. Aqui isso desfazia o LOD: as três malhas de cada ficha passavam pelo vértice
-// com todas as pessoas (3,3 milhões de triângulos na Coluna da Hora, 22/10/2026). O material da gente lê a matriz de
-// um buffer por cópia (matrizInstancia, arcane-tsl.js), que não depende do primeiro desenho; então a multidão tira esse
-// envoltório da malha dela (soltarContagem) e cuida dos outros dois motivos dele: nunca count 1 (o three junta o
-// objeto com outros do mesmo material) e nunca 0 (ainda desenhava uma cópia): sobra vira cópia nula (escala zero).
+// lista de matrizes do primeiro desenho. O material da gente lê a matriz de um buffer por cópia (matrizInstancia,
+// arcane-tsl.js), que não depende do primeiro desenho; então a multidão marca a malha (userData.contagemViva, a
+// bandeira do renderizador no branch fluido) e, onde a bandeira ainda não existe, tira o envoltório (soltarContagem).
+// Cuida dos outros dois motivos dele: no WebGPU nunca contagem 1 (o three junta o objeto com outros do mesmo
+// material) nem 0 (ainda desenhava uma cópia): sobra vira cópia nula (escala zero).
 
 import * as THREE from 'three'
 
-const NIVEIS = ['perto', 'longe']
 const NULA = new THREE.Matrix4().makeScale(0, 0, 0).elements
+// o mínimo de 2 cópias é coisa do WebGPU; no Node (testes) a contagem é a de verdade
+const MINIMO = typeof navigator !== 'undefined' && navigator.gpu ? 2 : 0
 
-// tira o envoltório de quantidade fixa do renderizador do WebGPU (ver o começo do arquivo), se ele já passou
+// tira o envoltório de quantidade fixa do renderizador do WebGPU (ver o começo do arquivo), se ele passou
 function soltarContagem(m) {
   const d = Object.getOwnPropertyDescriptor(m, 'count')
   if (!d || !d.get) return
   delete m.count
   delete m.userData.quantidadeReal
   m.count = m.instanceMatrix.count
-  m.userData.webgpu = true // desenhada pelo WebGPU: daqui em diante a contagem tem o mínimo de 2
 }
-// grava a contagem: no mínimo 2 (as que faltam são nulas) e nunca além da capacidade
+// grava a contagem: no mínimo MINIMO (as que faltam são nulas) e nunca além da capacidade
 function contar(m, n) {
   soltarContagem(m)
   const cap = m.instanceMatrix.count
   const a = m.instanceMatrix.array
-  // (no WebGL e nos testes a contagem é a de verdade; o mínimo de 2 é coisa do WebGPU)
-  const min = m.userData.webgpu ? 2 : 0
-  for (let i = n; i < Math.min(min, cap); i++) a.set(NULA, i * 16)
-  m.count = Math.min(cap, Math.max(min, n))
+  for (let i = n; i < Math.min(MINIMO, cap); i++) a.set(NULA, i * 16)
+  m.count = Math.min(cap, Math.max(MINIMO, n))
   m.instanceMatrix.needsUpdate = true
 }
+
 // controlaVisivel: malha sem ninguém fica invisível (a cidade); no campo quem liga e desliga é o dia e a noite
-export function criarMultidao(cena, material, { nome, lodPerto = 20, ate = 400, sombra = true, controlaVisivel = false } = {}) {
+export function criarMultidao(cena, material, { nome, ate = 400, sombra = true, controlaVisivel = false } = {}) {
   const tipos = []
   let sujo = true
   const ultima = new THREE.Vector3(1e9, 0, 1e9)
-  let lim2 = lodPerto * lodPerto
   let ate2 = ate * ate
   const malhas = []
 
   const api = {
     malhas,
     tipos,
-    // um tipo de figura: { perto, longe } (figuraLod)
-    tipo(lod) {
-      const t = { lod, entradas: [], perto: null, longe: null }
+    // um tipo de figura: a geometria dela (figuraGeo)
+    tipo(geo) {
+      const t = { geo, entradas: [], malha: null }
       tipos.push(t)
       return t
     },
@@ -64,7 +64,7 @@ export function criarMultidao(cena, material, { nome, lodPerto = 20, ate = 400, 
       t.entradas.push(e)
       return e
     },
-    // cria as malhas com lugar para todas as entradas; até o primeiro atualizar com câmera, todos ficam de perto
+    // cria as malhas com lugar para todas as entradas; até o primeiro atualizar com câmera, todos aparecem
     montar() {
       const esfera = new THREE.Sphere()
       const caixa = new THREE.Box3()
@@ -75,58 +75,50 @@ export function criarMultidao(cena, material, { nome, lodPerto = 20, ate = 400, 
         for (const e of t.entradas) caixa.expandByPoint(p.setFromMatrixPosition(e.matriz))
         caixa.getBoundingSphere(esfera)
         esfera.radius += 2
-        for (const nivel of NIVEIS) {
-          const m = new THREE.InstancedMesh(t.lod[nivel], material, t.entradas.length)
-          m.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
-          m.count = 0
-          m.castShadow = sombra
-          m.receiveShadow = true
-          m.frustumCulled = false // a gente se espalha pela cidade toda e se mexe: a esfera seria a cidade inteira
-          m.boundingSphere = esfera.clone()
-          m.userData.peso = 0.8
-          m.userData.nivel = nivel
-          m.name = nome
-          t[nivel] = m
-          malhas.push(m)
-          cena.add(m)
-        }
+        const m = new THREE.InstancedMesh(t.geo, material, t.entradas.length)
+        // uso estático de propósito: com DynamicDrawUsage o three refaz o objeto inteiro (FULL) em todo desenho
+        // (hasDynamicInstancing); a matriz sobe do mesmo jeito quando needsUpdate (12 vezes por segundo, quem anda)
+        m.userData.contagemViva = true
+        m.castShadow = sombra
+        m.receiveShadow = true
+        m.frustumCulled = false // a gente se espalha pela cidade toda e se mexe: a esfera seria a cidade inteira
+        m.boundingSphere = esfera.clone()
+        m.userData.peso = 0.8
+        m.name = nome
+        t.malha = m
+        malhas.push(m)
+        cena.add(m)
       }
       api.atualizar(null, true)
       return api
     },
     sujar() { sujo = true },
-    // as cópias que passam pelo vértice agora (todas as malhas): o que o LOD economiza
-    copiasDesenhadas() { let n = 0; for (const m of malhas) n += m.count; return n },
-    set lodPerto(v) { lim2 = v * v; sujo = true },
     set ate(v) { ate2 = v * v; sujo = true },
-    // arruma as cópias: perto ou longe pela câmera (cam: Vector3 ou null = todos de perto)
+    // as cópias que passam pelo vértice agora
+    copiasDesenhadas() { let n = 0; for (const m of malhas) n += m.count; return n },
+    // arruma as cópias pela câmera (cam: Vector3 ou null = todos aparecem); refaz só se alguém mexeu ou a câmera andou
     atualizar(cam = null, forcar = false) {
       if (cam) {
-        if (!forcar && !sujo && ultima.distanceToSquared(cam) < 1.5 * 1.5) return false
+        if (!forcar && !sujo && ultima.distanceToSquared(cam) < 4 * 4) return false
         ultima.copy(cam)
       } else if (!forcar && !sujo) return false
       sujo = false
       for (const t of tipos) {
-        if (!t.perto) continue
-        let np = 0
-        let nl = 0
-        const ap = t.perto.instanceMatrix.array
-        const al = t.longe.instanceMatrix.array
+        if (!t.malha) continue
+        let n = 0
+        const a = t.malha.instanceMatrix.array
         for (const e of t.entradas) {
           if (e.oculta) continue
           const el = e.matriz.elements
-          let d2 = 0
           if (cam) {
             const dx = el[12] - cam.x
             const dz = el[14] - cam.z
-            d2 = dx * dx + dz * dz
+            if (dx * dx + dz * dz > ate2) continue
           }
-          if (d2 < lim2) ap.set(el, np++ * 16)
-          else if (d2 < ate2) al.set(el, nl++ * 16)
+          a.set(el, n++ * 16)
         }
-        contar(t.perto, np)
-        contar(t.longe, nl)
-        if (controlaVisivel) { t.perto.visible = np > 0; t.longe.visible = nl > 0 }
+        contar(t.malha, n)
+        if (controlaVisivel) t.malha.visible = n > 0
       }
       return true
     },

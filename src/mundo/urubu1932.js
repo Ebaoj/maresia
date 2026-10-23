@@ -84,7 +84,7 @@ function alturaMedia (q, cu, cw, l, p) {
 export function criarUrubu1932 (cena, cfgJogo = null) {
   const cfg = { ...PADRAO.mundo.urubu, ...(cfgJogo?.mundo?.urubu || {}) }
   multidoes.length = 0
-  lodGente = { lodPerto: cfgJogo?.pessoas?.lodPerto ?? 20, ate: cfgJogo?.pessoas?.ate ?? 400 }
+  lodGente = { ate: cfgJogo?.pessoas?.ate ?? 400 }
   const planta = criarPlanta(cfg)
   const q = planta.quadro
   const rnd = criarAleatorio(1932)
@@ -297,7 +297,7 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
     // camera: some o miúdo de longe (confere a cada 4 m que a câmera anda, ou quando vira dia ou noite)
     parado: false, // o medidor esconde o campo inteiro e pede para ninguém mostrar de volta
     // a figura de perto até (m): o painel (Mundo > Gente de 1932) muda ao vivo
-    gente: { set lodPerto (v) { for (const md of multidoes) md.lodPerto = v }, set ate (v) { for (const md of multidoes) md.ate = v } },
+    gente: { set ate (v) { for (const md of multidoes) md.ate = v } },
     atualizar (hora, camera = null) {
       if (this.parado) return
       // perto e longe da gente: barato (só refaz quando a câmera anda 1,5 m)
@@ -318,14 +318,16 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
 
 // as figuras nas vagas: um modelo por vaga (de pé ou sentado, adulto ou criança; quem leva a lata na cabeça tem o
 // modelo com a lata); o que a pessoa carrega na mão (a lata) ou no colo (o pano) vai em cópias à parte. A gente vai
-// numa multidão (multidao.js): uma malha por modelo e por nível (perto, longe), arrumada pela distância da câmera.
+// numa multidão (multidao.js): uma malha por modelo, arrumada pela câmera.
 // O modelo de criança já tem o tamanho de criança (1,13 m, gente-corpo.js), com variação de 0,9 a 1,1.
 const LATA_MAO = new THREE.Vector3(0.27, 0.36, 0.04) // a base da lata, com a alça na mão que cai ao lado do corpo
 const LATA_CHAO = new THREE.Vector3(0.36, 0, 0.12)
 function montarGente (cena, mat, matPano, modelos, vagas, nome) {
   const md = criarMultidao(cena, matGente(), { nome, ...lodGente })
+  // a fila da cozinha e da água (a cena que conta, com a câmera na altura dela) tem a figura de perto; o resto, a média
+  const detalhe = nome === 'urubu-gente' ? 'perto' : 'medio'
   const tipos = new Map()
-  const tipoDe = (lod) => { if (!tipos.has(lod)) tipos.set(lod, md.tipo(lod)); return tipos.get(lod) }
+  const tipoDe = (lod) => { if (!tipos.has(lod)) tipos.set(lod, md.tipo(lod[detalhe])); return tipos.get(lod) }
   const latas = []
   const panos = []
   const v3 = new THREE.Vector3()

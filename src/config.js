@@ -336,7 +336,6 @@ export const PADRAO = {
     gruposSe: 8,         // no largo da Sé
     diaDe: 6,            // o movimento do dia começa (hora)
     diaAte: 18.5,        // e acaba
-    lodPerto: 20,        // até quantos metros da câmera a gente é a figura de perto (rosto, mão); depois, a de longe (multidao.js)
     ate: 400,            // além disso a gente não é desenhada (no Centro já está atrás das casas)
   },
   // a vida de rua de 1932 nos espaços abertos (src/mundo/vida1932.js); tudo muda ao recarregar

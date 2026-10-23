@@ -131,8 +131,8 @@ export function figuraGeo(fig, { sentado = false, detalhe = 'perto' } = {}) {
   return m
 }
 
-// as duas versões de uma ficha: perto (o detalhe) e longe (a mesma figura com menos lados)
+// as duas versões de uma ficha: perto (o detalhe do ator e da fila da cozinha) e média (a gente parada)
 export function figuraLod(fig, opcoes = {}) {
   const g = (detalhe) => figuraGeo(fig, { ...opcoes, detalhe })
-  return { perto: g('perto'), longe: g('longe'), fig, sentado: !!opcoes.sentado }
+  return { perto: g('perto'), medio: g('medio'), fig, sentado: !!opcoes.sentado }
 }

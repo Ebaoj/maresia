@@ -38,12 +38,13 @@ describe('as fichas da cidade', () => {
   })
 })
 
-describe('a figura de perto e a de longe', () => {
+describe('a figura de perto e a média', () => {
   const { pe } = fichasDaCidade(criarAleatorio(808))
-  it('a de longe tem menos de 40% dos triângulos da de perto, e a altura é a de gente', () => {
+  it('a média tem menos de 75% dos vértices da de perto e menos da metade da figura antiga (2.400), e a altura é a de gente', () => {
     for (const f of pe) {
-      const { perto, longe } = figuraLod(f)
-      expect(tris(longe)).toBeLessThan(tris(perto) * 0.4)
+      const { perto, medio } = figuraLod(f)
+      expect(medio.attributes.position.count).toBeLessThan(perto.attributes.position.count * 0.75)
+      expect(medio.attributes.position.count).toBeLessThan(1200)
       perto.computeBoundingBox()
       const h = perto.boundingBox.max.y
       if (f.crianca) expect(h).toBeLessThan(1.35)
@@ -65,26 +66,27 @@ describe('a figura de perto e a de longe', () => {
 })
 
 describe('a multidão', () => {
-  it('põe cada pessoa na malha de perto ou na de longe pela distância da câmera, e some com a oculta', () => {
+  it('arruma as visíveis no começo da malha: a contagem é quem aparece (sem as ocultas e as além de ate)', () => {
     const cena = new THREE.Scene()
-    const md = criarMultidao(cena, new THREE.MeshBasicMaterial(), { nome: 'teste', lodPerto: 30, ate: 400 })
-    const t = md.tipo({ perto: new THREE.BoxGeometry(), longe: new THREE.BoxGeometry() })
+    const md = criarMultidao(cena, new THREE.MeshBasicMaterial(), { nome: 'teste', ate: 60 })
+    const t = md.tipo(new THREE.BoxGeometry())
     const e = [0, 10, 50, 100].map((x) => md.adicionar(t, new THREE.Matrix4().makeTranslation(x, 0, 0)))
     md.montar()
-    expect(t.perto.count + t.longe.count).toBe(4)
+    expect(t.malha.count).toBe(4) // sem câmera, todos
     md.atualizar(new THREE.Vector3(0, 0, 0))
-    expect([t.perto.count, t.longe.count]).toEqual([2, 2])
+    expect(t.malha.count).toBe(3) // a de 100 m fica de fora
     e[0].oculta = true
     md.sujar()
     md.atualizar(new THREE.Vector3(0, 0, 0))
-    expect([t.perto.count, t.longe.count]).toEqual([1, 2])
-    md.atualizar(new THREE.Vector3(100, 0, 0), true)
-    expect([t.perto.count, t.longe.count]).toEqual([1, 2])
-    expect(cena.children.filter((o) => o.name === 'teste')).toHaveLength(2) // perto e longe
-    // além de `ate`, ninguém
-    md.ate = 60
+    expect(t.malha.count).toBe(2)
+    // as que aparecem ficam no começo, na ordem das entradas
+    const m = new THREE.Matrix4()
+    t.malha.getMatrixAt(0, m)
+    expect(m.elements[12]).toBe(10)
+    md.ate = 1000
     md.atualizar(new THREE.Vector3(0, 0, 0))
-    expect([t.perto.count, t.longe.count]).toEqual([1, 1])
+    expect(t.malha.count).toBe(3)
+    expect(cena.children.filter((o) => o.name === 'teste')).toHaveLength(1)
   })
 })
 

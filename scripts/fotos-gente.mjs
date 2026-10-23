@@ -104,6 +104,23 @@ try {
       console.log(top.join('\n'))
       continue
     }
+    // alocação: o mesmo, com o perfil de memória por amostragem (quem aloca mais, em bytes)
+    if (l.alocacao) {
+      await cmd('HeapProfiler.enable')
+      await cmd('HeapProfiler.startSampling', { samplingInterval: 4096 })
+      const r = await avaliar(`(async () => JSON.stringify(await (async () => { ${l.alocacao} })()))()`)
+      const p = (await cmd('HeapProfiler.stopSampling')).result.profile
+      const porFn = new Map()
+      const andar = (n, pilha) => {
+        const k = `${n.callFrame.functionName || '(anon)'} ${n.callFrame.url.split('/').slice(-2).join('/')}:${n.callFrame.lineNumber}`
+        porFn.set(k, (porFn.get(k) || 0) + n.selfSize)
+        for (const c of n.children || []) andar(c)
+      }
+      andar(p.head)
+      console.log(`alocacao ${l.nome}:`, r.valor || r.erro)
+      console.log([...porFn].sort((a, b) => b[1] - a[1]).slice(0, l.top || 20).map(([k, v]) => `${(v / 1e6).toFixed(1).padStart(7)} MB  ${k}`).join('\n'))
+      continue
+    }
     if (l.avaliar) {
       const r = await avaliar(`(async () => JSON.stringify(await (async () => { ${l.avaliar} })()))()`)
       console.log(`conta ${l.nome}:`, r.valor || r.erro)

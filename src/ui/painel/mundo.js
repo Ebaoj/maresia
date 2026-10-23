@@ -33,7 +33,7 @@ export function secaoMundo(gui, cfg) {
   gente.add(cfg.pessoas, 'gruposSe', 0, 40, 1).name(rec('grupos no largo da Sé'))
   gente.add(cfg.pessoas, 'diaDe', 0, 12, 0.25).name('o movimento começa (h)')
   gente.add(cfg.pessoas, 'diaAte', 12, 24, 0.25).name('e acaba (h)')
-  for (const [k, nome, max] of [['lodPerto', 'figura de perto até (m)', 120], ['ate', 'gente desenhada até (m)', 2000]]) {
+  for (const [k, nome, max] of [['ate', 'gente desenhada até (m)', 2000]]) {
     gente.add(cfg.pessoas, k, 5, max, 1).name(nome).onChange((v) => { if (window.maresia?.pessoas) window.maresia.pessoas.multidao[k] = v; if (window.maresia?.urubu?.gente) window.maresia.urubu.gente[k] = v })
   }
 

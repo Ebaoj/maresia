@@ -2,7 +2,7 @@
 // no calçadão. Quem caminha balança "em 2", como o resto da animação.
 
 import * as THREE from 'three'
-import { fichasDaCidade, figuraLod } from './gente-figurino.js'
+import { fichasDaCidade, figuraGeo } from './gente-figurino.js'
 import { criarMultidao } from './multidao.js'
 import { linhaCosta, larguraPraia, pesos, NIVEL_CIDADE, LARG_CALCADAO, rioX, RIO_MEIA_LARGURA } from './mapa.js'
 import { trechosJogo, VILAS } from './fortaleza1932.js'
@@ -25,14 +25,14 @@ const rnd = criarAleatorio(808)
 // 1932 (fotos de 1925 a 1936 e docs/figurino.md): terno e camisa de linho branco ou creme, algodãozinho "cor de couro"
 // (mangue, murici), vestidos claros e compridos, chapéu de palha na maioria; elenco diverso, como a Fortaleza da época.
 // As fichas e o corpo: gente-figurino.js e gente-corpo.js (22/10/2026, docs/gente-22-10.md); cada ficha tem a figura de
-// perto e a de longe, e multidao.js põe cada pessoa na certa pela distância da câmera (cfg.pessoas.lodPerto).
+// média (o detalhe de perto é do ator animado, atores.js), e multidao.js arruma as cópias pela câmera (cfg.pessoas.ate).
 
 export function criarPessoas(cena, grade, cfg = null) {
   // os sorteios das fichas saem do rnd da cidade na ordem da figura antiga: quem fica onde continua igual
   const fichas = fichasDaCidade(rnd)
   const mat = toonVertice({ opacity: 0.85, blending: THREE.NoBlending }) // alfa 0,85: o filtro reconhece gente
-  const multidao = criarMultidao(cena, mat, { nome: 'pessoas', lodPerto: cfg?.pessoas?.lodPerto ?? 20, ate: cfg?.pessoas?.ate ?? 400, controlaVisivel: true })
-  const novoTipo = (fig, sentada = false) => { const t = multidao.tipo(figuraLod(fig, { sentado: sentada })); t.fig = fig; t.sentada = sentada; return t }
+  const multidao = criarMultidao(cena, mat, { nome: 'pessoas', ate: cfg?.pessoas?.ate ?? 400, controlaVisivel: true })
+  const novoTipo = (fig, sentada = false) => { const t = multidao.tipo(figuraGeo(fig, { sentado: sentada, detalhe: 'medio' })); t.fig = fig; t.sentada = sentada; return t }
   const emPe = fichas.pe.map((f) => novoTipo(f))
   const sentadas = fichas.sentadas.map((f) => novoTipo(f, true))
   // criança só nos grupos parados: quem anda (e vira ator animado, que tem corpo de adulto) é adulto

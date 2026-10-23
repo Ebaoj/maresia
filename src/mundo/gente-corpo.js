@@ -120,14 +120,14 @@ function ossoDoTronco(j) {
   return (x, y) => (y < j.Hips.y + 0.03 ? 'Hips' : y < y1 ? 'Spine' : y < y2 ? 'Spine1' : 'Spine2')
 }
 
-// detalhe: 'perto' (o padrão: rosto, mão, fita do chapéu) ou 'longe' (menos lados, sem nariz nem orelha), os dois
-// níveis da multidão (multidao.js)
+// detalhe: 'perto' (o padrão: o ator animado e a fila da cozinha) ou 'medio' (a gente parada da cidade e do campo:
+// os mesmos traços com menos lados; multidao.js diz por que um nível só)
 const LADOS = {
   perto: { tubo: 7, torno: 10, bola: [10, 7], mao: 6, aba: 14, copa: 10 },
-  longe: { tubo: 4, torno: 6, bola: [6, 4], mao: 3, aba: 8, copa: 5 },
+  medio: { tubo: 5, torno: 7, bola: [6, 5], mao: 4, aba: 10, copa: 6 },
 }
 export function vestir(fig, j, { detalhe = 'perto', cabeca = 1 } = {}, emitir) {
-  const perto = detalhe === 'perto'
+  const perto = true // rosto, mão e fita do chapéu nos dois níveis
   const S = LADOS[detalhe] || LADOS.perto
   const mulher = fig.corpo === 'mulher' || fig.corpo === 'menina'
   const crianca = fig.corpo === 'menino' || fig.corpo === 'menina'
@@ -144,6 +144,11 @@ export function vestir(fig, j, { detalhe = 'perto', cabeca = 1 } = {}, emitir) {
     emitir(bola(H.clone().add(V(0, 0.056 * ec, 0.022 * ec)), 0.064 * ec, ...S.bola, 0.95, 0.95, 1.0), 'pele', 'Head', 'cabeca')
     emitir(orientar(new THREE.ConeGeometry(0.017 * ec, 0.045 * ec, 5).translate(0, 0.022 * ec, 0), H.clone().add(V(0, 0.086 * ec, 0.088 * ec)), H.clone().add(V(0, 0.072 * ec, 0.14 * ec)), V(0, 1, 0)), 'pele', 'Head', 'cabeca')
     for (const s of [1, -1]) emitir(bola(H.clone().add(V(s * 0.086 * ec, 0.095 * ec, -0.004)), 0.022 * ec, 6, 5, 0.45, 1, 0.75), 'pele', 'Head', 'cabeca')
+    // olho e sobrancelha: uma mancha escura cada, rente ao rosto (de perto o rosto diz para onde a pessoa olha)
+    for (const s of [1, -1]) {
+      emitir(bola(H.clone().add(V(s * 0.031 * ec, 0.097 * ec, 0.089 * ec)), 0.0115 * ec, 6, 4, 1, 0.62, 0.5), 'cabelo', 'Head', 'cabeca')
+      emitir(new THREE.BoxGeometry(0.034 * ec, 0.0075 * ec, 0.012 * ec).rotateZ(s * -0.18).translate(s * 0.033 * ec, 0.116 * ec + H.y, 0.088 * ec + H.z).translate(H.x, 0, 0), 'cabelo', 'Head', 'cabeca')
+    }
   }
 
   // ---- cabelo
@@ -197,8 +202,8 @@ export function vestir(fig, j, { detalhe = 'perto', cabeca = 1 } = {}, emitir) {
   const alto = hy(fig.chapeu === 'palha' ? 0.25 : 0.205)
   if (fig.carga === 'cesto') {
     emitir(torno([[0.05, -0.012], [0.085, 0.004], [0.075, 0.024], [0.04, 0.03]], S.copa, { centro: alto }), 'calca', 'Head', 'cesto')
-    emitir(torno([[0.15, 0.02], [0.2, 0.14], [0.205, 0.15], [0.19, 0.15], [0.0, 0.13]], S.copa, { centro: alto }), 'chapeu', 'Head', 'cesto')
-    for (let k = 0; k < (perto ? 5 : 2); k++) {
+    emitir(torno([[0.0, 0.02], [0.13, 0.02], [0.2, 0.14], [0.205, 0.15], [0.19, 0.15], [0.0, 0.13]], S.copa, { centro: alto }), 'chapeu', 'Head', 'cesto')
+    for (let k = 0; k < (detalhe === 'perto' ? 5 : 3); k++) {
       const a = k * 2.4
       emitir(bola(alto.clone().add(V(Math.cos(a) * 0.09 * (k ? 1 : 0), 0.17, Math.sin(a) * 0.08 * (k ? 1 : 0))), 0.055, 6, 5), 'listra', 'Head', 'cesto')
     }
@@ -262,9 +267,12 @@ export function vestir(fig, j, { detalhe = 'perto', cabeca = 1 } = {}, emitir) {
     const papel = roupa === 'saia' ? 'calca' : 'camisa'
     if (sentado) {
       // sentada: a saia cobre as coxas e cai até a canela
-      const c = V(0, j.Hips.y, 0)
-      const g = new THREE.CylinderGeometry(0.2, 0.24, 0.62, S.torno, 1, false).rotateX(Math.PI / 2).scale(1.05, 0.55, 1).translate(0, c.y - 0.04, 0.24)
-      emitir(g, papel, 'Hips', 'saia')
+      // sentada: a saia cobre as coxas até o joelho levantado e cai dele até o chão, na frente da canela
+      const K = j.LeftLeg.clone().setX(0)
+      const quadril = V(0, j.Hips.y - 0.02, -0.02)
+      emitir(tubo(quadril, K.clone().add(V(0, 0.02, 0.02)), 0.2, 0.19, S.torno, { fino: V(0, 1, 0), achata: 0.62 }), papel, 'Hips', 'saia')
+      const caida = torno([[0.23, -K.y + 0.06], [0.2, -0.04], [0.14, 0.02]], S.torno, { sx: 1.05, sz: 0.45, phi0: -Math.PI * 0.55, phi: Math.PI * 1.1 })
+      emitir(caida.translate(0, K.y, K.z - 0.01), papel, 'Hips', 'saia')
     } else {
       const hem = roupa === 'vestido' ? (crianca ? j.LeftLeg.y - 0.04 : j.LeftLeg.y - 0.17) : 0.09
       const rh = roupa === 'vestido' ? (crianca ? 0.22 : 0.29) : 0.3
