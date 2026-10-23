@@ -13,6 +13,8 @@ import { matrizInstancia } from '../render/arcane-tsl.js'
 // aAnimA = (linhaA, linhaB, frac, peso) do andar; aAnimB = (linhaA, linhaB, frac, 0) do parado.
 // O peso do parado é 1 - peso.
 export const ATRIBUTOS = { animA: 'aAnimA', animB: 'aAnimB' }
+// a forma de figurino de cada cópia (gente-ator.js), opcional: atributos.fichas = DataTexture de quantos x 1 (R = forma),
+// lida pelo índice da cópia (o desenho já usa os 8 buffers de vértice do WebGPU); a máscara das peças vem no skinIndex.y
 
 // Linhas da textura para um tempo do clipe. clipe = { linha0, quadros, duracao } (de assarOssos). O quadro k é o
 // tempo k / fps e o último não repete o primeiro: a volta é aqui, linhaB do último quadro é o primeiro.
@@ -41,7 +43,8 @@ export function materialAtoresVat({ textura, nOssos, opacity = 0.85, atributos }
     // instancedBufferAttribute regrava o usage do atributo como estático; atores.js o marca dinâmico (muda todo
     // quadro), então o nó dinâmico é o que preserva isso (o mesmo que matrizInstancia faz com a matriz)
     const no = (attr) => (attr.usage === W.DynamicDrawUsage ? W.instancedDynamicBufferAttribute : W.instancedBufferAttribute)(attr, 'vec4')
-    entradas = { tex: W.texture(textura), a: no(atributos.animA), b: no(atributos.animB) }
+    // a ficha da cópia (22/10/2026, gente-ator.js); sem ela, todo vértice aparece
+    entradas = { tex: W.texture(textura), a: no(atributos.animA), b: no(atributos.animB), f: atributos.fichas ? W.texture(atributos.fichas) : null }
     return entradas
   }
 
@@ -70,7 +73,18 @@ export function materialAtoresVat({ textura, nOssos, opacity = 0.85, atributos }
     const p4 = vec4(p, 1.0)
     const pA = mix(mA1.mul(p4), mA2.mul(p4), a.z)
     const pB = mix(mB1.mul(p4), mB2.mul(p4), b.z)
-    const posicao = mix(pB, pA, a.w).xyz
+    let posicao = mix(pB, pA, a.w).xyz
+    // a roupa da ficha: o vértice cuja máscara (aOpc, bit f) não tem a ficha da cópia vai para a origem e o
+    // triângulo some (gente-ator.js). Só quando a geometria e o material têm as duas pontas
+    if (entradas.f) {
+      const opc = W.float(attribute('skinIndex', 'uvec4').y)
+      // a ficha vem de uma textura de uma linha (texel = cópia), lida como a dos ossos: a uniformArray do three 0.186
+      // não chegava ao vértice com o valor escrito (a conta dava outra ficha e as peças sumiam ou se misturavam)
+      const f = W.float(entradas.f.load(W.ivec2(W.int(W.instanceIndex), 0)).x).toVar()
+      // a conta em float puro (sem vetor de booleano): bit f da máscara, 0 ou 1, multiplica a posição
+      const bit = W.float(W.mod(W.floor(opc.div(W.exp2(f)).add(0.001)), 2.0)).toVar()
+      posicao = posicao.mul(bit)
+    }
     return {
       posicao,
       get normal() {

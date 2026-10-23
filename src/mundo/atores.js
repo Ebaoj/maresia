@@ -5,7 +5,9 @@
 // com os atores defasados entre si para não andarem todos no mesmo passo.
 
 import * as THREE from 'three'
-import { criarBoneco } from '../jogador/esqueleto.js'
+import { criarBoneco, criarEsqueleto } from '../jogador/esqueleto.js'
+import { toon } from '../materiais.js'
+import { pecasDosAtores, PAPEIS_ATOR } from './gente-ator.js'
 import { criarAleatorio } from '../utils.js'
 import { assarOssos, pecasPorPapel, PAPEIS } from './ossos-textura.js'
 import { materialAtoresVat, quadroDoTempo, ATRIBUTOS } from './atores-vat-material.js'
@@ -29,11 +31,14 @@ export function criarAtores(cena, pessoas, clipes, opcoes = {}) {
 function criarAtoresSkinned(cena, pessoas, clipes, { quantos = 16, raio = 35, passadaAndar = 1.5 } = {}) {
   if (!clipes.andar || !clipes.parado) return null
   const atores = []
+  // com as fichas da gente (gente-ator.js) o ator veste a pessoa que ocupa; sem elas (testes), o boneco antigo
+  const kit = pessoas.fichasAtor?.length ? pecasDosAtores(pessoas.fichasAtor) : null
   for (let i = 0; i < quantos; i++) {
-    const b = criarBoneco({
+    const cores = {
       pele: rnd.escolha(PELES), camisa: rnd.escolha(CAMISAS), listra: rnd.escolha(LISTRAS),
       calca: rnd.escolha(CALCAS), chapeu: rnd.escolha(CHAPEUS),
-    })
+    }
+    const b = kit ? corpoDeFicha(kit) : criarBoneco(cores)
     // alfa 0,85: o filtro de quadrinho dá traço de "gente" (o jogador tem 0,5, mais forte)
     for (const m of b.malhas) { m.material.opacity = 0.85; m.castShadow = true }
     const raiz = new THREE.Group()
@@ -43,11 +48,21 @@ function criarAtoresSkinned(cena, pessoas, clipes, { quantos = 16, raio = 35, pa
     const mixer = new THREE.AnimationMixer(b.raiz)
     const acoes = { andar: mixer.clipAction(clipes.andar), parado: mixer.clipAction(clipes.parado) }
     for (const a of Object.values(acoes)) { a.play(); a.setEffectiveWeight(0) }
-    atores.push({ raiz, mixer, acoes, pessoa: null, estado: null, acc: (i / quantos) / 12, escala: rnd.entre(0.92, 1.05) })
+    const escala = rnd.entre(0.92, 1.05)
+    atores.push({ raiz, mixer, acoes, pessoa: null, estado: null, acc: (i / quantos) / 12, escala, escalaBase: escala, malhas: b.malhas })
   }
   const p = new THREE.Vector3()
   const q = new THREE.Quaternion()
   const s = new THREE.Vector3()
+  // veste o ator com a ficha da pessoa (as peças dela e as cores dela)
+  const vestirAtor = (a, r) => {
+    const f = kit ? kit.fichas.indexOf(r.tipo?.fig) : -1
+    if (f < 0) return
+    const fig = kit.fichas[f]
+    const geos = kit.porFicha(f)
+    for (const m of a.malhas) { m.geometry = geos[m.userData.papel]; m.material.color.set(fig.cores[m.userData.papel]) }
+    a.escala = a.escalaBase * escalaDaFicha(fig)
+  }
 
   return {
     atores,
@@ -55,6 +70,7 @@ function criarAtoresSkinned(cena, pessoas, clipes, { quantos = 16, raio = 35, pa
       // quem está perto (fora da cidade inteira, só olha o registro, que é pequeno)
       const perto = []
       for (const r of pessoas.registro) {
+        if (r.tipo?.fig?.crianca) continue // criança não vira ator (o corpo do ator é de adulto)
         p.setFromMatrixPosition(r.matriz)
         const d = Math.hypot(p.x - jogador.x, p.z - jogador.z)
         if (d < raio) perto.push([d, r])
@@ -72,6 +88,7 @@ function criarAtoresSkinned(cena, pessoas, clipes, { quantos = 16, raio = 35, pa
         if (!a) break
         a.pessoa = r
         a.estado = null
+        vestirAtor(a, r)
         pessoas.ocupar(r, a)
         a.raiz.visible = true
         a.acoes.parado.time = rnd.entre(0, a.acoes.parado.getClip().duration) // cada um respira no seu tempo
@@ -114,14 +131,20 @@ function criarAtoresSkinned(cena, pessoas, clipes, { quantos = 16, raio = 35, pa
 function criarAtoresVat(cena, pessoas, clipes, { quantos = 16, raio = 35, passadaAndar = 1.5 } = {}) {
   if (quantos <= 0) return null
   const assado = assarOssos({ boneco: criarBoneco(), clipes: { andar: clipes.andar, parado: clipes.parado } })
-  const pecas = pecasPorPapel()
+  const kit = pessoas.fichasAtor?.length ? pecasDosAtores(pessoas.fichasAtor) : null
+  const pecas = kit ? kit.pecas : pecasPorPapel()
+  // a ficha de cada cópia (a máscara das peças, gente-ator.js): o material lê como uniforme por cópia
+  const fichas = new THREE.DataTexture(new Float32Array(quantos * 4), quantos, 1, THREE.RGBAFormat, THREE.FloatType)
+  fichas.magFilter = fichas.minFilter = THREE.NearestFilter
+  fichas.generateMipmaps = false
+  fichas.needsUpdate = true
   // aAnimA = (linhaA, linhaB, frac, peso) do andar; aAnimB = o mesmo do parado. Os mesmos dois objetos vão ao
   // material (que os lê por nome no shader) e às 6 geometrias; nascem antes do material.
   const animA = new THREE.InstancedBufferAttribute(new Float32Array(quantos * 4), 4)
   const animB = new THREE.InstancedBufferAttribute(new Float32Array(quantos * 4), 4)
   animA.setUsage(THREE.DynamicDrawUsage)
   animB.setUsage(THREE.DynamicDrawUsage)
-  const material = materialAtoresVat({ textura: assado.textura, nOssos: assado.nOssos, opacity: 0.85, atributos: { animA, animB } })
+  const material = materialAtoresVat({ textura: assado.textura, nOssos: assado.nOssos, opacity: 0.85, atributos: kit ? { animA, animB, fichas } : { animA, animB } })
 
   const nula = new THREE.Matrix4().makeScale(0, 0, 0) // cópia desocupada: escala 0, não desenha nada
   const malhas = PAPEIS.map((papel) => {
@@ -154,7 +177,8 @@ function criarAtoresVat(cena, pessoas, clipes, { quantos = 16, raio = 35, passad
     const mixer = new THREE.AnimationMixer(new THREE.Object3D())
     const acoes = { andar: mixer.clipAction(relogio.andar), parado: mixer.clipAction(relogio.parado) }
     for (const a of Object.values(acoes)) { a.play(); a.setEffectiveWeight(0) }
-    atores.push({ i, mixer, acoes, pessoa: null, estado: null, acc: (i / quantos) / 12, escala: rnd.entre(0.92, 1.05) })
+    const escala = rnd.entre(0.92, 1.05)
+    atores.push({ i, mixer, acoes, pessoa: null, estado: null, acc: (i / quantos) / 12, escala, escalaBase: escala })
   }
   for (const m of malhas) { m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true }
   for (const m of malhas) cena.add(m)
@@ -166,6 +190,17 @@ function criarAtoresVat(cena, pessoas, clipes, { quantos = 16, raio = 35, passad
   const M = new THREE.Matrix4()
 
   const escreverMatriz = (i, matriz) => { for (const m of malhas) m.setMatrixAt(i, matriz) }
+  const _cor = new THREE.Color()
+  // veste a cópia com a ficha da pessoa: a máscara das peças e as cores dela
+  const vestirAtor = (a, r) => {
+    const f = kit ? kit.fichas.indexOf(r.tipo?.fig) : -1
+    if (f < 0) return false
+    const fig = kit.fichas[f]
+    fichas.image.data[a.i * 4] = kit.formaDe[f]
+    for (const papel of PAPEIS) malhaDe[papel].setColorAt(a.i, _cor.set(fig.cores[papel]))
+    a.escala = a.escalaBase * escalaDaFicha(fig)
+    return true
+  }
   const escreverPose = (a) => {
     const A = quadroDoTempo(assado.clipes.andar, a.acoes.andar.time)
     const B = quadroDoTempo(assado.clipes.parado, a.acoes.parado.time)
@@ -177,10 +212,12 @@ function criarAtoresVat(cena, pessoas, clipes, { quantos = 16, raio = 35, passad
     atores,
     malhas,
     assado,
+    fichas, // a ficha de cada cópia (depuração)
     atualizar(dt, jogador) {
       // quem está perto (fora da cidade inteira, só olha o registro, que é pequeno)
       const perto = []
       for (const r of pessoas.registro) {
+        if (r.tipo?.fig?.crianca) continue // criança não vira ator (o corpo do ator é de adulto)
         p.setFromMatrixPosition(r.matriz)
         const d = Math.hypot(p.x - jogador.x, p.z - jogador.z)
         if (d < raio) perto.push([d, r])
@@ -189,6 +226,7 @@ function criarAtoresVat(cena, pessoas, clipes, { quantos = 16, raio = 35, passad
       const querem = new Set(perto.slice(0, atores.length).map(([, r]) => r))
       let matrizes = false
       let poses = false
+      let vestidas = false
       // solta quem saiu do raio
       for (const a of atores) {
         if (a.pessoa && !querem.has(a.pessoa)) { pessoas.ocupar(a.pessoa, null); a.pessoa = null; escreverMatriz(a.i, nula); matrizes = true }
@@ -200,6 +238,7 @@ function criarAtoresVat(cena, pessoas, clipes, { quantos = 16, raio = 35, passad
         if (!a) break
         a.pessoa = r
         a.estado = null
+        if (vestirAtor(a, r)) { vestidas = true }
         pessoas.ocupar(r, a)
         a.acoes.parado.time = rnd.entre(0, a.acoes.parado.getClip().duration) // cada um respira no seu tempo
         a.acoes.andar.time = rnd.entre(0, a.acoes.andar.getClip().duration)
@@ -238,6 +277,33 @@ function criarAtoresVat(cena, pessoas, clipes, { quantos = 16, raio = 35, passad
       }
       if (matrizes) for (const m of malhas) m.instanceMatrix.needsUpdate = true
       if (poses) { animA.needsUpdate = true; animB.needsUpdate = true }
+      if (vestidas) { fichas.needsUpdate = true; for (const m of malhas) m.instanceColor.needsUpdate = true }
     },
   }
+}
+
+// a mulher um pouco mais baixa que o homem (a altura do esqueleto é a de um homem de 1,71 m)
+function escalaDaFicha(fig) { return fig.corpo === 'mulher' ? 0.95 : 1 }
+
+// o corpo de um ator do caminho do WebGL: o esqueleto padrão e um SkinnedMesh por papel; a geometria é trocada pela
+// da ficha da pessoa ao ocupar (vestirAtor)
+function corpoDeFicha(kit) {
+  const { raizOsso, esqueleto } = criarEsqueleto()
+  const raiz = new THREE.Group()
+  raiz.add(raizOsso)
+  raiz.updateMatrixWorld(true)
+  esqueleto.calculateInverses()
+  const geos = kit.porFicha(0)
+  const malhas = PAPEIS_ATOR.map((papel) => {
+    const m = new THREE.SkinnedMesh(geos[papel], toon('#ffffff', { semCache: true, opacity: 0.85, blending: THREE.NoBlending }))
+    m.castShadow = true
+    m.receiveShadow = true
+    m.frustumCulled = false
+    m.userData.papel = papel
+    raiz.add(m)
+    m.bind(esqueleto, m.matrixWorld)
+    return m
+  })
+  raiz.userData.peso = 1
+  return { raiz, malhas, esqueleto }
 }

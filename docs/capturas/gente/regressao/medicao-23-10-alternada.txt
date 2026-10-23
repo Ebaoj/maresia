@@ -1,0 +1,17 @@
+== depois volta 1 03:21 { 2.82 4.03 4.64 }
+conta quebra: {"coluna":{"malhas":24,"tri":139560,"vert":141723},"cozinha":{"malhas":49,"tri":402822,"vert":425130}}
+conta medir: {"pixels":"2000x1125","res":{"4241,2164":{"base":{"ms":209.75,"cpu":205.38},"semGente":{"ms":167.74,"cpu":157.32}},"2016,1591":{"base":{"ms":40.17,"cpu":37.77},"semGente":{"ms":34.48,"cpu":28.71}}}}
+conta ab5: {"coluna":{"com":67.03,"sem":58.89,"gente":8.14},"cozinha":{"com":30.07,"sem":22.46,"gente":7.61}}
+== antes volta 1 03:41 { 6.00 4.28 3.60 }
+conta quebra: {"coluna":{"malhas":24,"tri":505856,"vert":1517568},"cozinha":{"malhas":77,"tri":871700,"vert":2615100}}
+conta medir: {"pixels":"2000x1125","res":{"4241,2164":{"base":{"ms":183.77,"cpu":178.22},"semGente":{"ms":156.44,"cpu":148.36}},"2016,1591":{"base":{"ms":77.68,"cpu":76.05},"semGente":{"ms":39.77,"cpu":37.36}}}}
+conta ab5: {"coluna":{"com":166.79,"sem":134.57,"gente":32.22},"cozinha":{"com":75.06,"sem":44.3,"gente":30.76}}
+== depois volta 2 03:48 { 5.83 5.30 4.33 }
+conta quebra: {"coluna":{"malhas":24,"tri":139560,"vert":141723},"cozinha":{"malhas":49,"tri":402822,"vert":425130}}
+conta medir: {"pixels":"2000x1125","res":{"4241,2164":{"base":{"ms":208.73,"cpu":202.21},"semGente":{"ms":228.32,"cpu":217.46}},"2016,1591":{"base":{"ms":77.46,"cpu":74.33},"semGente":{"ms":49.92,"cpu":47.69}}}}
+conta ab5: {"coluna":{"com":164.32,"sem":142.09,"gente":22.23},"cozinha":{"com":42.42,"sem":30.29,"gente":12.13}}
+== antes volta 2 03:56 { 10.52 7.51 5.57 }
+conta quebra: {"coluna":{"malhas":24,"tri":505856,"vert":1517568},"cozinha":{"malhas":77,"tri":871700,"vert":2615100}}
+conta medir: {"pixels":"2000x1125","res":{"4241,2164":{"base":{"ms":220.59,"cpu":213.48},"semGente":{"ms":223.54,"cpu":216.9}},"2016,1591":{"base":{"ms":105.31,"cpu":97.19},"semGente":{"ms":51.66,"cpu":46.23}}}}
+conta ab5: {"coluna":{"com":188.22,"sem":189.9,"gente":-1.68},"cozinha":{"com":51.62,"sem":33.04,"gente":18.58}}
+FIM
