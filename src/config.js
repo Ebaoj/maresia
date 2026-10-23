@@ -373,6 +373,7 @@ export const PADRAO = {
     sombraPerto: true,
     sombraPertoTamanho: 48,     // metros de lado (48 m em 2048 = 2,3 cm por texel; o de longe dá 8,5)
     sombraPertoResolucao: 2048,
+    cacheSombraFatias: 6,       // fluido 23/10/2026 (render/cache-sombra-gpu.js): o mapa novo dos parados é desenhado em tantas fatias, uma por quadro, e só então troca (1 = de uma vez, como antes; WebGPU)
     sombraPertoRecorte: true,   // fluido 22/10/2026 (render/sombra-perto-recorte.js): o bloco grande de cópias entra no mapa de perto só com as cópias da janela (WebGPU)
     sombraPertoBorda: 0.12,     // fração da janela de perto em que ela se mistura com a de longe
     sombraPertoAFrente: 8,      // metros à frente do jogador (para onde a câmera olha) onde a janela de perto fica

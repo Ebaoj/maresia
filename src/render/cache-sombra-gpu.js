@@ -28,7 +28,16 @@ export class CacheSombraGpu {
     this.refazer = null
     this.aplicado = false // os parados estão com castShadow desligado (o mapa em cache está valendo)
     this.stats = { refeitos: 0, quadros: 0, motivos: {}, msRefazer: 0, msQuadro: 0, parados: 0 }
-    this.recorte = new RecortePerto() // o mapa de perto recebe os blocos grandes só com as cópias da janela (sombra-perto-recorte.js)
+    this.recorte = new RecortePerto()
+    // refazer em fatias (fluido, 23/10/2026): com a hora andando o sol pede mapa novo ~5 vezes por segundo e cada
+    // refazer desenhava todos os parados da janela de uma vez (13 a 140 ms de processador num quadro, medidos andando).
+    // Agora o mapa novo é desenhado num segundo alvo, uma fatia dos parados por quadro (cfg.mundo.cacheSombraFatias),
+    // com a pose nova; o mapa velho continua valendo até o novo ficar pronto, e os dois trocam juntos com a pose.
+    this.alvoNovo = null
+    this.obra = null // { pose: {centro, dir}, lista, i, fatias, motivo }
+    this.poseAtiva = null // a pose do mapa que está valendo (a que o céu usa)
+    this.trocar = false // o mapa novo ficou pronto: troca no próximo quadro, junto com a pose
+    this.proxima = null // pedido que chegou com uma obra em andamento // o mapa de perto recebe os blocos grandes só com as cópias da janela (sombra-perto-recorte.js)
     this._c = { x: 0, y: 0, z: 0 }
     this._d = { x: 0, y: 1, z: 0 }
     sol.userData.cacheSombraGpu = this
@@ -96,10 +105,39 @@ export class CacheSombraGpu {
     if (!this.ligado) return null
     this.politica.raio = this.cfg.mundo.cacheSombraRaio ?? 15
     const d = this.politica.decidir(centro, dir)
-    if (d.refazer) this.refazer = d.motivo
+    const fatias = this.fatias()
+    if (fatias > 1 && this.poseAtiva && this.aplicado) {
+      // em fatias: o pedido vira uma obra com a pose nova; a pose que vale continua a do mapa pronto
+      if (this.obra && this.obra.pronta) {
+        this.poseAtiva = this.obra.pose
+        this.trocar = true
+        this.obra = null
+        if (this.proxima) { this.comecarObra(this.proxima.pose, this.proxima.motivo); this.proxima = null }
+      }
+      if (d.refazer) this.pedir({ centro: { ...d.centro }, dir: { ...d.dir } }, d.motivo)
+      Object.assign(this._c, this.poseAtiva.centro)
+      Object.assign(this._d, this.poseAtiva.dir)
+      return { centro: this._c, dir: this._d }
+    }
+    if (d.refazer) { this.refazer = d.motivo; this.obra = null; this.proxima = null; this.trocar = false }
+    this.poseAtiva = { centro: { ...d.centro }, dir: { ...d.dir } }
     Object.assign(this._c, d.centro)
     Object.assign(this._d, d.dir)
     return { centro: this._c, dir: this._d }
+  }
+
+  fatias() { return Math.max(1, Math.round(this.cfg.mundo.cacheSombraFatias ?? 1)) }
+
+  // pedido de mapa novo: com uma obra em andamento, o pedido espera ela acabar (só o mais recente fica); largar a obra
+  // a cada pedido deixaria o mapa sem trocar nunca quando o quadro é lento (o sol pede a cada 0,2 s)
+  pedir(pose, motivo) {
+    if (this.obra) this.proxima = { pose, motivo }
+    else this.comecarObra(pose, motivo)
+  }
+
+  comecarObra(pose, motivo) {
+    this.obra = { pose, motivo, lista: null, i: 0, pronta: false }
+    this.stats.motivos[motivo] = (this.stats.motivos[motivo] || 0) + 1
   }
 
   invalidar(motivo) { this.politica.invalidar(motivo) }
@@ -129,9 +167,24 @@ export class CacheSombraGpu {
     }
     const chave = shadow.mapSize.width * 4096 + shadow.camera.right
     const assinatura = assinaturaEstaticos()
+    if (this.trocar) {
+      // o mapa novo (desenhado em fatias) passa a valer neste quadro, com a pose dele (já posta no sol pelo céu)
+      const a = this.alvoEstatico
+      this.alvoEstatico = this.alvoNovo
+      this.alvoNovo = a
+      this.trocar = false
+      this.stats.refeitos++
+    }
     if (!this.refazer) {
       if (chave !== this.chave) this.refazer = 'tamanho'
-      else if (assinatura !== this.assinatura) this.refazer = 'conjunto'
+      else if (assinatura !== this.assinatura) {
+        // com fatias, o conjunto novo também vira obra (mesma pose), sem tranco
+        if (this.fatias() > 1 && this.poseAtiva && this.aplicado) {
+          const pc = this.politica.centro, pd = this.politica.dir
+          this.pedir({ centro: { ...pc }, dir: { ...pd } }, 'conjunto')
+          this.assinatura = assinatura
+        } else this.refazer = 'conjunto'
+      }
     }
     if (this.refazer) {
       const t1 = performance.now()
@@ -141,6 +194,7 @@ export class CacheSombraGpu {
       this.stats.refeitos++
       this.stats.msRefazer = performance.now() - t1
     }
+    if (this.obra && !this.obra.pronta && !this.refazer) this.fatiar(no, frame, original)
     this.compor(no, frame, original)
     this.stats.quadros++
     this.stats.msQuadro = performance.now() - t0
@@ -177,6 +231,57 @@ export class CacheSombraGpu {
     this.aplicado = true
     this.chave = chave
     this.refazer = null
+  }
+
+  // Uma fatia da obra: os parados da fatia, com a pose nova, no alvo novo (a primeira fatia limpa). O sol volta para a
+  // pose que vale antes de o mapa vivo ser composto, e as matrizes da sombra também (os materiais leem as dela).
+  fatiar(no, frame, original) {
+    const r = frame.renderer
+    const mapa = no.shadowMap
+    const shadow = no.shadow
+    const sol = this.sol
+    const ob = this.obra
+    const t0 = performance.now()
+    if (!this.alvoNovo || this.alvoNovo.width !== mapa.width || this.alvoNovo.height !== mapa.height) {
+      if (this.alvoNovo) { this.alvoNovo.depthTexture.dispose(); this.alvoNovo.dispose() }
+      const { W } = this
+      const dt = new W.DepthTexture(mapa.width, mapa.height)
+      dt.type = W.FloatType
+      dt.name = 'ShadowCacheNovo'
+      const rt = new W.RenderTarget(mapa.width, mapa.height)
+      rt.texture.name = 'ShadowCacheNovo'
+      rt.depthTexture = dt
+      this.alvoNovo = rt
+    }
+    if (!ob.lista) ob.lista = [...estaticosRegistrados()]
+    const n = Math.ceil(ob.lista.length / this.fatias())
+    const fatia = ob.lista.slice(ob.i, ob.i + n)
+    const posSol = sol.position.clone()
+    const posAlvo = sol.target.position.clone()
+    sol.position.set(ob.pose.centro.x, ob.pose.centro.y, ob.pose.centro.z).addScaledVector(ob.pose.dir, 250)
+    sol.target.position.set(ob.pose.centro.x, ob.pose.centro.y, ob.pose.centro.z)
+    sol.updateMatrixWorld()
+    sol.target.updateMatrixWorld()
+    for (const o of fatia) o.castShadow = true
+    const mascara = shadow.camera.layers.mask
+    shadow.camera.layers.mask = 1 << BIT_ESTATICO
+    const autoLimpar = r.autoClear
+    r.autoClear = ob.i === 0
+    r.setRenderTarget(this.alvoNovo)
+    try { original.call(no, frame) } finally {
+      r.autoClear = autoLimpar
+      shadow.camera.layers.mask = mascara
+      for (const o of fatia) o.castShadow = false
+      sol.position.copy(posSol)
+      sol.target.position.copy(posAlvo)
+      sol.updateMatrixWorld()
+      sol.target.updateMatrixWorld()
+      shadow.updateMatrices(sol)
+      r.setRenderTarget(mapa)
+    }
+    ob.i += n
+    if (ob.i >= ob.lista.length) ob.pronta = true
+    this.stats.msFatia = performance.now() - t0
   }
 
   // Copia o mapa dos parados para o mapa vivo e desenha por cima, sem limpar, só o que se mexe.

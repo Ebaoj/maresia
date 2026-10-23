@@ -38,5 +38,6 @@ export function secaoDesempenho(gui, cfg) {
   sombra.add(cfg.mundo, 'passoSombraMin', 0, 15, 1).name('sombra anda em passos (min)')
   sombra.add(cfg.mundo, 'cacheSombra').name('sombra dos parados em cache')
   sombra.add(cfg.mundo, 'cacheSombraRaio', 5, 40, 1).name('cache da sombra: raio (m)')
+  sombra.add(cfg.mundo, 'cacheSombraFatias', 1, 12, 1).name('cache da sombra: fatias por refazer')
   return des
 }

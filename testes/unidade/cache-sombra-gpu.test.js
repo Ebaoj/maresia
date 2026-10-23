@@ -177,3 +177,63 @@ describe('cache de sombra no WebGPU', () => {
     expect(antes).toEqual([])
   })
 })
+
+// fluido, 23/10/2026: com a hora andando o sol pede mapa novo ~5 vezes por segundo, e cada refazer desenhava todos os
+// parados num quadro só (13 a 140 ms de processador, medidos andando). Em fatias: o mapa novo é desenhado num segundo
+// alvo, uma fatia por quadro, com a pose nova; o velho vale (com a pose velha) até o novo ficar pronto, e os dois trocam
+// juntos. Estes testes pegam: pose nova antes do mapa novo (sombra deslocada), fatia que limpa o que a anterior
+// desenhou, parado que fica de fora, obra largada a cada pedido (o mapa nunca troca com quadro lento).
+describe('cache de sombra no WebGPU, refeito em fatias', () => {
+  beforeEach(() => limparEstaticos())
+
+  it('o mapa novo sai em fatias e só troca, junto com a pose, quando fica pronto', () => {
+    const t = montar()
+    t.cfg.mundo.cacheSombraFatias = 2
+    for (const n of ['a', 'b', 'c', 'd']) t.malha(n, true)
+    t.malha('neto', false)
+    t.quadro() // o primeiro mapa: de uma vez
+    const velho = t.cache.alvoEstatico
+    // o sol mudou: primeira fatia no alvo novo, limpando; o mapa vivo continua vindo do velho
+    let p = t.quadro(sol3(0, 0, 0), graus(35))
+    expect(t.cache.poseAtiva.dir.x).toBeCloseTo(graus(30).x, 6)
+    expect(p.map((x) => x.tipo)).toEqual(['sombra', 'copia', 'sombra'])
+    expect(p[0].alvo).toBe(t.cache.alvoNovo)
+    expect(p[0].autoClear).toBe(true)
+    expect(p[0].mascara).toBe(1 << 1)
+    const primeira = p[0].objetos
+    expect(primeira.length).toBe(2)
+    expect(p[1].de).toBe(velho.depthTexture)
+    expect(p[2].objetos).toEqual(['neto'])
+    // segunda fatia, sem limpar; o resto dos parados
+    p = t.quadro(sol3(0, 0, 0), graus(35))
+    expect(p[0].alvo).toBe(t.cache.alvoNovo)
+    expect(p[0].autoClear).toBe(false)
+    expect([...primeira, ...p[0].objetos].sort()).toEqual(['a', 'b', 'c', 'd'])
+    expect(t.cache.poseAtiva.dir.x).toBeCloseTo(graus(30).x, 6)
+    // pronto: troca de mapa e de pose no mesmo quadro
+    const novo = t.cache.alvoNovo
+    p = t.quadro(sol3(0, 0, 0), graus(35))
+    expect(t.cache.poseAtiva.dir.x).toBeCloseTo(graus(35).x, 6)
+    expect(t.cache.alvoEstatico).toBe(novo)
+    expect(p.map((x) => x.tipo)).toEqual(['copia', 'sombra'])
+    expect(p[0].de).toBe(novo.depthTexture)
+    // nenhum parado ficou com castShadow ligado fora da fatia
+    t.cena.traverse((o) => { if (o.isMesh && o.name !== 'neto') expect(o.castShadow).toBe(false) })
+  })
+
+  it('pedido novo no meio da obra espera ela acabar (o mapa troca mesmo com pedidos seguidos)', () => {
+    const t = montar()
+    t.cfg.mundo.cacheSombraFatias = 3
+    for (const n of ['a', 'b', 'c']) t.malha(n, true)
+    t.quadro()
+    let g = 30
+    let trocou = 0
+    let antes = t.cache.alvoEstatico
+    for (let i = 0; i < 12; i++) {
+      g += 1 // o sol pede mapa novo em todo quadro
+      t.quadro(sol3(0, 0, 0), graus(g))
+      if (t.cache.alvoEstatico !== antes) { trocou++; antes = t.cache.alvoEstatico }
+    }
+    expect(trocou).toBeGreaterThanOrEqual(2)
+  })
+})
