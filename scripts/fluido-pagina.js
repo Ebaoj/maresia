@@ -465,3 +465,29 @@ export async function familiasLonge({ lugar = 'coluna' } = {}) {
     return Object.fromEntries(Object.entries(out).sort((a, c) => c[1].tri - a[1].tri))
   } finally { g.controle.pausado = false }
 }
+
+// As cópias que o WebGPU desenha à toa: quantidadeFixa (render/renderizador.js) faz o three ver sempre a capacidade
+// inteira e zera a escala das cópias além do count do jogo; a escala zero não aparece, mas o vértice roda
+export async function copiasZeradas({ lugar = 'coluna' } = {}) {
+  const g = m()
+  g.controle.pausado = true
+  try {
+    await ir(lugar)
+    const out = {}
+    g.cena.traverse((o) => {
+      if (!o.isInstancedMesh || !o.userData.quantidadeReal) return
+      let vis = true
+      for (let n = o; n; n = n.parent) if (!n.visible) vis = false
+      const geo = o.geometry
+      const tri = (geo.index ? geo.index.count : geo.attributes.position.count) / 3
+      const cap = o.instanceMatrix.count
+      const real = o.userData.quantidadeReal()
+      const e = (out[o.name] ||= { malhas: 0, visiveis: 0, cap: 0, real: 0, triAToa: 0, triPorCopia: Math.round(tri) })
+      e.malhas++
+      e.cap += cap
+      e.real += real
+      if (vis && o.layers.mask & 1) { e.visiveis++; e.triAToa += (cap - real) * tri }
+    })
+    return Object.fromEntries(Object.entries(out).filter(([, e]) => e.cap > e.real).sort((a, b) => b[1].triAToa - a[1].triAToa))
+  } finally { g.controle.pausado = false }
+}
