@@ -300,8 +300,8 @@ export function criarUrubu1932 (cena, cfgJogo = null) {
     gente: { set ate (v) { for (const md of multidoes) md.ate = v } },
     atualizar (hora, camera = null) {
       if (this.parado) return
-      // perto e longe da gente: barato (só refaz quando a câmera anda 1,5 m)
-      if (camera) for (const md of multidoes) if (md.malhas[0]?.visible) md.atualizar(camera.position)
+      // a gente à vista: barato (só refaz quando a câmera anda 2 m ou gira, multidao.js)
+      if (camera) for (const md of multidoes) if (md.malhas[0]?.visible) md.atualizar(camera)
       const d = ehDia(hora)
       const c = camera?.position
       if (d === agoraDia && (!c || (ultima && ultima.distanceToSquared(c) < 16))) return

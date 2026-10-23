@@ -88,6 +88,19 @@ describe('a multidão', () => {
     expect(t.malha.count).toBe(3)
     expect(cena.children.filter((o) => o.name === 'teste')).toHaveLength(1)
   })
+  it('com a câmera inteira, quem está fora do quadro (além da folga) não é desenhado', () => {
+    const md = criarMultidao(new THREE.Scene(), new THREE.MeshBasicMaterial(), { nome: 'teste', ate: 400, folga: 2 })
+    const t = md.tipo(new THREE.BoxGeometry())
+    for (const z of [20, -20, 60]) md.adicionar(t, new THREE.Matrix4().makeTranslation(0, 0, z))
+    md.adicionar(t, new THREE.Matrix4().makeTranslation(80, 0, 10)) // de lado, fora do quadro
+    md.montar()
+    const cam = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 1000)
+    cam.position.set(0, 1.5, 0)
+    cam.lookAt(0, 1.5, 100)
+    cam.updateMatrixWorld(true)
+    md.atualizar(cam, true)
+    expect(t.malha.count).toBe(2) // as duas da frente; a de trás e a do lado ficam de fora
+  })
 })
 
 describe('o corpo dos atores', () => {

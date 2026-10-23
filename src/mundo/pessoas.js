@@ -241,8 +241,8 @@ export function criarPessoas(cena, grade, cfg = null) {
         for (const r of diurnos) reavaliar(r)
         multidao.sujar()
       }
-      const cam = camera?.position || camera
-      multidao.atualizar(cam && cam.isVector3 ? cam : null)
+      const cam = camera && (camera.isCamera || camera.isVector3) ? camera : null
+      multidao.atualizar(cam)
       // só reposiciona 12 vezes por segundo: caminhada "em 2"
       acumulado += dt
       if (acumulado < 1 / 12) return
@@ -277,7 +277,7 @@ export function criarPessoas(cena, grade, cfg = null) {
         a.matriz.compose(p, q, um)
       }
       if (andando.length) multidao.sujar()
-      multidao.atualizar(cam && cam.isVector3 ? cam : null)
+      multidao.atualizar(cam)
     },
   }
 }

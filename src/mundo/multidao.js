@@ -9,6 +9,10 @@
 // perto do jogador, atores.js) e, no campo, com a fila da cozinha; o resto da gente usa a figura média (gente-corpo.js).
 //
 // Entrada: { matriz, oculta }. Quem mexe na matriz (quem anda) ou na oculta (ator ocupou, noite) chama sujar().
+// Com a câmera inteira (não só a posição), a multidão também deixa de fora quem está fora do quadro, com folga
+// (`folga` metros, para a sombra de quem está logo fora ainda cair na tela): as malhas por bloco de antes eram
+// cortadas pelo three por bloco; a malha única não é (a esfera dela é a cidade). Refaz quando a câmera anda 2 m ou
+// gira 0,08 rad, ou quando alguém mexeu.
 //
 // WebGPU: o renderizador (src/render/renderizador.js, quantidadeFixa) faz toda malha de cópias cuja contagem muda ser
 // desenhada com a capacidade inteira (as cópias a mais viram escala zero), porque o instance() do three guardava a
@@ -43,10 +47,15 @@ function contar(m, n) {
 }
 
 // controlaVisivel: malha sem ninguém fica invisível (a cidade); no campo quem liga e desliga é o dia e a noite
-export function criarMultidao(cena, material, { nome, ate = 400, sombra = true, controlaVisivel = false } = {}) {
+const _frustum = new THREE.Frustum()
+const _pm = new THREE.Matrix4()
+const _esf = new THREE.Sphere()
+const _dir = new THREE.Vector3()
+export function criarMultidao(cena, material, { nome, ate = 400, sombra = true, controlaVisivel = false, folga = 6 } = {}) {
   const tipos = []
   let sujo = true
   const ultima = new THREE.Vector3(1e9, 0, 1e9)
+  const ultimaDir = new THREE.Vector3()
   let ate2 = ate * ate
   const malhas = []
 
@@ -96,13 +105,21 @@ export function criarMultidao(cena, material, { nome, ate = 400, sombra = true, 
     set ate(v) { ate2 = v * v; sujo = true },
     // as cópias que passam pelo vértice agora
     copiasDesenhadas() { let n = 0; for (const m of malhas) n += m.count; return n },
-    // arruma as cópias pela câmera (cam: Vector3 ou null = todos aparecem); refaz só se alguém mexeu ou a câmera andou
-    atualizar(cam = null, forcar = false) {
+    // arruma as cópias pela câmera (camera: THREE.Camera, ou Vector3 = só a distância, ou null = todos aparecem)
+    atualizar(camera = null, forcar = false) {
+      const cam = camera?.isCamera ? camera.position : camera
+      let quadro = null
+      if (camera?.isCamera) {
+        camera.getWorldDirection(_dir)
+        quadro = _frustum.setFromProjectionMatrix(_pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse))
+      }
       if (cam) {
-        if (!forcar && !sujo && ultima.distanceToSquared(cam) < 4 * 4) return false
+        if (!forcar && !sujo && ultima.distanceToSquared(cam) < 2 * 2 && (!quadro || ultimaDir.dot(_dir) > Math.cos(0.08))) return false
         ultima.copy(cam)
+        if (quadro) ultimaDir.copy(_dir)
       } else if (!forcar && !sujo) return false
       sujo = false
+      _esf.radius = 1.2 + folga
       for (const t of tipos) {
         if (!t.malha) continue
         let n = 0
@@ -114,6 +131,7 @@ export function criarMultidao(cena, material, { nome, ate = 400, sombra = true, 
             const dx = el[12] - cam.x
             const dz = el[14] - cam.z
             if (dx * dx + dz * dz > ate2) continue
+            if (quadro) { _esf.center.set(el[12], el[13] + 0.9, el[14]); if (!quadro.intersectsSphere(_esf)) continue }
           }
           a.set(el, n++ * 16)
         }
