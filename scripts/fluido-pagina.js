@@ -226,6 +226,12 @@ export async function andar({ trechos = [{ lugar: 'coluna', segundos: 12 }], cor
     const tempos = []
     const tropecos = []
     const p0 = window.__pipelinesNovos || 0
+    // o que pode tropeçar: o mapa dos parados refeito (cache da sombra do sol), a escolha do recorte de perto
+    const cs = g.cacheSombra.stats
+    const rc = g.cacheSombra.recorte?.stats
+    let sombraAntes = cs.refeitos, recorteAntes = rc ? rc.refeitos : 0
+    const sombra0 = cs.refeitos, recorte0 = recorteAntes
+    const motivos0 = { ...cs.motivos }
     let ultimo = performance.now()
     const fim = ultimo + t.segundos * 1000
     g.teclas.frente = true
@@ -236,7 +242,9 @@ export async function andar({ trechos = [{ lugar: 'coluna', segundos: 12 }], cor
         const dt = agora - ultimo
         ultimo = agora
         tempos.push(dt)
-        if (dt > 50) tropecos.push({ t: +((agora - (fim - t.segundos * 1000)) / 1000).toFixed(2), ms: +dt.toFixed(1), pipelines: (window.__pipelinesNovos || 0) - p0 })
+        const ds = cs.refeitos - sombraAntes, dr = (rc ? rc.refeitos : 0) - recorteAntes
+        sombraAntes = cs.refeitos; recorteAntes = rc ? rc.refeitos : 0
+        if (dt > 50) tropecos.push({ t: +((agora - (fim - t.segundos * 1000)) / 1000).toFixed(2), ms: +dt.toFixed(1), pipelines: (window.__pipelinesNovos || 0) - p0, sombra: ds, recorte: dr })
         g.cam.yaw += (t.giro ?? giro) * dt / 1000
         if (agora < fim) requestAnimationFrame(quadro)
         else resolve()
@@ -254,6 +262,9 @@ export async function andar({ trechos = [{ lugar: 'coluna', segundos: 12 }], cor
       p50: pct(0.5), p90: pct(0.9), p99: pct(0.99), max: +s[s.length - 1].toFixed(1),
       acima33: tempos.filter((x) => x > 33.4).length, acima50: tropecos.length,
       pipelinesNovos: (window.__pipelinesNovos || 0) - p0, tropecos: tropecos.slice(0, 20),
+      sombraRefeita: cs.refeitos - sombra0, recorteRefeito: (rc ? rc.refeitos : 0) - recorte0,
+      motivos: Object.fromEntries(Object.entries(cs.motivos).map(([k, v]) => [k, v - (motivos0[k] || 0)]).filter(([, v]) => v)),
+      tropecoComSombra: tropecos.filter((x) => x.sombra).length, msRefazerUltimo: +cs.msRefazer.toFixed(1),
       escala: g.cfg.desempenho.resolucaoDinamica ? g.resolucaoDinamica.escala : g.cfg.desempenho.resolucao,
     })
   }
@@ -490,4 +501,44 @@ export async function copiasZeradas({ lugar = 'coluna' } = {}) {
     })
     return Object.fromEntries(Object.entries(out).filter(([, e]) => e.cap > e.real).sort((a, b) => b[1].triAToa - a[1].triAToa))
   } finally { g.controle.pausado = false }
+}
+
+// Quem muda o "conjunto" dos parados andando (o que obriga o mapa de sombra dos parados a ser refeito inteiro):
+// anda segundos com W e conta, por nome, os parados que aparecem, somem ou mudam de cópias entre um quadro e outro
+export async function conjuntoQueMuda({ lugar = 'coluna', segundos = 15, horaPausada = true } = {}) {
+  const g = m()
+  const { estaticosRegistrados } = await import('/src/render/sombra-estatica.js')
+  const L = await lugares()
+  const v = L[lugar]
+  g.controle.pausado = false
+  g.cfg.fatia.travar = false
+  g.cfg.tempo.pausado = horaPausada
+  g.irPara(v.x, v.z, v.yaw, v.hora)
+  await new Promise((r) => setTimeout(r, 1500))
+  const estado = (o) => { for (let n = o; n; n = n.parent) if (n.visible === false) return 0; return 1 + ((o.count ?? 0) << 1) }
+  const antes = new Map()
+  for (const o of estaticosRegistrados()) antes.set(o, estado(o))
+  const conta = {}
+  const r0 = g.cacheSombra.stats.refeitos
+  g.teclas.frente = true
+  g.teclas.correr = true
+  const fim = performance.now() + segundos * 1000
+  await new Promise((resolve) => {
+    const q = () => {
+      for (const o of estaticosRegistrados()) {
+        const e = estado(o)
+        const a = antes.get(o)
+        if (a !== e) {
+          const k = (o.name || o.type) + (a === undefined ? ' (novo)' : (a && e ? ' (cópias)' : ' (vis)'))
+          conta[k] = (conta[k] || 0) + 1
+          antes.set(o, e)
+        }
+      }
+      if (performance.now() < fim) requestAnimationFrame(q); else resolve()
+    }
+    requestAnimationFrame(q)
+  })
+  g.teclas.frente = false
+  g.teclas.correr = false
+  return { refeitos: g.cacheSombra.stats.refeitos - r0, motivos: g.cacheSombra.stats.motivos, muda: Object.fromEntries(Object.entries(conta).sort((a, b) => b[1] - a[1]).slice(0, 30)) }
 }
