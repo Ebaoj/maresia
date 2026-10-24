@@ -3,13 +3,23 @@
 // Uso no console:
 //   await maresia.medir({ lugares: [[x, z, yaw, hora]], largura: 1600, altura: 900, resolucao: 1.25,
 //                          variantes: { semGrama: (m) => { ...; return () => desfaz } } })
-// Devolve, por lugar e variante, ms por quadro (ms) e quanto disso é JavaScript (cpu).
+// Devolve, por lugar e variante, ms por quadro (ms) e quanto disso é JavaScript (cpu), e o quadro dos picos:
+// quantos quadros estouraram 33 ms (picos33) e 50 ms (picos50), o percentil 99 (p99) e o pior quadro (pior).
+// A média esconde o que incomoda: dois quadros de 80 ms num lugar viram um número que parece bom.
 
 import * as THREE from 'three'
 
 const mediana = (v) => {
   const s = [...v].sort((a, b) => a - b)
   return +s[s.length >> 1].toFixed(2)
+}
+
+// o percentil p dos tempos (p em %): o valor abaixo do qual está p% dos quadros
+const percentil = (v, p) => {
+  if (!v.length) return 0
+  const s = [...v].sort((a, b) => a - b)
+  const i = Math.min(s.length - 1, Math.max(0, Math.ceil((p / 100) * s.length) - 1))
+  return +s[i].toFixed(2)
 }
 
 export function instalar(m) {
@@ -41,16 +51,23 @@ export function instalar(m) {
       await ler(alvo)
       const t0 = performance.now()
       let cpu = 0
+      // o tempo de cada quadro: do fim de um ao fim do seguinte. Inclui a fila da GPU (quando a placa não
+      // acompanha, o quadro seguinte demora mais), que é o que o jogador sente
+      const tempos = []
+      let anterior = t0
       for (let i = 0; i < quadros; i++) {
         const a = performance.now()
         passo()
         cpu += performance.now() - a
+        const agora = performance.now()
+        tempos.push(agora - anterior)
+        anterior = agora
       }
       await ler(alvo)
-      rodadas.push({ total: (performance.now() - t0) / quadros, cpu: cpu / quadros })
+      rodadas.push({ total: (performance.now() - t0) / quadros, cpu: cpu / quadros, tempos })
       await new Promise((res) => setTimeout(res, 30))
     }
-    return { ms: mediana(rodadas.map((x) => x.total)), cpu: mediana(rodadas.map((x) => x.cpu)) }
+    return { ms: mediana(rodadas.map((x) => x.total)), cpu: mediana(rodadas.map((x) => x.cpu)), tempos: rodadas.flatMap((x) => x.tempos) }
   }
 
   // repeticoes: as variantes se alternam (A, B, A, B...) para a GPU do Mac, que muda de
@@ -84,7 +101,17 @@ export function instalar(m) {
           }
         }
         for (const [v, l] of Object.entries(amostras)) {
-          res[nome][v] = { ms: mediana(l.map((a) => a.ms)), cpu: mediana(l.map((a) => a.cpu)) }
+          const tempos = l.flatMap((a) => a.tempos || [])
+          res[nome][v] = {
+            ms: mediana(l.map((a) => a.ms)),
+            cpu: mediana(l.map((a) => a.cpu)),
+            // os picos: a média esconde o quadro que travou
+            quadros: tempos.length,
+            picos33: tempos.filter((t) => t > 33).length,
+            picos50: tempos.filter((t) => t > 50).length,
+            p99: percentil(tempos, 99),
+            pior: tempos.length ? +tempos.reduce((a, b) => (b > a ? b : a), 0).toFixed(2) : 0,
+          }
         }
       }
     } finally {
