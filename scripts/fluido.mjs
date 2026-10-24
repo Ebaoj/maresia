@@ -129,6 +129,49 @@ try {
       resultados.push({ foto: p.foto, r: r.valor || r.erro })
       continue
     }
+    if (p.perfilCpu) {
+      // perfil de processador (CDP, amostra a cada 200 µs) enquanto uma função da página roda; soma o tempo próprio por
+      // função (nome + arquivo:linha) e mostra as 30 maiores
+      await cmd('Profiler.enable')
+      await cmd('Profiler.setSamplingInterval', { interval: 200 })
+      await cmd('Profiler.start')
+      const t1 = Date.now()
+      const rr = await avaliar(`(async () => { const f = await import('/scripts/fluido-pagina.js'); return JSON.stringify(await f[${JSON.stringify(p.perfilCpu.fn)}](${JSON.stringify(p.perfilCpu.args || {})})) })()`)
+      const prof = (await cmd('Profiler.stop')).result.profile
+      const dur = (Date.now() - t1)
+      const porNo = new Map(prof.nodes.map((n) => [n.id, n]))
+      const conta = new Map()
+      const dt = prof.timeDeltas
+      for (let i = 0; i < prof.samples.length; i++) {
+        const n = porNo.get(prof.samples[i])
+        const cf = n.callFrame
+        const k = `${cf.functionName || '(anônima)'} ${(cf.url || '').replace(/^.*\/(src|node_modules)\//, '$1/').replace(/\?.*$/, '')}:${cf.lineNumber + 1}`
+        conta.set(k, (conta.get(k) || 0) + (dt[i] || 0) / 1000)
+      }
+      const top = [...conta.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40).map(([k, ms]) => [k, +ms.toFixed(1)])
+      // tempo inclusivo das funções do jogo (src/): cada amostra conta uma vez para cada função de src/ na pilha dela
+      const pai = new Map()
+      for (const n of prof.nodes) for (const c of n.children || []) pai.set(c, n.id)
+      const incl = new Map()
+      for (let i = 0; i < prof.samples.length; i++) {
+        const vistos = new Set()
+        for (let id = prof.samples[i]; id !== undefined; id = pai.get(id)) {
+          const cf = porNo.get(id).callFrame
+          if (!/\/src\//.test(cf.url || '')) continue
+          const k = `${cf.functionName || '(anônima)'} ${(cf.url || '').replace(/^.*\/src\//, 'src/').replace(/\?.*$/, '')}:${cf.lineNumber + 1}`
+          if (vistos.has(k)) continue
+          vistos.add(k)
+          incl.set(k, (incl.get(k) || 0) + (dt[i] || 0) / 1000)
+        }
+      }
+      const topIncl = [...incl.entries()].sort((a, b) => b[1] - a[1]).slice(0, 45).map(([k, ms]) => [k, +ms.toFixed(1)])
+      console.log('--- inclusivo (src/)')
+      for (const [k, ms] of topIncl) console.log(String(ms).padStart(9), k)
+      console.log('--- perfil cpu', JSON.stringify(p.perfilCpu), dur, 'ms')
+      for (const [k, ms] of top) console.log(String(ms).padStart(9), k)
+      resultados.push({ perfilCpu: p.perfilCpu, duracaoMs: dur, top, topIncl, r: rr.valor ? JSON.parse(rr.valor) : rr })
+      continue
+    }
     if (p.js) {
       const r = await avaliar(p.js)
       console.log('js', JSON.stringify(r).slice(0, 400))
