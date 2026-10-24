@@ -51,7 +51,11 @@ case "${1:-}" in
     ssh -f -n -i $PEM ubuntu@$(ip_maquina) '(cd maresia && exec setsid nohup npm run dev) > maresia/vite.log 2>&1 < /dev/null &'
     # sem tela de bloqueio: o usuário ubuntu não tem senha (acesso só por chave), então a tela travada
     # pedia uma senha que não existe. Quem chega no DCV já passou pelo túnel SSH com a chave
-    ssh_ 'export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; gsettings set org.gnome.desktop.screensaver lock-enabled false; gsettings set org.gnome.desktop.session idle-delay 0; sudo loginctl unlock-sessions'
+    ssh_ 'export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus; gsettings set org.gnome.desktop.lockdown disable-lock-screen true; gsettings set org.gnome.desktop.screensaver lock-enabled false; gsettings set org.gnome.desktop.screensaver idle-activation-enabled false; gsettings set org.gnome.desktop.session idle-delay 0; sudo passwd -d ubuntu; sudo loginctl unlock-sessions'
+    # o DCV não pode trancar a sessão de console: quando tranca (auto-lock, quando o último cliente
+    # desconecta), o GDM abre a tela de senha do ubuntu — que não tem senha — e o jogo some da tela
+    # do DCV. Garante as duas chaves na config, sem mexer no resto do arquivo.
+    ssh_ "sudo grep -q '^os-auto-lock' /etc/dcv/dcv.conf || sudo sed -i '/^\[security\]/a os-auto-lock = false' /etc/dcv/dcv.conf; sudo grep -q '^disconnect-on-lock' /etc/dcv/dcv.conf || sudo sed -i '/^\[connectivity\]/a disconnect-on-lock = false' /etc/dcv/dcv.conf"
     # Chrome em tela cheia na área de trabalho da máquina (a sessão do DCV), na placa NVIDIA
     # sem trava de 60 (vsync); pkill pelo nome do processo (com -f, o padrão casava com o próprio comando).
     # Janela inteira no Vulkan (as mesmas opções do Modal): no X11 com NVIDIA, o WebGPU (Vulkan) passando a imagem

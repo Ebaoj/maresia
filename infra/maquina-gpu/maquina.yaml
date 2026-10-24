@@ -86,8 +86,14 @@ Resources:
           web-listen-endpoints = ['127.0.0.1:8443']
           quic-listen-endpoints = []
           enable-quic-frontend = false
+          # o DCV nao desconecta o cliente quando a sessao de console trava
+          disconnect-on-lock = false
           [security]
           authentication = "none"
+          # sem auto-lock: quando o ultimo cliente desconectava, o DCV trancava a sessao de
+          # console e o GDM abria a tela de senha do ubuntu (conta sem senha -> trava sem
+          # saida). O jogo some da tela do DCV ate alguem destravar.
+          os-auto-lock = false
           CONF
           systemctl enable dcvserver
           # Chrome e Node 20
@@ -97,6 +103,8 @@ Resources:
           apt-get install -y nodejs
           # login automatico do ubuntu na sessao grafica (o DCV usa a sessao de console)
           sed -i 's/^#  AutomaticLoginEnable = true/AutomaticLoginEnable = true/; s/^#  AutomaticLogin = user1/AutomaticLogin = ubuntu/' /etc/gdm3/custom.conf
+          # conta sem senha: o SSH e por chave, e se a sessao travar nao ha senha para digitar
+          passwd -d ubuntu
           mkdir -p /home/ubuntu/maresia && chown ubuntu:ubuntu /home/ubuntu/maresia
           touch /home/ubuntu/.instalado
           reboot
