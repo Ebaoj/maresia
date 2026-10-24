@@ -1,6 +1,8 @@
 // Todos os números ajustáveis do jogo. O painel de debug (tecla H) mexe aqui.
 // O que você ajusta no painel fica salvo no navegador; "Restaurar padrão" volta a isto.
 
+import { aplicarQualidadeDaUrl } from './qualidade.js'
+
 export const PADRAO = {
   tempo: {
     hora: 16.6,          // começa na hora dourada (luz-arcane, item 3: o forte de 1932 da referência)
@@ -242,7 +244,7 @@ export const PADRAO = {
   },
   grama: {
     raio: 109,          // unidades de jogo em volta do jogador: o mundo comprimido valia 38, e a praca descomprimida levou o centro a 1:1 (fator 2,88)
-    quantidade: 200000,
+    quantidade: 50000,  // 24/10/2026: era 200000 (o perfil padrão é o "medio": 50000; o "alto" volta a 200000)
     altura: 0.75,
     largura: 0.07,
     lodPerto: 8,           // até quantos metros da câmera ficam todas as folhas
@@ -367,13 +369,15 @@ export const PADRAO = {
     // 21/10/2026: 0 (era 4). Com 4, o mapa de longe pulava ~1° a cada 4 s (1 min de jogo por segundo) e a sombra
     // inteira dava um tranco visível. Com 0 o cache dos parados refaz a cada 0,05° (~5 vezes por segundo, cada vez
     // só os parados), e o mapa de perto segue o sol contínuo. Só vale para o mapa de longe
+    // 24/10/2026: o cache dos parados passou a esperar sombraCacheIntervaloMin entre um refazer e outro
     passoSombraMin: 0,
     sombras: true,
     resolucaoSombra: 4096, // mapa de longe (346 m): 4096 = 8,5 cm por texel, 2048 mais leve
     // mapa de perto (render/sombra-perto.js): janela pequena e densa em volta do jogador, refeita todo quadro
     sombraPerto: true,
-    sombraPertoTamanho: 48,     // metros de lado (48 m em 2048 = 2,3 cm por texel; o de longe dá 8,5)
-    sombraPertoResolucao: 2048,
+    sombraPertoTamanho: 48,     // metros de lado (48 m em 1024 = 4,7 cm por texel; o de longe dá 8,5)
+    sombraPertoResolucao: 1024,
+    sombraPertoACada: 2,       // a cada quantos quadros o mapa de perto é refeito (1 = todo quadro, como era)
     cacheSombraFatias: 6,       // fluido 23/10/2026 (render/cache-sombra-gpu.js): o mapa novo dos parados é desenhado em tantas fatias, uma por quadro, e só então troca (1 = de uma vez, como antes; WebGPU)
     sombraPertoRecorte: true,   // fluido 22/10/2026 (render/sombra-perto-recorte.js): o bloco grande de cópias entra no mapa de perto só com as cópias da janela (WebGPU)
     sombraPertoBorda: 0.12,     // fração da janela de perto em que ela se mistura com a de longe
@@ -385,6 +389,7 @@ export const PADRAO = {
     sombraFiltro: 'pintado',    // 'pintado' (grade presa ao mapa) ou 'three' (o disco girado por ruído de tela, o de antes)
     cacheSombra: true,     // KAN-74 (F4): sombra dos objetos parados em cache (só WebGL); refaz com o sol, ao andar mais que cacheSombraRaio ou quando um parado aparece ou some. Ver docs/motor-f4-cache-sombra.md
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
+    sombraCacheIntervaloMin: 0.5, // segundos entre dois refazimentos do cache por giro do sol (com passoSombraMin 0 o sol não para: era ~5x/s, cada vez um pico de quadro)
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
     palhaPerto: 220,     // até essa distância (un) a palhoça das vilas é a de perto; depois, a caixa de taipa e palha (vilas.js)
@@ -522,7 +527,7 @@ export const PADRAO = {
     travar: true,          // prende o jogador na fatia vertical da Praia do Peixe (mundo/fatia.js)
   },
   desempenho: {
-    resolucao: 1.25,
+    resolucao: 1.0,        // 24/10/2026: era 1,25; o perfil padrão é o "medio" (src/qualidade.js)
     mostrarFps: true,      // contagem de FPS no alto da tela
     renderizador: 'webgl', // 'webgpu': o motor novo em teste (KAN-67), ainda sem o pós e com parte dos materiais
     tamBloco: 192,         // metros por bloco de cópias (árvores, plantas, objetos); maior = menos chamadas de desenho. A/B na L4 17/10: 96 -> 192 tira 22% das chamadas e dá +6 a +16 FPS parado; 384 oscilou
@@ -536,7 +541,7 @@ export const PADRAO = {
     atoresVat: true,       // KAN-74 fase 2b: atores de fundo como cópias com a pose em textura de ossos; só vale no WebGPU; recarregar
     cortePequenos: true,   // fluido 22/10/2026 (render/corte-tela.js): a peça que fica menor que cortePx na tela sai do desenho (lampião, vaso, dormente de longe, o campo do Urubu a 2 km)
     cortePx: 3,            // tamanho (px numa tela de 900 de altura) abaixo do qual a peça sai
-    resolucaoDinamica: true, // R1 (robustez no M1): a resolução segue o custo do quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao limitada pelo devicePixelRatio. Ligada em 23/10/2026 (fluido): com a guarda de eficácia, a descida que não ajuda volta
+    resolucaoDinamica: true, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Ligada em 24/10/2026 (o perfil padrão é o "medio")
     resolucaoMin: 0.9,     // R1: menor escala que a resolução dinâmica aceita (0,9 = 72% da linha de 1,25; abaixo disso a retícula e o papel engrossam, docs/capturas/fluido/res-*.jpg)
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
   },
@@ -582,6 +587,11 @@ export const PADRAO_MUDOU = [
   ['estilo.dofLongeInicio', 8, 2], // idem para o fundo
   ['desempenho.resolucaoDinamica', false, true], // 23/10/2026 (fluido): ligada, com a guarda de eficácia
   ['desempenho.resolucaoMin', 0.6, 0.9], // o piso de 0,6 amolecia a retícula e o papel
+  // 24/10/2026: o perfil padrão passou a ser o "medio" (src/qualidade.js): resolução 1,0, resolução dinâmica
+  // ligada, grama 50000 e sombra de perto em 1024. Quem salvou o painel com o padrão antigo passa ao novo.
+  ['desempenho.resolucao', 1.25, 1.0],
+  ['grama.quantidade', 200000, 50000],
+  ['mundo.sombraPertoResolucao', 2048, 1024],
 ]
 
 export function migrarPadroes(salvo) {
@@ -613,6 +623,8 @@ export function carregarConfig() {
     if (salvo) mesclar(cfg, migrarPadroes(salvo))
   } catch { /* navegador sem storage: segue com o padrão */ }
   aplicarModoLeve(cfg, globalThis.location?.search)
+  // perfil de qualidade (24/10/2026): ?qualidade=alto|medio|baixo|auto na URL, por cima do salvo, só nesta abertura
+  aplicarQualidadeDaUrl(cfg, globalThis.location?.search)
   return cfg
 }
 

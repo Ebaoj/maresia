@@ -17,6 +17,10 @@ npm run dev
 
 Abre em http://localhost:5195. No preview do Claude: `preview_start` com o nome `maresia`.
 
+Na URL: `?qualidade=alto|medio|baixo|auto` escolhe o perfil de qualidade do jogo inteiro (24/10/2026, `src/qualidade.js`);
+`?leve` (ou `?leve=0.7`) deixa o jogo mais leve para jogar enquanto os agentes trabalham na mesma máquina. Os dois valem
+por cima do que está salvo no painel, só nesta abertura.
+
 Controles: WASD andar, Shift correr, Espaço pular, arrastar o mouse gira a câmera, roda dá zoom,
 Z/C giram a câmera, E faz a ação (sentar, pegar, arremessar, pedir água de coco), M abre o mapa da cidade, H esconde o painel, N liga/desliga o som, T avança uma hora.
 
@@ -35,6 +39,7 @@ frequência e outra aba do jogo aberta disputa a placa: comparar só variantes a
 |---|---|
 | `src/main.js` | Liga as peças e roda o laço de quadros |
 | `src/config.js` | Todos os números ajustáveis (o painel mexe aqui; salva no localStorage) |
+| `src/qualidade.js` | Perfis de qualidade (24/10/2026): `?qualidade=alto\|medio\|baixo\|auto` na URL escolhe o perfil do jogo inteiro (resolução, sombra, grama, dof) só nesta abertura |
 | `src/mundo/mapa.js` | A cidade como função de (x, z): costa, praia, rio, morros, dunas |
 | `src/mundo/terreno.js` | Malha do chão, cores por bairro, mapa de alturas como textura |
 | `src/mundo/mar.js` | Mar e rio num plano só, cor pela profundidade, espuma |
