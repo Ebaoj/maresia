@@ -542,6 +542,10 @@ export const PADRAO = {
     cortePequenos: true,   // fluido 22/10/2026 (render/corte-tela.js): a peça que fica menor que cortePx na tela sai do desenho (lampião, vaso, dormente de longe, o campo do Urubu a 2 km)
     cortePx: 3,            // tamanho (px numa tela de 900 de altura) abaixo do qual a peça sai
     resolucaoDinamica: true, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Ligada em 24/10/2026 (o perfil padrão é o "medio")
+    tetoRetina: 1.0,       // 24/10/2026: em tela Retina (dpr > 1,5) o pixel ratio do desenho não passa disto (o M1 desenhava 1,25 x 2 vezes mais pixels que um monitor comum e travava); os perfis mudam (baixo 0,75, medio 1,0, alto 1,25)
+    governador: true,      // 24/10/2026 (render/governador.js): troca o perfil inteiro (alto, medio, baixo) quando o p90 do quadro fica caro por segundos; desligado com ?qualidade=alto|medio|baixo
+    qualidadeEscolhida: 'medio', // o perfil de partida do governador (?qualidade= muda; não é ajuste do painel)
+    qualidadeFixa: false,  // true quando a URL fixou um perfil
     casasPorQuadro: 1,     // 25/10/2026: blocos de casas detalhadas montados por quadro (era 2: dois blocos num quadro davam ~650 ms na T4 depois do teleporte)
     resolucaoMin: 0.9,     // R1: menor escala que a resolução dinâmica aceita (0,9 = 72% da linha de 1,25; abaixo disso a retícula e o papel engrossam, docs/capturas/fluido/res-*.jpg)
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
@@ -624,6 +628,9 @@ export function carregarConfig() {
   } catch { /* navegador sem storage: segue com o padrão */ }
   aplicarModoLeve(cfg, globalThis.location?.search)
   // perfil de qualidade (24/10/2026): ?qualidade=alto|medio|baixo|auto na URL, por cima do salvo, só nesta abertura
+  // o perfil escolhido não é ajuste do painel: o salvo não vale, a URL decide a cada abertura
+  cfg.desempenho.qualidadeEscolhida = PADRAO.desempenho.qualidadeEscolhida
+  cfg.desempenho.qualidadeFixa = false
   aplicarQualidadeDaUrl(cfg, globalThis.location?.search)
   return cfg
 }

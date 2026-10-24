@@ -16,6 +16,7 @@ export const PERFIS = {
   baixo: {
     'desempenho.resolucao': 0.75,
     'desempenho.resolucaoMin': 0.5,
+    'desempenho.tetoRetina': 0.75,
     'mundo.resolucaoSombra': 1024,
     'mundo.sombraPerto': false,
     'estilo.dof': false,
@@ -24,12 +25,20 @@ export const PERFIS = {
   },
   medio: {
     'desempenho.resolucao': 1.0,
+    'desempenho.tetoRetina': 1.0,
+    'mundo.sombraPerto': true,
+    'estilo.dof': true,
+    'estilo.estabilizar': 0.85,
     'mundo.resolucaoSombra': 2048,
     'mundo.sombraPertoResolucao': 1024,
     'grama.quantidade': 200000,
   },
   alto: {
     'desempenho.resolucao': 1.25,
+    'desempenho.tetoRetina': 1.25,
+    'mundo.sombraPerto': true,
+    'estilo.dof': true,
+    'estilo.estabilizar': 0.85,
     'mundo.resolucaoSombra': 4096,
     'mundo.sombraPertoResolucao': 2048,
     'grama.quantidade': 200000,
@@ -37,8 +46,8 @@ export const PERFIS = {
 }
 
 // Aplica um perfil no cfg. Devolve false quando o nível não é conhecido (nada muda).
-export function aplicarQualidade(cfg, nivel) {
-  const perfil = PERFIS[nivel]
+export function aplicarQualidade(cfg, nivel, so = null) {
+  const perfil = so || PERFIS[nivel]
   if (!perfil || !cfg) return false
   for (const caminho in perfil) {
     const partes = caminho.split('.')
@@ -49,13 +58,39 @@ export function aplicarQualidade(cfg, nivel) {
   return true
 }
 
+// As chaves que podem mudar com o jogo rodando (24/10/2026, governador.js): a resolução, a sombra de perto e a
+// profundidade de campo. O mapa de sombra de longe e a grama só mudam ao recarregar, então ficam de fora.
+export const CHAVES_VIVAS = ['desempenho.resolucao', 'desempenho.resolucaoMin', 'desempenho.tetoRetina', 'mundo.sombraPerto',
+  'mundo.sombraPertoResolucao', 'estilo.dof', 'estilo.estabilizar']
+
+export function aplicarNivelVivo(cfg, nivel) {
+  const perfil = PERFIS[nivel]
+  if (!perfil || !cfg) return false
+  const vivo = {}
+  for (const k of CHAVES_VIVAS) if (k in perfil) vivo[k] = perfil[k]
+  return aplicarQualidade(cfg, nivel, vivo)
+}
+
+// Teto do pixel ratio (24/10/2026): numa tela Retina (dpr > 1,5) o desenho não passa de cfg.desempenho.tetoRetina,
+// mesmo que a resolução do painel peça mais. Num monitor comum vale o dpr.
+export function tetoPixel(cfg, dpr = globalThis.devicePixelRatio || 1) {
+  const teto = dpr > 1.5 ? (cfg.desempenho.tetoRetina ?? 1) : Infinity
+  return Math.min(dpr, teto)
+}
+
 // Lê ?qualidade= na URL e aplica o perfil (auto = detectar). Vale só nesta abertura: não salva no painel.
 export function aplicarQualidadeDaUrl(cfg, busca) {
   const p = new URLSearchParams(busca || '')
   if (!p.has('qualidade')) return false
   const bruto = (p.get('qualidade') || '').trim().toLowerCase()
   const nivel = bruto === 'auto' ? detectarQualidade() : bruto
-  return aplicarQualidade(cfg, nivel)
+  const ok = aplicarQualidade(cfg, nivel)
+  if (ok && cfg.desempenho) {
+    cfg.desempenho.qualidadeEscolhida = nivel
+    // ?qualidade=auto deixa o governador trabalhar; um nível explícito o desliga
+    cfg.desempenho.qualidadeFixa = bruto !== 'auto'
+  }
+  return ok
 }
 
 // A placa de vídeo, quando o navegador deixa saber (o nome vem do WebGL; fora do navegador, nada).

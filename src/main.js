@@ -68,6 +68,8 @@ import { carregarAvo } from './jogador/avo.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
 import { AranhaversoGpu } from './pos/aranhaverso-gpu.js'
 import { ResolucaoDinamica } from './render/resolucao-dinamica.js'
+import { GovernadorQualidade } from './render/governador.js'
+import { aplicarNivelVivo, tetoPixel } from './qualidade.js'
 import { atualizarCorte } from './render/corte-tela.js'
 import { criarHud } from './ui/hud.js'
 import { criarPainel } from './ui/painel.js'
@@ -263,7 +265,7 @@ async function iniciar() {
   // O teto é a resolução do painel; a escala viva fica em dinamica.escala
   // o teto é o que a tela usa de fato (resolução do painel limitada pelo devicePixelRatio: num monitor de 1x, 1,25 vira
   // 1,0 e as primeiras descidas não mudavam nada); a guarda de eficácia desfaz a descida que não melhorou o quadro
-  const tetoResolucao = () => Math.min(cfg.desempenho.resolucao, devicePixelRatio || 1)
+  const tetoResolucao = () => Math.min(cfg.desempenho.resolucao, tetoPixel(cfg))
   const dinamica = new ResolucaoDinamica({
     alvo: tetoResolucao(),
     minimo: cfg.desempenho.resolucaoMin,
@@ -279,9 +281,12 @@ async function iniciar() {
   let tamanhoTravado = false // a foto justa fixa o tamanho (tamanhoFixo): a resolução dinâmica não roda nesse tempo
   const escalaAtual = () => (cfg.desempenho.resolucaoDinamica ? dinamica.escala : cfg.desempenho.resolucao)
 
+  const governador = cfg.desempenho.governador && !cfg.desempenho.qualidadeFixa
+    ? new GovernadorQualidade({ nivel: cfg.desempenho.qualidadeEscolhida, orcamentoMs: cfg.desempenho.orcamentoQuadroMs })
+    : null
   let resolucao = 0
   function redimensionar() {
-    resolucao = Math.min(escalaAtual(), devicePixelRatio || 1)
+    resolucao = Math.min(escalaAtual(), tetoPixel(cfg))
     renderer.setPixelRatio(resolucao)
     renderer.setSize(innerWidth, innerHeight, false)
     camera.aspect = innerWidth / innerHeight
@@ -461,7 +466,13 @@ async function iniciar() {
       dinamica.orcamentoMs = cfg.desempenho.orcamentoQuadroMs
       dinamica.quadro(webgpu && custoQuadroMs > 0 ? custoQuadroMs : real * 1000)
     }
-    if (Math.min(escalaAtual(), devicePixelRatio || 1) !== resolucao) redimensionar()
+    // governador (24/10/2026): troca o perfil quando o quadro fica caro por segundos; a troca de resolução volta pelo
+    // teste de cima no próximo quadro (resolucaoDoPainel muda) e a escala recomeça do teto novo
+    if (governador && !tamanhoTravado) {
+      const nivel = governador.quadro(real * 1000)
+      if (nivel) { aplicarNivelVivo(cfg, nivel); cfg.desempenho.qualidadeEscolhida = nivel }
+    }
+    if (Math.min(escalaAtual(), tetoPixel(cfg)) !== resolucao) redimensionar()
     const t0Quadro = performance.now()
     passo(Math.min(real, 1 / 20))
     if (webgpu && dinamicaLigada && !medindoCusto && renderer.backend?.device) {
@@ -495,7 +506,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { ferrovia: () => ferrovia, cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
+  window.maresia = { ferrovia: () => ferrovia, cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, governador, pixelRatio: () => renderer.getPixelRatio(), toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
