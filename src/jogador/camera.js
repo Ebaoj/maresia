@@ -6,6 +6,12 @@ import { alturaChao } from '../mundo/colisao.js'
 import { prepararSolidos, solidosAoAlcance } from '../mundo/solidos.js'
 import { clamp } from '../utils.js'
 
+// 24/10/2026: o feixe da câmera roda em todo quadro (até 7 vezes) e alocava: o ponto desejado, o objeto de
+// resposta, as listas dos raios e das tentativas, e a lista de acertos do raycaster. Agora são fixos.
+const RAIOS = [0, 0, 1, 0, -1, 0, 0, 1, 0, -1] // centro e os 4 lados da lente (pares: lado, cima)
+const TENTATIVAS = [0.2, 0.4, 0.6, 0.8] // quanto a câmera sobe quando tem parede atrás
+const LADOS = [1, -1] // para onde empurrar a câmera quando há parede ao lado
+
 export class CameraTerceiraPessoa {
   constructor(camera, dom, cfg, yaw = 0) {
     this.camera = camera
@@ -23,6 +29,9 @@ export class CameraTerceiraPessoa {
     this._lado = new THREE.Vector3()
     this._cima = new THREE.Vector3()
     this._origem = new THREE.Vector3()
+    this._desejado = new THREE.Vector3() // onde a câmera quer ficar (o corpo + a altura)
+    this._hits = [] // os acertos do raio (o raycaster preenche a lista que passamos)
+    this._livre = 0 // quanto espaço livre o feixe achou (o último livreEm)
 
     let arrastando = false
     let ux = 0
@@ -58,7 +67,7 @@ export class CameraTerceiraPessoa {
     if (teclas.girarEsq) this.yaw += dt * 1.8
     if (teclas.girarDir) this.yaw -= dt * 1.8
 
-    const desejado = new THREE.Vector3(pos.x, pos.y + cfg.altura, pos.z)
+    const desejado = this._desejado.set(pos.x, pos.y + cfg.altura, pos.z)
     if (!this.iniciado) {
       this.alvo.copy(desejado)
       this.iniciado = true
@@ -71,35 +80,41 @@ export class CameraTerceiraPessoa {
     // só os sólidos ao alcance dos raios deste quadro: os do feixe (até a distância da câmera, saindo a menos de
     // 0,5 m do alvo) e os dois do lado (1,4 m a partir da câmera)
     const solidos = solidosAoAlcance(this.alvo, cfg.distancia + 2.5, this._solidos ||= [])
+    // o feixe deste ângulo: a direção vai para this._dir e o espaço livre para this._livre
     const livreEm = (pitch) => {
       const cp = Math.cos(pitch)
       const dir = this._dir.set(Math.sin(this.yaw) * cp, Math.sin(pitch), Math.cos(this.yaw) * cp)
       this._lado.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).multiplyScalar(0.35)
       this._cima.crossVectors(dir, this._lado).normalize().multiplyScalar(0.25)
       let livre = cfg.distancia
-      for (const [a, b] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        this._origem.copy(this.alvo).addScaledVector(this._lado, a).addScaledVector(this._cima, b)
+      for (let i = 0; i < RAIOS.length; i += 2) {
+        this._origem.copy(this.alvo).addScaledVector(this._lado, RAIOS[i]).addScaledVector(this._cima, RAIOS[i + 1])
         this.raio.set(this._origem, dir)
         this.raio.far = livre
-        const bate = this.raio.intersectObjects(solidos, true)[0]
+        this._hits.length = 0
+        this.raio.intersectObjects(solidos, true, this._hits)
+        const bate = this._hits[0]
         if (bate) livre = Math.min(livre, bate.distance)
       }
-      return { dir, livre }
+      this._livre = livre
     }
     // parede atrás da câmera (o personagem andando para ela, de costas para uma casa): em vez de colar
     // no rosto dele, sobe e olha por cima do telhado; procura o ângulo mais baixo que deixa a câmera longe
     let alvoSubida = 0
-    let { dir, livre } = livreEm(Math.min(1.25, this.pitch))
+    livreEm(Math.min(1.25, this.pitch))
+    let livre = this._livre
     if (livre < cfg.distancia * 0.6) {
       let melhor = livre + 0.3
-      for (const extra of [0.2, 0.4, 0.6, 0.8]) {
-        const tentativa = livreEm(Math.min(1.25, this.pitch + extra))
-        if (tentativa.livre > melhor) { melhor = tentativa.livre; alvoSubida = extra }
-        if (tentativa.livre >= cfg.distancia * 0.6) break
+      for (const extra of TENTATIVAS) {
+        livreEm(Math.min(1.25, this.pitch + extra))
+        if (this._livre > melhor) { melhor = this._livre; alvoSubida = extra }
+        if (this._livre >= cfg.distancia * 0.6) break
       }
     }
     this.subida += (alvoSubida - this.subida) * (1 - Math.exp(-dt * (alvoSubida > this.subida ? 5 : 1.5)))
-    ;({ dir, livre } = livreEm(Math.min(1.25, this.pitch + this.subida)))
+    livreEm(Math.min(1.25, this.pitch + this.subida))
+    livre = this._livre
+    const dir = this._dir
     // aproxima na hora (não atravessa parede) e volta devagar só até onde está livre: antes voltava até
     // passar do obstáculo, batia, pulava para perto e repetia (a câmera tremia parada, ciclo de 3 quadros)
     const limite = livre < cfg.distancia ? Math.max(1.2, livre - 0.5) : cfg.distancia
@@ -109,10 +124,12 @@ export class CameraTerceiraPessoa {
     // parede ao lado (não entre a câmera e o personagem): afasta para o outro lado, sem pulo
     this._lado.normalize()
     let empurra = 0
-    for (const s of [1, -1]) {
+    for (const s of LADOS) {
       this.raio.set(p, this._origem.copy(this._lado).multiplyScalar(s))
       this.raio.far = 1.4
-      const bate = this.raio.intersectObjects(solidos, true)[0]
+      this._hits.length = 0
+      this.raio.intersectObjects(solidos, true, this._hits)
+      const bate = this._hits[0]
       if (bate) empurra -= s * (1.4 - bate.distance)
     }
     this.empurrao = (this.empurrao || 0) + (empurra - (this.empurrao || 0)) * (1 - Math.exp(-dt * 5))

@@ -13,6 +13,18 @@ const PROFUNDIDADE_NADO = 1.15
 const VENTO = new THREE.Vector3(-1, 0, -0.35).normalize()
 const ALTURA_BOIANDO = -1.05
 
+// 24/10/2026: temporários de módulo. O laço de animação roda em todo quadro e alocava um Vector3 (o ponto
+// olhado), um objeto (o que está na mão), o objeto do estado lido pelo animador, o objeto do pedido de
+// trajetória e a função do chão. Agora nada disso é criado por quadro.
+const _olhar = new THREE.Vector3() // para onde o corpo olha quando está parado
+const _nova = new THREE.Vector3() // a posição do próximo quadro (antes: this.pos.clone())
+const _segurando = { x: 0, y: 0, z: 0, raio: 0 } // o objeto na mão
+const _estado = { // o estado que o animador lê (o mesmo objeto, reescrito a cada quadro)
+  vel: 0, velY: 0, noAr: false, sentado: false, nadando: false, carregando: false, yaw: 0,
+  chao: null, velPedida: 0, yawPedido: null, olhar: null, segurando: null, traj: null,
+}
+const _pedido = { vel: null, velDesejada: null, yaw: 0, yawDesejado: 0 } // o pedido de trajetória
+
 export class Jogador {
   constructor(cena, cfg, inicio, yaw = 0) {
     this.cfg = cfg
@@ -43,6 +55,9 @@ export class Jogador {
     this.eventos = []
     this.p.raiz.position.copy(this.pos)
     this.p.raiz.rotation.y = yaw
+    // o chão sob o pé, com a altura que o corpo tinha quando a pose foi pedida (uma função só, criada aqui)
+    this._yAnim = inicio.y
+    this._chao = (x, z) => alturaChao(x, z, this._yAnim + 0.4) - this.afundado
   }
 
   // troca o boneco antigo pelo corpo novo (esqueleto padrão + movimentos do Mixamo) quando ele carrega
@@ -63,41 +78,57 @@ export class Jogador {
     const a = this.animador
     // "em 2" que muda com a ação: correndo e no ar a pose muda 24 vezes por segundo ("em 1"), andando 12
     const acao = this.velHoriz > cfg.corridaNova * 0.75 || !this.noChao
-    Object.assign(a.opcoes, {
-      // visual Arcane: personagem a 24 poses por segundo sempre (o "em 2" é linguagem do Aranhaverso)
-      fps: acao || this.cfg.estilo.visual === 'arcane' ? cfg.fpsAcao : cfg.fpsPose, em2: true, ik: cfg.peNoChao, inclinar: cfg.inclinar,
-      mm: cfg.motionMatching && !!a.banco, pausaPulo: cfg.pausaPulo, multiplos: cfg.multiplos > 0, clavicula: cfg.clavicula, joelhos: cfg.joelhos,
-      giroClipeMin: cfg.giroClipeMin, ritmoGiro: cfg.ritmoGiro, buscaNaHora: cfg.mmBuscaNaHora,
-    })
+    const op = a.opcoes
+    // visual Arcane: personagem a 24 poses por segundo sempre (o "em 2" é linguagem do Aranhaverso)
+    op.fps = acao || this.cfg.estilo.visual === 'arcane' ? cfg.fpsAcao : cfg.fpsPose
+    op.em2 = true
+    op.ik = cfg.peNoChao
+    op.inclinar = cfg.inclinar
+    op.mm = cfg.motionMatching && !!a.banco
+    op.pausaPulo = cfg.pausaPulo
+    op.multiplos = cfg.multiplos > 0
+    op.clavicula = cfg.clavicula
+    op.joelhos = cfg.joelhos
+    op.giroClipeMin = cfg.giroClipeMin
+    op.ritmoGiro = cfg.ritmoGiro
+    op.buscaNaHora = cfg.mmBuscaNaHora
     // força dos múltiplos: some andando, cresce da corrida para a disparada e aparece no pulo
     const forca = Math.max(clamp((this.velHoriz - cfg.corridaNova * 0.8) / (cfg.corridaNova * 0.3), 0, 1), this.noChao || this.nadando ? 0 : 0.5)
     // no visual Arcane não há cópias em retícula (são linguagem de quadrinho do Aranhaverso)
     this.multiplos?.atualizar(this.cfg.estilo.visual === 'arcane' ? 0 : forca * cfg.multiplos)
     const y = this.pos.y
-    a.atualizar(dt, {
-      vel: this.velHoriz,
-      velY: this.vel.y,
-      noAr: !this.noChao && !this.nadando,
-      sentado: !!this.sentado,
-      nadando: this.nadando,
-      carregando: !!this.carregando,
-      yaw: this.yawVisual,
-      chao: (x, z) => alturaChao(x, z, y + 0.4) - this.afundado, // na areia fofa o pé afunda junto com o corpo
-      velPedida: this.velDesejada.length(),
-      yawPedido: this.velDesejada.lengthSq() > 0.09 ? Math.atan2(this.velDesejada.x, this.velDesejada.z) : null,
-      // para onde olhar: o que dá para usar (interacoes.js) ou, parado, para onde a câmera aponta
-      olhar: this.olharPara || (this.velHoriz < 0.3 && this.yawCamera !== undefined
-        ? new THREE.Vector3(this.pos.x - Math.sin(this.yawCamera) * 10, this.pos.y + 1.4, this.pos.z - Math.cos(this.yawCamera) * 10)
-        : null),
-      segurando: this.carregando?.corpo ? (() => { const t = this.carregando.corpo.translation(); return { x: t.x, y: t.y, z: t.z, raio: this.carregando.tipo === 'bola' ? 0.22 : 0.11 } })() : null,
-      // trajetória que o controle vai fazer no próximo segundo (motion matching)
-      traj: trajetoriaPedida({
-        vel: this.vel,
-        velDesejada: this.velDesejada,
-        yaw: this.yawVisual,
-        yawDesejado: this.velDesejada.lengthSq() > 0.09 ? Math.atan2(this.velDesejada.x, this.velDesejada.z) : this.yawVisual,
-      }),
-    })
+    this._yAnim = y
+    // o estado (o mesmo objeto, reescrito a cada quadro: o animador lê na hora e não guarda)
+    const s = _estado
+    s.vel = this.velHoriz
+    s.velY = this.vel.y
+    s.noAr = !this.noChao && !this.nadando
+    s.sentado = !!this.sentado
+    s.nadando = this.nadando
+    s.carregando = !!this.carregando
+    s.yaw = this.yawVisual
+    s.chao = this._chao
+    s.velPedida = this.velDesejada.length()
+    s.yawPedido = this.velDesejada.lengthSq() > 0.09 ? Math.atan2(this.velDesejada.x, this.velDesejada.z) : null
+    // para onde olhar: o que dá para usar (interacoes.js) ou, parado, para onde a câmera aponta
+    s.olhar = this.olharPara || (this.velHoriz < 0.3 && this.yawCamera !== undefined
+      ? _olhar.set(this.pos.x - Math.sin(this.yawCamera) * 10, this.pos.y + 1.4, this.pos.z - Math.cos(this.yawCamera) * 10)
+      : null)
+    if (this.carregando?.corpo) {
+      const t = this.carregando.corpo.translation()
+      _segurando.x = t.x
+      _segurando.y = t.y
+      _segurando.z = t.z
+      _segurando.raio = this.carregando.tipo === 'bola' ? 0.22 : 0.11
+      s.segurando = _segurando
+    } else s.segurando = null
+    // trajetória que o controle vai fazer no próximo segundo (motion matching)
+    _pedido.vel = this.vel
+    _pedido.velDesejada = this.velDesejada
+    _pedido.yaw = this.yawVisual
+    _pedido.yawDesejado = this.velDesejada.lengthSq() > 0.09 ? Math.atan2(this.velDesejada.x, this.velDesejada.z) : this.yawVisual
+    s.traj = trajetoriaPedida(_pedido)
+    a.atualizar(dt, s)
     // tecido solto: todo quadro (o pano não anda em 2: balança contínuo)
     if (a.pano && cfg.panoSolto > 0) {
       // vento de Fortaleza: o alísio vem do leste-sudeste e sopra para oeste-noroeste (x oeste, z norte);
@@ -248,7 +279,7 @@ export class Jogador {
 
     if (!this.nadando) this.vel.y -= cfg.gravidade * dt
 
-    const nova = this.pos.clone().addScaledVector(this.vel, dt)
+    const nova = _nova.copy(this.pos).addScaledVector(this.vel, dt)
     // onda: na água rasa o vaivém empurra para a praia e puxa de volta (período de ~7 s; a praia fica
     // para +z). Mais forte quanto mais fundo, até a profundidade de nadar.
     if (!this.nadando && profAqui > 0.15) {

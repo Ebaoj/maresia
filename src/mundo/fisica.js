@@ -134,10 +134,14 @@ export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
   const p3 = new THREE.Vector3()
   const um = new THREE.Vector3(1, 1, 1)
   const jogAnterior = new THREE.Vector3()
+  // 24/10/2026: o Rapier copia os valores na hora, então o mesmo objeto serve para todos os impulsos e
+  // velocidades (antes cada passo alocava um objeto literal por corpo)
+  const _v = { x: 0, y: 0, z: 0 }
 
   function passoFisica(jogador) {
     const jp = jogador.pos
-    corpoJog.setNextKinematicTranslation({ x: jp.x, y: jp.y + 0.85, z: jp.z })
+    _v.x = jp.x; _v.y = jp.y + 0.85; _v.z = jp.z
+    corpoJog.setNextKinematicTranslation(_v)
     for (const p of props) {
       if (p.carregado) continue
       const t = p.corpo.translation()
@@ -149,9 +153,11 @@ export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
       const submerso = fundo < NIVEL_AGUA - 0.1 ? THREE.MathUtils.clamp((NIVEL_AGUA + p.raio * 0.4 - t.y) / (p.raio * 2), 0, 1) : 0
       if (submerso > 0) {
         const massa = p.corpo.mass()
-        p.corpo.applyImpulse({ x: 0, y: massa * 25 * (p.tipo === 'bola' ? 2.6 : 1.7) * submerso * PASSO, z: 0 }, true)
+        _v.x = 0; _v.y = massa * 25 * (p.tipo === 'bola' ? 2.6 : 1.7) * submerso * PASSO; _v.z = 0
+        p.corpo.applyImpulse(_v, true)
         const v = p.corpo.linvel()
-        p.corpo.setLinvel({ x: v.x * 0.97, y: v.y * 0.9, z: v.z * 0.97 }, true)
+        _v.x = v.x * 0.97; _v.y = v.y * 0.9; _v.z = v.z * 0.97
+        p.corpo.setLinvel(_v, true)
         if (!p.naAgua && v.y < -2) toque.gota(t.x, t.z, 0.6, Math.min(1, -v.y * 0.12))
       }
       p.naAgua = submerso > 0
@@ -164,7 +170,8 @@ export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
         const contra = (vj.x * dx + vj.z * dz) / Math.max(d, 1e-3)
         if (d < 0.95 && contra > 2 && Math.abs(t.y - (jp.y + 0.35)) < 0.8) {
           const f = p.corpo.mass() * Math.min(contra, 9) * 1.1
-          p.corpo.applyImpulse({ x: (dx / d) * f, y: f * 0.55, z: (dz / d) * f }, true)
+          _v.x = (dx / d) * f; _v.y = f * 0.55; _v.z = (dz / d) * f
+          p.corpo.applyImpulse(_v, true)
         }
       }
     }

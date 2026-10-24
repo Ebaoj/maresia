@@ -196,20 +196,29 @@ export class BancoDeMovimento {
 
 // Trajetória pedida pelo controle, no espaço da raiz (frente = +Z): mola crítica para a velocidade
 // (como o controle faz) e aproximação exponencial para a direção.
+// 24/10/2026: o resultado vai para um array reaproveitado (o chamador usa na hora e não guarda): antes eram
+// três arrays novos por quadro (a lista de posições, a de direções e a junção).
+const TRAJ = new Array(FUTURO.length * 4).fill(0)
 export function trajetoriaPedida({ vel, velDesejada, yaw, yawDesejado, acel = 10, giroTaxa = 8 }) {
-  const out = []
-  const dirs = []
+  let i = 0
+  const cos = Math.cos(yaw)
+  const sen = Math.sin(yaw)
   for (const k of FUTURO) {
     const t = k / FPS
     const e = Math.exp(-acel * t)
     const px = velDesejada.x * t + (vel.x - velDesejada.x) * (1 - e) / acel
     const pz = velDesejada.z * t + (vel.z - velDesejada.z) * (1 - e) / acel
-    out.push(...giro(px, pz, yaw))
+    TRAJ[i++] = px * cos - pz * sen // gira (x, z) por -yaw no plano
+    TRAJ[i++] = px * sen + pz * cos
+  }
+  for (const k of FUTURO) {
+    const t = k / FPS
     const y = yaw + difAng(yawDesejado, yaw) * (1 - Math.exp(-giroTaxa * t))
     const a = y - yaw
-    dirs.push(Math.sin(a), Math.cos(a))
+    TRAJ[i++] = Math.sin(a)
+    TRAJ[i++] = Math.cos(a)
   }
-  return [...out, ...dirs]
+  return TRAJ
 }
 
 // Espelha um clipe (esquerda vira direita): dobra o banco de graça, por exemplo a curva para a
