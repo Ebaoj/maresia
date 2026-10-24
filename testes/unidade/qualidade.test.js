@@ -30,7 +30,7 @@ describe('perfis de qualidade', () => {
     expect(cfg.desempenho.resolucao).toBe(1.0)
     expect(cfg.mundo.resolucaoSombra).toBe(2048)
     expect(cfg.mundo.sombraPertoResolucao).toBe(1024)
-    expect(cfg.grama.quantidade).toBe(50000)
+    expect(cfg.grama.quantidade).toBe(200000)
   })
 
   it('o perfil alto é o de antes: resolução 1,25, sombra 4096 e sombra de perto em 2048', () => {

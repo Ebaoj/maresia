@@ -244,7 +244,7 @@ export const PADRAO = {
   },
   grama: {
     raio: 109,          // unidades de jogo em volta do jogador: o mundo comprimido valia 38, e a praca descomprimida levou o centro a 1:1 (fator 2,88)
-    quantidade: 50000,  // 24/10/2026: era 200000 (o perfil padrão é o "medio": 50000; o "alto" volta a 200000)
+    quantidade: 200000, // 24/10/2026: 50000 ficou no ruído na T4 (61 contra 72 quadros >33 ms, dentro da variação); voltou a 200000. O perfil baixo usa 25000
     altura: 0.75,
     largura: 0.07,
     lodPerto: 8,           // até quantos metros da câmera ficam todas as folhas
@@ -369,7 +369,7 @@ export const PADRAO = {
     // 21/10/2026: 0 (era 4). Com 4, o mapa de longe pulava ~1° a cada 4 s (1 min de jogo por segundo) e a sombra
     // inteira dava um tranco visível. Com 0 o cache dos parados refaz a cada 0,05° (~5 vezes por segundo, cada vez
     // só os parados), e o mapa de perto segue o sol contínuo. Só vale para o mapa de longe
-    // 24/10/2026: o cache dos parados passou a esperar sombraCacheIntervaloMin entre um refazer e outro
+    // 24/10/2026: sombraCacheIntervaloMin (espera entre dois refazimentos pelo sol) existe, mas fica em 0 (como era): na T4 ficou no ruído
     passoSombraMin: 0,
     sombras: true,
     resolucaoSombra: 4096, // mapa de longe (346 m): 4096 = 8,5 cm por texel, 2048 mais leve
@@ -389,7 +389,7 @@ export const PADRAO = {
     sombraFiltro: 'pintado',    // 'pintado' (grade presa ao mapa) ou 'three' (o disco girado por ruído de tela, o de antes)
     cacheSombra: true,     // KAN-74 (F4): sombra dos objetos parados em cache (só WebGL); refaz com o sol, ao andar mais que cacheSombraRaio ou quando um parado aparece ou some. Ver docs/motor-f4-cache-sombra.md
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
-    sombraCacheIntervaloMin: 0.5, // segundos entre dois refazimentos do cache por giro do sol (com passoSombraMin 0 o sol não para: era ~5x/s, cada vez um pico de quadro)
+    sombraCacheIntervaloMin: 0, // segundos (0 = como era; na T4, 0,5 ficou no ruído) entre dois refazimentos do cache por giro do sol (com passoSombraMin 0 o sol não para: era ~5x/s, cada vez um pico de quadro)
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
     palhaPerto: 220,     // até essa distância (un) a palhoça das vilas é a de perto; depois, a caixa de taipa e palha (vilas.js)
@@ -588,9 +588,8 @@ export const PADRAO_MUDOU = [
   ['desempenho.resolucaoDinamica', false, true], // 23/10/2026 (fluido): ligada, com a guarda de eficácia
   ['desempenho.resolucaoMin', 0.6, 0.9], // o piso de 0,6 amolecia a retícula e o papel
   // 24/10/2026: o perfil padrão passou a ser o "medio" (src/qualidade.js): resolução 1,0, resolução dinâmica
-  // ligada, grama 50000 e sombra de perto em 1024. Quem salvou o painel com o padrão antigo passa ao novo.
+  // ligada e sombra de perto em 1024. Quem salvou o painel com o padrão antigo passa ao novo.
   ['desempenho.resolucao', 1.25, 1.0],
-  ['grama.quantidade', 200000, 50000],
   ['mundo.sombraPertoResolucao', 2048, 1024],
 ]
 

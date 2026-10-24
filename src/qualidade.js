@@ -26,7 +26,7 @@ export const PERFIS = {
     'desempenho.resolucao': 1.0,
     'mundo.resolucaoSombra': 2048,
     'mundo.sombraPertoResolucao': 1024,
-    'grama.quantidade': 50000,
+    'grama.quantidade': 200000,
   },
   alto: {
     'desempenho.resolucao': 1.25,
