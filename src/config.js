@@ -542,6 +542,7 @@ export const PADRAO = {
     cortePequenos: true,   // fluido 22/10/2026 (render/corte-tela.js): a peça que fica menor que cortePx na tela sai do desenho (lampião, vaso, dormente de longe, o campo do Urubu a 2 km)
     cortePx: 3,            // tamanho (px numa tela de 900 de altura) abaixo do qual a peça sai
     resolucaoDinamica: true, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Ligada em 24/10/2026 (o perfil padrão é o "medio")
+    casasPorQuadro: 1,     // 25/10/2026: blocos de casas detalhadas montados por quadro (era 2: dois blocos num quadro davam ~650 ms na T4 depois do teleporte)
     resolucaoMin: 0.9,     // R1: menor escala que a resolução dinâmica aceita (0,9 = 72% da linha de 1,25; abaixo disso a retícula e o papel engrossam, docs/capturas/fluido/res-*.jpg)
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
   },

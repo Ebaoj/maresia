@@ -355,7 +355,7 @@ async function iniciar() {
     praia.atualizar(t)
     cenografia.atualizar()
     marcosNorte.atualizar(camera)
-    casas.atualizar(camera)
+    casas.atualizar(camera, cfg.desempenho.casasPorQuadro ?? 1)
     marcos1932.atualizar(camera)
     marcos.atualizar(t)
 

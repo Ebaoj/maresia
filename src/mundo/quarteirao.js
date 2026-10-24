@@ -672,7 +672,8 @@ export function criarCasas(cena, casario, morro) {
         if (b) { b.longe.push(im); im.visible = !(b.perto && b.montado) } else im.visible = true
       }
     },
-    atualizar(camera) {
+    // porQuadro (cfg.desempenho.casasPorQuadro): quantos blocos de casas detalhadas montar por quadro
+    atualizar(camera, porQuadro = 2) {
       matAceso.color.copy(escuro).lerp(quente, globais.uNoite.value)
       if (!camera) return
       const cx = camera.position.x
@@ -685,9 +686,10 @@ export function criarCasas(cena, casario, morro) {
         const dz = Math.max(b.z0 - cz, 0, cz - (b.z0 + TAM_BLOCO))
         const d = Math.hypot(dx, dz)
         const perto = b.perto ? d < PERTO + 8 : d < PERTO // folga para não piscar na divisa
-        // bloco perto e ainda não montado: monta agora (no máximo dois por quadro)
+        // bloco perto e ainda não montado: monta agora (no máximo porQuadro por quadro; 25/10/2026: cada bloco leva
+        // 150 a 300 ms na T4, e dois no mesmo quadro davam o pico de ~650 ms depois de um teleporte)
         if (perto && !b.montado) {
-          if (montou >= 2) continue
+          if (montou >= porQuadro) continue
           b.perto = true
           montarBloco(b)
           montou++
