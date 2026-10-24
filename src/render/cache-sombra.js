@@ -63,7 +63,10 @@ export class CacheSombra {
   pose(centro, dir) {
     if (!this.ligado) return null
     this.politica.raio = this.cfg.mundo.cacheSombraRaio ?? 15
-    const d = this.politica.decidir(centro, dir)
+    // intervalo mínimo entre refazimentos por giro do sol (24/10/2026): sem ele o mapa dos parados era
+    // refeito ~5x/s com passoSombraMin em 0, e cada refazer é um pico de quadro
+    this.politica.intervaloMin = this.cfg.mundo.sombraCacheIntervaloMin ?? 0.5
+    const d = this.politica.decidir(centro, dir, performance.now() / 1000)
     if (d.refazer) this.refazer = d.motivo
     return { centro: this._c.set(d.centro.x, d.centro.y, d.centro.z), dir: this._d.set(d.dir.x, d.dir.y, d.dir.z) }
   }

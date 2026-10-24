@@ -28,6 +28,7 @@ export function secaoDesempenho(gui, cfg) {
   sombra.add(cfg.mundo, 'sombraPertoTamanho', 16, 120, 1).name('sombra de perto: lado (m)')
   sombra.add(cfg.mundo, 'sombraPertoResolucao', [1024, 2048, 4096]).name('sombra de perto: qualidade')
   sombra.add(cfg.mundo, 'sombraPertoRecorte').name('sombra de perto: só as cópias da janela')
+  sombra.add(cfg.mundo, 'sombraPertoACada', 1, 8, 1).name('sombra de perto: refaz a cada (quadros)')
   sombra.add(cfg.mundo, 'sombraPertoBorda', 0.02, 0.4, 0.01).name('sombra de perto: faixa de mistura')
   sombra.add(cfg.mundo, 'sombraPertoAFrente', 0, 20, 0.5).name('sombra de perto: à frente (m)')
   sombra.add(cfg.mundo, 'sombraSuave', 0, 3, 0.05).name('borda da sombra: suavidade (texels)')
@@ -39,5 +40,6 @@ export function secaoDesempenho(gui, cfg) {
   sombra.add(cfg.mundo, 'cacheSombra').name('sombra dos parados em cache')
   sombra.add(cfg.mundo, 'cacheSombraRaio', 5, 40, 1).name('cache da sombra: raio (m)')
   sombra.add(cfg.mundo, 'cacheSombraFatias', 1, 12, 1).name('cache da sombra: fatias por refazer')
+  sombra.add(cfg.mundo, 'sombraCacheIntervaloMin', 0, 3, 0.05).name('cache da sombra: espera mínima (s)')
   return des
 }

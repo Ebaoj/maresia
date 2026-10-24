@@ -63,12 +63,13 @@ export class SombraPerto {
     this.W = W
     const luz = new THREE.DirectionalLight(0xffffff, 0)
     luz.name = 'sol de perto (só sombra)'
-    luz.shadow.mapSize.set(cfg.mundo.sombraPertoResolucao ?? 2048, cfg.mundo.sombraPertoResolucao ?? 2048)
+    luz.shadow.mapSize.set(cfg.mundo.sombraPertoResolucao ?? 1024, cfg.mundo.sombraPertoResolucao ?? 1024)
     this.luz = luz
     this._centro = new THREE.Vector3()
     this._ancora = null // centro alinhado do quadro anterior: a grade de texels passa por ele
     this._dir = new THREE.Vector3(0, 1, 0)
-    this.stats = { texelCm: 0, ligado: false }
+    this.contador = -1 // conta os quadros: o mapa de perto é refeito a cada N (cfg.mundo.sombraPertoACada)
+    this.stats = { texelCm: 0, ligado: false, refeitos: 0 }
     if (W) {
       // fora da cena: não ilumina; o ShadowNode dela é criado aqui e entra na sombra do sol
       luz.castShadow = false
@@ -97,14 +98,15 @@ export class SombraPerto {
 
   get ligado() { return !!(this.cfg.mundo.sombras && this.cfg.mundo.sombraPerto) }
 
-  // dirLuz: a direção do sol sem os passos de cfg.mundo.passoSombraMin (o mapa de perto é refeito todo quadro,
-  // então segue o sol contínuo e não dá o salto de 1° a cada 4 s); centro: onde a janela fica (perto do jogador).
+  // dirLuz: a direção do sol sem os passos de cfg.mundo.passoSombraMin (o mapa de perto é refeito a cada N
+  // quadros, então segue o sol contínuo e não dá o salto de 1° a cada 4 s); centro: onde a janela fica (perto do
+  // jogador).
   atualizar(dirLuz, centro) {
     const m = this.cfg.mundo
     const luz = this.luz
     const sc = luz.shadow.camera
     const tam = Math.max(8, m.sombraPertoTamanho ?? 48)
-    const res = m.sombraPertoResolucao ?? 2048
+    const res = m.sombraPertoResolucao ?? 1024
     if (luz.shadow.mapSize.x !== res) {
       luz.shadow.mapSize.set(res, res)
       if (luz.shadow.map) { luz.shadow.map.dispose(); luz.shadow.map = null }
@@ -128,15 +130,25 @@ export class SombraPerto {
     luz.shadow.radius = raioDoFiltro(this.cfg)
     const ligado = this.ligado
     const borda = ligado ? Math.min(0.5, Math.max(0.01, m.sombraPertoBorda ?? 0.12)) : 0
+    // O mapa de perto é refeito a cada N quadros (24/10/2026): refazer todo quadro é um passe de sombra
+    // inteiro em volta do jogador, e o sol anda devagar (o mapa de longe acompanha o sol por passos).
+    // N = 1 deixa como era (todo quadro).
+    const aCada = Math.max(1, Math.round(m.sombraPertoACada ?? 2))
+    this.contador = (this.contador + 1) % aCada
+    const refazer = ligado && this.contador === 0
+    if (refazer) this.stats.refeitos++
     if (this.W) {
       this.uBorda.value = borda
-      luz.shadow.autoUpdate = ligado // desligado: o mapa de perto não é desenhado
+      // autoUpdate desligado: quem manda é o needsUpdate, que o jogo liga a cada N quadros
+      luz.shadow.autoUpdate = false
+      luz.shadow.needsUpdate = refazer
     } else {
       // WebGL: projetar sombra fica ligado junto com a do sol (ligar e desligar recompila todos os materiais);
       // desligado, a faixa vai a 0 (o shader só lê o de longe) e o mapa não é redesenhado
       luz.castShadow = !!m.sombras
       luz.shadow.intensity = borda
-      luz.shadow.autoUpdate = ligado
+      luz.shadow.autoUpdate = false
+      luz.shadow.needsUpdate = refazer
       if (!ligado) luz.shadow.needsUpdate = false
     }
     this.stats.texelCm = +(texel * 100).toFixed(2)

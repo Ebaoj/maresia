@@ -60,6 +60,25 @@ describe('política: quando refazer o mapa dos parados', () => {
     expect(p.decidir(sol(0, 0, 0), graus(30)).refazer).toBe(false)
     expect(p.motivos).toEqual({ inicial: 1, conjunto: 1 })
   })
+
+  // 24/10/2026: com passoSombraMin em 0 o sol não para e o mapa dos parados era refeito ~5x/s (cada refazer
+  // é um pico de quadro). O giro do sol passou a esperar o intervalo mínimo; a janela que andou com o
+  // jogador não espera (senão a sombra some).
+  it('o giro do sol espera o intervalo mínimo antes de refazer o mapa', () => {
+    const p = new PoliticaCacheSombra({ intervaloMin: 0.5 })
+    p.decidir(sol(0, 0, 0), graus(30), 0) // o primeiro refazer é sempre
+    const adiado = p.decidir(sol(0, 0, 0), graus(31), 0.2)
+    expect(adiado.refazer).toBe(false)
+    expect(adiado.motivo).toBe(null)
+    expect(adiado.centro).toEqual(sol(0, 0, 0)) // a pose fica congelada
+    expect(p.decidir(sol(0, 0, 0), graus(31), 0.6).motivo).toBe('sol')
+  })
+
+  it('a janela que andou com o jogador refaz na hora, sem esperar o intervalo', () => {
+    const p = new PoliticaCacheSombra({ raio: 15, intervaloMin: 0.5 })
+    p.decidir(sol(0, 0, 0), graus(30), 0)
+    expect(p.decidir(sol(0, 0, 40), graus(30), 0.1).motivo).toBe('janela')
+  })
 })
 
 describe('registro dos parados', () => {

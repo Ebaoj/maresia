@@ -83,16 +83,27 @@ describe('mapa de perto', () => {
   })
 
   // o mapa único de 346 m em 4096 dava 8,5 cm por texel em volta do jogador (10 pixels por texel a 5 m da câmera)
-  it('em volta do jogador o texel tem no máximo 3 cm e a janela anda presa à grade de texels', async () => {
+  // 24/10/2026: o perfil padrão passou a 1024 (o mapa de perto é refeito a cada 2 quadros, para tirar o pico de
+  // quadro): o texel em volta do jogador passou de 2,3 cm para 4,7 cm. A garantia da sombra nítida (3 cm) continua
+  // valendo no perfil alto, o de 2048 (src/qualidade.js).
+  it('em volta do jogador o texel tem no máximo 3 cm no perfil alto, e a janela anda presa à grade de texels', async () => {
     const { SombraPerto } = await import('../../src/render/sombra-perto.js')
     const cena = new THREE.Scene()
     const sol = new THREE.DirectionalLight()
     cena.add(sol)
-    const cfg = cfgPadrao()
-    const sp = new SombraPerto({ cena, sol, cfg })
     const dir = new THREE.Vector3(0.3, 0.6, -0.5).normalize()
+    // perfil padrão: 1024 (4,7 cm por texel)
+    const cfg = cfgPadrao()
+    expect(cfg.mundo.sombraPertoResolucao).toBe(1024)
+    const sp = new SombraPerto({ cena, sol, cfg })
     sp.atualizar(dir, new THREE.Vector3(700, 2, 0))
-    expect(sp.stats.texelCm).toBeLessThanOrEqual(3)
+    expect(sp.stats.texelCm).toBeLessThanOrEqual(5)
+    // perfil alto: 2048 (2,3 cm por texel): a sombra nítida continua
+    const cfgAlto = cfgPadrao()
+    cfgAlto.mundo.sombraPertoResolucao = 2048
+    const spAlto = new SombraPerto({ cena, sol, cfg: cfgAlto })
+    spAlto.atualizar(dir, new THREE.Vector3(700, 2, 0))
+    expect(spAlto.stats.texelCm).toBeLessThanOrEqual(3)
     expect(sp.luz.castShadow).toBe(true)
     expect(cena.children.indexOf(sp.luz)).toBeGreaterThan(cena.children.indexOf(sol)) // índice 1 no shader
     // anda 1 mm: a câmera da luz fica no mesmo texel (no plano da luz), nada de borda tremendo
