@@ -11,6 +11,7 @@
 // Entra no lugar do shadowMap.render do three (chamado por dentro de renderer.render, depois de as matrizes
 // estarem em dia e das listas montadas). Com cfg.mundo.cacheSombra desligado, tudo volta ao caminho de antes.
 // Limite conhecido: a sombra de folha que balança no vento é de parado e não balança até o próximo refazer.
+import { marcar } from '../debug/marcas.js'
 import * as THREE from 'three'
 import { PoliticaCacheSombra } from './politica-sombra.js'
 import { BIT_ESTATICO, estaticosRegistrados, assinaturaEstaticos } from './sombra-estatica.js'
@@ -67,7 +68,7 @@ export class CacheSombra {
     // refeito ~5x/s com passoSombraMin em 0, e cada refazer é um pico de quadro
     this.politica.intervaloMin = this.cfg.mundo.sombraCacheIntervaloMin ?? 0
     const d = this.politica.decidir(centro, dir, performance.now() / 1000)
-    if (d.refazer) this.refazer = d.motivo
+    if (d.refazer) { this.refazer = d.motivo; marcar('sombra:' + d.motivo) }
     return { centro: this._c.set(d.centro.x, d.centro.y, d.centro.z), dir: this._d.set(d.dir.x, d.dir.y, d.dir.z) }
   }
 

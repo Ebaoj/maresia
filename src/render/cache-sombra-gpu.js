@@ -7,6 +7,7 @@
 // A cópia usa copyTextureToTexture, que no WebGPU só aceita profundidade de 32 bits em ponto flutuante: o mapa de
 // sombra do sol passa a ter DepthTexture de FloatType (depth32float, no lugar de depth24plus: mesma memória).
 // Limite conhecido: a sombra de folha que balança no vento é de "parado" e não balança até o próximo refazer.
+import { marcar } from '../debug/marcas.js'
 import { PoliticaCacheSombra } from './politica-sombra.js'
 import { BIT_ESTATICO, estaticosRegistrados, assinaturaEstaticos } from './sombra-estatica.js'
 import { RecortePerto } from './sombra-perto-recorte.js'
@@ -105,6 +106,7 @@ export class CacheSombraGpu {
     if (!this.ligado) return null
     this.politica.raio = this.cfg.mundo.cacheSombraRaio ?? 15
     const d = this.politica.decidir(centro, dir)
+    if (d.refazer) marcar('sombra:' + d.motivo)
     const fatias = this.fatias()
     if (fatias > 1 && this.poseAtiva && this.aplicado) {
       // em fatias: o pedido vira uma obra com a pose nova; a pose que vale continua a do mapa pronto

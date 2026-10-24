@@ -8,6 +8,7 @@
 // A média esconde o que incomoda: dois quadros de 80 ms num lugar viram um número que parece bom.
 
 import * as THREE from 'three'
+import { criarRastreador } from './rastreador.js'
 
 const mediana = (v) => {
   const s = [...v].sort((a, b) => a - b)
@@ -55,20 +56,48 @@ export function instalar(m) {
       // acompanha, o quadro seguinte demora mais), que é o que o jogador sente
       const tempos = []
       let anterior = t0
+      const rast = criarRastreador(m)
+      const detalhe = []
       for (let i = 0; i < quadros; i++) {
         const a = performance.now()
         passo()
         cpu += performance.now() - a
         const agora = performance.now()
         tempos.push(agora - anterior)
+        const d = rast.quadro(anterior, agora, 50)
+        if (d) detalhe.push(d)
         anterior = agora
       }
+      rast.parar()
       await ler(alvo)
-      rodadas.push({ total: (performance.now() - t0) / quadros, cpu: cpu / quadros, tempos })
+      rodadas.push({ total: (performance.now() - t0) / quadros, cpu: cpu / quadros, tempos, detalhe })
       await new Promise((res) => setTimeout(res, 30))
     }
-    return { ms: mediana(rodadas.map((x) => x.total)), cpu: mediana(rodadas.map((x) => x.cpu)), tempos: rodadas.flatMap((x) => x.tempos) }
+    return { ms: mediana(rodadas.map((x) => x.total)), cpu: mediana(rodadas.map((x) => x.cpu)), tempos: rodadas.flatMap((x) => x.tempos), detalhe: rodadas.flatMap((x) => x.detalhe) }
   }
+
+  // Ao vivo (24/10/2026): o jogo rodando de verdade (requestAnimationFrame), sem passo fixo. Cada quadro acima de
+  // `limite` ms volta com as pistas do que aconteceu nele. Uso: await maresia.rastrear({ segundos: 30 })
+  // enquanto anda ou se teleporta (o pico de ~160 ms uma vez por rodada apareceu assim na T4).
+  m.rastrear = ({ segundos = 30, limite = 50 } = {}) => new Promise((resolver) => {
+    const rast = criarRastreador(m)
+    const picos = []
+    const tempos = []
+    const fim = performance.now() + segundos * 1000
+    let anterior = performance.now()
+    const f = (agora) => {
+      tempos.push(agora - anterior)
+      const d = rast.quadro(anterior, agora, limite)
+      if (d) picos.push(d)
+      anterior = agora
+      if (agora < fim) requestAnimationFrame(f)
+      else {
+        rast.parar()
+        resolver({ quadros: tempos.length, p99: percentil(tempos, 99), pior: +Math.max(0, ...tempos).toFixed(1), picos })
+      }
+    }
+    requestAnimationFrame((t) => { anterior = t; requestAnimationFrame(f) })
+  })
 
   // repeticoes: as variantes se alternam (A, B, A, B...) para a GPU do Mac, que muda de
   // frequência sozinha, afetar todas igual; o resultado é a mediana das repetições.
@@ -111,6 +140,8 @@ export function instalar(m) {
             picos50: tempos.filter((t) => t > 50).length,
             p99: percentil(tempos, 99),
             pior: tempos.length ? +tempos.reduce((a, b) => (b > a ? b : a), 0).toFixed(2) : 0,
+            // 24/10/2026: cada quadro acima de 50 ms com o que aconteceu nele (debug/rastreador.js)
+            picosDetalhe: l.flatMap((a) => a.detalhe || []),
           }
         }
       }

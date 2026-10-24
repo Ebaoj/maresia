@@ -72,6 +72,7 @@ import { atualizarCorte } from './render/corte-tela.js'
 import { criarHud } from './ui/hud.js'
 import { criarPainel } from './ui/painel.js'
 import { criarSom } from './audio.js'
+import { marcar as marcarEvento } from './debug/marcas.js'
 
 const cfg = carregarConfig()
 definirTonsLuz(cfg.estilo.visual === 'arcane' ? 'liso' : cfg.estilo.tonsLuz) // antes de qualquer material ser criado (Arcane: as faixas são do pintor de luz)
@@ -476,6 +477,7 @@ async function iniciar() {
   // para inspecionar pelo console do navegador
   // irPara(x, z, yawCamera, hora): teletransporte para depurar
   const irPara = (x, z, yaw = cam.yaw, hora = cfg.tempo.hora) => {
+    marcarEvento('teleporte', { x: Math.round(x), z: Math.round(z) })
     jogador.pos.set(x, alturaChao(x, z) + 0.05, z)
     jogador.vel.set(0, 0, 0)
     cam.yaw = yaw

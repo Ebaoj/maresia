@@ -10,6 +10,7 @@
 // - Na água tudo boia (empuxo simples + atrito da água).
 // - Conversa com a camada 1: o que rola deita a grama, marca a areia e faz ondinha.
 
+import { marcar } from '../debug/marcas.js'
 import * as THREE from 'three'
 import RAPIER from '@dimforge/rapier3d-compat'
 import { geometriaBola, geometriaCoco, OBJETOS_FISICOS } from './objetos-fisicos.js'
@@ -26,7 +27,9 @@ const PASSO = 1 / 60
 const NIVEL_AGUA = 0
 
 export async function criarFisica(cena, cfg, { coqueiros, toque, areia }) {
+  marcar('rapier:init')
   await RAPIER.init()
+  marcar('rapier:pronto')
   const world = new RAPIER.World({ x: 0, y: -25, z: 0 })
   const rnd = criarAleatorio(1337)
 

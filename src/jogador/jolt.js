@@ -4,6 +4,7 @@
 // (back stop: o ponto não passa para dentro da pele). Ver docs/roupas-plano.md.
 
 import initJolt from 'jolt-physics'
+import { marcar } from '../debug/marcas.js'
 
 let promessa = null
 
@@ -11,7 +12,7 @@ export const CAMADA = { PANO_SOLTO: 0, CORPO: 1, PANO_JUSTO: 2 }
 
 // carrega uma vez só (o motor tem ~3 MB) e devolve { J, sistema, corpos, passo(dt) }
 export function carregarJolt() {
-  if (!promessa) promessa = criarMundoJolt()
+  if (!promessa) { marcar('jolt:init'); promessa = criarMundoJolt().then((r) => { marcar('jolt:pronto'); return r }) }
   return promessa
 }
 
