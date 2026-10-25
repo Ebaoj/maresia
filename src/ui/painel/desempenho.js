@@ -21,6 +21,14 @@ export function secaoDesempenho(gui, cfg) {
   des.add(d, 'cortePx', 0, 12, 0.5).name('peça some abaixo de (px)')
   des.add(d, 'muitoLongeTam', [384, 768, 1536]).name(rec('célula de muito longe (m)'))
 
+  const montagem = des.addFolder('Montagem das casas')
+  montagem.add(d, 'fatiarMontagem').name('montagem fatiada (por tempo)')
+  montagem.add(d, 'orcamentoMontagemMs', 1, 16, 0.5).name('orçamento de montagem (ms)')
+  montagem.add(d, 'orcamentoUploadMB', 2, 64, 1).name('subida para a placa (MB/quadro)')
+  montagem.add(d, 'raioPrefetch', 0, 240, 8).name('anel à frente (m)')
+  montagem.add(d, 'casasPorQuadro', 1, 4, 1).name('blocos por quadro (sem fatiamento)')
+  montagem.add(d, 'preaquecerShaders').name(rec('aquecer os shaders (WebGL)'))
+
   const sombra = des.addFolder('Sombra')
   sombra.add(cfg.mundo, 'sombras').name('sombras')
   sombra.add(cfg.mundo, 'resolucaoSombra', [1024, 2048, 4096]).name('qualidade da sombra')

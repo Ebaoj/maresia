@@ -1,0 +1,253 @@
+# Plano de performance (Fortaleza 1932)
+
+Documento de trabalho da Fase 1 do plano de performance. O jogo é um protótipo de um
+único jogador, sem multiplayer, rodando no navegador (three.js 0.186, Vite 7). O alvo de
+hardware é o MacBook com M1 (o Joabe joga nele), com a Tesla T4 da EC2 como máquina de
+comparação, porque os números de quadro na T4 são reproduzíveis e a GPU não muda de
+frequência por conta própria.
+
+O problema que motiva o plano: depois de um teleporte (e ao andar pelo centro), o jogo
+trava. O quadro chega a 300 ms ou mais, e a cena congela. As marcas do rastreador
+(`src/debug/rastreador.js`) mostram que o culpado é a montagem dos blocos de casas de 1932
+(`src/mundo/quarteirao.js`): cada bloco de 96 m levava 150 a 300 ms na T4, e o bloco
+inteiro era montado dentro de um único quadro.
+
+O plano está em três fases. Cada fase tem objetivo, mudanças, arquivos, métrica e meta.
+A métrica e o protocolo de medição são os mesmos em todas as fases, para as comparações
+valerem.
+
+## Protocolo de medição (vale para as três fases)
+
+O mesmo roteiro, sempre, para dar número comparável:
+
+1. Abrir o jogo em modo dev (`npm run dev`), WebGL (o caminho que importa mais).
+2. `cfg.fatia.travar = false` (a fatia de verdade não trava o jogador).
+3. Começar no ponto de partida, andar para a frente.
+4. Teleportar para a Coluna da Hora (`irPara` com a vista do conceito, `colunaHora`).
+5. Teleportar para o registro do Campo do Urubu (`urubuRegistro`).
+6. Em cada trecho, andar para a frente sem parar.
+
+A medição é feita com o rastreador do jogo, ao vivo:
+
+```js
+await maresia.rastrear({ segundos: 45, limite: 50 })
+```
+
+O `limite` de 50 ms é o piso do que interessa (abaixo de 33 ms o quadro ainda cabe em 30
+fps). O rastreador devolve, além dos picos com as pistas de cada quadro lento
+(`src/debug/rastreador.js`), o resumo: média, p95, p99, quantos quadros passaram de 33, de
+50 e de 100 ms, e o pior quadro.
+
+Duas máquinas, com o mesmo roteiro:
+
+- **Tesla T4 (EC2)**: a referência. A GPU não muda de frequência sozinha, o número é
+  estável e serve de linha de base entre rodadas.
+- **4K com DPR alto (proxy do M1)**: a mesma sessão em 3840 × 2160 com `devicePixelRatio`
+  alto. Serve de proxy do Apple M1, que tem mais pixels por quadro e muda de frequência
+  quando esquenta. A comparação só vale entre variantes alternadas na mesma rodada (a
+  GPU do Mac disputa com outra aba do jogo).
+
+Tabela de resultados (uma linha por rodada; a coluna `picos` traz os quadros acima de
+50 ms com as pistas de cada um):
+
+| Rodada | Média (ms) | p95 (ms) | p99 (ms) | Quadros > 33 ms | Quadros > 50 ms | Quadros > 100 ms | Pior (ms) | Picos (ms e pistas) |
+|---|---|---|---|---|---|---|---|---|
+| antes (linha de base) | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher |
+| depois | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher |
+
+Regras de leitura da tabela:
+
+- A média e o p99 valem mais que o pior quadro isolado: o pior quadro pode ser a
+  collecta de lixo ou a subida de um arquivo, e o que incomoda é a repetição.
+- O número de quadros acima de 50 ms é o que define se o jogo "trava" na prática.
+- Comparar sempre com a linha de base da mesma máquina e do mesmo roteiro.
+
+## Fase 1: os picos (montagem e shaders)
+
+**Status: em execucao.**
+
+### Objetivo
+
+Nenhum quadro passa de 50 ms por causa do trabalho de montar o mundo. A montagem das
+casas vira trabalho com orçamento de tempo, e os shaders são compilados antes de o jogo
+aparecer, não no meio da partida.
+
+### Mudanças
+
+1. **Montagem fatiada, com orçamento de tempo.** O bloco de casas deixa de ser montado de
+   uma vez. A casa virou um gerador: cada passo (o corpo, a fachada, cada vão, o telhado,
+   os fundos) é uma unidade. A fila de montagem gasta no máximo
+   `cfg.desempenho.orcamentoMontagemMs` (4 ms) por quadro e a fila aprende o custo de cada
+   tipo de unidade, para não começar uma unidade que não cabe no que sobrou.
+   Um bloco grande é quebrado em unidades menores: nunca há uma unidade só com o bloco
+   inteiro.
+2. **Menos trabalho por casa.** A pilha de cada casa não cria mais uma geometria por
+   peça (caixa nova, `toNonIndexed`, `clone`) nem junta tudo no fim com `mergeGeometries`.
+   Cada pilha escreve direto nos seus arrays (posição, normal, cor e o chão da casa) e a
+   geometria final sai deles: quatro alocações por pilha em vez de milhares por bloco.
+   A caixa de 1 m é compartilhada por todas as peças.
+3. **Limites pré-calculados.** A esfera e a caixa de cada malha saem da extensão conhecida
+   do bloco, e o three não calcula a esfera no primeiro quadro em que a malha aparece
+   (era um dos picos).
+4. **Subida gradual para a placa.** As malhas novas só aparecem quando o orçamento de
+   bytes do quadro (`cfg.desempenho.orcamentoUploadMB`) deixa, em vez de todas de uma vez
+   quando o jogador chega perto.
+5. **Prefetch.** O destino do teleporte (`irPara`) e o anel à frente do jogador entram
+   na fila de montagem com prioridade, para o casario já estar pronto quando o jogador
+   chega. A prioridade do destino só vale enquanto o jogador está perto dele.
+6. **Aquecimento dos shaders (WebGL).** No carregamento, depois da cena montada:
+   `renderer.compileAsync(cena, camera, cena)` com o alvo real do pós-processamento ligado
+   (é o alvo que decide a variante do shader), e depois um desenho da cena num alvo de
+   1 × 1 do mesmo formato, com o passe de sombra ligado (é ele que compila os materiais de
+   profundidade). As malhas representativas dos materiais das casas entram na cena só
+   durante o aquecimento, porque os blocos ainda não foram montados.
+   O `?semPreaquecer` na URL desliga, para o A/B.
+
+### Arquivos
+
+| Arquivo | O que mudou |
+|---|---|
+| `src/mundo/fila-montagem.js` | novo: a fila pura com orçamento de tempo e o custo aprendido por tipo de unidade |
+| `src/mundo/bloco-casas.js` | novo: o gerenciador dos blocos (a fila, o prefetch do destino, a subida gradual para a placa e os limites já calculados) |
+| `src/mundo/quarteirao.js` | a casa virou gerador, a pilha escreve direto nos arrays (sem geometria por peça), o bloco é montado em etapas |
+| `src/render/preaquecer-webgl.js` | novo: o aquecimento dos shaders no WebGL (compileAsync mais o desenho de 1 × 1) |
+| `src/main.js` | o `irPara` avisa o destino da montagem; o aquecimento roda antes de o jogo aparecer |
+| `src/mundo/cidade.js` | passa o `cfg` para `criarCasas` (o orçamento e os interruptores) |
+| `src/config.js` | `desempenho.fatiarMontagem`, `desempenho.orcamentoMontagemMs`, `desempenho.orcamentoUploadMB`, `desempenho.raioPrefetch`, `desempenho.preaquecerShaders` |
+| `src/ui/painel/desempenho.js` | os interruptores novos no painel (e `casasPorQuadro`, que só vale sem fatiamento) |
+| `src/debug/medidor.js` | `maresia.rastrear` devolve média, p95, p99 e a contagem dos quadros acima de 33, 50 e 100 ms |
+| `src/debug/rastreador.js`, `src/debug/marcas.js` | as pistas dos quadros lentos (a marca `montagem` diz quanto a fila gastou) |
+| `testes/unidade/fila-montagem.test.js` | novo: a fila com orçamento de tempo (lógica pura) |
+| `testes/unidade/quarteirao-geometria.test.js` | novo: a geometria nova da casa tem de ser igual, vértice a vértice, à de antes |
+
+### Métrica
+
+- Número de quadros acima de 50 ms no roteiro (coluna da Hora e registro do Urubu).
+- Pior quadro do roteiro.
+- Tempo de montagem de um bloco (marca `montagem`): a meta é que nenhum quadro gaste
+  mais que o orçamento (4 ms) mais o custo de uma unidade.
+
+### Meta
+
+- Nenhum quadro acima de 100 ms no roteiro completo, na T4 e no proxy 4K.
+- No máximo 2 quadros acima de 50 ms em 45 s de roteiro.
+- O casario do destino aparece completo em menos de 1 s depois do teleporte (com o
+  prefetch).
+
+### Resultados da Fase 1
+
+a preencher
+
+## Fase 2: o peso de cada quadro (o M1)
+
+### Objetivo
+
+O quadro normal (sem picos) fica abaixo de 16,7 ms no M1: o jogo roda liso andando pelo
+centro. O que pesa hoje é o custo de tela cheia (profundidade de campo, bloom, retícula),
+a grama, a sombra e o número de desenhos.
+
+### Mudanças
+
+1. **Sombra dos parados em cache, com redesenho só na mudança.** `shadowMap.autoUpdate`
+   desligado e o mapa refeito quando muda alguma coisa (o sol gira, o jogador anda além do
+   raio, aparece ou some um objeto parado). No máximo uma ou duas luzes com sombra: o sol
+   projetando e, no máximo, uma luz de preenchimento com sombra.
+2. **Casas em `BatchedMesh` ou `InstancedMesh` por material.** Hoje cada bloco vira cinco
+   malhas e o three desenha cada uma. Com o mesmo material, as casas de um quarteirão
+   cabem em um desenho só (ou em instâncias, quando a geometria é a mesma).
+3. **Perfil de GPU integrada.** Um perfil novo de qualidade, ligado por padrão quando o
+   navegador diz que a GPU é integrada: grama só perto, sem profundidade de campo, sem
+   bloom, resolução dinâmica entre 0,75 e 0,9.
+
+### Arquivos
+
+| Arquivo | O que muda |
+|---|---|
+| `src/render/cache-sombra.js` | o mapa de sombra dos parados em cache, refeito na mudança |
+| `src/render/politica-sombra.js` | quando o cache é refeito (o sol, o jogador, um objeto que aparece) |
+| `src/render/sombra-estatica.js` | o registro do que é parado (a assinatura que diz o que mudou) |
+| `src/render/sombra-perto.js`, `src/render/filtro-sombra.js`, `src/render/sombra-luz.js` | a janela de sombra de perto e o filtro, no perfil da GPU integrada |
+| `src/mundo/quarteirao.js` | as casas de cada material em um desenho só |
+| `src/mundo/blocos.js` | o `instanciarEmBlocos` (o motor de cópias por bloco) |
+| `src/mundo/grama.js` | a grama só perto, no perfil da GPU integrada |
+| `src/pos/profundidade.js`, `src/pos/aranhaverso.js` | a profundidade de campo e o bloom (ligados/desligados pelo perfil) |
+| `src/render/resolucao-dinamica.js` | a resolução dinâmica entre 0,75 e 0,9 |
+| `src/qualidade.js` | o perfil da GPU integrada (e o `?qualidade=` da URL) |
+| `src/config.js` | as chaves do perfil |
+
+### Métrica
+
+- Tempo de quadro andando pelo centro (média e p95), sem teleporte: a meta é a média
+  abaixo de 16,7 ms no proxy 4K.
+- Número de desenhos por quadro (`renderer.info.render.calls`).
+- Tempo do quadro com o painel escondido, para não medir a interface.
+
+### Meta
+
+- Média de quadro abaixo de 16,7 ms e p95 abaixo de 33 ms andando pelo centro, no proxy 4K.
+- Meta de 100 desenhos por quadro no centro (a dica da comunidade está nas Fontes).
+
+## Fase 3: o mundo (streaming, LOD e texturas)
+
+### Objetivo
+
+O mapa grande não pesa mais do que o pedaço que o jogador está vendo. Os blocos que
+ficaram para trás saem da memória, as casas de longe viram impostores, e as texturas
+sobem em KTX2 (metade da memória e da subida).
+
+### Mudanças
+
+1. **Streaming de blocos com descarga.** O bloco sai da memória quando o jogador passa
+   longe, e volta quando ele chega perto (com o prefetch da Fase 1, a volta já vem
+   pronta). A descarga tem de respeitar o que está no cache de sombra e no LOD de longe.
+2. **LOD e impostores para as casas de longe.** Além da caixa com fachada pintada, as
+   casas do outro lado da baía viram impostores (um plano com a fachada desenhada), e o
+   corte por instância (culling por instância) fica ligado.
+3. **Texturas em KTX2.** As texturas grandes (a do papel, a do mar, as de ruído) sobem
+   comprimidas em KTX2 (Basis Universal), com a queda do tamanho de download e da memória
+   de vídeo.
+
+### Arquivos
+
+| Arquivo | O que muda |
+|---|---|
+| `src/mundo/blocos.js` | a divisão em blocos de 96 m e o que fica carregado |
+| `src/mundo/muito-longe.js` | as células grandes de longe e a descarga do que não está à vista |
+| `src/mundo/quarteirao.js` | o corte por nível de detalhe e os impostores das casas |
+| `src/mundo/cidade.js`, `src/mundo/escala1932.js` | o mapa contínuo e o que o casario pula |
+| `src/render/motor-placa.js` | o motor de cópias na GPU (o que já existe, para as impostores) |
+| `src/materiais.js`, `scripts/preparar-geometria.mjs` | as texturas em KTX2 e a preparação fora do navegador |
+
+### Métrica
+
+- Memória de vídeo e de geometria depois de percorrer o mapa inteiro (`renderer.info.memory`).
+- Tempo do quadro longe do centro (onde o mapa inteiro está à vista).
+- Tempo de carregamento de um bloco depois que ele foi descarregado.
+
+### Meta
+
+- A memória de geometria não cresce com o percurso (a descarga funciona).
+- O quadro longe do centro custa o mesmo que o quadro perto (o que está fora da tela não
+  pesa).
+
+## Fontes
+
+- [100 Three.js Tips That Actually Improve Performance (2026), Utsubo](https://www.utsubo.com/blog/threejs-best-practices-100-tips):
+  medir antes de mexer (`renderer.info`, `stats-gl`), instâncias e `BatchedMesh` para
+  cortar desenhos, KTX2 e Draco/Meshopt para os arquivos, streamed chunks para cenas
+  grandes, e o orçamento de cerca de 100 desenhos por quadro no celular.
+- [compileAsync e a lista de desenhos (fórum do three, 86191)](https://discourse.threejs.org/t/86191):
+  `compileAsync` monta a lista de desenho antes de compilar, e precisa da cena de destino
+  com a luz montada. É a conversa já citada em `src/render/renderizador.js`.
+- [Performance issue due to fill rate (fórum do three, 9019)](https://discourse.threejs.org/t/performance-issue-due-to-fill-rate/9019):
+  o custo de tela cheia (pixels, sobreposição, sombras) domina antes do número de
+  desenhos. É a base da Fase 2.
+- [How to render shadow map one time (fórum do three, 7176)](https://discourse.threejs.org/t/how-to-render-shadow-map-one-time/7176):
+  `renderer.shadowMap.autoUpdate = false` e `renderer.shadowMap.needsUpdate = true` quando
+  o mapa precisa ser refeito. É a base da sombra em cache da Fase 2.
+- [Performant soft shadows (fórum do three, 27777)](https://discourse.threejs.org/t/performant-soft-shadows-three-js/27777):
+  o mapa de sombra também custa fill rate, e o número de luzes com sombra pesa.
+- [Best practices for mobile (fórum do three, 95775)](https://discourse.threejs.org/t/what-are-your-best-practices-for-keeping-three-js-scenes-performant-on-mobile-devices/95775):
+  reduzir a resolução, cortar texturas grandes (KTX2) e moderar o número de luzes.
+- [Changing pixelRatio based on fps (fórum do three, 34563)](https://discourse.threejs.org/t/changing-pixelratio-based-on-fps-good-or-bad-idea/34563):
+  a resolução dinâmica, com a marca do passo para não ficar tremendo.

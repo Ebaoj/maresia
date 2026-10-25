@@ -11,7 +11,6 @@
 // desenho, e o three pula o bloco inteiro fora da tela ou da sombra.
 
 import * as THREE from 'three'
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { pintar, gradienteToon, luzFixa, texturizar } from '../materiais.js'
 import { globais } from '../globais.js'
 import { CAL, ESQUADRIAS } from '../paleta.js'
@@ -23,6 +22,7 @@ import { criarAleatorio } from '../utils.js'
 import { ref } from '../render/gpu/comum.js'
 import { GLSL_DESGASTE, envelhecerTsl } from './desgaste.js'
 import { GLSL_CASCA_MARCO, ligarCascaGlsl, cascaMarcoTsl } from './desgaste-marcos.js'
+import { GerenciadorDeBlocos } from './bloco-casas.js'
 
 // rua de referência da fatia vertical (z ≈ 152, x -72 a -36): bom lugar para comparar com os filmes
 export const FATIA = { x0: -73, x1: -35, z0: 134, z1: 170 }
@@ -34,32 +34,98 @@ const PAREDE = 0.32 // espessura da fachada (o recuo dos vãos)
 
 const cor = new THREE.Color()
 const m4 = new THREE.Matrix4()
+const m4b = new THREE.Matrix4() // matriz do deslocamento (não aloca por peça)
+const normalMatriz = new THREE.Matrix3() // a matriz normal (inversa transposta do 3x3)
+// a caixa de 1 m, compartilhada por todas as peças (o tamanho entra na escala)
+const CAIXA = new THREE.BoxGeometry(1, 1, 1).toNonIndexed()
 
-// junta geometrias com cor por vértice
-class Pilha {
-  constructor() { this.geos = []; this.chao = 0 }
-  add(geo, matriz, hex) {
+// Junta geometrias com cor por vértice.
+// Fase 1 (25/10/2026): cada peça virava uma geometria nova (BoxGeometry, toNonIndexed,
+// clone) e as pilhas eram juntadas no fim com mergeGeometries. São milhares de alocações
+// por bloco, e o bloco inteiro era montado dentro de um quadro (150 a 300 ms na T4).
+// Agora cada pilha escreve direto nos seus arrays (posição, normal, cor e o chão da casa)
+// e a geometria final sai deles: quatro alocações por pilha em vez de milhares.
+// (o teste testes/unidade/quarteirao-geometria.test.js confere que a geometria sai igual)
+export class Pilha {
+  constructor() {
+    this.pPos = new Float32Array(0)
+    this.pNor = new Float32Array(0)
+    this.pCor = new Float32Array(0)
+    this.pChao = new Float32Array(0)
+    this.n = 0 // vértices
+    this.chao = 0 // o chão da casa: o salitre sobe a partir dele
+  }
+
+  // espaço para mais vértices (cresce dobrando: o custo é amortizado)
+  crescer(vertices) {
+    const precisa = (this.n + vertices) * 3
+    if (precisa <= this.pPos.length) return
+    let cap = Math.max(this.pPos.length, 3 * 1024)
+    while (cap < precisa) cap *= 2
+    const troca = (a) => { const b = new Float32Array(cap); b.set(a); return b }
+    this.pPos = troca(this.pPos)
+    this.pNor = troca(this.pNor)
+    this.pCor = troca(this.pCor)
+    this.pChao = troca(this.pChao)
+  }
+
+  // acrescenta uma geometria, transformada pela matriz, com a cor por vértice.
+  // ex, ey, ez: escala da posição antes da matriz (a caixa de 1 m compartilhada).
+  // A normal não é escalada: a matriz não tem escala (a casa é montada na base),
+  // então a matriz normal é uma rotação e a normal continua unitária, como antes.
+  add(geo, matriz, hex, ex = 1, ey = 1, ez = 1) {
     if (SO_PLANEJAR || !geo) return
-    const g = (geo.index ? geo.toNonIndexed() : geo.clone())
-    g.deleteAttribute('uv')
-    g.applyMatrix4(matriz)
+    const pos = geo.attributes.position
+    if (!pos) return
+    const nor = geo.attributes.normal
+    const n = pos.count
+    if (!n) return
+    this.crescer(n)
+    const e = matriz.elements
+    normalMatriz.getNormalMatrix(matriz)
+    const nm = normalMatriz.elements
     cor.set(hex)
-    const n = g.attributes.position.count
-    const c = new Float32Array(n * 3)
-    const ch = new Float32Array(n).fill(this.chao) // chão da casa: o salitre sobe a partir dele
-    for (let i = 0; i < n; i++) { c[i * 3] = cor.r; c[i * 3 + 1] = cor.g; c[i * 3 + 2] = cor.b }
-    g.setAttribute('color', new THREE.BufferAttribute(c, 3))
-    g.setAttribute('aChao', new THREE.BufferAttribute(ch, 1))
-    this.geos.push(g)
+    const r = cor.r, g = cor.g, b = cor.b
+    const chao = this.chao
+    const P = this.pPos, N = this.pNor, C = this.pCor, A = this.pChao
+    let d = this.n * 3
+    for (let i = 0; i < n; i++) {
+      const x = pos.getX(i) * ex, y = pos.getY(i) * ey, z = pos.getZ(i) * ez
+      P[d] = e[0] * x + e[4] * y + e[8] * z + e[12]
+      P[d + 1] = e[1] * x + e[5] * y + e[9] * z + e[13]
+      P[d + 2] = e[2] * x + e[6] * y + e[10] * z + e[14]
+      if (nor) {
+        const nx = nor.getX(i), ny = nor.getY(i), nz = nor.getZ(i)
+        let ax = nm[0] * nx + nm[3] * ny + nm[6] * nz
+        let ay = nm[1] * nx + nm[4] * ny + nm[7] * nz
+        let az = nm[2] * nx + nm[5] * ny + nm[8] * nz
+        // a normal é normalizada, como o three faz (a matriz normal não é exatamente uma
+        // rotação: ela sai da inversa transposta, e o comprimento sai 1 com alguns erros)
+        const comp = Math.sqrt(ax * ax + ay * ay + az * az) || 1
+        ax /= comp; ay /= comp; az /= comp
+        N[d] = ax; N[d + 1] = ay; N[d + 2] = az
+      }
+      C[d] = r; C[d + 1] = g; C[d + 2] = b
+      A[d / 3] = chao
+      d += 3
+    }
+    this.n += n
   }
   caixa(base, x, y, z, sx, sy, sz, hex) {
     if (SO_PLANEJAR) return
-    this.add(new THREE.BoxGeometry(sx, sy, sz), m4.copy(base).multiply(new THREE.Matrix4().makeTranslation(x, y, z)), hex)
+    // a caixa de 1 m, compartilhada: o tamanho entra na escala, não numa geometria nova
+    this.add(CAIXA, m4.copy(base).multiply(m4b.makeTranslation(x, y, z)), hex, sx, sy, sz)
   }
-  malha(material, nome) {
-    if (!this.geos.length) return null
-    const g = mergeGeometries(this.geos)
-    g.computeBoundingSphere()
+  // limites: a esfera e a caixa já calculadas (o bloco sabe a extensão dele):
+  // assim o three não calcula a esfera no primeiro quadro que a malha aparece
+  malha(material, nome, limites) {
+    if (!this.n) return null
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(this.pPos.slice(0, this.n * 3), 3))
+    g.setAttribute('normal', new THREE.BufferAttribute(this.pNor.slice(0, this.n * 3), 3))
+    g.setAttribute('color', new THREE.BufferAttribute(this.pCor.slice(0, this.n * 3), 3))
+    g.setAttribute('aChao', new THREE.BufferAttribute(this.pChao.slice(0, this.n), 1))
+    if (limites) { g.boundingSphere = limites.esfera; g.boundingBox = limites.caixa }
     const m = new THREE.Mesh(g, material)
     m.name = nome
     m.castShadow = true
@@ -152,7 +218,12 @@ function folha(pecas, base, hx, y0, z, w, h, ang, lado, hex, porta, simples) {
   }
 }
 
-function casa(it, P, rnd, simples) {
+// A casa de 1932. É um gerador: cada yield é um ponto onde a montagem pode ser
+// interrompida e retomada no quadro seguinte (Fase 1 do plano de performance).
+// Uma casa sozinha leva alguns ms; o bloco inteiro levava 150 a 300 ms na T4 e
+// travava o quadro. O sorteio é o mesmo de sempre: o yield não come números.
+// (a chamada planejarCasa drena o gerador inteiro, com o mesmo sorteio)
+function* casa(it, P, rnd, simples) {
   const { reboco, pecas, interior: interiorEscuro, aceso: interiorAceso, telhas } = P
   // eixo local: fachada voltada para +z
   const frenteX = it.frente && it.frente[0] !== 0
@@ -183,6 +254,7 @@ function casa(it, P, rnd, simples) {
 
   // corpo atrás da fachada
   reboco.caixa(base, 0, H / 2, -PAREDE / 2, F, H, D - PAREDE, parede)
+  yield
 
   // vãos: térreo com porta e janelas; sobrado com portas-janelas em cima
   // a fachada pode ser bem estreita (o lote de 4 m da planta de 1932): os vãos
@@ -214,6 +286,7 @@ function casa(it, P, rnd, simples) {
     fach.holes.push(furo)
   }
   reboco.add(extrudar(fach, PAREDE), new THREE.Matrix4().copy(base).multiply(new THREE.Matrix4().makeTranslation(0, 0, zf - PAREDE)), parede)
+  yield
 
   // embasamento (barrado em relevo) e cunhais nas quinas
   // o barrado é interrompido nas portas do térreo
@@ -263,6 +336,7 @@ function casa(it, P, rnd, simples) {
         pecas.caixa(base, v.cx + s * (v.w + 0.56) / 2, v.y0 + 0.47, zf + 0.35 + (k - 1.5) * 0.3, 0.025, 0.95, 0.025, ferro)
       }
     }
+    yield // um vão por passo: a casa não trava o quadro
   }
 
   // friso entre os andares do sobrado
@@ -300,6 +374,7 @@ function casa(it, P, rnd, simples) {
     // testeira sob o beiral (sombra forte na parede)
     pecas.caixa(base, 0, H - 0.06, zf + 0.06, F, 0.12, 0.1, moldura)
   }
+  yield // o telhado (com as empenas) é um passo só
 
   // fundos: casa de verdade tem janela para o quintal (fechada, sem furo na parede)
   const costas = new THREE.Matrix4().copy(base).multiply(new THREE.Matrix4().makeRotationY(Math.PI))
@@ -318,6 +393,7 @@ function casa(it, P, rnd, simples) {
       pecas.caixa(costas, cx, y0 + h / 2, D / 2 + 0.045, 0.025, h, 0.01, new THREE.Color(esq).multiplyScalar(0.7).getHex())
     }
   }
+  yield // os fundos
 
   // altura e base reais (árvores e vasos usam) e marca de que a casa já tem fachada própria
   it.y = chao
@@ -343,7 +419,8 @@ export function planejarCasa(it, rnd, simples) {
   const antes = SO_PLANEJAR
   SO_PLANEJAR = true
   try {
-    casa(it, { reboco: new Pilha(), pecas: new Pilha(), interior: new Pilha(), aceso: new Pilha(), telhas: new Pilha() }, rnd, simples)
+    // o gerador é drenado inteiro: o planejamento precisa chegar até o fim da casa
+    for (const _ of casa(it, { reboco: new Pilha(), pecas: new Pilha(), interior: new Pilha(), aceso: new Pilha(), telhas: new Pilha() }, rnd, simples)) { /* nada */ }
   } finally { SO_PLANEJAR = antes }
 }
 
@@ -576,49 +653,59 @@ export function materiaisDasCasas() {
   }
 }
 
-export function criarCasas(cena, casario, morro) {
-  const rnd = criarAleatorio(1932)
+// as cinco pilhas de uma casa (reboco, peças, interior, interior aceso e telhas)
+export function pilhasVazias() {
+  return { reboco: new Pilha(), pecas: new Pilha(), interior: new Pilha(), aceso: new Pilha(), telhas: new Pilha() }
+}
+
+// só para os testes: monta a casa nas pilhas dadas (o gerador é drenado inteiro)
+export function montarCasa(it, rnd, simples, pilhas) {
+  for (const _ of casa(it, pilhas, rnd, simples)) { /* nada */ }
+  return pilhas
+}
+
+export function criarCasas(cena, casario, morro, cfg = null) {
   const { reboco: matReboco, rebocoMorro: matRebocoMorro, pecas: matPecas, telhas: matTelhas } = materiaisDasCasas()
   const grupo = new THREE.Group()
   grupo.name = 'casas-1932'
-  const blocos = new Map()
-  const bloco = (it, simples) => {
-    const k = `${simples ? 'm' : 'c'}${Math.floor(it.x / TAM_BLOCO)},${Math.floor(it.z / TAM_BLOCO)}`
-    if (!blocos.has(k)) {
-      const kx = Math.floor(it.x / TAM_BLOCO)
-      const kz = Math.floor(it.z / TAM_BLOCO)
-      blocos.set(k, { simples, reboco: new Pilha(), pecas: new Pilha(), interior: new Pilha(), aceso: new Pilha(), malhas: [], longe: [], x0: kx * TAM_BLOCO, z0: kz * TAM_BLOCO, perto: true })
-    }
-    return blocos.get(k)
-  }
-  // cada casa tem o próprio sorteio: montar agora ou depois dá a mesma casa
   const semente = (i) => criarAleatorio(1932 + i * 7919)
   const todas = [...casario.map((it) => [it, false]), ...morro.map((it) => [it, true])]
   SO_PLANEJAR = true
-  const vazio = () => ({ reboco: new Pilha(), pecas: new Pilha(), interior: new Pilha(), aceso: new Pilha(), telhas: new Pilha() })
+  const vazio = pilhasVazias
+  // o gerenciador dos blocos (Fase 1): a fila com orçamento de tempo, o prefetch do destino,
+  // a subida gradual para a placa e os limites já calculados (src/mundo/bloco-casas.js)
+  const ger = new GerenciadorDeBlocos({ grupo, cfg, tamBloco: TAM_BLOCO, gerar: (b) => gerarBloco(b) })
   todas.forEach(([it, simples], i) => {
-    const b = bloco(it, simples)
-    casa(it, vazio(), semente(i), simples)
-    ;(b.itens ||= []).push([it, i])
+    const b = ger.bloco(it, simples)
+    // o planejamento drena o gerador da casa inteira (o mesmo sorteio de sempre)
+    for (const _ of casa(it, vazio(), semente(i), simples)) { /* nada */ }
+    b.itens.push([it, i])
   })
   SO_PLANEJAR = false
-  void rnd
   // interior aceso: escuro de dia, candeeiro quente à noite (não recebe luz; brilha no filtro)
   const matAceso = luzFixa(new THREE.MeshBasicMaterial({ vertexColors: true }), 0.6, globais.uNoite)
-  const montarBloco = (b) => {
+
+  // o bloco inteiro, em etapas: cada casa (e cada etapa de casa) é um passo, e a
+  // junção de cada pilha é outro. A pilha escreve direto nos arrays, sem geometrias
+  // intermediárias (Fase 1): o bloco sai em quatro alocações por pilha.
+  function* gerarBloco(b) {
     const pilhas = vazio()
-    for (const [it, i] of b.itens) casa(it, pilhas, semente(i), b.simples)
-    const r = pilhas.reboco.malha(b.simples ? matRebocoMorro : matReboco, 'casas-reboco')
-    const p = pilhas.pecas.malha(matPecas, 'casas-pecas')
-    const i = pilhas.interior.malha(matPecas, 'casas-interior')
-    const a = pilhas.aceso.malha(matAceso, 'casas-interior-aceso')
-    const t = pilhas.telhas.malha(matTelhas, 'casas-telhas')
-    for (const m of [i, a]) if (m) m.castShadow = false
-    for (const m of [r, p, i, a, t]) if (m) { m.visible = b.perto; grupo.add(m); b.malhas.push(m); registrarEstatico(m) }
-    b.montado = true
-    if (b.perto) for (const m of b.longe) m.visible = false
+    for (const [it, i] of b.itens) yield* casa(it, pilhas, semente(i), b.simples)
+    const limites = ger.limites(b)
+    // cada pilha vira uma malha num passo só (a junção copia os arrays: alguns ms)
+    const r = pilhas.reboco.malha(b.simples ? matRebocoMorro : matReboco, 'casas-reboco', limites)
+    yield
+    const p = pilhas.pecas.malha(matPecas, 'casas-pecas', limites)
+    yield
+    const i2 = pilhas.interior.malha(matPecas, 'casas-interior', limites)
+    yield
+    const a = pilhas.aceso.malha(matAceso, 'casas-interior-aceso', limites)
+    yield
+    const t = pilhas.telhas.malha(matTelhas, 'casas-telhas', limites)
+    yield
+    for (const m of [i2, a]) if (m) m.castShadow = false
+    for (const m of [r, p, i2, a, t]) if (m) { m.visible = false; grupo.add(m); b.malhas.push(m); registrarEstatico(m) }
   }
-  for (const b of blocos.values()) { b.perto = false; b.montado = false }
   // a câmera colide com caixas simples, uma por casa (invisíveis). Raio contra a malha detalhada
   // testava centenas de milhares de triângulos por quadro e derrubava o jogo para 40 ms.
   const caixas = []
@@ -643,19 +730,47 @@ export function criarCasas(cena, casario, morro) {
   const PERTO = 70
   // de muito longe, as caixas de fachada pintada dos blocos se juntam por célula grande (muito-longe.js)
   const muitoLonge = new MuitoLonge(grupo, { nome: 'casas' })
+  // as malhas representativas dos materiais das casas, para o pré-aquecimento dos shaders
+  // (Fase 1): os blocos são montados depois do jogo começar, e sem elas os shaders das casas
+  // só entrariam no primeiro teleporte, no quadro em que o programa é compilado
+  let representantes = null
+  const geometriaRepresentante = () => {
+    const p = new Pilha()
+    p.caixa(new THREE.Matrix4(), 0, 0, 0, 1, 1, 1, '#ffffff')
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(p.pPos.slice(0, p.n * 3), 3))
+    g.setAttribute('normal', new THREE.BufferAttribute(p.pNor.slice(0, p.n * 3), 3))
+    g.setAttribute('color', new THREE.BufferAttribute(p.pCor.slice(0, p.n * 3), 3))
+    g.setAttribute('aChao', new THREE.BufferAttribute(p.pChao.slice(0, p.n), 1))
+    return g
+  }
+  const representantesAquecimento = () => {
+    if (representantes) return representantes
+    representantes = []
+    const geo = geometriaRepresentante()
+    for (const [mat, nome] of [[matReboco, 'aq-reboco'], [matRebocoMorro, 'aq-reboco-morro'], [matPecas, 'aq-pecas'], [matTelhas, 'aq-telhas'], [matAceso, 'aq-aceso']]) {
+      const m = new THREE.Mesh(geo, mat)
+      m.name = nome
+      m.castShadow = true
+      m.receiveShadow = true
+      representantes.push(m)
+    }
+    return representantes
+  }
   return {
     grupo,
     muitoLonge,
+    representantesAquecimento,
     // depois do registrarLonge do casario e do morro
     montarMuitoLonge() {
-      for (const b of blocos.values()) {
+      for (const b of ger.blocos.values()) {
         b.unidade = {
           x: b.x0 + TAM_BLOCO / 2, z: b.z0 + TAM_BLOCO / 2, r: TAM_BLOCO * Math.SQRT1_2,
           longe: b.longe,
           get todas() { return [...b.malhas, ...b.longe] },
-          distancia: (camera) => Math.hypot(Math.max(b.x0 - camera.position.x, 0, camera.position.x - (b.x0 + TAM_BLOCO)), Math.max(b.z0 - camera.position.z, 0, camera.position.z - (b.z0 + TAM_BLOCO))),
+          distancia: (camera) => ger.distancia(b, camera.position.x, camera.position.z),
           // volta ao estado de longe (a caixa à vista); o laço decide de novo neste quadro
-          retomar: () => { b.perto = false; for (const m of b.malhas) m.visible = false; for (const m of b.longe) m.visible = true },
+          retomar: () => { b.perto = false; ger.aplicarVisibilidade(b) },
         }
         muitoLonge.adicionar(b.unidade)
       }
@@ -668,38 +783,17 @@ export function criarCasas(cena, casario, morro) {
       for (const im of malhas) {
         im.getMatrixAt(0, mt)
         v.setFromMatrixPosition(mt)
-        const b = blocos.get(`${simples ? 'm' : 'c'}${Math.floor(v.x / TAM_BLOCO)},${Math.floor(v.z / TAM_BLOCO)}`)
-        if (b) { b.longe.push(im); im.visible = !(b.perto && b.montado) } else im.visible = true
+        const b = ger.blocos.get(`${simples ? 'm' : 'c'}${Math.floor(v.x / TAM_BLOCO)},${Math.floor(v.z / TAM_BLOCO)}`)
+        if (b) { b.longe.push(im); im.visible = !(b.perto && b.pronto) } else im.visible = true
       }
     },
+    // Fase 1: o destino do teleporte entra na fila de montagem antes de todo o resto
+    prefetch(x, z) { ger.prefetch(x, z) },
     // porQuadro (cfg.desempenho.casasPorQuadro): quantos blocos de casas detalhadas montar por quadro
     atualizar(camera, porQuadro = 2) {
       matAceso.color.copy(escuro).lerp(quente, globais.uNoite.value)
-      if (!camera) return
-      const cx = camera.position.x
-      const cz = camera.position.z
-      let montou = 0
       muitoLonge.atualizar(camera, PERTO + 8)
-      for (const b of blocos.values()) {
-        if (b.unidade?.suspenso) continue
-        const dx = Math.max(b.x0 - cx, 0, cx - (b.x0 + TAM_BLOCO))
-        const dz = Math.max(b.z0 - cz, 0, cz - (b.z0 + TAM_BLOCO))
-        const d = Math.hypot(dx, dz)
-        const perto = b.perto ? d < PERTO + 8 : d < PERTO // folga para não piscar na divisa
-        // bloco perto e ainda não montado: monta agora (no máximo porQuadro por quadro; 25/10/2026: cada bloco leva
-        // 150 a 300 ms na T4, e dois no mesmo quadro davam o pico de ~650 ms depois de um teleporte)
-        if (perto && !b.montado) {
-          if (montou >= porQuadro) continue
-          b.perto = true
-          montarBloco(b)
-          montou++
-          continue
-        }
-        if (perto === b.perto) continue
-        b.perto = perto
-        for (const m of b.malhas) m.visible = perto
-        for (const m of b.longe) m.visible = !(perto && b.montado)
-      }
+      ger.atualizar(camera, porQuadro)
     },
   }
 }

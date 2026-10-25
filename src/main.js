@@ -13,6 +13,7 @@ import { ocupacao as ocupacaoLivre } from './mundo/ocupacao.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
 import { criarRenderizador, prepararCenaWebgpu, preaquecerWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
+import { preaquecerWebgl } from './render/preaquecer-webgl.js'
 import { ligarMotorPlaca, prepararMotorPlaca } from './render/motor-placa.js'
 import { definirTamBloco, atualizarBlocosLonge } from './mundo/blocos.js'
 import { definirMuitoLonge } from './mundo/muito-longe.js'
@@ -447,6 +448,15 @@ async function iniciar() {
   // (o compileAsync da vg monta listas de desenho e precisa das matrizes do mundo já calculadas)
   if (webgpu) { prepararCenaWebgpu(cena); cena.updateMatrixWorld(); await prepararMotorPlaca(renderer, cena, camera) }
 
+  // Fase 1 (25/10/2026): no WebGL os shaders são compilados antes de o jogo aparecer. Sem isso, cada material
+  // novo (o das casas, que só entram depois de um teleporte) compila no quadro em que aparece e trava.
+  // ?semPreaquecer desliga, para o A/B.
+  const semPreaquecer = new URLSearchParams(location.search).has('semPreaquecer')
+  if (!webgpu && cfg.desempenho.preaquecerShaders !== false && !semPreaquecer) {
+    const alvo = pos.rtCor || null // o alvo real do pós: o mesmo programa do jogo
+    await preaquecerWebgl(renderer, cena, camera, { alvo, extras: casas.representantesAquecimento() })
+  }
+
   const contadorFps = criarContadorFps(cfg)
   function quadro() {
     requestAnimationFrame(quadro)
@@ -494,6 +504,8 @@ async function iniciar() {
     cam.yaw = yaw
     cam.iniciado = false
     cfg.tempo.hora = hora
+    // Fase 1: os blocos de casas do destino entram na fila de montagem antes de todo o resto
+    casas.prefetch(x, z)
   }
   window.__tempos = tempos
   // tamanho fixo do desenho (foto justa): mesma resolução nos dois renderizadores, sem depender da janela

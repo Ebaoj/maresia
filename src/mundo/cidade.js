@@ -284,7 +284,7 @@ export function criarCidade(cena, cfg) {
   const muros = preencheVaus(cas, cfg)
 
   // casas com geometria de verdade (src/mundo/quarteirao.js); de longe, a caixa com fachada pintada
-  const casas = criarCasas(cena, cas.itens, sim.itens)
+  const casas = criarCasas(cena, cas.itens, sim.itens, cfg)
   casas.registrarLonge(cas.criar(cena, 'casario-longe', false), false)
   casas.registrarLonge(sim.criar(cena, 'favela-longe', false), true)
   casas.montarMuitoLonge()
