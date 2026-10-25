@@ -269,6 +269,32 @@ não depende da placa, então o software serve para a conta; a fluidez não).
 - O que o script confere em cada lado do A/B: `window.__shadersQuebrados` vazio (o programa
   do lote é outra variante do shader e precisa compilar) e nenhum material sem `gLuz`.
 
+### Resultados da Fase 2 (T4, medido em 25/10/2026)
+
+WebGL, `fatia.travar=false`, roteiro completo, `rastrear({segundos:45, limite:50})`, 3 rodadas por
+configuração (mediana) mais 1 rodada de estresse (1920x1080 DPR 2). Base: perf-fase1 (6f41a34);
+Fase 2: ea78198. Orçamento passado pela config salva. Dados brutos em /workspace/medicao/gpu6.
+
+| Config | Média | p95 | p99 | > 33 | > 50 | > 100 | Pior |
+|---|---|---|---|---|---|---|---|
+| fase1, orçamento 4 ms | 10,8 | 15,3 | 22,1 | 7 | 0 | 0 | 49 |
+| fase1, orçamento 3 ms | 10,8 | 15,2 | 18,8 | 7 | 0 | 0 | 44 |
+| fase1, orçamento 2 ms | 11,0 | 15,4 | 26,4 | 7 | 0 | 0 | 45 |
+| fase2, orçamento 3 ms | 10,5 | 15,1 | 24,4 | 11 | 4 | 3 | 410 |
+| fase2, orçamento 4 ms | 10,6 | 15,1 | 27,4 | 15 | 5 | 3 | 410 |
+| estresse fase1 4 / 3 / 2 ms | 11,3 / 11,2 / 10,9 | 17,6 / 18,6 / 17,3 | 32,8 / 32,2 / 30,9 | 38 / 24 / 22 | 1 / 1 / 4 | 1 / 1 / 3 | 161 / 161 / 172 |
+| estresse fase2 3 / 4 ms | 11,0 / 11,1 | 18,1 / 18,7 | 32,4 / 33,9 | 32 / 49 | 9 / 11 | 6 / 5 | 412 / 409 |
+
+Leitura honesta:
+- Orçamento: 3 ms ficou um pouco melhor (p99 e pior quadro) que 4 e 2 ms, mas a diferença está perto
+  do ruído entre rodadas. Padrão passou a 3 ms.
+- Fase 2 baixou a média em ~0,3 ms, mas trouxe de volta picos: 3 quadros acima de 100 ms por rodada,
+  pior ~410 ms. As pistas mostram uma única unidade de montagem de ~100 ms (e outra de ~70 ms): a
+  inserção no BatchedMesh (addGeometry e cópia para os buffers grandes) não está fatiada pelo
+  orçamento. A sombra em cache não apareceu como pico.
+- Antes de seguir, a inserção no lote precisa ser fatiada (ou reservar e enviar por faixas com
+  addUpdateRange) ou `casasEmLote` deve ficar desligado por padrão.
+
 ## Fase 3: o mundo (streaming, LOD e texturas)
 
 ### Objetivo

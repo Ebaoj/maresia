@@ -555,7 +555,7 @@ export const PADRAO = {
     qualidadeFixa: false,  // true quando a URL fixou um perfil
     casasPorQuadro: 1,     // 25/10/2026: blocos de casas detalhadas montados por quadro (era 2: dois blocos num quadro davam ~650 ms na T4 depois do teleporte)
     fatiarMontagem: true,  // 25/10/2026 (Fase 1): a montagem dos blocos de casas é fatiada em passos, com orçamento de tempo por quadro (desligado: o bloco inteiro num quadro, como antes)
-    orcamentoMontagemMs: 4, // 25/10/2026 (Fase 1): quanto tempo por quadro a montagem dos blocos de casas pode gastar (ms)
+    orcamentoMontagemMs: 3, // 25/10/2026 (Fase 2: 3 ms medido melhor que 2 e 4 na T4; era 4 na Fase 1): quanto tempo por quadro a montagem dos blocos de casas pode gastar (ms)
     orcamentoUploadMB: 16, // 25/10/2026 (Fase 1): quanto de geometria nova sobe para a placa por quadro (MB)
     raioPrefetch: 96,      // 25/10/2026 (Fase 1): o anel de blocos montados à frente do jogador (m), para o casario já estar pronto quando ele chega
     preaquecerShaders: true, // 25/10/2026 (Fase 1): no WebGL, compilar os shaders e desenhar uma vez antes de mostrar o jogo (?semPreaquecer desliga, para o A/B)
