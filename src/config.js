@@ -390,6 +390,13 @@ export const PADRAO = {
     cacheSombra: true,     // KAN-74 (F4): sombra dos objetos parados em cache (só WebGL); refaz com o sol, ao andar mais que cacheSombraRaio ou quando um parado aparece ou some. Ver docs/motor-f4-cache-sombra.md
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
     sombraCacheIntervaloMin: 0, // segundos (0 = como era; na T4, 0,5 ficou no ruído) entre dois refazimentos do cache por giro do sol (com passoSombraMin 0 o sol não para: era ~5x/s, cada vez um pico de quadro)
+    // Fase 2 (25/10/2026, no WebGL): o mapa de sombra do sol é refeito INTEIRO só quando alguma coisa muda (o sol gira
+    // além do limiar, o jogador sai da janela e ela se recentra na grade de texels, aparece ou some uma casa,
+    // o teleporte, o tamanho do mapa). Entre um refazer e outro o passe de sombra some do quadro: era o peso
+    // de tela cheia do M1. O que se mexe perto da câmera (jogador, gente, bicho) continua com sombra nova pelo
+    // mapa de perto (sombraPertoACada). Desligado: o caminho de camadas do F4 (a cópia do mapa em cache todo quadro).
+    // No WebGPU o cache é outro (render/cache-sombra-gpu.js) e esta chave não muda nada lá.
+    sombraEstatica: true,
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
     palhaPerto: 220,     // até essa distância (un) a palhoça das vilas é a de perto; depois, a caixa de taipa e palha (vilas.js)
@@ -552,6 +559,8 @@ export const PADRAO = {
     orcamentoUploadMB: 16, // 25/10/2026 (Fase 1): quanto de geometria nova sobe para a placa por quadro (MB)
     raioPrefetch: 96,      // 25/10/2026 (Fase 1): o anel de blocos montados à frente do jogador (m), para o casario já estar pronto quando ele chega
     preaquecerShaders: true, // 25/10/2026 (Fase 1): no WebGL, compilar os shaders e desenhar uma vez antes de mostrar o jogo (?semPreaquecer desliga, para o A/B)
+    casasEmLote: true,     // 25/10/2026 (Fase 2): as casas de cada material num BatchedMesh só (um desenho por material, em vez de cinco por bloco); desligado: uma malha por pilha, como antes
+    casasLoteVertices: 1500000, // 25/10/2026 (Fase 2): os vértices que os lotes de casas reservam na placa, no total (cada material fica com a sua fatia: as peças da casa são a maior parte; o lote cresce quando falta)
     resolucaoMin: 0.9,     // R1: menor escala que a resolução dinâmica aceita (0,9 = 72% da linha de 1,25; abaixo disso a retícula e o papel engrossam, docs/capturas/fluido/res-*.jpg)
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
   },
@@ -625,6 +634,38 @@ export function aplicarModoLeve(cfg, busca) {
   return true
 }
 
+// Ajustes pela URL (25/10/2026, Fase 2): ?cfg=mundo.sombraEstatica=0;desempenho.casasEmLote=0
+// Vale por cima do que está salvo, só nesta abertura (como ?leve e ?qualidade). O caminho da chave é o mesmo do
+// painel (mundo.sombraEstatica). O valor é lido pelo tipo que a chave já tem: booleano, número ou texto.
+// Vários ajustes: separados por ponto e vírgula dentro do mesmo ?cfg=, ou com vários ?cfg= na URL.
+// Devolve a lista das chaves que mudou (para o console e para o teste).
+export function aplicarCfgDaUrl(cfg, busca) {
+  const p = new URLSearchParams(busca || '')
+  const mudou = []
+  for (const bruto of p.getAll('cfg')) {
+    for (const par of bruto.split(/[;,]/)) {
+      const partes = par.split('=')
+      if (partes.length < 2) continue
+      const caminho = partes[0].trim()
+      const valor = partes.slice(1).join('=').trim()
+      const chaves = caminho.split('.')
+      const ultima = chaves.pop()
+      if (!ultima) continue
+      const dono = chaves.reduce((o, k) => (o && typeof o === 'object' ? o[k] : undefined), cfg)
+      if (!dono || !(ultima in dono)) continue
+      const atual = dono[ultima]
+      if (typeof atual === 'boolean') dono[ultima] = !(valor === '0' || valor === 'false' || valor === 'nao' || valor === 'off')
+      else if (typeof atual === 'number') {
+        const n = Number(valor)
+        if (Number.isFinite(n)) dono[ultima] = n
+        else continue
+      } else dono[ultima] = valor
+      mudou.push(caminho)
+    }
+  }
+  return mudou
+}
+
 export function carregarConfig() {
   const cfg = copiaProfunda(PADRAO)
   try {
@@ -637,6 +678,8 @@ export function carregarConfig() {
   cfg.desempenho.qualidadeEscolhida = PADRAO.desempenho.qualidadeEscolhida
   cfg.desempenho.qualidadeFixa = false
   aplicarQualidadeDaUrl(cfg, globalThis.location?.search)
+  // ajustes pela URL (?cfg=mundo.sombraEstatica=0): por cima do salvo e do perfil, só nesta abertura
+  aplicarCfgDaUrl(cfg, globalThis.location?.search)
   return cfg
 }
 

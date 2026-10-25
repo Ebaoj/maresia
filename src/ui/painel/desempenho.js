@@ -28,6 +28,9 @@ export function secaoDesempenho(gui, cfg) {
   montagem.add(d, 'raioPrefetch', 0, 240, 8).name('anel à frente (m)')
   montagem.add(d, 'casasPorQuadro', 1, 4, 1).name('blocos por quadro (sem fatiamento)')
   montagem.add(d, 'preaquecerShaders').name(rec('aquecer os shaders (WebGL)'))
+  // Fase 2: as casas de cada material num lote só (um desenho por material)
+  montagem.add(d, 'casasEmLote').name(rec('casas em lote (WebGL)'))
+  montagem.add(d, 'casasLoteVertices', 200000, 4000000, 100000).name(rec('vértices dos lotes (casas)'))
 
   const sombra = des.addFolder('Sombra')
   sombra.add(cfg.mundo, 'sombras').name('sombras')
@@ -46,6 +49,7 @@ export function secaoDesempenho(gui, cfg) {
   sombra.add(cfg.mundo, 'sombraViesNormal', 0, 4, 0.05).name('sombra: viés pela normal (texels)')
   sombra.add(cfg.mundo, 'passoSombraMin', 0, 15, 1).name('sombra anda em passos (min)')
   sombra.add(cfg.mundo, 'cacheSombra').name('sombra dos parados em cache')
+  sombra.add(cfg.mundo, 'sombraEstatica').name('sombra refeita só na mudança')
   sombra.add(cfg.mundo, 'cacheSombraRaio', 5, 40, 1).name('cache da sombra: raio (m)')
   sombra.add(cfg.mundo, 'cacheSombraFatias', 1, 12, 1).name('cache da sombra: fatias por refazer')
   sombra.add(cfg.mundo, 'sombraCacheIntervaloMin', 0, 3, 0.05).name('cache da sombra: espera mínima (s)')

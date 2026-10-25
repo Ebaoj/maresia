@@ -200,6 +200,75 @@ a grama, a sombra e o número de desenhos.
 - Média de quadro abaixo de 16,7 ms e p95 abaixo de 33 ms andando pelo centro, no proxy 4K.
 - Meta de 100 desenhos por quadro no centro (a dica da comunidade está nas Fontes).
 
+### O que foi feito (25/10/2026, Fase 2 no WebGL)
+
+O caminho do WebGPU continua como estava (o `CacheSombraGpu` tem o seu próprio cache); o
+trabalho abaixo é do WebGL, que é o caminho do M1.
+
+**Sombra do sol refeita só na mudança** (`src/render/cache-sombra.js`).
+
+- `renderer.shadowMap.autoUpdate = false` (já era assim) e o mapa do sol refeito inteiro
+  (parados e o que se mexe, num passe só) só quando alguma coisa muda de verdade:
+  - o sol gira além do limiar (0,05 grau, em `politica-sombra.js`; a pose fica congelada entre um
+    refazer e outro, com o centro preso à grade de texels em `sombra-luz.js`);
+  - o jogador sai da janela (`cfg.mundo.cacheSombraRaio`): a janela se recentra;
+  - aparece ou some uma casa: o bloco de casas avisa (`aoMudarCasas` no `quarteirao.js`),
+    porque no lote das casas a assinatura dos parados não muda;
+  - o teleporte (`irPara` invalida o mapa);
+  - o tamanho do mapa muda.
+- Entre um refazer e outro o passe de sombra some do quadro: era a cópia de tela cheia do
+  mapa em cache (4096² por quadro) mais o passe do que se mexe. O que se mexe perto da
+  câmera (jogador, gente, bicho) continua com sombra nova pelo mapa de perto
+  (`sombra-perto.js`, a cada `cfg.mundo.sombraPertoACada` quadros).
+- Duas luzes com sombra, no máximo: o sol e a luz de perto (a lua é o mesmo sol).
+- A chave `cfg.mundo.sombraEstatica` (padrão ligado) escolhe esse caminho; desligada, volta
+  o caminho de camadas do F4 (o mapa em cache dos parados, copiado para o mapa vivo).
+- Os refazimentos são contados (`cacheSombra.stats`) e marcados (`sombra:refeita`, com o
+  motivo), para o rastreador do medidor dizer por que o quadro foi caro.
+
+**Casas em lote** (`src/mundo/casas-lote.js`).
+
+- As geometrias de todos os blocos de um mesmo material entram num `BatchedMesh` só
+  (reboco, reboco do morro, peças, interior, aceso e telhas): um desenho por material em
+  vez de cinco por bloco. Com `WEBGL_multi_draw` (a extensão existe no Chrome), o lote é
+  um multi-draw; sem ela, o three cai no desenho por instância.
+- O corte por instância fica ligado (`perObjectFrustumCulled`): o three corta cada bloco
+  pela sua esfera antes de desenhar.
+- A geometria de cada bloco já está no lugar do mundo, então a matriz da instância é a
+  identidade, e o `pintar()` (`src/materiais.js`) aplica a matriz do lote no mundo e na
+  normal.
+- A chave `cfg.desempenho.casasEmLote` (padrão ligado) escolhe esse caminho; desligada,
+  volta uma malha por pilha. No WebGPU o lote fica desligado (o desenho é por objeto).
+
+**Ajustes pela URL** (`?cfg=`).
+
+- `?cfg=mundo.sombraEstatica=0;desempenho.casasEmLote=0` desliga o caminho novo só nesta
+  abertura, sem mexer no que está salvo no painel (como `?leve` e `?qualidade`).
+
+**Números dos desenhos**.
+
+- `maresia.desempenho()` devolve os desenhos do último quadro (`renderer.info.render.calls`),
+  o estado da sombra em cache e o do lote das casas; o medidor (`rastrear`) também mostra
+  os desenhos e o rastreador aponta quando o quadro foi caro por causa deles.
+
+**Números medidos** (25/10/2026, Chrome sem janela, WebGL por software; o número de desenhos
+não depende da placa, então o software serve para a conta; a fluidez não).
+
+- O custo das casas no quadro, medido na mesma cena (quadros alternados, com as malhas das
+  casas escondidas e à mostra, no meio do casario, 7 blocos à vista e 36 montados):
+  - com o lote: **92 desenhos**;
+  - sem o lote (uma malha por pilha): **353 desenhos**.
+  - Ou seja, o lote tira 261 desenhos por quadro do que se mexe perto da câmera. Os
+    triângulos não são a conta aqui: com o lote o corte é por instância e cada bloco entra
+    inteiro.
+- A sombra: o mapa do sol é refeito só quando algo muda. No A/B (`scripts/verificar-fase2.mjs`),
+  os motivos que apareceram foram `inicial`, `conjunto` (um parado novo entrou), `casas`
+  (um bloco de casas montou) e `sol` (o sol girou além do limiar). Entre um refazer e outro
+  o passe do sol não entra no quadro; o mapa de perto (`sombraPertoACada`) continua dando a
+  sombra do jogador, da gente e do bicho.
+- O que o script confere em cada lado do A/B: `window.__shadersQuebrados` vazio (o programa
+  do lote é outra variante do shader e precisa compilar) e nenhum material sem `gLuz`.
+
 ## Fase 3: o mundo (streaming, LOD e texturas)
 
 ### Objetivo

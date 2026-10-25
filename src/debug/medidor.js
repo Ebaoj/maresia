@@ -106,6 +106,9 @@ export function instalar(m) {
           picos50: tempos.filter((t) => t > 50).length,
           picos100: tempos.filter((t) => t > 100).length,
           pior: +Math.max(0, ...tempos).toFixed(1),
+          // Fase 2: os desenhos do último quadro (renderer.info.render.calls) e o estado da sombra
+          desenhos: m.renderer?.info?.render?.calls ?? 0,
+          sombra: m.cacheSombra?.stats ?? null,
           picos,
         })
       }

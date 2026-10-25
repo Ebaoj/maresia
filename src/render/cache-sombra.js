@@ -1,12 +1,21 @@
-// KAN-74 (F4): sombra em duas camadas no WebGL.
+// KAN-74 (F4) e Fase 2 do plano de performance (docs/PLANO-PERFORMANCE.md): a sombra do sol.
 //
 // Antes, todo quadro refazia o mapa de sombra com todos os objetos (o three limpa o mapa e redesenha tudo). Agora:
-//   - os PARADOS (registrados em sombra-estatica.js) são desenhados num mapa de profundidade só deles, em cache;
-//     ele só é refeito quando a política (politica-sombra.js) manda: sol mudou, jogador longe do centro da
-//     janela, conjunto de parados mudou, tamanho do mapa mudou;
-//   - todo quadro: copia o mapa em cache para o mapa vivo (um passe de tela cheia que escreve gl_FragDepth, 1
-//     chamada de desenho) e desenha por cima, SEM limpar, só o que se mexe (jogador, gente, bicho, física e tudo
-//     que não foi registrado). O resultado é o mesmo de desenhar tudo junto: a profundidade guarda o mais perto.
+//
+//   - F4 (o caminho de camadas, cfg.mundo.sombraEstatica desligado): os PARADOS (registrados em
+//     sombra-estatica.js) são desenhados num mapa de profundidade só deles, em cache; ele só é refeito quando a
+//     política (politica-sombra.js) manda: sol mudou, jogador longe do centro da janela, conjunto de parados
+//     mudou, tamanho do mapa mudou. Todo quadro: copia o mapa em cache para o mapa vivo (um passe de tela cheia
+//     que escreve gl_FragDepth, 1 chamada de desenho) e desenha por cima, SEM limpar, só o que se mexe (jogador,
+//     gente, bicho, física e tudo que não foi registrado).
+//
+//   - Fase 2 (o caminho novo, cfg.mundo.sombraEstatica ligado, o padrão): o mapa do sol é refeito INTEIRO
+//     (parados e o que se mexe, num passe só) só quando alguma coisa muda de verdade: o sol gira além do
+//     limiar, o jogador sai da janela (a janela se recentra, presa à grade de texels), aparece ou some uma
+//     casa (o bloco de casas montado ou descarregado), o jogo é teletransportado ou o mapa muda de tamanho.
+//     Entre um refazer e outro o mapa fica como está e o passe de sombra some do quadro: era o peso de tela
+//     cheia que pesava no M1. O que se mexe perto da câmera (o jogador, a gente, o bicho) continua com sombra
+//     nova pelo mapa de perto (render/sombra-perto.js), que é refeito a cada cfg.mundo.sombraPertoACada quadros.
 //
 // Entra no lugar do shadowMap.render do three (chamado por dentro de renderer.render, depois de as matrizes
 // estarem em dia e das listas montadas). Com cfg.mundo.cacheSombra desligado, tudo volta ao caminho de antes.
@@ -38,7 +47,7 @@ export class CacheSombra {
     this.refazer = null
     this.aplicado = false // os parados estão com castShadow desligado (o mapa em cache está valendo)
     // motivos: quantas vezes cada um refez o mapa; chamadas*: desenhos do último passe dos parados e do dinâmico
-    this.stats = { refeitos: 0, quadros: 0, motivos: {}, msRefazer: 0, msQuadro: 0, parados: 0, chamadasEstatico: 0, chamadasDinamico: 0, chamadasOutras: 0 }
+    this.stats = { refeitos: 0, quadros: 0, motivos: {}, msRefazer: 0, msQuadro: 0, parados: 0, chamadasEstatico: 0, chamadasDinamico: 0, chamadasSol: 0, chamadasOutras: 0 }
     this._c = new THREE.Vector3()
     this._d = new THREE.Vector3()
     const mat = new THREE.ShaderMaterial({
@@ -58,6 +67,9 @@ export class CacheSombra {
   }
 
   get ligado() { return !!this.cfg.mundo.cacheSombra }
+
+  // Fase 2: o mapa do sol só é refeito quando muda. Ligado por padrão (cfg.mundo.sombraEstatica).
+  get estatica() { return this.cfg.mundo.sombraEstatica === true }
 
   // Chamado por ceu.atualizar a cada quadro com o centro já alinhado ao texel e a direção da luz. Devolve a pose a
   // usar (a congelada, se o cache vale) ou null (desligado: ceu.js usa a pose de sempre).
@@ -83,6 +95,25 @@ export class CacheSombra {
     this.politica.valido = false
   }
 
+  // a chave do mapa: o tamanho dele e a largura da janela (mudou um dos dois, o mapa é outro)
+  chaveMapa() {
+    const sol = this.sol
+    return sol.shadow.mapSize.x * 4096 + sol.shadow.camera.right
+  }
+
+  // Por que o mapa do sol precisa ser refeito agora (ou null, se ele ainda vale).
+  // A política manda no sol, na janela e nas invalidações (a casa que apareceu, o teleporte); o conjunto de
+  // parados e o tamanho do mapa são conferidos aqui.
+  motivoRedraw() {
+    // o tamanho e o conjunto de parados vêm primeiro: são mudanças do mundo, não da pose
+    const estado = this.politica.estado(this.assinaturaEstatica(), this.chaveMapa())
+    if (estado) return estado
+    if (!this.sol.shadow.map) return 'inicial' // o mapa vivo ainda não existe
+    return this.refazer
+  }
+
+  assinaturaEstatica() { return assinaturaEstaticos() }
+
   sombra(luzes, c, cam) {
     const r = this.r
     const sol = this.sol
@@ -98,33 +129,77 @@ export class CacheSombra {
     if (r.shadowMap.autoUpdate === false && r.shadowMap.needsUpdate === false) return
     // as outras luzes que projetam sombra (a de perto, sombra-perto.js) vão pelo caminho de sempre, depois do sol
     const outras = luzes.length === 1 ? null : luzes.filter((l) => l !== sol)
-    luzes = this.soSol
     const t0 = performance.now()
-    const chave = sol.shadow.mapSize.x * 4096 + sol.shadow.camera.right
-    const assinatura = assinaturaEstaticos()
-    if (!this.refazer) {
-      if (chave !== this.chave) this.refazer = 'tamanho'
-      else if (assinatura !== this.assinatura) this.refazer = 'conjunto'
+    if (this.estatica) {
+      // Fase 2: o mapa do sol inteiro, refeito só quando muda (o passe some do quadro entre um refazer e outro)
+      this.refazerSol(c, cam)
+    } else {
+      // F4: o mapa em cache dos parados, a cópia para o mapa vivo e o que se mexe por cima
+      this.sombraEmCamadas(c, cam)
     }
-    if (this.refazer) {
-      const t1 = performance.now()
-      this.stats.motivos[this.refazer] = (this.stats.motivos[this.refazer] || 0) + 1
-      this.refazerEstaticos(luzes, c, cam, chave)
-      this.assinatura = assinatura
-      this.stats.refeitos++
-      this.stats.msRefazer = performance.now() - t1
-    }
-    this.compor(luzes, c, cam)
     if (outras && outras.length) this.passeOutras(outras, c, cam)
     this.stats.quadros++
     this.stats.msQuadro = performance.now() - t0
   }
 
+  // F4: os parados num mapa à parte (em cache), a cópia para o mapa vivo e o que se mexe por cima, todo quadro.
+  sombraEmCamadas(c, cam) {
+    const r = this.r
+    const t1 = performance.now()
+    const chave = this.chaveMapa()
+    const assinatura = this.assinaturaEstatica()
+    if (!this.refazer) {
+      if (chave !== this.chave) this.refazer = 'tamanho'
+      else if (assinatura !== this.assinatura) this.refazer = 'conjunto'
+    }
+    if (this.refazer) {
+      const motivo = this.refazer
+      this.stats.motivos[motivo] = (this.stats.motivos[motivo] || 0) + 1
+      this.refazerEstaticos(this.soSol, c, cam, chave)
+      this.assinatura = assinatura
+      this.stats.refeitos++
+      this.stats.msRefazer = performance.now() - t1
+      marcar('sombra:refeita', { motivo })
+    }
+    this.compor(this.soSol, c, cam)
+  }
+
+  // Fase 2: o mapa do sol refeito inteiro (parados e o que se mexe, num passe só), só quando alguma coisa muda.
+  refazerSol(c, cam) {
+    const motivo = this.motivoRedraw()
+    if (!motivo) return
+    const r = this.r
+    const sol = this.sol
+    const lista = estaticosRegistrados()
+    // os parados voltam a projetar sombra: o mapa é refeito do zero, com eles e com o que se mexe
+    for (const o of lista) o.castShadow = true
+    r.shadowMap.needsUpdate = true
+    sol.shadow.needsUpdate = true
+    const chamadas = r.info.render.calls
+    const t1 = performance.now()
+    // só o sol: a luz de perto tem o próprio passe (passeOutras), que não desenha as malhas de muito longe
+    try { this.original.call(r.shadowMap, this.soSol, c, cam) } finally { for (const o of lista) o.castShadow = false }
+    this.stats.chamadasSol = r.info.render.calls - chamadas
+    this.stats.motivos[motivo] = (this.stats.motivos[motivo] || 0) + 1
+    this.stats.refeitos++
+    this.stats.msRefazer = performance.now() - t1
+    this.stats.parados = lista.size
+    this.refazer = null
+    this.assinatura = this.assinaturaEstatica()
+    this.chave = this.chaveMapa()
+    this.politica.marcar(this.assinatura, this.chave)
+    this.aplicado = true
+    marcar('sombra:refeita', { motivo })
+  }
+
   // Outra luz (o mapa de perto): desenho completo de sempre, com os parados de volta. Enquanto o cache vale, os
-  // parados ficam com castShadow desligado (para o passe dinâmico do sol não os desenhar), e o mapa de perto
+  // parados ficam com castShadow desligado (para o passe do sol não os desenhar), e o mapa de perto
   // ficaria só com quem se mexe.
   passeOutras(outras, c, cam) {
     const r = this.r
+    // o mapa de perto tem o próprio ritmo (cfg.mundo.sombraPertoACada): sem refazer nada, não há passe
+    const precisa = outras.some((l) => l.shadow && (l.shadow.autoUpdate !== false || l.shadow.needsUpdate === true))
+    if (!precisa) return
     const lista = this.aplicado ? estaticosRegistrados() : null
     // as malhas juntas de muito longe (mundo/muito-longe.js) ficam fora: estão a mais de 90 m, e a esfera de uma célula
     // de 768 m sempre cruzaria a janela de perto (seriam desenhadas inteiras todo quadro sem pôr sombra nela)

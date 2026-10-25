@@ -94,6 +94,12 @@ export function pintar(mat, chave) {
           pmP = instanceMatrix * pmP;
           nP = mat3(instanceMatrix) * nP;
         #endif
+        #ifdef USE_BATCHING
+          // Fase 2: no lote das casas (BatchedMesh) a matriz da instância é a do lote;
+          // sem esta linha o mundo calculado aqui seria o da geometria sem a transformação
+          pmP = batchingMatrix * pmP;
+          nP = mat3(batchingMatrix) * nP;
+        #endif
         vPMundo = (modelMatrix * pmP).xyz;
         vNMundo = normalize(mat3(modelMatrix) * nP);
         #ifdef TEX_PINTADA_ALT

@@ -16,6 +16,7 @@ import { globais } from '../globais.js'
 import { CAL, ESQUADRIAS } from '../paleta.js'
 import { adicionarDeck } from './colisao.js'
 import { MuitoLonge } from './muito-longe.js'
+import { LoteCasas } from './casas-lote.js'
 import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { criarAleatorio } from '../utils.js'
@@ -118,15 +119,19 @@ export class Pilha {
   }
   // limites: a esfera e a caixa já calculadas (o bloco sabe a extensão dele):
   // assim o three não calcula a esfera no primeiro quadro que a malha aparece
-  malha(material, nome, limites) {
-    if (!this.n) return null
+  geometria(limites) {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(this.pPos.slice(0, this.n * 3), 3))
     g.setAttribute('normal', new THREE.BufferAttribute(this.pNor.slice(0, this.n * 3), 3))
     g.setAttribute('color', new THREE.BufferAttribute(this.pCor.slice(0, this.n * 3), 3))
     g.setAttribute('aChao', new THREE.BufferAttribute(this.pChao.slice(0, this.n), 1))
     if (limites) { g.boundingSphere = limites.esfera; g.boundingBox = limites.caixa }
-    const m = new THREE.Mesh(g, material)
+    return g
+  }
+
+  malha(material, nome, limites) {
+    if (!this.n) return null
+    const m = new THREE.Mesh(this.geometria(limites), material)
     m.name = nome
     m.castShadow = true
     m.receiveShadow = true
@@ -438,7 +443,16 @@ function materialReboco(desgaste, marco = false) {
     sh.uniforms.uArcDesgaste = globais.uArcDesgaste
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float aChao; varying float vChaoQ; varying vec3 vMundoQ; varying vec3 vNormalQ;' + (marco ? '\nattribute vec4 aCaixa; varying vec3 vLocalQ; varying vec4 vCaixaQ;' : ''))
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMundoQ = (modelMatrix * vec4(transformed, 1.0)).xyz; vNormalQ = normal; vChaoQ = aChao;' + (marco ? '\nvLocalQ = transformed; vCaixaQ = aCaixa;' : ''))
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        #ifdef USE_BATCHING
+          // Fase 2: no lote das casas (BatchedMesh) a matriz da instância é a do lote
+          vMundoQ = (modelMatrix * batchingMatrix * vec4(transformed, 1.0)).xyz;
+          vNormalQ = normalize(mat3(batchingMatrix) * normal);
+        #else
+          vMundoQ = (modelMatrix * vec4(transformed, 1.0)).xyz;
+          vNormalQ = normal;
+        #endif
+        vChaoQ = aChao;` + (marco ? '\nvLocalQ = transformed; vCaixaQ = aCaixa;' : ''))
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         varying vec3 vMundoQ; varying vec3 vNormalQ; varying float vChaoQ; uniform float uDesgQ; uniform vec3 uTaipa; uniform float uArcDesgaste;
@@ -664,7 +678,7 @@ export function montarCasa(it, rnd, simples, pilhas) {
   return pilhas
 }
 
-export function criarCasas(cena, casario, morro, cfg = null) {
+export function criarCasas(cena, casario, morro, cfg = null, opcoes = {}) {
   const { reboco: matReboco, rebocoMorro: matRebocoMorro, pecas: matPecas, telhas: matTelhas } = materiaisDasCasas()
   const grupo = new THREE.Group()
   grupo.name = 'casas-1932'
@@ -685,6 +699,19 @@ export function criarCasas(cena, casario, morro, cfg = null) {
   // interior aceso: escuro de dia, candeeiro quente à noite (não recebe luz; brilha no filtro)
   const matAceso = luzFixa(new THREE.MeshBasicMaterial({ vertexColors: true }), 0.6, globais.uNoite)
 
+  // Fase 2: as casas de cada material num lote só (um BatchedMesh por material: um desenho por
+  // material em vez de cinco por bloco). Só no WebGL: o caminho do WebGPU desenha por objeto.
+  // O renderizador que vale é o que o jogo está usando (o WebGPU pode cair para o WebGL).
+  const emLote = cfg?.desempenho?.casasEmLote !== false && !opcoes.webgpu
+  const loteCasas = emLote ? new LoteCasas({ grupo, cfg, materiais: [
+    { nome: 'reboco', material: matReboco, castShadow: true, receiveShadow: true },
+    { nome: 'rebocoMorro', material: matRebocoMorro, castShadow: true, receiveShadow: true },
+    { nome: 'pecas', material: matPecas, castShadow: true, receiveShadow: true },
+    { nome: 'interior', material: matPecas, castShadow: false, receiveShadow: true },
+    { nome: 'aceso', material: matAceso, castShadow: false, receiveShadow: true },
+    { nome: 'telhas', material: matTelhas, castShadow: true, receiveShadow: true },
+  ] }) : null
+
   // o bloco inteiro, em etapas: cada casa (e cada etapa de casa) é um passo, e a
   // junção de cada pilha é outro. A pilha escreve direto nos arrays, sem geometrias
   // intermediárias (Fase 1): o bloco sai em quatro alocações por pilha.
@@ -692,6 +719,28 @@ export function criarCasas(cena, casario, morro, cfg = null) {
     const pilhas = vazio()
     for (const [it, i] of b.itens) yield* casa(it, pilhas, semente(i), b.simples)
     const limites = ger.limites(b)
+    if (loteCasas) {
+      // Fase 2: cada pilha entra no lote do seu material (um desenho por material, no lugar
+      // de um por pilha e por bloco). A geometria já está no lugar do mundo: a instância do
+      // lote é a identidade.
+      const nomes = [
+        [pilhas.reboco, b.simples ? 'rebocoMorro' : 'reboco'],
+        [pilhas.pecas, 'pecas'],
+        [pilhas.interior, 'interior'],
+        [pilhas.aceso, 'aceso'],
+        [pilhas.telhas, 'telhas'],
+      ]
+      for (const [pilha, nome] of nomes) {
+        const g = pilha.geometria(limites)
+        if (!g || !pilha.n) continue
+        const id = loteCasas.adicionar(nome, g)
+        if (id) b.lote.push({ lote: loteCasas, id, bytes: LoteCasas.bytes(g) })
+        yield
+      }
+      // o bloco acabou: o lote sabe agora a fatia de cada material no espaço reservado
+      loteCasas.fecharBloco()
+      return
+    }
     // cada pilha vira uma malha num passo só (a junção copia os arrays: alguns ms)
     const r = pilhas.reboco.malha(b.simples ? matRebocoMorro : matReboco, 'casas-reboco', limites)
     yield
@@ -755,12 +804,42 @@ export function criarCasas(cena, casario, morro, cfg = null) {
       m.receiveShadow = true
       representantes.push(m)
     }
+    // Fase 2: o lote das casas é um BatchedMesh, e o programa dele é outra variante do shader
+    // (o three compila uma variante por tipo de objeto). Sem esta malha representativa, o
+    // programa do lote só seria compilado no quadro em que o primeiro bloco de casas entrasse.
+    if (loteCasas) {
+      for (const [mat, nome] of [[matReboco, 'aq-lote-reboco'], [matRebocoMorro, 'aq-lote-reboco-morro'], [matPecas, 'aq-lote-pecas'], [matTelhas, 'aq-lote-telhas'], [matAceso, 'aq-lote-aceso']]) {
+        const lote = new THREE.BatchedMesh(1, geo.getAttribute('position').count, geo.getAttribute('position').count, mat)
+        lote.name = nome
+        const id = lote.addGeometry(geo)
+        lote.addInstance(id)
+        lote.castShadow = true
+        lote.receiveShadow = true
+        representantes.push(lote)
+      }
+    }
     return representantes
   }
   return {
     grupo,
     muitoLonge,
     representantesAquecimento,
+    lote: loteCasas, // o lote das casas em BatchedMesh (Fase 2); null no caminho de antes
+    // Fase 2: quem avisa que o conjunto de casas mudou (o cache da sombra refaz o mapa)
+    aoMudarCasas: (fn) => { ger.aoMudar = fn },
+    // o estado dos blocos (o console e o medidor olham isto): quantos estão montados, perto (a casa
+    // detalhada à vista) e prontos (a subida na placa já aconteceu)
+    estatisticas: () => {
+      let perto = 0, pronto = 0, montado = 0, malhas = 0, lote = 0
+      for (const b of ger.blocos.values()) {
+        if (b.perto) perto++
+        if (b.pronto) pronto++
+        if (b.montado) montado++
+        malhas += b.malhas.length
+        lote += b.lote.length
+      }
+      return { blocos: ger.blocos.size, perto, pronto, montado, malhas, lote }
+    },
     // depois do registrarLonge do casario e do morro
     montarMuitoLonge() {
       for (const b of ger.blocos.values()) {
@@ -769,6 +848,16 @@ export function criarCasas(cena, casario, morro, cfg = null) {
           longe: b.longe,
           get todas() { return [...b.malhas, ...b.longe] },
           distancia: (camera) => ger.distancia(b, camera.position.x, camera.position.z),
+          // Fase 2: no lote a casa detalhada não é uma malha: esconder o bloco é esconder as
+          // instâncias dele no lote (a célula de muito longe troca as malhas de longe no lugar).
+          // A sombra da casa detalhada some com ela: o mapa do sol é refeito.
+          esconder: () => {
+            for (const e of b.lote) e.lote.mostrar(e.id, false)
+            for (const m of b.malhas) m.visible = false
+            for (const m of b.longe) m.visible = false // a caixa de longe também some (a célula unida fica no lugar)
+            b.detalhe = false
+            ger.aoMudar?.('casas')
+          },
           // volta ao estado de longe (a caixa à vista); o laço decide de novo neste quadro
           retomar: () => { b.perto = false; ger.aplicarVisibilidade(b) },
         }

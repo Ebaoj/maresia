@@ -31,6 +31,7 @@ export class GerenciadorDeBlocos {
     this.raioPrefetch = cfg?.desempenho?.raioPrefetch ?? 96
     this.fila = criarFilaMontagem({ orcamentoMs: this.orcamentoMs })
     this.alvoPrefetch = null // o destino do teleporte (main.js irPara)
+    this.aoMudar = null // quem avisa que o conjunto de casas mudou (o cache da sombra, Fase 2)
   }
 
   // o registro dos blocos: a chave é o bloco de 96 m (a casa é simples, do morro, ou de casario)
@@ -38,10 +39,10 @@ export class GerenciadorDeBlocos {
     const k = `${simples ? 'm' : 'c'}${Math.floor(it.x / this.tamBloco)},${Math.floor(it.z / this.tamBloco)}`
     if (!this.blocos.has(k)) {
       this.blocos.set(k, {
-        chave: k, simples, itens: [], malhas: [], longe: [],
+        chave: k, simples, itens: [], malhas: [], longe: [], lote: [],
         x0: Math.floor(it.x / this.tamBloco) * this.tamBloco,
         z0: Math.floor(it.z / this.tamBloco) * this.tamBloco,
-        perto: false, montado: false, pronto: false, bytes: 0, gerador: null,
+        perto: false, montado: false, pronto: false, bytes: 0, gerador: null, detalhe: null,
       })
     }
     return this.blocos.get(k)
@@ -89,8 +90,14 @@ export class GerenciadorDeBlocos {
   // perto e pronto: a malha detalhada à vista; longe: a caixa de fachada pintada
   aplicarVisibilidade(b) {
     const detalhe = b.perto && b.pronto
+    // Fase 2: no lote a assinatura dos parados não muda (a malha é uma só para o mapa inteiro),
+    // então quem avisa que o mapa da sombra tem de ser refeito é o bloco mesmo.
+    const mudou = b.detalhe !== detalhe
+    b.detalhe = detalhe
     for (const m of b.malhas) m.visible = detalhe
+    for (const e of b.lote) e.lote.mostrar(e.id, detalhe)
     for (const m of b.longe) m.visible = !detalhe
+    if (mudou) this.aoMudar?.('casas')
   }
 
   // quanto a malha ocupa na placa (bytes), para o orçamento de subida do quadro
@@ -109,7 +116,7 @@ export class GerenciadorDeBlocos {
     if (!r.done) return
     b.gerador = null
     b.montado = true
-    b.bytes = b.malhas.reduce((s, m) => s + this.bytesDaMalha(m), 0)
+    b.bytes = this.bytesDoBloco(b)
     this.fila.remover(b.chave)
     this.aplicarVisibilidade(b)
   }
@@ -121,8 +128,16 @@ export class GerenciadorDeBlocos {
     while (!r.done) r = b.gerador.next()
     b.gerador = null
     b.montado = true
-    b.bytes = b.malhas.reduce((s, m) => s + this.bytesDaMalha(m), 0)
+    b.bytes = this.bytesDoBloco(b)
     this.fila.remover(b.chave)
+  }
+
+  // quanto o bloco ocupa na placa: as malhas do caminho de antes e as geometrias do lote (Fase 2)
+  bytesDoBloco(b) {
+    let n = 0
+    for (const m of b.malhas) n += this.bytesDaMalha(m)
+    for (const e of b.lote) n += e.bytes || 0
+    return n
   }
 
   // Fase 1: o destino conhecido (teleporte) entra na fila antes de todo o resto, e os vizinhos
