@@ -52,8 +52,8 @@ Tabela de resultados (uma linha por rodada; a coluna `picos` traz os quadros aci
 
 | Rodada | Média (ms) | p95 (ms) | p99 (ms) | Quadros > 33 ms | Quadros > 50 ms | Quadros > 100 ms | Pior (ms) | Picos (ms e pistas) |
 |---|---|---|---|---|---|---|---|---|
-| antes (linha de base) | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher |
-| depois | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher | a preencher |
+| antes, T4 (mediana de 3) | 12,0 | 15,8 | 29,1 | 20 | 10 | 9 | 271 | teleporte + shaders novos + tarefas longas de 120 a 300 ms (montagem) |
+| depois, T4 (mediana de 3) | 13,5 | 19,4 | 33,4 | 40 | 0 | 0 | 49 | nenhum quadro acima de 50 ms |
 
 Regras de leitura da tabela:
 
@@ -64,7 +64,7 @@ Regras de leitura da tabela:
 
 ## Fase 1: os picos (montagem e shaders)
 
-**Status: em execucao.**
+**Status: executada (commit 6f41a34), medida na T4.**
 
 ### Objetivo
 
@@ -136,7 +136,20 @@ aparecer, não no meio da partida.
 
 ### Resultados da Fase 1
 
-a preencher
+Medido em 24/10/2026 na T4 (g4dn, ANGLE Vulkan), WebGL, `fatia.travar=false`, roteiro completo,
+commit 6f41a34 contra 7c8b4af. Dados brutos em /workspace/medicao/gpu5.
+
+| Config | Média | p95 | p99 | > 33 | > 50 | > 100 | Pior |
+|---|---|---|---|---|---|---|---|
+| antes, 1280x720 DPR 1 (mediana de 3) | 12,0 | 15,8 | 29,1 | 20 | 10 | 9 | 271 |
+| depois, 1280x720 DPR 1 (mediana de 3) | 13,5 | 19,4 | 33,4 | 40 | 0 | 0 | 49 |
+| antes, estresse 1920x1080 DPR 2 (1 rodada) | 12,4 | 24,8 | 33,7 | 55 | 10 | 9 | 309 |
+| depois, estresse 1920x1080 DPR 2 (1 rodada) | 13,2 | 30,4 | 34,5 | 85 | 5 | 0 | 86 |
+
+Leitura: os picos sumiram (quadros acima de 100 ms de 9 para 0, pior de 271 para 49 ms), mas
+o custo foi espalhado: média +1,5 ms, p95 +3,6 ms e o dobro de quadros entre 33 e 50 ms. No
+estresse o teto Retina e a resolução dinâmica limitaram o buffer (1728x972 antes, 1440x810
+depois), então ele não é um 4K real. A Fase 2 ataca justamente esse peso por quadro.
 
 ## Fase 2: o peso de cada quadro (o M1)
 
