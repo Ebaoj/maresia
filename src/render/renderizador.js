@@ -7,6 +7,7 @@
 //   (window.__faltaPortar), que a suíte e a foto justa leem.
 
 import * as THREE from 'three'
+import { instalarMedicaoM1 } from './medicao-m1.js'
 import { materialArcane, copiarPropriedades, matrizInstancia } from './arcane-tsl.js'
 import { usarModulo, ref } from './gpu/comum.js'
 import { instalarFaixasUnicas } from './gpu/faixas-uniform.js'
@@ -66,6 +67,7 @@ export async function criarRenderizador(cfg, canvas) {
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap // suave desde o three 0.182
   renderer.shadowMap.autoUpdate = false
+  instalarMedicaoM1(renderer, cfg)
   return { renderer, webgpu: false }
 }
 

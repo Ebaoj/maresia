@@ -1,3 +1,5 @@
+export const sinalGpu = { ms: null, instante: 0 }
+
 // R1 (robustez no M1, 19/10/2026): resolução de desenho guiada pelo tempo de quadro. Lógica pura (sem three, sem
 // relógio: recebe o dt de cada quadro), para testar em segundos.
 //
@@ -67,6 +69,8 @@ export class ResolucaoDinamica {
 
   // dtMs: tempo do quadro em ms. Devolve a NOVA escala quando decidir mudar; senão null.
   quadro(dtMs) {
+    // Amostra assíncrona recente evita os degraus de vsync; sem extensão, vale o intervalo.
+    if (sinalGpu.ms > 0 && performance.now() - sinalGpu.instante < 250) dtMs = sinalGpu.ms
     if (!(dtMs > 0)) return null
     if (dtMs > DT_MAXIMO_MS) {
       // troca de aba, pausa: o histórico não vale mais
