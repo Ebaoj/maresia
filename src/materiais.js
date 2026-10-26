@@ -204,7 +204,7 @@ export function pintar(mat, chave) {
 const _texturas = new Map()
 export function texturaPintada(nome) {
   if (!_texturas.has(nome)) {
-    const t = new THREE.TextureLoader().load(`/texturas/${nome}.jpg`, () => { geracaoTexturas.valor++ })
+    const t = new THREE.TextureLoader().load(`${import.meta.env.BASE_URL}texturas/${nome}.jpg`, () => { geracaoTexturas.valor++ })
     t.wrapS = t.wrapT = THREE.RepeatWrapping
     t.colorSpace = THREE.NoColorSpace // valores crus: é detalhe, não cor
     t.anisotropy = 4
