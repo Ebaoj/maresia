@@ -30,7 +30,7 @@ export function secaoDesempenho(gui, cfg) {
   montagem.add(d, 'preaquecerShaders').name(rec('aquecer os shaders (WebGL)'))
   // Fase 2: as casas de cada material num lote só (um desenho por material)
   montagem.add(d, 'casasEmLote').name(rec('casas em lote (WebGL)'))
-  montagem.add(d, 'casasLoteVertices', 200000, 4000000, 100000).name(rec('vértices dos lotes (casas)'))
+  montagem.add(d, 'casasLoteVertices', 200000, 8000000, 100000).name(rec('vértices dos lotes (casas)'))
 
   const sombra = des.addFolder('Sombra')
   sombra.add(cfg.mundo, 'sombras').name('sombras')
