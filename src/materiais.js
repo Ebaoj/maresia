@@ -207,17 +207,51 @@ export function pintar(mat, chave) {
 // Texturas pintadas do mundo (visual Arcane): geradas no ComfyUI, tornadas contínuas por
 // arte/texturas/costurar.py e normalizadas para média 0,5 em cada canal (no shader viram média 1 e
 // multiplicam a cor do material). Ficam em public/texturas/<nome>.jpg.
+//
+// 26/10/2026: a textura não é mais baixada pelo TextureLoader. O <img> do TextureLoader só é
+// decodificado quando o desenho precisa dela, e esse decode cai na thread do jogo: na T4 ele
+// custava uma tarefa longa de 83 ms e um quadro de 76 ms (com "texturas novas: 1" na pista do
+// rastreador). Aqui a imagem vira um ImageBitmap com createImageBitmap (o decode sai da thread do
+// jogo) e a subida para a placa é feita antes de o jogo aparecer (src/mundo/preaquecer-texturas.js).
 const _texturas = new Map()
+const _pendentes = new Map() // nome → a promise do bitmap (ainda no caminho)
 export function texturaPintada(nome) {
   if (!_texturas.has(nome)) {
-    const t = new THREE.TextureLoader().load(`/texturas/${nome}.jpg`, () => { geracaoTexturas.valor++ })
+    const t = new THREE.Texture()
+    t.name = `pintada-${nome}`
     t.wrapS = t.wrapT = THREE.RepeatWrapping
     t.colorSpace = THREE.NoColorSpace // valores crus: é detalhe, não cor
     t.anisotropy = 4
     _texturas.set(nome, t)
+    _pendentes.set(nome, carregarBitmap(nome).then((bitmap) => {
+      t.image = bitmap
+      t.needsUpdate = true
+      geracaoTexturas.valor++ // o observador de parados refaz a ligação de quem já foi desenhado
+      return t
+    }).catch((erro) => {
+      console.warn('[maresia] a textura pintada não carregou:', nome, erro)
+      return null
+    }))
   }
   return _texturas.get(nome)
 }
+
+// o bitmap da textura pintada: a imagem vem do servidor e o decode sai da thread do jogo
+// (o mesmo do ImageBitmapLoader do three: o flip vai no bitmap, porque o UNPACK_FLIP_Y do WebGL
+// não vale para ImageBitmap)
+async function carregarBitmap(nome) {
+  const url = `/texturas/${nome}.jpg`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`textura ${nome}: ${res.status}`)
+  const blob = await res.blob()
+  if (typeof createImageBitmap !== 'function') throw new Error('sem createImageBitmap')
+  return createImageBitmap(blob, { imageOrientation: 'flipY', premultiplyAlpha: 'none', colorSpaceConversion: 'none' })
+}
+
+// as texturas pintadas que ainda estão no caminho (o pré-aquecimento espera por elas)
+export function texturasPendentes() { return [..._pendentes.values()] }
+// todas as texturas pintadas do mundo
+export function texturasPintadas() { return [..._texturas.values()] }
 
 // Liga a textura pintada num material que passa por pintar(): "topo" no que olha para cima (chão,
 // telhado), "lado" nas paredes; tam = quantos metros cobre uma repetição. Chamar antes do primeiro desenho.

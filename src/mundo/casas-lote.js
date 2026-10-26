@@ -27,6 +27,7 @@
 import * as THREE from 'three'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { Escritor } from './lote-fatia.js'
+import { TABELA, capacidadePorLote, BYTES_POR_VERTICE } from './casas-capacidade.js'
 
 const IDENTIDADE = new THREE.Matrix4()
 
@@ -36,16 +37,19 @@ const MINIMO_ESCRITA_MS = 0.25
 
 // O custo de uma casa em vértices, por material (medido no casario e no morro de 1932, 26/10/2026).
 // O morro é a casa simples: ela pede menos peça e menos reboco.
-const CUSTO_CASARIO = { reboco: 583, pecas: 4866, interior: 141, aceso: 55, telhas: 51 }
-const CUSTO_MORRO = { rebocoMorro: 244, pecas: 1313, interior: 58, aceso: 43, telhas: 50 }
+// A medição completa (o mapa inteiro, com o mesmo gerador e a mesma semente do jogo) está em
+// src/mundo/casas-capacidade.json (scripts/medir-casas.mjs); estas constantes são a média por
+// casa, tirada dessa medição, e servem de reserva quando a tabela não está à mão.
+const CUSTO_CASARIO = { reboco: 623, pecas: 5212, interior: 125, aceso: 82, telhas: 51 }
+const CUSTO_MORRO = { rebocoMorro: 216, pecas: 1089, interior: 41, aceso: 42, telhas: 50 }
 const MATERIAIS_LOTE = ['reboco', 'rebocoMorro', 'pecas', 'interior', 'aceso', 'telhas']
 const CAPACIDADE_MINIMA = 20000 // nenhum material fica sem espaço para uma casa
 const VERTICES_MINIMOS = 1024 // o menor lote que o three aceita
 
 // O espaço final de cada lote: o total reservado (cfg.desempenho.casasLoteVertices) dividido
-// pela fatia de cada material no mapa inteiro (medida pelo número de casas de cada tipo).
-// Com `nomes`, só os materiais que existem no jogo entram na conta (o que não existir divide
-// a sua parte com os que existem).
+// pela fatia de cada material no anel que o jogo mantém montado (a medição real do mapa, em
+// src/mundo/casas-capacidade.json). Com `nomes`, só os materiais que existem no jogo entram na
+// conta (o que não existir divide a sua parte com os que existem).
 export function estimarCapacidade({ casas = [], morro = [], total = 1500000, nomes = MATERIAIS_LOTE }) {
   const nc = Math.max(casas.length, 1)
   const nm = Math.max(morro.length, 1)
@@ -64,16 +68,34 @@ export function estimarCapacidade({ casas = [], morro = [], total = 1500000, nom
   return { capacidade, precisa }
 }
 
+// O espaço de cada lote, tirado da medição do mapa (o anel que o jogo desenha por perto).
+// O total vem do painel (cfg.desempenho.casasLoteVertices) e a fatia de cada material sai da
+// demanda medida: o lote do 'pecas' (portas, janelas, cornija, guarda-corpo) é o maior do mapa.
+export function capacidadeMedida({ total = null, tabela = TABELA, nomes = MATERIAIS_LOTE } = {}) {
+  const { porLote, vertices, bytes } = capacidadePorLote(tabela, { total })
+  const capacidade = {}
+  for (const nome of nomes) {
+    const v = porLote[nome] ?? 0
+    capacidade[nome] = Math.max(VERTICES_MINIMOS, Math.round(v || CAPACIDADE_MINIMA))
+  }
+  return { capacidade, vertices, bytes }
+}
+
 export class LoteCasas {
   // materiais: [{ nome, material, castShadow, receiveShadow }]
-  // capacidade: o espaço final de cada material (o que estimarCapacidade devolve); sem ele, a
-  //   estimativa sai do total reservado (cfg.desempenho.casasLoteVertices)
-  constructor({ grupo, cfg, capacidade = null, materiais }) {
+  // capacidade: o espaço final de cada material (o que estimarCapacidade/capacidadeMedida devolve);
+  //   sem ele, a estimativa sai do total reservado (cfg.desempenho.casasLoteVertices)
+  // indices: o espaço de índice de cada lote (cfg.desempenho.casasLoteIndices; 0 = a geometria da
+  //   casa é uma sopa de triângulos e o lote não tem buffer de índice)
+  constructor({ grupo, cfg, capacidade = null, indices = 0, materiais }) {
     this.cfg = cfg
     this.grupo = grupo
     this.lotes = new Map() // nome → { nome, material, castShadow, mesh, itens, vertices, capacidade, visiveis, instâncias }
     this.proximoId = 1
     this.totalReservado = Math.max(50000, Math.round(cfg?.desempenho?.casasLoteVertices ?? 1500000))
+    // o índice do lote (quando a geometria vier indexada): o mesmo total, dividido pela fatia de
+    // cada material (o lote conta os vértices de todo o lote: acima de 65.535 o índice é de 32 bits)
+    this.indicesReservados = Math.max(0, Math.round(indices ?? 0))
     // o three tem um limite de instâncias por lote, e o mapa tem mais de mil blocos de casas: o
     // limite é generoso (a matriz de cada instância são 64 bytes na placa)
     this.instanciasReservadas = Math.max(1024, Math.round(cfg?.desempenho?.casasLoteInstancias ?? 2048))
@@ -92,7 +114,11 @@ export class LoteCasas {
   // nunca cresce (crescer recria o buffer e a placa sobe tudo de novo: era o pico de 100 ms).
   criarLote(lote) {
     const vertices = lote.capacidade
-    const mesh = new THREE.BatchedMesh(this.instanciasReservadas, vertices, 0, lote.material)
+    // o índice (quando há): a fatia do total reservado (o lote conta os vértices de todo o lote)
+    const fatiaIndice = this.indicesReservados > 0
+      ? Math.max(0, Math.round((this.indicesReservados * vertices) / Math.max(1, this.totalReservado)))
+      : 0
+    const mesh = new THREE.BatchedMesh(this.instanciasReservadas, vertices, fatiaIndice, lote.material)
     mesh.name = `casas-lote-${lote.nome}`
     mesh.castShadow = lote.castShadow !== false
     mesh.receiveShadow = lote.receiveShadow !== false
@@ -264,14 +290,18 @@ export class LoteCasas {
   }
 
   stats() {
-    let geometrias = 0, visiveis = 0, vertices = 0, reservados = 0
+    let geometrias = 0, visiveis = 0, vertices = 0, reservados = 0, indices = 0
     for (const lote of this.lotes.values()) {
       geometrias += lote.itens.size
       visiveis += lote.visiveis
       vertices += lote.vertices
       reservados += lote.capacidade
+      indices += lote.mesh?.geometry?.index?.count ?? 0
     }
-    return { lotes: this.lotes.size, malhas: this.lotes.size, geometrias, visiveis, vertices, reservados, escrevendo: this.escritores.size }
+    return {
+      lotes: this.lotes.size, malhas: this.lotes.size, geometrias, visiveis, vertices, reservados, escrevendo: this.escritores.size,
+      indices, bytes: reservados * BYTES_POR_VERTICE,
+    }
   }
 }
 

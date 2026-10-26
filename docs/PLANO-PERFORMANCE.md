@@ -153,6 +153,39 @@ depois), então ele não é um 4K real. A Fase 2 ataca justamente esse peso por 
 
 ## Fase 2: o peso de cada quadro (o M1)
 
+### Continuação (26/10/2026): o espaço do lote e as texturas de primeira subida
+
+Duas coisas que a medição na T4 mostrou e que o código ainda não resolvia.
+
+**O espaço do lote das casas, medido de verdade.** O lote reserva na placa o espaço final de
+cada material (`cfg.desempenho.casasLoteVertices`), e o valor vinha de uma média de poucas casas.
+A contagem real (o script `scripts/medir-casas.mjs` monta a cidade como o jogo monta e gera a
+geometria de cada casa com o mesmo gerador e a mesma semente) diz:
+
+| | casas | blocos | vértices | bytes |
+|---|---|---|---|---|
+| mapa inteiro | 21.586 | 1.280 | 74.646.324 | 2,99 GB |
+| pior anel (23 blocos, o que o jogo desenha por perto) | | | 4.863.804 | 194,6 MB |
+| o lote reserva (anel + 10%) | | | 5.350.185 | 204 MB |
+
+O mapa inteiro não cabe na placa (e o lote não precisa dele: o desenho detalhado só existe no
+anel de blocos que o gerenciador mantém montado; o resto é a caixa de fachada pintada do LOD de
+longe). A fatia de cada material sai da demanda medida: o `pecas` (portas, janelas, cornija e
+guarda-corpo) pede 86% do anel. O índice fica em zero (`cfg.desempenho.casasLoteIndices`): a
+geometria da casa é uma sopa de triângulos, sem buffer de índice.
+
+A tabela fica em `src/mundo/casas-capacidade.json` e o teste
+`testes/unidade/casas-capacidade.test.js` confere que ela ainda bate com o gerador (se a casa
+mudar, o teste avisa).
+
+**As texturas de primeira subida.** Na rodada de estresse na T4 apareceu um quadro de 76 ms com
+"tarefa longa 83 ms" e "texturas novas: 1" na pista do rastreador: a textura subia para a placa no
+meio da partida. Agora as texturas do mundo sobem antes de o jogo aparecer
+(`src/mundo/preaquecer-texturas.js`: `renderer.initTexture` para cada textura usada por um
+material do mundo, depois de esperar as decodificações pendentes), e as texturas pintadas deixam
+de ser baixadas pelo `TextureLoader` (que só decodifica o `<img>` no momento do desenho, na
+thread do jogo): viram `ImageBitmap` com `createImageBitmap`, que decodifica fora da thread.
+
 ### Objetivo
 
 O quadro normal (sem picos) fica abaixo de 16,7 ms no M1: o jogo roda liso andando pelo

@@ -46,6 +46,7 @@ import { criarQuintal1932 } from './mundo/quintal1932.js'
 import { criarVida1932 } from './mundo/vida1932.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
+import { preaquecerTexturas } from './mundo/preaquecer-texturas.js'
 import { criarUrubu1932 } from './mundo/urubu1932.js'
 import { criarVilas } from './mundo/vilas.js'
 import { criarObjetosFatia, FOGAREIROS } from './mundo/fatia-objetos.js'
@@ -190,6 +191,9 @@ async function iniciar() {
       jogador.trocarCorpo(c)
       // a gente mais próxima vira ator animado, com os mesmos movimentos (mundo/atores.js)
       atores = criarAtores(cena, pessoas, c.clipes, { passadaAndar: c.passadas.andar || 1.4, vat: webgpu && cfg.desempenho.atoresVat, quantos: cfg.personagem.quantosAtores })
+      // 26/10/2026: as texturas do corpo novo (o rosto, a roupa e o mapa dos ossos dos atores) sobem
+      // para a placa agora, e não no primeiro quadro em que o corpo aparece (era o pico de 76 ms)
+      preaquecerTexturas(renderer, cena).catch((e) => console.warn('[maresia] texturas do corpo:', e))
     }).catch((e) => console.error('Corpo novo:', e)))
   }
   // o avô parado perto de onde o jogo começa, de frente para o neto (para julgar o modelo com o filtro)
@@ -456,6 +460,13 @@ async function iniciar() {
   // novo (o das casas, que só entram depois de um teleporte) compila no quadro em que aparece e trava.
   // ?semPreaquecer desliga, para o A/B.
   const semPreaquecer = new URLSearchParams(location.search).has('semPreaquecer')
+  // 26/10/2026: as texturas do mundo sobem para a placa antes de o jogo aparecer. Sem isso, a
+  // primeira subida cai no meio da partida (na T4: uma tarefa longa de 83 ms e um quadro de 76 ms
+  // com "texturas novas: 1" na pista do rastreador). O ?semPreaquecer desliga, para o A/B.
+  if (!semPreaquecer) {
+    const t = await preaquecerTexturas(renderer, cena)
+    if (import.meta.env.DEV) console.log('[maresia] texturas pré-aquecidas:', t)
+  }
   if (!webgpu && cfg.desempenho.preaquecerShaders !== false && !semPreaquecer) {
     const alvo = pos.rtCor || null // o alvo real do pós: o mesmo programa do jogo
     await preaquecerWebgl(renderer, cena, camera, { alvo, extras: casas.representantesAquecimento() })

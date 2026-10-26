@@ -20,7 +20,7 @@ import { luzFixa } from '../materiais.js'
 import { globais } from '../globais.js'
 import { adicionarDeck } from './colisao.js'
 import { MuitoLonge } from './muito-longe.js'
-import { LoteCasas, estimarCapacidade } from './casas-lote.js'
+import { LoteCasas, capacidadeMedida } from './casas-lote.js'
 import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { criarAleatorio } from '../utils.js'
@@ -83,16 +83,14 @@ export function criarCasas(cena, casario, morro, cfg = null, opcoes = {}) {
   // material em vez de cinco por bloco). Só no WebGL: o caminho do WebGPU desenha por objeto.
   // O renderizador que vale é o que o jogo está usando (o WebGPU pode cair para o WebGL).
   const emLote = cfg?.desempenho?.casasEmLote !== false && !opcoes.webgpu
-  // o espaço final de cada lote: o total reservado dividido pela estimativa de quantos vértices
-  // cada material pede no mapa inteiro (src/mundo/casas-lote.js)
-  const estimativa = estimarCapacidade({
-    casas: casario,
-    morro,
-    total: cfg?.desempenho?.casasLoteVertices ?? 1500000,
-  })
+  // O espaço final de cada lote: a medição real do mapa (src/mundo/casas-capacidade.json, feita
+  // por scripts/medir-casas.mjs com o mesmo gerador e a mesma semente do jogo). O total vem do
+  // painel (cfg.desempenho.casasLoteVertices) e a fatia de cada material sai da demanda medida.
+  const dimensao = capacidadeMedida({ total: cfg?.desempenho?.casasLoteVertices ?? null })
   const loteCasas = emLote ? new LoteCasas({
     grupo, cfg,
-    capacidade: estimativa.capacidade,
+    capacidade: dimensao.capacidade,
+    indices: cfg?.desempenho?.casasLoteIndices ?? 0,
     materiais: [
       { nome: 'reboco', material: matReboco, castShadow: true, receiveShadow: true },
       { nome: 'rebocoMorro', material: matRebocoMorro, castShadow: true, receiveShadow: true },
@@ -103,7 +101,8 @@ export function criarCasas(cena, casario, morro, cfg = null, opcoes = {}) {
     ],
   }) : null
 
-  // o material de cada pilha (o nome da pilha é o nome do lote)
+  // o material de cada pilha (o nome da pilha é o nome do lote). O reboco da favela (o morro) tem
+  // material próprio (o desgaste maior de src/mundo/casas-materiais.js): é o lote 'rebocoMorro'.
   const MATERIAIS = {
     reboco: matReboco,
     rebocoMorro: matRebocoMorro,
@@ -112,6 +111,8 @@ export function criarCasas(cena, casario, morro, cfg = null, opcoes = {}) {
     aceso: matAceso,
     telhas: matTelhas,
   }
+  // o lote de cada pilha: o reboco do morro vai para o lote dele (o resto é o mesmo material)
+  const nomeDoLote = (pilha, simples) => (pilha === 'reboco' && simples ? 'rebocoMorro' : pilha)
 
   // O worker que monta o bloco fora da thread do jogo. Sem worker (os testes, os lugares sem
   // Web Worker), o bloco é gerado no fio: a montagem continua, só que mais lenta.
@@ -180,8 +181,9 @@ export function criarCasas(cena, casario, morro, cfg = null, opcoes = {}) {
     for (const nome of PILHAS) {
       const pilha = pilhas?.[nome]
       if (!pilha || !pilha.vertices) continue
-      const material = MATERIAIS[nome]
-      const ticket = loteCasas ? loteCasas.reservar(nome, pilha.vertices) : null
+      const lote = nomeDoLote(nome, b.simples)
+      const material = MATERIAIS[lote]
+      const ticket = loteCasas ? loteCasas.reservar(lote, pilha.vertices) : null
       if (ticket) {
         const bytes = LoteCasas.bytesDosDados(pilha)
         escritores.push(new Escritor({
