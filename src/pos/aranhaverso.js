@@ -646,6 +646,7 @@ export class Aranhaverso {
     const r = this.renderer
     const cam = this.camera
 
+
     // visual Arcane (docs/pesquisa-arcane.md): o pintor de luz mora nos materiais; aqui saem a retícula,
     // a hachura, a aberração e o traço tremido, e o bloom vira halo liso
     const arc = e.visual === 'arcane'
@@ -815,6 +816,18 @@ export class Aranhaverso {
     const e = this.cfg.estilo
     const r = this.renderer
     const cam = this.camera
+    // Menos pixels nos efeitos nos perfis medio/baixo. Cada chave aceita ajuste vivo.
+    const reduzido = this.cfg.desempenho.qualidadeEscolhida !== 'alto'
+    const divisor = Math.max(1, this.cfg.desempenho.bloomDivisor ?? (reduzido ? 8 : 4))
+    if (this.tamCheio) {
+      const [w, h] = this.tamCheio
+      const bw = Math.max(1, Math.ceil(w / divisor)), bh = Math.max(1, Math.ceil(h / divisor))
+      if (this.rtBrilhoA.width !== bw || this.rtBrilhoA.height !== bh) {
+        this.rtBrilhoA.setSize(bw, bh)
+        this.rtBrilhoB.setSize(bw, bh)
+        this.tamBrilho.set(1 / bw, 1 / bh)
+      }
+    }
 
     // 1. cena (sombra recalculada em todo quadro: quadro alternado deixava a sombra travada)
     r.shadowMap.needsUpdate = true
@@ -834,8 +847,10 @@ export class Aranhaverso {
 
     // 4. brilho: separa o que é muito claro e borra em duas direções
     this.uClaro.uLimiar.value = e.limiarBrilho
-    this.passo(this.matClaro, this.rtBrilhoA)
-    for (let i = 0; i < 2; i++) {
+    const bloomLigado = this.cfg.desempenho.bloom !== false && e.brilho > 0
+    this.uTela.uBrilho.value = bloomLigado ? e.brilho : 0
+    if (bloomLigado) this.passo(this.matClaro, this.rtBrilhoA)
+    for (let i = 0; bloomLigado && i < 2; i++) {
       this.uDesfoque.tFonte.value = this.rtBrilhoA.texture
       this.uDesfoque.uDir.value.set(this.tamBrilho.x * (1 + i), 0)
       this.passo(this.matDesfoque, this.rtBrilhoB)
@@ -858,6 +873,12 @@ export class Aranhaverso {
     if (this.dofLigado && !this.dof) {
       this.dof = new ProfundidadeWebgl(THREE, this.uDof)
       if (this.tamCheio) this.dof.tamanho(...this.tamCheio)
+    }
+    if (this.dof && this.tamCheio) {
+      const escala = Math.min(1, Math.max(0.25, this.cfg.desempenho.dofEscalaJuncao ?? (reduzido ? 0.5 : 1)))
+      const [w, h] = this.tamCheio
+      const jw = Math.max(1, Math.ceil(w * escala)), jh = Math.max(1, Math.ceil(h * escala))
+      if (this.dof.rtJunta.width !== jw || this.dof.rtJunta.height !== jh) this.dof.rtJunta.setSize(jw, jh)
     }
     if (this.dofLigado && dofAntes) fonte = this.dof.desenhar(this, fonte, this.rtCor.depthTexture)
 
