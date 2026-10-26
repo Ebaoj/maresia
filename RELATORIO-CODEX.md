@@ -57,3 +57,7 @@ A junção do DOF em meia resolução pode amolecer também detalhes nítidos e 
 Safari pode não expor consultas de GPU ou Long Animation Frames. O JSON indica indisponibilidade. O medidor anterior documenta resultados incoerentes de timer no ANGLE/Metal; as amostras deste módulo precisam ser confrontadas com os intervalos de quadro no M1. Se incoerentes, desligue tempoGpu. Disjoint não detecta toda possível imprecisão do driver.
 
 O roteiro usa movimento normal, sujeito a colisões e aos controles manuais, e registra intervalos de requestAnimationFrame, sem garantir apresentação física de cada quadro no monitor. O trajeto termina no Urubu, sem restaurar a posição inicial. O modo automático é voltado ao WebGL; com WebGPU ele não é instalado.
+
+## Correção de ?medirM1 — 26/10/2026
+
+O timestamp do primeiro requestAnimationFrame pode ser anterior ao performance.now() usado no início da rodada. O intervalo negativo mantinha a etapa em -1 e a lista vazia, causando a falha ao ler nome. A medição agora usa o timestamp do primeiro quadro como origem. O teste de regressão reproduziu o erro antes da correção e verifica a rota automática completa, as transições em 15/30 segundos, a duração de 45 segundos e a restauração dos controles. Validação: npm test passou (487 aprovados, 4 ignorados); npm run build passou com aviso de chunks grandes.

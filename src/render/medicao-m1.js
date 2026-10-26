@@ -109,7 +109,7 @@ async function medirRota(m, gpu, coletar) {
     observador = new PerformanceObserver(lista => longos.push(...lista.getEntries().map(e => e.toJSON())))
     observador.observe({ type: 'long-animation-frame' })
   }
-  const inicio = performance.now()
+  let inicio = null
   let anterior = null, etapa = -1
   m.cfg.fatia.travar = false
   m.controle.pausado = false
@@ -118,6 +118,8 @@ async function medirRota(m, gpu, coletar) {
   try {
     await new Promise(resolve => {
       const quadro = agora => {
+        // O timestamp do RAF pode preceder performance.now() chamado nesta rodada.
+        inicio ??= agora
         if (anterior !== null) tempos.push(agora - anterior)
         anterior = agora
         const decorrido = agora - inicio
