@@ -10,6 +10,11 @@
 // frente do jogador entram na fila com prioridade, para o casario já estar pronto quando o
 // jogador chega.
 //
+// 26/10/2026 (Fase 2): o bloco tem três tempos. A geometria é gerada fora da thread do jogo
+// (o trabalhador, src/mundo/gerador-bloco.worker.js: enquanto ele monta, este quadro não gasta
+// nada), depois a geometria entra no lote das casas em fatias (src/mundo/lote-fatia.js: cada
+// quadro escreve um trecho dos vértices na faixa reservada), e só então o bloco fica pronto.
+//
 // O módulo não sabe de geometria: quem monta as casas é o gerador que o quarteirao.js passa
 // (cada passo do gerador é uma etapa da montagem).
 
@@ -20,10 +25,18 @@ import { marcar } from '../debug/marcas.js'
 const PERTO = 70 // metros: dentro disso a casa é a de verdade, fora é a caixa pintada
 
 export class GerenciadorDeBlocos {
-  constructor({ grupo, cfg, tamBloco, gerar }) {
+  // gerar: (b) => o gerador das etapas do bloco (o caminho no fio)
+  // pedir: (b) => o pedido da geometria do bloco ao trabalhador (null quando não há trabalhador)
+  // podePedir: (b) => se o trabalhador tem vaga (a fila dele é curta: o bloco espera)
+  // registrar: (b, pilhas) => quem reserva a faixa no lote e devolve o escritor do bloco
+  // (as fatias da escrita; null quando o bloco não entrou no lote)
+  constructor({ grupo, cfg, tamBloco, gerar, pedir, podePedir, registrar }) {
     this.grupo = grupo
     this.tamBloco = tamBloco
     this.gerar = gerar // (b) => o gerador das etapas do bloco
+    this.pedir = pedir // (b) => o pedido ao trabalhador
+    this.podePedir = podePedir // (b) => o trabalhador tem vaga
+    this.registrar = registrar // (b, pilhas) => a geometria entra na fila de escrita do lote
     this.blocos = new Map()
     this.fatiar = cfg?.desempenho?.fatiarMontagem !== false
     this.orcamentoMs = cfg?.desempenho?.orcamentoMontagemMs ?? 4
@@ -43,6 +56,7 @@ export class GerenciadorDeBlocos {
         x0: Math.floor(it.x / this.tamBloco) * this.tamBloco,
         z0: Math.floor(it.z / this.tamBloco) * this.tamBloco,
         perto: false, montado: false, pronto: false, bytes: 0, gerador: null, detalhe: null,
+        pedido: null, escritor: null,
       })
     }
     return this.blocos.get(k)
@@ -109,12 +123,39 @@ export class GerenciadorDeBlocos {
     return n
   }
 
-  // um passo da fila: a etapa seguinte do bloco
-  passo(b) {
-    if (!b.gerador) return
-    const r = b.gerador.next()
-    if (!r.done) return
-    b.gerador = null
+  // um passo da fila: o bloco avança um pouco. A geometria pode estar no trabalhador (este
+  // quadro não gasta nada), no gerador do fio (uma casa por passo) ou na escrita do lote
+  // (uma fatia: o que sobra do orçamento do quadro).
+  passo(b, restante) {
+    if (b.pedido) {
+      // o trabalhador ainda está montando o bloco: espera sem gastar nada
+      if (!b.pedido.pronto) return
+      const pilhas = b.pedido.pilhas
+      b.pedido = null
+      b.escritor = this.registrar(b, pilhas)
+      if (!b.escritor) this.finalizar(b)
+      return
+    }
+    if (b.gerador) {
+      const r = b.gerador.next()
+      if (!r.done) return
+      b.gerador = null
+      b.escritor = this.registrar(b, r.value)
+      if (!b.escritor) this.finalizar(b)
+      return
+    }
+    if (b.escritor) {
+      const r = b.escritor.passo(restante ?? this.orcamentoMs)
+      if (r.fim) {
+        b.escritor = null
+        this.finalizar(b)
+      }
+    }
+  }
+
+  // o bloco acabou: ele está no lote (ou nas malhas de antes) e a subida para a placa espera
+  // o orçamento de bytes do quadro
+  finalizar(b) {
     b.montado = true
     b.bytes = this.bytesDoBloco(b)
     this.fila.remover(b.chave)
@@ -127,6 +168,9 @@ export class GerenciadorDeBlocos {
     let r = b.gerador.next()
     while (!r.done) r = b.gerador.next()
     b.gerador = null
+    const escritor = this.registrar(b, r.value)
+    // sem fatiamento o bloco entra inteiro no lote
+    if (escritor) while (!escritor.passo(1e6).fim) { /* nada */ }
     b.montado = true
     b.bytes = this.bytesDoBloco(b)
     this.fila.remover(b.chave)
@@ -162,7 +206,7 @@ export class GerenciadorDeBlocos {
         && this.distancia(b, this.alvoPrefetch.x, this.alvoPrefetch.z) <= this.raioPrefetch + this.tamBloco
       const noAnel = this.fatiar && d < PERTO + this.raioPrefetch
       const prioridade = noDestino ? -1000 + d : d
-      if ((perto || noDestino || noAnel) && !b.montado && !b.gerador) {
+      if ((perto || noDestino || noAnel) && !b.montado && !b.gerador && !b.pedido && !b.escritor) {
         if (!this.fatiar) {
           // o jeito de antes: o bloco inteiro dentro de um quadro (para o A/B)
           if (montou >= porQuadro) continue
@@ -173,9 +217,14 @@ export class GerenciadorDeBlocos {
           this.aplicarVisibilidade(b)
           continue
         }
-        b.gerador = this.gerar(b)
-        this.fila.enfileirar(b.chave, () => this.passo(b), { prioridade, tipo: 'casa' })
-      } else if (b.gerador) {
+        // o trabalhador tem fila curta: enquanto ele está cheio o bloco espera (o próximo quadro tenta)
+        if (!this.podePedir(b)) continue
+        b.pedido = this.pedir(b) // null quando não há trabalhador: o bloco é gerado no fio
+        if (!b.pedido) b.gerador = this.gerar(b)
+        // a unidade recebe o que sobra do orçamento do quadro: é por ele que a fatia da
+        // escrita no lote se corta (src/mundo/lote-fatia.js)
+        this.fila.enfileirar(b.chave, (restante) => this.passo(b, restante), { prioridade, tipo: 'casa' })
+      } else if (b.gerador || b.pedido || b.escritor) {
         // a prioridade anda com a câmera (o bloco mais perto é sempre o primeiro)
         this.fila.mudarPrioridade(b.chave, prioridade)
       }

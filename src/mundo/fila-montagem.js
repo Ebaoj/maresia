@@ -94,7 +94,9 @@ export function criarFilaMontagem({ orcamentoMs = ORCAMENTO_PADRAO, agora = () =
         // roda (senão um trabalho estimado como caro nunca sairia).
         if (feitos > 0 && gasto + estimado > teto) break
         const a = relogio()
-        item.fazer()
+        // a unidade recebe o que sobra do orçamento: é por ele que a fatia da escrita no
+        // lote das casas se corta (src/mundo/lote-fatia.js)
+        item.fazer(Math.max(0, teto - gasto))
         const durou = relogio() - a
         // média do tipo: o próximo orçamento sabe quanto custa, sem chutar
         const anterior = custoPorTipo.get(item.tipo)

@@ -560,7 +560,9 @@ export const PADRAO = {
     raioPrefetch: 96,      // 25/10/2026 (Fase 1): o anel de blocos montados à frente do jogador (m), para o casario já estar pronto quando ele chega
     preaquecerShaders: true, // 25/10/2026 (Fase 1): no WebGL, compilar os shaders e desenhar uma vez antes de mostrar o jogo (?semPreaquecer desliga, para o A/B)
     casasEmLote: true,     // 25/10/2026 (Fase 2): as casas de cada material num BatchedMesh só (um desenho por material, em vez de cinco por bloco); desligado: uma malha por pilha, como antes
-    casasLoteVertices: 1500000, // 25/10/2026 (Fase 2): os vértices que os lotes de casas reservam na placa, no total (cada material fica com a sua fatia: as peças da casa são a maior parte; o lote cresce quando falta)
+    casasLoteVertices: 1500000, // 26/10/2026: os vértices que os lotes de casas reservam na placa, no total (é o espaço FINAL: o lote nunca cresce, e o bloco que não cabe usa as malhas de antes, uma por pilha). A fatia de cada material sai da estimativa de quantos vértices o mapa inteiro pede nele (src/mundo/casas-lote.js)
+    casasLoteInstancias: 2048, // 26/10/2026: as instâncias que cada lote reserva (o mapa tem mais de mil blocos de casas: um bloco é uma instância do lote do seu material)
+    casasLoteFatiaVertices: 65536, // 26/10/2026: o teto de vértices por fatia na escrita do lote (o orçamento do quadro é o que manda; este teto é a rede de segurança)
     resolucaoMin: 0.9,     // R1: menor escala que a resolução dinâmica aceita (0,9 = 72% da linha de 1,25; abaixo disso a retícula e o papel engrossam, docs/capturas/fluido/res-*.jpg)
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
   },
