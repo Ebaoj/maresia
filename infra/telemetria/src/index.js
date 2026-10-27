@@ -1,4 +1,4 @@
-// maresia-telemetria: recebe resumos de desempenho do jogo (POST /v1/sessao) e entrega ao admin (GET /v1/sessoes).
+// maresia-telemetria: recebe resumos de desempenho do jogo (POST /v1/q, apelido /v1/sessao) e entrega ao admin (GET /v1/sessoes).
 // Não guarda IP: o limite de taxa usa um hash do IP com sal diário, só na tabela de limite, e expira.
 const MAX_BYTES = 64 * 1024
 const LIMITE_POR_MIN = 12 // por IP-hash e por sessão
@@ -103,11 +103,13 @@ async function listar(req, env, url) {
 export default {
   async fetch(req, env) {
     const url = new URL(req.url)
-    if (req.method === 'OPTIONS' && url.pathname === '/v1/sessao') {
+    // /v1/q é o caminho neutro (bloqueadores de anúncio barravam /v1/sessao); /v1/sessao segue como apelido
+    const receberEm = url.pathname === '/v1/q' || url.pathname === '/v1/sessao'
+    if (req.method === 'OPTIONS' && receberEm) {
       const o = req.headers.get('Origin')
       return new Response(null, { status: origemOk(o) ? 204 : 403, headers: cors(o) })
     }
-    if (req.method === 'POST' && url.pathname === '/v1/sessao') return receber(req, env)
+    if (req.method === 'POST' && receberEm) return receber(req, env)
     if (req.method === 'GET' && url.pathname === '/v1/sessoes') return listar(req, env, url)
     if (url.pathname === '/') return new Response('maresia-telemetria\n')
     return json({ erro: 'não achado' }, 404)

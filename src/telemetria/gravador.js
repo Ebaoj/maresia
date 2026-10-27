@@ -1,9 +1,10 @@
 // Telemetria de desempenho (sempre ligada; ?semTelemetria desliga): a cada 30 s, e ao sair/esconder a aba, manda um
-// resumo anônimo ao Worker maresia-telemetria via sendBeacon. Sem IP, sem nada do jogador: só números do quadro e do
+// resumo anônimo ao Worker (maresia-q, apelido do maresia-telemetria; nome e caminho neutros porque bloqueador de
+// anúncio barrava o endereço antigo) via fetch keepalive, com sendBeacon de reserva. Sem IP, sem nada do jogador: só números do quadro e do
 // aparelho. O custo por quadro é um performance.now() e umas comparações; ordenar e montar o resumo fica fora do quadro.
 import { geracaoTexturas } from '../globais.js'
 
-const URL_PADRAO = 'https://maresia-telemetria.joabecornelio.workers.dev' // ou VITE_TELEMETRIA_URL
+const URL_PADRAO = 'https://maresia-q.joabecornelio.workers.dev' // ou VITE_TELEMETRIA_URL
 const INTERVALO_MS = 30000
 const MAX_QUADROS = 8192 // por janela de 30 s (até ~270 FPS)
 
@@ -49,7 +50,7 @@ export function causaProvavel(ms, marcas, texturaNova, shaderNovo) {
 
 export function criarTelemetria({ renderer, canvas, url, busca = location.search, intervaloMs = INTERVALO_MS } = {}) {
   if (telemetriaDesligada(busca)) return null
-  const destino = (url || import.meta.env.VITE_TELEMETRIA_URL || URL_PADRAO).replace(/\/$/, '') + '/v1/sessao'
+  const destino = (url || import.meta.env.VITE_TELEMETRIA_URL || URL_PADRAO).replace(/\/$/, '') + '/v1/q'
   if (destino.includes('PREENCHER')) return null
   const sessao = idAleatorio()
   const inicio = performance.now()
@@ -145,9 +146,14 @@ export function criarTelemetria({ renderer, canvas, url, busca = location.search
   function enviar(motivo) {
     if (!n) return
     const corpo = JSON.stringify(resumo(motivo))
-    // text/plain: o sendBeacon não faz preflight; o Worker lê o JSON do mesmo jeito
-    const blob = new Blob([corpo], { type: 'text/plain;charset=UTF-8' })
-    if (!navigator.sendBeacon?.(destino, blob)) fetch(destino, { method: 'POST', body: blob, keepalive: true, mode: 'cors' }).catch(() => {})
+    // text/plain: sem preflight; o Worker lê o JSON do mesmo jeito. O sendBeacon devolve true mesmo quando o
+    // bloqueador barra o pedido (ERR_BLOCKED_BY_CLIENT), então o fetch keepalive vai primeiro (a falha dele
+    // aparece) e o sendBeacon fica de reserva (fetch ausente ou recusado).
+    const tipo = 'text/plain;charset=UTF-8'
+    const reserva = () => { try { navigator.sendBeacon?.(destino, new Blob([corpo], { type: tipo })) } catch { /* nada a fazer */ } }
+    try {
+      fetch(destino, { method: 'POST', body: corpo, headers: { 'Content-Type': tipo }, keepalive: true, mode: 'cors', credentials: 'omit' }).catch(reserva)
+    } catch { reserva() }
   }
 
   const relogio = setInterval(() => enviar('intervalo'), intervaloMs)
