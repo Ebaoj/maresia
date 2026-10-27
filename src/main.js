@@ -348,7 +348,8 @@ async function iniciar() {
 
   const estatistica = { msQuadro: 16 }
   // telemetria de desempenho anônima (src/telemetria/gravador.js); ?semTelemetria desliga
-  const tele = criarTelemetria({ renderer, canvas })
+  const tele = criarTelemetria({ renderer, canvas, cena })
+  if (tele && governador) tele.estadoExtra(() => governador.estado())
   // o gravador pausa o laço e chama passo() com tempo fixo. Com ?foto na URL o jogo já abre pausado: a foto
   // justa (debug/foto-justa.js) roda a mesma sequência de passos fixos nos dois renderizadores, então o mundo
   // (partículas, ondas, animação) fica no mesmo estado nas duas fotos
@@ -508,9 +509,16 @@ async function iniciar() {
         marcarEvento('governador', { degrau: governador.nome })
       }
     }
-    if (!tamanhoTravado && Math.min(escalaAtual(), tetoPixel(cfg), tetoGovernador()) !== resolucao) redimensionar()
+    if (!tamanhoTravado && Math.min(escalaAtual(), tetoPixel(cfg), tetoGovernador()) !== resolucao) {
+      const t0r = performance.now()
+      redimensionar() // realoca os alvos do pós
+      tele?.marcar('resolucao', performance.now() - t0r)
+    }
     const t0Quadro = performance.now()
+    const marcado0 = tele ? tele.somaMarcas() : 0
     passo(Math.min(real, 1 / 20))
+    // o resto do passo (jogador, câmera, mundo) sem o que já tem marca própria (casas, chunks, sombra, cena, pós)
+    if (tele) tele.marcar('atualizar', Math.max(0, performance.now() - t0Quadro - (tele.somaMarcas() - marcado0)))
     if (webgpu && dinamicaLigada && !medindoCusto && renderer.backend?.device) {
       medindoCusto = true
       renderer.backend.device.queue.onSubmittedWorkDone().then(() => { custoQuadroMs = performance.now() - t0Quadro; medindoCusto = false })

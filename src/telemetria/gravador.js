@@ -37,18 +37,55 @@ function gpuDe(renderer) {
   return { fornecedor: null, gpu: null }
 }
 
-// Causa provável de uma travada: o que mais pesou no quadro anterior, entre os sistemas que avisam (marcar),
-// e se nesse quadro chegou textura nova ou o renderizador compilou programa novo
-export function causaProvavel(ms, marcas, texturaNova, shaderNovo) {
-  let causa = null, maior = 0
-  for (const k in marcas) if (marcas[k] > maior) { maior = marcas[k]; causa = k }
-  if (causa && maior >= ms * 0.3) return causa
+// Causa provável de uma travada (27/10/2026: mais sistemas medidos, para 'desconhecida' ficar rara). marcas: ms por
+// sistema no quadro anterior (atualizar, casas, chunks, sombra, cena, pos, resolucao...). Ordem:
+//   1. programa novo compilou -> 'shader'; textura nova subiu -> 'textura' (os dois acontecem DENTRO do desenho, que
+//      sem isso levaria a culpa);
+//   2. o sistema que pesou >= 30% do quadro;
+//   3. tarefa longa do navegador (PerformanceObserver longtask) que não é o nosso quadro: coleta de lixo, outro script
+//      -> 'gc-ou-tarefa';
+//   4. o nosso código mal trabalhou (< 35% do quadro) e ninguém mais ocupou a thread: o quadro esperou a placa, o
+//      compositor ou o vsync -> 'gpu-ou-espera';
+//   5. o maior sistema, se passou de 8 ms; senão 'desconhecida'.
+export function causaProvavel(ms, marcas, texturaNova, shaderNovo, { longaFora = 0 } = {}) {
+  let causa = null, maior = 0, soma = 0
+  for (const k in marcas) { soma += marcas[k]; if (marcas[k] > maior) { maior = marcas[k]; causa = k } }
   if (shaderNovo) return 'shader'
   if (texturaNova) return 'textura'
+  if (causa && maior >= ms * 0.3) return causa
+  if (longaFora >= ms * 0.4) return 'gc-ou-tarefa'
+  if (soma > 0 && soma < ms * 0.35) return 'gpu-ou-espera'
   return causa && maior >= 8 ? causa : 'desconhecida'
 }
 
-export function criarTelemetria({ renderer, canvas, url, busca = location.search, intervaloMs = INTERVALO_MS } = {}) {
+// Mede o desenho por dentro (27/10/2026): o mapa de sombra, a cena e o pós (cada render() que não é a cena principal),
+// embrulhando renderer.render e renderer.shadowMap.render. Devolve o objeto das marcas que o gravador soma.
+export function instrumentarDesenho(renderer, cena, marcar) {
+  if (!renderer || renderer.__telemetria) return
+  renderer.__telemetria = true
+  let profundidade = 0, sombraNoRender = 0
+  const sm = renderer.shadowMap
+  if (sm && typeof sm.render === 'function') {
+    const orig = sm.render
+    sm.render = function (...a) {
+      const t = performance.now()
+      try { return orig.apply(this, a) } finally { const d = performance.now() - t; sombraNoRender += d; marcar('sombra', d) }
+    }
+  }
+  const origR = renderer.render
+  renderer.render = function (cenaR, cam) {
+    if (profundidade++ > 0) { try { return origR.apply(this, arguments) } finally { profundidade-- } }
+    const t = performance.now()
+    sombraNoRender = 0
+    try { return origR.apply(this, arguments) } finally {
+      profundidade--
+      const d = performance.now() - t - sombraNoRender
+      marcar(cenaR === cena ? 'cena' : 'pos', d)
+    }
+  }
+}
+
+export function criarTelemetria({ renderer, canvas, cena = null, url, busca = location.search, intervaloMs = INTERVALO_MS } = {}) {
   if (telemetriaDesligada(busca)) return null
   const destino = (url || import.meta.env.VITE_TELEMETRIA_URL || URL_PADRAO).replace(/\/$/, '') + '/v1/q'
   if (destino.includes('PREENCHER')) return null
@@ -61,6 +98,13 @@ export function criarTelemetria({ renderer, canvas, url, busca = location.search
   let geracaoTex = geracaoTexturas.valor
   let programas = renderer.info?.programs?.length ?? 0
   let custoProprio = 0, amostrasCusto = 0
+  const somaSistemas = {} // ms por sistema na janela (média no resumo)
+  // tarefas longas do navegador (> 50 ms), para separar coleta de lixo / outro script do nosso quadro
+  const longas = []
+  try {
+    const po = new PerformanceObserver((l) => { for (const e of l.getEntries()) { longas.push(e.startTime, e.duration); if (longas.length > 64) longas.splice(0, 2) } })
+    po.observe({ type: 'longtask', buffered: false })
+  } catch { /* sem longtask (Safari, Firefox) */ }
   let amostrando = false, autoResetAntes = true, contaQuadros = 0
   const amostra = { chamadas: 0, triangulos: 0 }
   const gpu = gpuDe(renderer)
@@ -75,12 +119,16 @@ export function criarTelemetria({ renderer, canvas, url, busca = location.search
         if (d > 100) acima100++
         if (d > piorMs) piorMs = d
         const progs = renderer.info?.programs?.length ?? programas
-        const c = causaProvavel(d, marcas, geracaoTexturas.valor !== geracaoTex, progs !== programas)
+        // tarefa longa dentro do intervalo do quadro, menos o que nós mesmos marcamos
+        let longa = 0, nosso = 0
+        for (const k in marcas) nosso += marcas[k]
+        for (let i = 0; i < longas.length; i += 2) if (longas[i] + longas[i + 1] > ultimo && longas[i] < t) longa += longas[i + 1]
+        const c = causaProvavel(d, marcas, geracaoTexturas.valor !== geracaoTex, progs !== programas, { longaFora: Math.max(0, longa - nosso) })
         causas[c] = (causas[c] || 0) + 1
       }
     }
     ultimo = t
-    for (const k in marcas) marcas[k] = 0
+    for (const k in marcas) { somaSistemas[k] = (somaSistemas[k] || 0) + marcas[k]; marcas[k] = 0 }
     // base para a próxima travada: textura nova chegou? programa novo compilou? (só leituras de contador)
     geracaoTex = geracaoTexturas.valor
     programas = renderer.info?.programs?.length ?? programas
@@ -106,6 +154,10 @@ export function criarTelemetria({ renderer, canvas, url, busca = location.search
 
   // sistemas avisam quanto gastaram no quadro: marcar('casas', ms)
   function marcar(nome, duracao) { marcas[nome] = (marcas[nome] || 0) + duracao }
+  // soma do que já foi marcado no quadro em curso (quem mede um bloco que contém outros desconta por aqui)
+  function somaMarcas() { let s = 0; for (const k in marcas) s += marcas[k]; return s }
+  instrumentarDesenho(renderer, cena, marcar)
+  let extra = null // o governador e afins põem estado aqui (resumo.governador)
 
   function resumo(motivo) {
     const ord = ms.slice(0, n).sort()
@@ -124,6 +176,9 @@ export function criarTelemetria({ renderer, canvas, url, busca = location.search
         pior: +piorMs.toFixed(1),
       },
       travadas: { acima50, acima100, causas },
+      // ms médios por quadro de cada sistema medido (atualizar, sombra, cena, pos, casas, chunks...)
+      sistemas: Object.fromEntries(Object.entries(somaSistemas).map(([k, v]) => [k, n ? +(v / n).toFixed(2) : 0])),
+      ...(extra ? { governador: extra() } : {}),
       render: {
         chamadas: amostra.chamadas || (r.calls ?? r.drawCalls ?? 0), triangulos: amostra.triangulos || (r.triangles ?? 0),
         geometrias: mem.geometries ?? 0, texturas: mem.textures ?? 0, programas: info.programs?.length ?? 0,
@@ -140,6 +195,7 @@ export function criarTelemetria({ renderer, canvas, url, busca = location.search
       custoGravadorMs: amostrasCusto ? +(custoProprio / amostrasCusto).toFixed(4) : 0,
     }
     n = 0; acima50 = 0; acima100 = 0; piorMs = 0; causas = {}; custoProprio = 0; amostrasCusto = 0
+    for (const k in somaSistemas) delete somaSistemas[k]
     return p
   }
 
@@ -161,7 +217,7 @@ export function criarTelemetria({ renderer, canvas, url, busca = location.search
   addEventListener('pagehide', () => enviar('saida'))
   avisar()
 
-  return { quadro, marcar, enviar, sessao, parar: () => clearInterval(relogio) }
+  return { quadro, marcar, somaMarcas, enviar, sessao, parar: () => clearInterval(relogio), estadoExtra: (f) => { extra = f } }
 }
 
 // Aviso curto na primeira tela (some sozinho; não volta depois de visto)
