@@ -3,7 +3,7 @@
 // aparelho. O custo por quadro é um performance.now() e umas comparações; ordenar e montar o resumo fica fora do quadro.
 import { geracaoTexturas } from '../globais.js'
 
-const URL_PADRAO = 'https://maresia-telemetria.PREENCHER.workers.dev' // trocar pela URL do deploy (ou VITE_TELEMETRIA_URL)
+const URL_PADRAO = 'https://maresia-telemetria.joabecornelio.workers.dev' // ou VITE_TELEMETRIA_URL
 const INTERVALO_MS = 30000
 const MAX_QUADROS = 8192 // por janela de 30 s (até ~270 FPS)
 
