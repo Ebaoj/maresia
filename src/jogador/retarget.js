@@ -153,7 +153,7 @@ export function medirPassada(clipe, alvo, raiz) {
 
 // Carrega o Y Bot (repouso da fonte) e cada movimento do Mixamo da pasta, já convertidos para o alvo.
 // alvo: { ossos (Map), raiz }. Devolve { clipes, crus, passadas, faltando, ybot, fontes: crus }.
-export async function carregarMovimentosMixamo({ alvo, pasta, nomes, dedos = PADRAO.personagem, semDeslocamento = ['sentar', 'levantar', 'empurrar'] }) {
+export async function carregarMovimentosMixamo({ alvo, pasta, nomes, dedos = PADRAO.personagem, semDeslocamento = ['sentar', 'levantar', 'empurrar'], assados = null }) {
   const existe = async (url) => {
     try {
       const r = await fetch(daBase(url), { method: 'HEAD' })
@@ -162,7 +162,16 @@ export async function carregarMovimentosMixamo({ alvo, pasta, nomes, dedos = PAD
   }
   let repFonte = null
   let ybot = null
-  if (await existe(pasta + 'ybot.fbx')) {
+  // sem os FBX (eles ficam fora do git pela licença): os mesmos movimentos assados num GLB do jogo
+  if (!assados && !(await existe(pasta + 'ybot.fbx'))) {
+    const assados = await carregarAssados()
+    if (assados) return carregarMovimentosMixamo({ alvo, pasta, nomes, dedos, semDeslocamento, assados })
+  }
+  if (assados) {
+    ybot = assados.esqueleto()
+    ybot.updateMatrixWorld(true)
+    repFonte = repouso(ossosPorNome(ybot))
+  } else if (await existe(pasta + 'ybot.fbx')) {
     ybot = (await carregar(pasta + 'ybot.fbx')).raiz
     ybot.updateMatrixWorld(true)
     repFonte = repouso(ossosPorNome(ybot)) // antes de qualquer escala: mesma unidade dos movimentos
@@ -172,18 +181,24 @@ export async function carregarMovimentosMixamo({ alvo, pasta, nomes, dedos = PAD
   const clipes = {}
   const crus = {}
   const faltando = []
-  await Promise.all(nomes.map(async (nome) => {
+  const lerMovimento = async (nome) => {
+    if (assados) {
+      const clipe = assados.clipes.get(nome)
+      return clipe ? { raiz: assados.esqueleto(), clipes: [clipe] } : null
+    }
     const url = pasta + nome + '.fbx'
-    if (!(await existe(url))) { faltando.push(nome); return }
-    const f = await carregar(url)
-    if (!f.clipes[0]) { faltando.push(nome); return }
+    return (await existe(url)) ? carregar(url) : null
+  }
+  await Promise.all(nomes.map(async (nome) => {
+    const f = await lerMovimento(nome)
+    if (!f || !f.clipes[0]) { faltando.push(nome); return }
     f.raiz.updateMatrixWorld(true)
     crus[nome] = { raiz: f.raiz, clipe: f.clipes[0] }
   }))
   const refNome = dedos.dedosReferenciaAndar
-  if (crus.andar && refNome && refNome !== 'andar' && await existe(pasta + refNome + '.fbx')) {
-    const ref = await carregar(pasta + refNome + '.fbx')
-    if (ref.clipes[0]) crus.andar.referenciaDedos = { registro: { raiz: ref.raiz, clipe: ref.clipes[0] }, fechamento: dedos.dedosFecharCiclo }
+  if (crus.andar && refNome && refNome !== 'andar') {
+    const ref = await lerMovimento(refNome)
+    if (ref?.clipes[0]) crus.andar.referenciaDedos = { registro: { raiz: ref.raiz, clipe: ref.clipes[0] }, fechamento: dedos.dedosFecharCiclo }
   }
   // a conversão mexe nos ossos do alvo só pela leitura do repouso; uma por vez
   for (const nome of nomes) {
@@ -203,6 +218,21 @@ export async function carregarMovimentosMixamo({ alvo, pasta, nomes, dedos = PAD
     if (clipes[k]) passadas[k] = medirPassada(clipes[k], destino, alvo.raiz)
   }
   return { clipes, crus: Object.fromEntries(Object.entries(crus).map(([k, v]) => [k, v.clipe])), passadas, faltando, ybot, fontes: crus }
+}
+
+// GLB com o esqueleto do Y Bot e todos os movimentos (scripts/assar-movimentos.mjs); carregado uma vez
+let assadosPromessa = null
+export function carregarAssados(url = '/arte/finais/movimentos-mixamo.glb') {
+  assadosPromessa ??= gltf.loadAsync(daBase(url)).then((g) => {
+    g.scene.traverse((o) => { if (o.userData.osso) o.isBone = true }) // sem pele, o GLTFLoader não faz Bone
+    g.scene.updateMatrixWorld(true)
+    const base = g.scene.getObjectByName('ybot') || g.scene
+    return {
+      clipes: new Map(g.animations.map((c) => [c.name, c])),
+      esqueleto: () => { const e = base.clone(true); e.traverse((o) => { if (o.userData.osso) o.isBone = true }); e.updateMatrixWorld(true); return e },
+    }
+  }).catch((e) => { console.warn('Movimentos assados não carregaram', e); return null })
+  return assadosPromessa
 }
 
 // O caminho Mixamo -> boneco simplificado -> Neto perdia os dedos no primeiro passo.
