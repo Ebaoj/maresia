@@ -162,8 +162,9 @@ export async function carregarMovimentosMixamo({ alvo, pasta, nomes, dedos = PAD
   }
   let repFonte = null
   let ybot = null
-  // sem os FBX (eles ficam fora do git pela licença): os mesmos movimentos assados num GLB do jogo
-  if (!assados && !(await existe(pasta + 'ybot.fbx'))) {
+  // sem os FBX (eles ficam fora do git pela licença): os mesmos movimentos assados num GLB do jogo.
+  // No build publicado nem pergunta pelos FBX (o GitHub Pages responderia 404); no dev, os FBX têm preferência.
+  if (!assados && (!import.meta.env?.DEV || !(await existe(pasta + 'ybot.fbx')))) {
     const assados = await carregarAssados()
     if (assados) return carregarMovimentosMixamo({ alvo, pasta, nomes, dedos, semDeslocamento, assados })
   }
