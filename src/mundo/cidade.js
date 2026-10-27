@@ -25,6 +25,20 @@ import { dentroDaPraca } from './praca1932.js'
 
 const rnd = criarAleatorio(42)
 
+let _caixaLonge = null
+function caixaLonge() {
+  if (_caixaLonge) return _caixaLonge
+  const g = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0)
+  // sem a face de baixo (grupo 3 da BoxGeometry: -y), que nunca aparece
+  const idx = [...g.index.array]
+  const baixo = g.groups[3]
+  idx.splice(baixo.start, baixo.count)
+  g.setIndex(idx)
+  g.clearGroups()
+  _caixaLonge = g
+  return g
+}
+
 class Lote {
   constructor(material, tipo) {
     this.material = material
@@ -62,7 +76,12 @@ class Lote {
       new THREE.Quaternion().setFromAxisAngle(eixo, it.rot),
       new THREE.Vector3(it.w, it.h, it.d)
     ))
-    return instanciarEmBlocos(cena, geo, this.material, mats, this.itens.map((it) => it.cor), { nome, solido, tam: TAM_LOD })
+    const malhas = instanciarEmBlocos(cena, geo, this.material, mats, this.itens.map((it) => it.cor), { nome, solido, tam: TAM_LOD })
+    // muito longe (27/10/2026): a caixa sem as 6 fatias de altura e sem o fundo (10 triângulos em vez de 52). As fatias
+    // só dão a barriga da parede (2,5%: < 1 px a 160 m, a distância mínima da célula de muito longe); o desenho das
+    // janelas é por fragmento, pela posição local, e não muda
+    if (!solido) for (const m of malhas) m.userData.geoMuitoLonge = caixaLonge()
+    return malhas
   }
 }
 

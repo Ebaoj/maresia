@@ -490,6 +490,8 @@ export function materialPredio({
   mat.userData.tsl = predioTsl(u)
   // reboco e telha pintados também na versão de longe do casario (visual Arcane); a chave de cache vem
   // de pintar e ganha a textura, mas cada lote mantém os próprios uniforms
+  // a cópia sorteia inclinação, janelas e luz pelo gl_InstanceID: quem reordena cópias (muito-longe.js) não pode mexer
+  mat.userData.usaInstancia = true
   return texturizar(pintar(mat, 'predio-pintado'), { topo: 'telha', lado: 'cal', tam: 2.5, contraste: 2.5 })
 }
 

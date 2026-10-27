@@ -31,7 +31,9 @@ function aparece(o) {
 export function assinaturaEstaticos() {
   let h = estaticos.size | 0
   for (const o of estaticos) {
-    h = (Math.imul(h, 31) + (aparece(o) ? 1 + ((o.count ?? 0) << 1) : 0)) | 0
+    // semAssinatura (27/10/2026): malha cuja contagem muda com a câmera (LOD cópia a cópia das árvores) e cujas cópias
+    // estão sempre no mapa por uma versão ou outra: só a visibilidade conta
+    h = (Math.imul(h, 31) + (aparece(o) ? 1 + ((o.userData.semAssinatura ? 0 : (o.count ?? 0)) << 1) : 0)) | 0
   }
   return h
 }

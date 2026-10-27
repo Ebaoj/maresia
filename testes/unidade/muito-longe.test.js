@@ -4,7 +4,9 @@
 // abre de novo no mesmo quadro em que alguma chega perto; desligada no painel, tudo volta ao LOD de sempre.
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { MuitoLonge, LongeMascarado, definirMuitoLonge, juntarCopias } from '../../src/mundo/muito-longe.js'
+import { MuitoLonge, LongeMascarado, definirMuitoLonge, juntarCopias, LOD_MANCHA, LOD_COPIAS } from '../../src/mundo/muito-longe.js'
+LOD_MANCHA.ligado = false // a mancha e o LOD cópia a cópia (27/10/2026) têm teste próprio em lod-longe.test.js
+LOD_COPIAS.ligado = false
 import { criarAleatorio } from '../../src/utils.js'
 
 function blocoDeCopias(geo, mat, x, z, n, rnd) {

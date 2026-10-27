@@ -278,6 +278,7 @@ export const PADRAO = {
     lodPerto: 65,          // m: até aqui os cartões de folha em tamanho cheio
     lodLonge: 85,          // m: aqui eles já sumiram (encolhem no meio)
     lodBloco: 90,          // m: bloco de árvores mais longe que isso troca para a copa simples
+    lodCopia: true,        // 27/10/2026 (lod-arvores.js): no bloco de perto, cada árvore escolhe corpo ou copa simples pela distância dela (era o bloco inteiro)
     borda: 0.12,           // luz do céu na borda de cima da copa
     bordaCor: '#cfe3ee',   // a cor dessa luz
     transluz: 0.6,         // contraluz: com o sol atrás, a folha deixa a luz passar e acende quente
@@ -537,6 +538,8 @@ export const PADRAO = {
     chaoSoltoPerto: true,
     muitoLonge: true,      // 22/10/2026: célula grande junta as malhas de longe dos blocos de LOD (terreno, casario, palhoça, árvores) quando estão todos longe
     blocosJuntos: true,    // 22/10/2026: os blocos sem LOD (postes, cadeiras, vasos, cercas...) também se juntam por célula quando estão longe
+    sombraLeve: true,      // 27/10/2026 (render/simplificar.js): gente animada projeta sombra com a malha simplificada (o neto: ~230 mil triângulos de sombra por quadro); recarregar
+    lodCopias: true,       // 27/10/2026 (muito-longe.js): nas células de muito longe, cópia a cópia: a pequena na tela vira a peça simplificada (render/simplificar.js), a menor que cortePx sai; recarregar
     muitoLongeTam: 768,    // lado da célula de muito longe (m); recarregar  // 22/10/2026: o chão solto só vira objeto perto da câmera (eram 5.854 blocos na cena); false = como era, para medir
     atoresVat: true,       // KAN-74 fase 2b: atores de fundo como cópias com a pose em textura de ossos; só vale no WebGPU; recarregar
     cortePequenos: true,   // fluido 22/10/2026 (render/corte-tela.js): a peça que fica menor que cortePx na tela sai do desenho (lampião, vaso, dormente de longe, o campo do Urubu a 2 km)

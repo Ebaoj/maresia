@@ -20,11 +20,12 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { congelar } from './congelar.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { registrarCorte, pecaSai } from '../render/corte-tela.js'
+import { simplificarPorGrade } from '../render/simplificar.js'
 
 // cfg.desempenho.muitoLonge (liga e desliga ao vivo) e muitoLongeTam (lado da célula, recarregar)
 let CFG = null
 let TAM = 768
-export function definirMuitoLonge(cfg) { CFG = cfg; TAM = cfg?.desempenho?.muitoLongeTam ?? TAM }
+export function definirMuitoLonge(cfg) { CFG = cfg; TAM = cfg?.desempenho?.muitoLongeTam ?? TAM; LOD_COPIAS.ligado = cfg?.desempenho?.lodCopias !== false }
 const ligado = () => CFG?.desempenho?.muitoLonge !== false
 
 const _m = new THREE.Matrix4()
@@ -34,7 +35,8 @@ const _c = new THREE.Color()
 export function juntarCopias(malhas, nome) {
   const total = malhas.reduce((s, im) => s + im.count, 0)
   const base = malhas[0]
-  const im = new THREE.InstancedMesh(base.geometry, base.material, total)
+  // geoMuitoLonge: a peça pede uma geometria mais simples para a junta de longe (as caixas das casas, cidade.js)
+  const im = new THREE.InstancedMesh(base.userData.geoMuitoLonge || base.geometry, base.material, total)
   const comCor = malhas.some((x) => x.instanceColor)
   let k = 0
   for (const x of malhas) {
@@ -88,7 +90,7 @@ export class MuitoLonge {
     const cj = Math.floor(u.z / this.tam)
     const k = `${ci},${cj}`
     let c = this.celulas.get(k)
-    if (!c) { c = { k, unidades: [], malhas: [], junta: false, x: 0, z: 0, r: 0 }; this.celulas.set(k, c); this.lista.push(c) }
+    if (!c) { c = { k, unidades: [], malhas: [], familias: [], junta: false, x: 0, z: 0, r: 0 }; this.celulas.set(k, c); this.lista.push(c) }
     c.unidades.push(u)
   }
 
@@ -114,9 +116,14 @@ export class MuitoLonge {
         const j = lista[0].isInstancedMesh ? juntarCopias(lista, nome) : juntarMalhas(lista, nome)
         j.visible = false
         ;(lista[0].parent || this.cena).add(congelar(j))
+        // cópia a cópia (27/10/2026): a peça de longe vira a versão simplificada e a menor que cortePx sai
+        // (o material que sorteia pelo gl_InstanceID, como o das casas, não pode ter as cópias reordenadas)
+        const f = j.isInstancedMesh && LOD_COPIAS.ligado && !j.material.userData?.usaInstancia ? familiaPorCopia(j) : null
+        if (f) { c.familias.push(f); c.malhas.push(...f.desenho) }
         if (j.castShadow) registrarEstatico(j)
         // a célula de miúdos (lampião, vaso, dormente) sai do desenho quando a peça fica menor que cortePx na tela
-        if (j.isInstancedMesh) registrarCorte(j)
+        // (com o LOD cópia a cópia o corte é por cópia, em distribuir)
+        if (j.isInstancedMesh && !f) registrarCorte(j)
         c.malhas.push(j)
       }
     }
@@ -144,12 +151,25 @@ export class MuitoLonge {
       }
       if (junta === c.junta) continue
       c.junta = junta
+      for (const f of c.familias) f.mudou = true
       for (const m of c.malhas) m.visible = junta
       for (const u of c.unidades) {
         u.suspenso = junta
         if (junta) for (const m of u.todas) m.visible = false
         else u.retomar()
       }
+    }
+    this.atualizarCopias(camera)
+  }
+
+  // cópia a cópia nas células juntas: só quando a câmera anda 12 m (ou a célula acabou de fechar)
+  atualizarCopias(camera) {
+    const p = camera.position
+    const anda = !this.camCopias || this.camCopias.distanceToSquared(p) > 144 || this.fovCopias !== camera.fov || this.corteCopias !== CFG?.desempenho?.cortePx
+    if (anda) { (this.camCopias ||= p.clone()).copy(p); this.fovCopias = camera.fov; this.corteCopias = CFG?.desempenho?.cortePx }
+    for (const c of this.lista) {
+      if (!c.junta) continue
+      for (const f of c.familias) if (anda || f.mudou) { f.mudou = false; distribuir(f, p, camera.fov) }
     }
   }
 
@@ -158,6 +178,168 @@ export class MuitoLonge {
     for (const c of this.lista) if (c.junta) { juntas++; suspensas += c.unidades.length }
     return { celulas: this.lista.length, juntas, unidadesSuspensas: suspensas }
   }
+}
+
+// LOD cópia a cópia nas células de muito longe (27/10/2026, perf-governador). A célula de 768 m juntava as cópias
+// numa malha só, com a geometria cheia: na vista da Praça do Ferreira eram ~560 mil triângulos de lampião de coluna
+// (264 cada) a 0,2-2 km, 440 mil de coqueiro, 250 mil de buganvília. Agora cada família da célula tem três malhas:
+//   - a SOMBRA: a junta de sempre (todas as cópias, geometria cheia), só na camada dos parados (sombra-estatica.js);
+//     a contagem dela não muda, então o mapa de sombra em cache não é refeito quando a câmera anda;
+//   - a CHEIA: as cópias que ainda aparecem grandes na tela (>= LOD_COPIAS.px), geometria cheia, sem sombra;
+//   - a SIMPLES: as pequenas, com a geometria simplificada por grade (render/simplificar.js), sem sombra.
+// A cópia menor que cortePx sai das duas (corte-tela.js: pecaSai). A grade é tam / LOD_COPIAS.divisoes: na troca,
+// um canto anda no máximo ~px/divisoes pixels (na tela de referência de 900 px), e menos quanto mais longe.
+// Peça com até LOD_COPIAS.minTri triângulos (a caixa das casas de longe, 52) fica como está.
+export const LOD_COPIAS = { ligado: true, px: 48, divisoes: 14, minTri: 64 }
+// a mancha das copas de longe (LongeMascarado): a peça menor que px (tela de referência de 900 px) vira a mancha
+export const LOD_MANCHA = { ligado: true, px: 28 }
+const _manchas = new Map()
+// elipsoide de 20 triângulos na caixa da copa (os vértices do terço de cima para cima), com a cor média dela e os
+// atributos médios (o vento das árvores lê aVento; aTexAlt = 1, a textura da copa). Peça de cartão (aCentro) não tem
+function manchaDe(geo) {
+  if (_manchas.has(geo.uuid)) return _manchas.get(geo.uuid)
+  let g = null
+  const pos = geo.attributes.position
+  if (pos && !geo.attributes.aCentro && geo.attributes.normal) {
+    if (!geo.boundingBox) geo.computeBoundingBox()
+    const bb = geo.boundingBox
+    const y0 = bb.min.y + (bb.max.y - bb.min.y) * 0.33
+    const mn = new THREE.Vector3(Infinity, Infinity, Infinity), mx = new THREE.Vector3(-Infinity, -Infinity, -Infinity)
+    const soma = {}
+    let n = 0
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i)
+      if (y < y0) continue
+      mn.min(_v3.set(pos.getX(i), y, pos.getZ(i))); mx.max(_v3)
+      n++
+      for (const nome in geo.attributes) {
+        if (nome === 'position' || nome === 'normal') continue
+        const at = geo.attributes[nome]
+        const s = soma[nome] ||= new Float64Array(at.itemSize)
+        for (let e = 0; e < at.itemSize; e++) s[e] += at.getComponent ? at.getComponent(i, e) : at.array[i * at.itemSize + e]
+      }
+    }
+    if (n > 8 && mx.x > mn.x) {
+      g = new THREE.IcosahedronGeometry(0.5, 0)
+      g = g.index ? g.toNonIndexed() : g
+      const c = mn.clone().add(mx).multiplyScalar(0.5)
+      const t = mx.clone().sub(mn)
+      g.scale(t.x, t.y, t.z).translate(c.x, c.y, c.z)
+      g.computeVertexNormals()
+      // normal de esfera (suave): a luz da copa vira volume e não facetas
+      const p2 = g.attributes.position, n2 = g.attributes.normal
+      for (let i = 0; i < p2.count; i++) {
+        _v3.set((p2.getX(i) - c.x) / t.x, (p2.getY(i) - c.y) / t.y, (p2.getZ(i) - c.z) / t.z).normalize()
+        n2.setXYZ(i, _v3.x, _v3.y, _v3.z)
+      }
+      for (const nome in soma) {
+        const at = geo.attributes[nome]
+        const arr = new Float32Array(p2.count * at.itemSize)
+        for (let i = 0; i < p2.count; i++) for (let e = 0; e < at.itemSize; e++) arr[i * at.itemSize + e] = soma[nome][e] / n
+        g.setAttribute(nome, new THREE.BufferAttribute(arr, at.itemSize))
+      }
+      if (g.attributes.uv) g.deleteAttribute('uv')
+      g.computeBoundingSphere()
+    }
+  }
+  _manchas.set(geo.uuid, g)
+  return g
+}
+const _v3 = new THREE.Vector3()
+const _simplificadas = new Map() // geometria.uuid -> geometria simplificada (uma por peça, para todas as células)
+
+function geometriaSimples(geo, tamLocal) {
+  let g = _simplificadas.get(geo.uuid)
+  if (g === undefined) {
+    const nTri = (geo.index ? geo.index.count : geo.attributes.position.count) / 3
+    g = null
+    if (nTri > LOD_COPIAS.minTri) {
+      const s = simplificarPorGrade(geo, tamLocal / LOD_COPIAS.divisoes)
+      // não ganhou nada (peça já simples): fica a cheia
+      if (s.userData.simplificada.para < nTri * 0.7) g = s
+    }
+    _simplificadas.set(geo.uuid, g)
+  }
+  return g
+}
+
+function familiaPorCopia(j) {
+  if (!j.geometry.boundingBox) j.geometry.computeBoundingBox()
+  const bb = j.geometry.boundingBox
+  const tamLocal = Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z)
+  const a = j.instanceMatrix.array
+  const n = j.count
+  if (!n) return null
+  const esc = Math.max(Math.hypot(a[0], a[1], a[2]), Math.hypot(a[4], a[5], a[6]), Math.hypot(a[8], a[9], a[10]))
+  const geoS = geometriaSimples(j.geometry, tamLocal)
+  const nova = (geo, sufixo) => {
+    const m = new THREE.InstancedMesh(geo, j.material, n)
+    m.name = j.name + sufixo
+    m.castShadow = false
+    m.receiveShadow = j.receiveShadow
+    m.renderOrder = j.renderOrder
+    for (const k of ['peso', 'semNormal']) if (j.userData[k] !== undefined) m.userData[k] = j.userData[k]
+    m.userData.muitoLonge = true
+    m.userData.contagemViva = true
+    m.instanceMatrix.array.set(a)
+    if (j.instanceColor) { m.setColorAt(0, _c.setRGB(1, 1, 1)); m.instanceColor.array.set(j.instanceColor.array) }
+    m.computeBoundingSphere() // com todas as cópias: cobre a célula
+    m.count = 0
+    m.visible = false
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    ;(j.parent).add(congelar(m))
+    return m
+  }
+  const cheia = nova(j.geometry, '')
+  const simples = geoS ? nova(geoS, '-simples') : null
+  // a junta original vira só sombra (camada dos parados); sem sombra, ela some do desenho
+  j.layers.disable(0)
+  // posição de cada cópia no mundo (a célula está no espaço do pai, congelado)
+  j.parent?.updateWorldMatrix(true, false)
+  const mw = j.parent ? j.parent.matrixWorld.elements : null
+  const xyz = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) {
+    let x = a[i * 16 + 12], y = a[i * 16 + 13], z = a[i * 16 + 14]
+    if (mw) { const X = mw[0] * x + mw[4] * y + mw[8] * z + mw[12], Y = mw[1] * x + mw[5] * y + mw[9] * z + mw[13], Z = mw[2] * x + mw[6] * y + mw[10] * z + mw[14]; x = X; y = Y; z = Z }
+    xyz[i * 3] = x; xyz[i * 3 + 1] = y; xyz[i * 3 + 2] = z
+  }
+  const escMundo = mw ? Math.hypot(mw[0], mw[1], mw[2]) : 1
+  return { j, cheia, simples, desenho: simples ? [cheia, simples] : [cheia], xyz, n, tam: tamLocal * esc * escMundo, mudou: true,
+    matrizes: a, cores: j.instanceColor ? j.instanceColor.array : null }
+}
+
+// reparte as cópias entre a cheia e a simples (e o corte), pela distância de cada uma
+function distribuir(f, p, fov) {
+  const k = 450 / Math.tan((fov * Math.PI) / 360) // pixels por metro a 1 m (tela de referência de 900 px)
+  const dCheia = (f.tam * k) / LOD_COPIAS.px // até aqui a cópia é grande na tela
+  const corteLigado = CFG?.desempenho?.cortePequenos !== false
+  const dCorte = corteLigado ? (f.tam * k) / (CFG?.desempenho?.cortePx ?? 3) : Infinity
+  const am = f.cheia.instanceMatrix.array, ac = f.cheia.instanceColor?.array
+  const bm = f.simples?.instanceMatrix.array, bc = f.simples?.instanceColor?.array
+  let nc = 0, ns = 0
+  const xyz = f.xyz
+  for (let i = 0; i < f.n; i++) {
+    const d = Math.hypot(xyz[i * 3] - p.x, xyz[i * 3 + 1] - p.y, xyz[i * 3 + 2] - p.z) - f.tam / 2
+    if (d > dCorte) continue
+    if (d <= dCheia || !f.simples) {
+      am.set(f.matrizes.subarray(i * 16, i * 16 + 16), nc * 16)
+      if (ac) ac.set(f.cores.subarray(i * 3, i * 3 + 3), nc * 3)
+      nc++
+    } else {
+      bm.set(f.matrizes.subarray(i * 16, i * 16 + 16), ns * 16)
+      if (bc) bc.set(f.cores.subarray(i * 3, i * 3 + 3), ns * 3)
+      ns++
+    }
+  }
+  const por = (m, cont) => {
+    if (!m) return
+    m.count = cont
+    if (!cont) return
+    m.instanceMatrix.clearUpdateRanges(); m.instanceMatrix.addUpdateRange(0, cont * 16); m.instanceMatrix.needsUpdate = true
+    if (m.instanceColor) { m.instanceColor.clearUpdateRanges(); m.instanceColor.addUpdateRange(0, cont * 3); m.instanceColor.needsUpdate = true }
+  }
+  por(f.cheia, nc)
+  por(f.simples, ns)
 }
 
 // Longe mascarado (22/10/2026): para as espécies de árvore e as palhoças, que têm 3 ou 4 formas (cada forma é uma
@@ -224,11 +406,26 @@ export class LongeMascarado {
         fx.r = r + f.tam / 2
         fx.cortada = false
       }
+      // a mancha (27/10/2026): a copa de longe a mais de LOD_MANCHA.px vira um elipsoide de 20 triângulos com a cor
+      // média da copa (impostor geométrico; a cópia continua tendo posição, escala e tinta próprias)
+      const geoM = LOD_MANCHA.ligado ? manchaDe(j.geometry) : null
+      if (geoM) {
+        const b = new THREE.InstancedMesh(geoM, j.material, f.total)
+        copiarJeito(j, b, `${j.name}-mancha`)
+        b.castShadow = false // além de ~300 m: fora do mapa de sombra de longe (346 m em volta da câmera)
+        b.frustumCulled = false
+        if (j.instanceColor) { b.setColorAt(0, _c.setRGB(1, 1, 1)) }
+        b.count = 0
+        b.userData.contagemViva = true
+        f.mancha = b
+      }
+      j.userData.semAssinatura = true // as cópias que vão para a mancha estão longe do mapa de sombra
       j.count = 0 // nada à vista até o sistema dizer quem está longe
       j.userData.contagemViva = true // o count é o de verdade: o WebGPU não troca o resto por escala zero (renderizador.js)
       ;(f.lista[0].parent).add(congelar(j))
       if (j.castShadow) registrarEstatico(j)
       this.malhas.push(j)
+      if (f.mancha) { f.lista[0].parent.add(congelar(f.mancha)); this.malhas.push(f.mancha) }
       this.familias.push(f)
     }
     this.montada = true
@@ -248,9 +445,17 @@ export class LongeMascarado {
     for (const f of this.sujas) {
       const a = f.malha.instanceMatrix.array
       const c = f.cores ? f.malha.instanceColor.array : null
-      let k = 0
+      const am = f.mancha?.instanceMatrix.array
+      const cm = f.cores && f.mancha ? f.mancha.instanceColor.array : null
+      let k = 0, km = 0
       for (const fx of f.faixas) {
         if (!fx.u.visivelLonge || fx.cortada) continue
+        if (fx.mancha && f.mancha) {
+          am.set(f.matrizes.subarray(fx.inicio * 16, (fx.inicio + fx.n) * 16), km * 16)
+          if (cm) cm.set(f.cores.subarray(fx.inicio * 3, (fx.inicio + fx.n) * 3), km * 3)
+          km += fx.n
+          continue
+        }
         a.set(f.matrizes.subarray(fx.inicio * 16, (fx.inicio + fx.n) * 16), k * 16)
         if (c) c.set(f.cores.subarray(fx.inicio * 3, (fx.inicio + fx.n) * 3), k * 3)
         k += fx.n
@@ -258,6 +463,11 @@ export class LongeMascarado {
       f.malha.count = k
       f.malha.instanceMatrix.needsUpdate = true
       if (c) f.malha.instanceColor.needsUpdate = true
+      if (f.mancha) {
+        f.mancha.count = km
+        f.mancha.instanceMatrix.needsUpdate = true
+        if (cm) f.mancha.instanceColor.needsUpdate = true
+      }
     }
     this.sujas.clear()
   }
@@ -273,9 +483,12 @@ export class LongeMascarado {
     ;(this.cameraAntes ||= p.clone()).copy(p)
     for (const f of this.familias) {
       for (const fx of f.faixas) {
-        const corta = pecaSai(f.tam, Math.hypot(p.x - fx.cx, p.y - fx.cy, p.z - fx.cz) - fx.r, camera.fov, CFG)
-        if (corta === fx.cortada) continue
+        const dist = Math.hypot(p.x - fx.cx, p.y - fx.cy, p.z - fx.cz) - fx.r
+        const corta = pecaSai(f.tam, dist, camera.fov, CFG)
+        const mancha = !!f.mancha && dist > 1 && (f.tam * 450 / Math.tan((camera.fov * Math.PI) / 360)) / dist < LOD_MANCHA.px
+        if (corta === fx.cortada && mancha === !!fx.mancha) continue
         fx.cortada = corta
+        fx.mancha = mancha
         if (fx.u.visivelLonge) this.sujas.add(f)
       }
     }

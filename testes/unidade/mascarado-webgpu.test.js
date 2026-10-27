@@ -8,7 +8,8 @@
 // Correção: commit "Longe mascarado no WebGPU desenha só as cópias à vista".
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { LongeMascarado, definirMuitoLonge } from '../../src/mundo/muito-longe.js'
+import { LongeMascarado, definirMuitoLonge, LOD_MANCHA } from '../../src/mundo/muito-longe.js'
+LOD_MANCHA.ligado = false // a mancha (27/10/2026) tem teste próprio em lod-longe.test.js
 import { converterObjeto } from '../../src/render/renderizador.js'
 
 describe('longe mascarado no WebGPU', () => {

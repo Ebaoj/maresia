@@ -45,10 +45,95 @@ export function registrarLod(perto, longe, cartoes, cartoesLonge = null, ate = n
   if (!Array.isArray(perto) || !Array.isArray(longe) || perto.length !== longe.length) return
   for (let i = 0; i < perto.length; i++) {
     const s = perto[i].boundingSphere || (perto[i].computeBoundingSphere(), perto[i].boundingSphere)
-    grupos.push({ c: s.center.clone().applyMatrix4(perto[i].matrixWorld), r: s.radius, perto: perto[i], longe: longe[i], cart: cartoes ? cartoes[i] : null, cartLonge: cartoesLonge ? cartoesLonge[i] : null, ate, estado: null })
+    const g = { c: s.center.clone().applyMatrix4(perto[i].matrixWorld), r: s.radius, perto: perto[i], longe: longe[i], cart: cartoes ? cartoes[i] : null, cartLonge: cartoesLonge ? cartoesLonge[i] : null, ate, estado: null }
+    prepararCopias(g)
+    grupos.push(g)
     longe[i].visible = false
     if (cartoesLonge) cartoesLonge[i].visible = false
   }
+}
+
+// Cópia a cópia no bloco de perto (27/10/2026, perf-governador). O bloco de árvores tem de 192 a 768 m (blocos.js
+// junta os ralos), e bastava a borda dele chegar a lodBloco para TODAS as cópias dele virarem o corpo cheio (2 a 4 mil
+// triângulos cada, mais os cartões): na Praça do Ferreira eram ~600 mil triângulos de cajueiro de quintal e oiti, e
+// outro tanto no mapa de sombra de perto. Agora, no bloco de perto, cada cópia escolhe pela distância dela: até
+// lodBloco o corpo e os cartões; além, a copa simples do próprio bloco (a mesma que o bloco inteiro mostraria longe).
+// Mesma troca, na mesma distância, só que por árvore. Os cartões já sumiam no shader antes de lodLonge (< lodBloco).
+// A contagem dessas malhas muda com a câmera: elas não entram na assinatura do mapa de sombra em cache
+// (semAssinatura): a sombra das cópias está no mapa com uma versão ou a outra, nunca falta.
+export const LOD_COPIA_ARVORES = { ligado: true, folga: 8 }
+const _p = new THREE.Vector3()
+function prepararCopias(g) {
+  const malhas = [g.perto, g.longe, g.cart, g.cartLonge].filter(Boolean)
+  const n = g.perto.count
+  if (malhas.some((m) => m.count !== n)) return
+  g.n = n
+  g.xyz = new Float32Array(n * 3)
+  const a = g.perto.instanceMatrix.array
+  g.perto.updateWorldMatrix(true, false)
+  for (let i = 0; i < n; i++) {
+    _p.set(a[i * 16 + 12], a[i * 16 + 13], a[i * 16 + 14]).applyMatrix4(g.perto.matrixWorld)
+    g.xyz[i * 3] = _p.x; g.xyz[i * 3 + 1] = _p.y; g.xyz[i * 3 + 2] = _p.z
+  }
+  const geo = g.perto.geometry
+  if (!geo.boundingSphere) geo.computeBoundingSphere()
+  const esc = Math.max(Math.hypot(a[0], a[1], a[2]), Math.hypot(a[4], a[5], a[6]), Math.hypot(a[8], a[9], a[10]))
+  g.rCopia = geo.boundingSphere.radius * esc
+  for (const m of malhas) {
+    m.userData.copiasOrig = { mat: m.instanceMatrix.array.slice(), cor: m.instanceColor ? m.instanceColor.array.slice() : null }
+    m.userData.semAssinatura = true
+    m.userData.contagemViva = true
+  }
+  g.porCopia = false
+  g.camCopia = null
+}
+
+function escreverCopias(m, lista, k) {
+  if (!m) return
+  const o = m.userData.copiasOrig
+  const am = m.instanceMatrix.array, ac = m.instanceColor?.array
+  for (let j = 0; j < k; j++) {
+    const i = lista[j]
+    am.set(o.mat.subarray(i * 16, i * 16 + 16), j * 16)
+    if (ac && o.cor) ac.set(o.cor.subarray(i * 3, i * 3 + 3), j * 3)
+  }
+  m.count = k
+  if (!k) return
+  m.instanceMatrix.clearUpdateRanges(); m.instanceMatrix.addUpdateRange(0, k * 16); m.instanceMatrix.needsUpdate = true
+  if (ac) { m.instanceColor.clearUpdateRanges(); m.instanceColor.addUpdateRange(0, k * 3); m.instanceColor.needsUpdate = true }
+}
+
+const _perto = [], _longe = []
+function repartirCopias(g, cp, D) {
+  _perto.length = 0; _longe.length = 0
+  const x = g.xyz
+  for (let i = 0; i < g.n; i++) {
+    const d = Math.hypot(x[i * 3] - cp.x, x[i * 3 + 1] - cp.y, x[i * 3 + 2] - cp.z) - g.rCopia
+    const antes = g.ladoCopia ? g.ladoCopia[i] : 1
+    const perto = antes ? d < D + LOD_COPIA_ARVORES.folga : d < D
+    ;(perto ? _perto : _longe).push(i)
+  }
+  ;(g.ladoCopia ||= new Uint8Array(g.n)).fill(0)
+  for (const i of _perto) g.ladoCopia[i] = 1
+  escreverCopias(g.perto, _perto, _perto.length)
+  escreverCopias(g.cart, _perto, _perto.length)
+  escreverCopias(g.longe, _longe, _longe.length)
+  escreverCopias(g.cartLonge, _longe, _longe.length)
+  g.longe.visible = _longe.length > 0
+  if (g.cartLonge) g.cartLonge.visible = _longe.length > 0
+  g.perto.visible = _perto.length > 0
+  if (g.cart) g.cart.visible = _perto.length > 0
+  g.porCopia = true
+}
+
+// o bloco saiu de perto: as malhas voltam a ter todas as cópias, na ordem de sempre
+function restaurarCopias(g) {
+  if (!g.porCopia) return
+  g.porCopia = false
+  g.camCopia = null
+  g.ladoCopia = null
+  const todas = Array.from({ length: g.n }, (_, i) => i)
+  for (const m of [g.perto, g.cart, g.longe, g.cartLonge]) escreverCopias(m, todas, g.n)
 }
 
 // perto ou longe para um bloco a uma distância d (da câmera até a borda do bloco); folga para não piscar na divisa
@@ -85,12 +170,28 @@ export function atualizarLodArvores(camera, cfg) {
   for (const g of grupos) {
     const d = cp.distanceTo(g.c) - g.r
     const nivel = estadoDoBloco(d, D, g.ate ? g.ate() : null, g.estado)
-    if (nivel === g.estado) continue
-    g.estado = nivel
-    g.perto.visible = nivel === 'perto'
-    if (g.cart) g.cart.visible = nivel === 'perto'
-    if (g.unidade) mascara.mostrar(g.unidade, nivel === 'longe')
-    else { g.longe.visible = nivel === 'longe'; if (g.cartLonge) g.cartLonge.visible = nivel === 'longe' } // registrado depois da máscara
+    if (nivel !== g.estado) {
+      g.estado = nivel
+      if (nivel !== 'perto') restaurarCopias(g)
+      g.perto.visible = nivel === 'perto'
+      if (g.cart) g.cart.visible = nivel === 'perto'
+      if (g.unidade) { mascara.mostrar(g.unidade, nivel === 'longe'); g.longe.visible = false; if (g.cartLonge) g.cartLonge.visible = false }
+      else { g.longe.visible = nivel === 'longe'; if (g.cartLonge) g.cartLonge.visible = nivel === 'longe' } // registrado depois da máscara
+    }
+    // no bloco de perto, cópia a cópia (refaz quando a câmera anda 6 m)
+    if (g.estado === 'perto' && g.xyz && LOD_COPIA_ARVORES.ligado && cfg.arvores.lodCopia !== false) {
+      if (!g.camCopia || g.camCopia.distanceToSquared(cp) > 36 || g.dCopia !== D) {
+        ;(g.camCopia ||= cp.clone()).copy(cp)
+        g.dCopia = D
+        repartirCopias(g, cp, D)
+      }
+    } else if (g.estado === 'perto' && g.porCopia) {
+      restaurarCopias(g)
+      g.perto.visible = true
+      if (g.cart) g.cart.visible = true
+      g.longe.visible = false
+      if (g.cartLonge) g.cartLonge.visible = false
+    }
   }
   mascara?.aplicar()
 }

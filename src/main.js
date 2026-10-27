@@ -71,6 +71,7 @@ import { Aranhaverso } from './pos/aranhaverso.js'
 import { AranhaversoGpu } from './pos/aranhaverso-gpu.js'
 import { ResolucaoDinamica } from './render/resolucao-dinamica.js'
 import { GovernadorQualidade, aplicarDegrau } from './render/governador.js'
+import { instalarSombraLeve, procurarSombraLeve } from './render/simplificar.js'
 import { tetoPixel } from './qualidade.js'
 import { atualizarCorte } from './render/corte-tela.js'
 import { criarHud } from './ui/hud.js'
@@ -248,6 +249,11 @@ async function iniciar() {
   pos.focarEm(cam.alvo) // autofoco da profundidade de campo: o ponto que a câmera segue
   // F4 (KAN-74): sombra dos objetos parados em cache, no WebGL e no WebGPU; liga em cfg.mundo.cacheSombra e vale ao vivo
   const cacheSombra = webgpu ? new CacheSombraGpu(renderer, cena, camera, ceu.sol, cfg, moduloWebgpu()) : new CacheSombra(renderer, cena, camera, ceu.sol, cfg)
+  // sombra leve da gente animada (27/10/2026, render/simplificar.js): só no WebGL (o WebGPU desenha a sombra por outro caminho)
+  if (!webgpu && cfg.desempenho.sombraLeve !== false) {
+    instalarSombraLeve(renderer)
+    Promise.allSettled(carregamentos).then(() => procurarSombraLeve(cena))
+  }
   ceu.usarCache(cacheSombra)
   sombraPerto.luz.userData.cacheSombraVizinho = cacheSombra // WebGPU: o mapa de perto desenha os parados também
   if (import.meta.env.DEV && !webgpu) {
