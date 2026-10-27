@@ -1,0 +1,31 @@
+{
+ "url": "http://localhost:5311/?semTelemetria",
+ "variantes": {
+  "padrao": {
+   "pixelRatio": 1,
+   "governador": "cheio",
+   "lodCopia": true
+  },
+  "cache-refeito": {
+   "pixelRatio": 1,
+   "governador": "cheio",
+   "lodCopia": true
+  },
+  "sem-lod-copia": {
+   "pixelRatio": 1,
+   "governador": "cheio",
+   "lodCopia": false
+  },
+  "sem-lod-copia-sem-sombra-perto": {
+   "pixelRatio": 1,
+   "governador": "cheio",
+   "lodCopia": false
+  },
+  "volta-padrao": {
+   "pixelRatio": 1,
+   "governador": "cheio",
+   "lodCopia": true
+  }
+ },
+ "console": []
+}

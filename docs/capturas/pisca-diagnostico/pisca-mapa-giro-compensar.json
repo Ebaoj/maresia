@@ -1,0 +1,10 @@
+{
+ "raf-giro": {
+  "quadros": 16,
+  "pisca_pct": 0.2296,
+  "pisca_borda_pct": 0.8158,
+  "pisca_liso_pct": 0.0535,
+  "pior_quadro_pct": 0.2581,
+  "quadros_com_pisca_acima_0_05pct": 14
+ }
+}

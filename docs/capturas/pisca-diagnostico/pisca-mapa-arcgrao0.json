@@ -1,0 +1,18 @@
+{
+ "vivo-parado": {
+  "quadros": 16,
+  "pisca_pct": 0.0132,
+  "pisca_borda_pct": 0.0461,
+  "pisca_liso_pct": 0.0021,
+  "pior_quadro_pct": 0.0191,
+  "quadros_com_pisca_acima_0_05pct": 0
+ },
+ "raf-tempo": {
+  "quadros": 16,
+  "pisca_pct": 0.0091,
+  "pisca_borda_pct": 0.0319,
+  "pisca_liso_pct": 0.0015,
+  "pior_quadro_pct": 0.0131,
+  "quadros_com_pisca_acima_0_05pct": 0
+ }
+}

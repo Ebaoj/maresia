@@ -1,0 +1,599 @@
+{
+ "url": "http://localhost:5311/?semTelemetria",
+ "lugar": {
+  "x": 4240.84,
+  "z": 2164.09,
+  "yaw": 0,
+  "hora": 15,
+  "pitch": 0.2,
+  "dist": 5
+ },
+ "situacoes": {
+  "vivo-parado": {
+   "quadros": [
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 142430.5
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 144487.19999998808
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 146371.09999999404
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 148226.79999999702
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 150024.39999999106
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 151929.89999999106
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 153753.19999998808
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 155706.89999999106
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 157605.59999999404
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 159432
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 161352.19999998808
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 163292.59999999404
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 165309.5
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 167288.19999998808
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 169251.79999999702
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "pitch": 0.2,
+     "t": 171294.89999999106
+    }
+   ],
+   "assentarQuadros": 40,
+   "governadorAntes": "cheio",
+   "pixelRatioAntes": 1,
+   "governadorDepois": "cheio",
+   "governadorEstado": {
+    "degrau": 0,
+    "nome": "cheio",
+    "p50": 0,
+    "p95": 0,
+    "trocas": []
+   },
+   "segundos": 117.914
+  },
+  "raf-parado": {
+   "quadros": [
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15
+    }
+   ],
+   "governadorAntes": "cheio",
+   "governadorDepois": "cheio",
+   "segundos": 137.089
+  },
+  "raf-tempo": {
+   "quadros": [
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.000555555555556
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.001111111111111
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.001666666666667
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.002222222222223
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.002777777777778
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.003333333333334
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.00388888888889
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.004444444444445
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.005
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.005555555555556
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.006111111111112
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.006666666666668
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.007222222222223
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.007777777777779
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.008333333333335
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0,
+     "hora": 15.00888888888889
+    }
+   ],
+   "governadorAntes": "cheio",
+   "governadorDepois": "cheio",
+   "segundos": 144.317
+  },
+  "raf-giro": {
+   "quadros": [
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.006666666666666667,
+     "hora": 15.011666666666633
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.013333333333333334,
+     "hora": 15.012222222222189
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.02,
+     "hora": 15.012777777777744
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.02666666666666667,
+     "hora": 15.0133333333333
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.03333333333333333,
+     "hora": 15.013888888888856
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.04,
+     "hora": 15.014444444444411
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.04666666666666667,
+     "hora": 15.014999999999967
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.05333333333333334,
+     "hora": 15.015555555555522
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.060000000000000005,
+     "hora": 15.016111111111078
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.06666666666666667,
+     "hora": 15.016666666666634
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.07333333333333333,
+     "hora": 15.01722222222219
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.08,
+     "hora": 15.017777777777745
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.08666666666666667,
+     "hora": 15.0183333333333
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.09333333333333334,
+     "hora": 15.018888888888856
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.1,
+     "hora": 15.019444444444412
+    },
+    {
+     "governador": "cheio",
+     "pixelRatio": 1,
+     "w": 960,
+     "h": 540,
+     "yaw": 0.10666666666666667,
+     "hora": 15.019999999999968
+    }
+   ],
+   "governadorAntes": "cheio",
+   "governadorDepois": "cheio",
+   "segundos": 109.196
+  }
+ },
+ "console": [
+  "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "[warning] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+  "[warning] escultura leaoSerpente: /arte/finais/marcos1932/leao-serpente-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura leao: /arte/finais/marcos1932/leao-pe-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura tigre: /arte/finais/marcos1932/tigre-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura general: /arte/finais/marcos1932/general-jogo.glb não carregou, fica a procedural"
+ ],
+ "abrirS": 48.321,
+ "inicio": {
+  "webgpu": false,
+  "rendererTipo": "WebGLRenderer",
+  "governadorLigado": true,
+  "governador": "cheio",
+  "pixelRatio": 1,
+  "qualidadeFixa": false,
+  "qualidadeEscolhida": "medio",
+  "estabilizar": 0.85,
+  "quebrados": []
+ },
+ "quebradosFim": []
+}
