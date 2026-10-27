@@ -149,7 +149,12 @@ export class SombraPerto {
       luz.shadow.intensity = borda
       luz.shadow.autoUpdate = false
       luz.shadow.needsUpdate = refazer
-      if (!ligado) luz.shadow.needsUpdate = false
+      // Desligado, o mapa não é redesenhado, mas TEM de existir: o shader declara directionalShadowMap[ 1 ] como
+      // sampler2DShadow, e sem mapa o three liga ali a textura vazia (RGBA). O ANGLE sobre Metal (Chrome no Mac)
+      // recusa todo desenho com "Mismatch between texture format and sampler type" mesmo com o ramo do shader
+      // que lê o mapa de perto nunca rodando (o mundo saía branco). Então um passe, uma vez, só para criar o mapa
+      // de profundidade (de novo se a resolução mudar e o mapa for descartado).
+      if (!ligado) luz.shadow.needsUpdate = !luz.shadow.map && !!m.sombras
     }
     this.stats.texelCm = +(texel * 100).toFixed(2)
     this.stats.ligado = ligado
