@@ -1,0 +1,10 @@
+name = "maresia-telemetria"
+main = "src/index.js"
+compatibility_date = "2026-05-01"
+account_id = "51d9f6b05f0a6aafa2acad03656f4f72"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "maresia-telemetria"
+database_id = "6be7a8be-60f7-4f7e-bb3f-78b61fe8ed00"
