@@ -4,6 +4,7 @@
 
 import * as THREE from 'three'
 import { carregarConfig } from './config.js'
+import { criarTelemetria } from './telemetria/gravador.js'
 import { globais } from './globais.js'
 import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
 import { criarTerreno, alturaTerreno } from './mundo/terreno.js'
@@ -320,6 +321,8 @@ async function iniciar() {
   let t = 0
 
   const estatistica = { msQuadro: 16 }
+  // telemetria de desempenho anônima (src/telemetria/gravador.js); ?semTelemetria desliga
+  const tele = criarTelemetria({ renderer, canvas })
   // o gravador pausa o laço e chama passo() com tempo fixo. Com ?foto na URL o jogo já abre pausado: a foto
   // justa (debug/foto-justa.js) roda a mesma sequência de passos fixos nos dois renderizadores, então o mundo
   // (partículas, ondas, animação) fica no mesmo estado nas duas fotos
@@ -355,12 +358,16 @@ async function iniciar() {
     avo2?.atualizar(dt, fpsAvo)
     mar.atualizar(jogador.pos)
     grama.atualizar(jogador.pos, camera)
+    const t0Chunks = tele ? performance.now() : 0
     terreno.atualizar(camera)
     chaoSolto.atualizar(camera)
+    if (tele) tele.marcar('chunks', performance.now() - t0Chunks)
     praia.atualizar(t)
     cenografia.atualizar()
     marcosNorte.atualizar(camera)
+    const t0Casas = tele ? performance.now() : 0
     casas.atualizar(camera, cfg.desempenho.casasPorQuadro ?? 1)
+    if (tele) tele.marcar('casas', performance.now() - t0Casas)
     marcos1932.atualizar(camera)
     marcos.atualizar(t)
 
@@ -451,6 +458,7 @@ async function iniciar() {
   function quadro() {
     requestAnimationFrame(quadro)
     contadorFps.quadro()
+    tele?.quadro()
     const real = relogio.getDelta()
     estatistica.msQuadro += (real * 1000 - estatistica.msQuadro) * 0.05
     if (controle.pausado) return
@@ -506,7 +514,7 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { ferrovia: () => ferrovia, cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, governador, pixelRatio: () => renderer.getPixelRatio(), toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
+  window.maresia = { ferrovia: () => ferrovia, cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, governador, telemetria: tele, pixelRatio: () => renderer.getPixelRatio(), toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))
