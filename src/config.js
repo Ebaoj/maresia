@@ -543,7 +543,7 @@ export const PADRAO = {
     cortePx: 3,            // tamanho (px numa tela de 900 de altura) abaixo do qual a peça sai
     resolucaoDinamica: true, // R1 (robustez no M1): a resolução segue o tempo de quadro (desce quando a maioria dos quadros estoura o orçamento, sobe devagar quando sobra); teto = resolucao. Ligada em 24/10/2026 (o perfil padrão é o "medio")
     tetoRetina: 1.0,       // 24/10/2026: em tela Retina (dpr > 1,5) o pixel ratio do desenho não passa disto (o M1 desenhava 1,25 x 2 vezes mais pixels que um monitor comum e travava); os perfis mudam (baixo 0,75, medio 1,0, alto 1,25)
-    governador: true,      // 24/10/2026 (render/governador.js): troca o perfil inteiro (alto, medio, baixo) quando o p90 do quadro fica caro por segundos; desligado com ?qualidade=alto|medio|baixo
+    governador: true,      // 27/10/2026 (render/governador.js): escada de degraus (sombra, pós, distância, LOD; a resolução por último, piso 0,75) pelo p95 sustentado; com ele ligado a resolução dinâmica não roda; desligado com ?qualidade=alto|medio|baixo
     qualidadeEscolhida: 'medio', // o perfil de partida do governador (?qualidade= muda; não é ajuste do painel)
     qualidadeFixa: false,  // true quando a URL fixou um perfil
     casasPorQuadro: 1,     // 25/10/2026: blocos de casas detalhadas montados por quadro (era 2: dois blocos num quadro davam ~650 ms na T4 depois do teleporte)

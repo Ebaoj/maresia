@@ -15,7 +15,7 @@ export const NIVEIS = ['baixo', 'medio', 'alto']
 export const PERFIS = {
   baixo: {
     'desempenho.resolucao': 0.75,
-    'desempenho.resolucaoMin': 0.5,
+    'desempenho.resolucaoMin': 0.75, // 27/10/2026: era 0,5 (borrado demais na Retina); abaixo de 0,75 só o governador em emergência
     'desempenho.tetoRetina': 0.75,
     'mundo.resolucaoSombra': 1024,
     'mundo.sombraPerto': false,

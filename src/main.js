@@ -70,8 +70,8 @@ import { carregarAvo } from './jogador/avo.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
 import { AranhaversoGpu } from './pos/aranhaverso-gpu.js'
 import { ResolucaoDinamica } from './render/resolucao-dinamica.js'
-import { GovernadorQualidade } from './render/governador.js'
-import { aplicarNivelVivo, tetoPixel } from './qualidade.js'
+import { GovernadorQualidade, aplicarDegrau } from './render/governador.js'
+import { tetoPixel } from './qualidade.js'
 import { atualizarCorte } from './render/corte-tela.js'
 import { criarHud } from './ui/hud.js'
 import { criarPainel } from './ui/painel.js'
@@ -296,12 +296,18 @@ async function iniciar() {
   let tamanhoTravado = false // a foto justa fixa o tamanho (tamanhoFixo): a resolução dinâmica não roda nesse tempo
   const escalaAtual = () => (cfg.desempenho.resolucaoDinamica ? dinamica.escala : cfg.desempenho.resolucao)
 
+  // governador (27/10/2026, perf-governador): escada de degraus sobre o perfil escolhido; a resolução é o último
+  // degrau e, com ele ligado, a resolução dinâmica (que descia sozinha pelo p75) fica desligada: quem mexe no pixel
+  // ratio é só o governador, com piso de 0,75 fora de emergência
   const governador = cfg.desempenho.governador && !cfg.desempenho.qualidadeFixa
-    ? new GovernadorQualidade({ nivel: cfg.desempenho.qualidadeEscolhida, orcamentoMs: cfg.desempenho.orcamentoQuadroMs })
+    ? new GovernadorQualidade({ orcamentoMs: cfg.desempenho.orcamentoQuadroMs })
     : null
+  const baseGovernador = {}
+  if (governador) aplicarDegrau(cfg, governador, baseGovernador)
+  const tetoGovernador = () => (governador ? governador.capPixel() : Infinity)
   let resolucao = 0
   function redimensionar() {
-    resolucao = Math.min(escalaAtual(), tetoPixel(cfg))
+    resolucao = Math.min(escalaAtual(), tetoPixel(cfg), tetoGovernador())
     renderer.setPixelRatio(resolucao)
     renderer.setSize(innerWidth, innerHeight, false)
     camera.aspect = innerWidth / innerHeight
@@ -478,9 +484,9 @@ async function iniciar() {
     if (controle.pausado) return
     // R1: o usuário mexeu na resolução do painel (ou ligou a chave agora): recomeça do teto. Senão, a escala segue o tempo
     // de quadro; ao mudar, o teste logo abaixo refaz o tamanho do desenho
-    if (cfg.desempenho.resolucao !== resolucaoDoPainel || cfg.desempenho.resolucaoDinamica !== dinamicaLigada) {
+    if (cfg.desempenho.resolucao !== resolucaoDoPainel || (cfg.desempenho.resolucaoDinamica && !governador) !== dinamicaLigada) {
       resolucaoDoPainel = cfg.desempenho.resolucao
-      dinamicaLigada = cfg.desempenho.resolucaoDinamica
+      dinamicaLigada = !!cfg.desempenho.resolucaoDinamica && !governador
       dinamica.redefinir(tetoResolucao())
     }
     if (dinamicaLigada && !tamanhoTravado) {
@@ -488,13 +494,15 @@ async function iniciar() {
       dinamica.orcamentoMs = cfg.desempenho.orcamentoQuadroMs
       dinamica.quadro(webgpu && custoQuadroMs > 0 ? custoQuadroMs : real * 1000)
     }
-    // governador (24/10/2026): troca o perfil quando o quadro fica caro por segundos; a troca de resolução volta pelo
-    // teste de cima no próximo quadro (resolucaoDoPainel muda) e a escala recomeça do teto novo
+    // governador (27/10/2026): um degrau por vez, pelo p95 sustentado; a resolução só no fim da escada
     if (governador && !tamanhoTravado) {
-      const nivel = governador.quadro(real * 1000)
-      if (nivel) { aplicarNivelVivo(cfg, nivel); cfg.desempenho.qualidadeEscolhida = nivel }
+      const degrau = governador.quadro(real * 1000)
+      if (degrau !== null) {
+        aplicarDegrau(cfg, governador, baseGovernador)
+        marcarEvento('governador', { degrau: governador.nome })
+      }
     }
-    if (Math.min(escalaAtual(), tetoPixel(cfg)) !== resolucao) redimensionar()
+    if (!tamanhoTravado && Math.min(escalaAtual(), tetoPixel(cfg), tetoGovernador()) !== resolucao) redimensionar()
     const t0Quadro = performance.now()
     passo(Math.min(real, 1 / 20))
     if (webgpu && dinamicaLigada && !medindoCusto && renderer.backend?.device) {

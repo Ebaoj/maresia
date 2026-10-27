@@ -1,41 +1,82 @@
-// O governador de qualidade (24/10/2026, src/render/governador.js): troca o perfil quando o quadro fica caro por
-// segundos, volta com folga longa, não oscila, e o teto de pixel da tela Retina (qualidade.js: tetoPixel).
+// O governador de qualidade (src/render/governador.js; escada desde 27/10/2026): corta sombra, pós, distância e LOD
+// antes da resolução, pelo p95 sustentado, piso de pixel 0,75 fora de emergência, não oscila, e o teto de pixel da tela Retina (qualidade.js: tetoPixel).
 import { describe, it, expect } from 'vitest'
-import { GovernadorQualidade } from '../../src/render/governador.js'
+import { GovernadorQualidade, aplicarDegrau } from '../../src/render/governador.js'
 import { tetoPixel, aplicarNivelVivo, aplicarQualidadeDaUrl } from '../../src/qualidade.js'
 
 const rodar = (g, dt, ms) => { const trocas = []; for (let t = 0; t < ms; t += dt) { const n = g.quadro(dt); if (n) trocas.push(n) } return trocas }
 
-describe('governador de qualidade', () => {
-  it('quadro caro sustentado desce um nível por vez, com resfriamento entre as descidas', () => {
-    const g = new GovernadorQualidade({ nivel: 'alto' })
-    expect(rodar(g, 40, 3000)).toEqual([]) // janela enchendo + sustentar: ainda não
-    expect(rodar(g, 40, 3000)).toEqual(['medio'])
-    expect(rodar(g, 40, 2000)).toEqual([]) // resfriando
-    expect(rodar(g, 40, 10000)).toEqual(['baixo'])
-    expect(rodar(g, 40, 20000)).toEqual([]) // já está no piso
+describe('governador de qualidade (escada, 27/10/2026)', () => {
+  // gerador de quadros com p50 / p95 / picos (semente fixa)
+  const quadros = ({ p50, p95, pico = 0, cadaPico = 0 }) => {
+    let s = 7
+    const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647)
+    let k = 0
+    return () => { k++; if (cadaPico && k % cadaPico === 0) return pico; return rnd() < 0.9 ? p50 + (rnd() - 0.5) : p95 + rnd() }
+  }
+  const correr = (g, gerar, ms) => { const trocas = []; for (let t = 0; t < ms;) { const dt = gerar(); t += dt; const d = g.quadro(dt); if (d !== null) trocas.push(g.nome) } return trocas }
+
+  it('telemetria do M1 (p50 13, p95 15-20, travadas de 45-200 ms): nada cai, nem a resolução', () => {
+    const g = new GovernadorQualidade()
+    expect(correr(g, quadros({ p50: 13, p95: 19.5, pico: 45, cadaPico: 70 }), 240000)).toEqual([])
+    expect(correr(g, quadros({ p50: 13, p95: 18, pico: 180, cadaPico: 300 }), 120000)).toEqual([])
+    expect(g.capPixel()).toBe(Infinity)
   })
 
-  it('um pico isolado não derruba o nível', () => {
-    const g = new GovernadorQualidade({ nivel: 'medio' })
-    const trocas = []
-    for (let i = 0; i < 2000; i++) { const n = g.quadro(i % 50 === 0 ? 300 : 16); if (n) trocas.push(n) }
-    expect(trocas).toEqual([])
+  it('p95 caro com p50 folgado: corta sombra, pós, distância e LOD, mas nunca a resolução', () => {
+    const g = new GovernadorQualidade()
+    const trocas = correr(g, quadros({ p50: 13, p95: 30 }), 120000)
+    expect(trocas[0]).toBe('sombra-perto-leve')
+    expect(trocas).toContain('sem-estabilizar')
+    expect(trocas.some((n) => n.startsWith('pixel'))).toBe(false)
+    expect(g.capPixel()).toBe(Infinity)
+    expect(g.ajustes()['estilo.dof']).toBe(false)
   })
 
-  it('sobe só com folga longa, e a espera dobra quando a subida não se sustenta (sem oscilar)', () => {
-    const g = new GovernadorQualidade({ nivel: 'baixo', esperaSubirMs: 10000 })
-    expect(rodar(g, 8, 9000)).toEqual([])
-    expect(rodar(g, 8, 8000)).toEqual(['medio'])
-    expect(rodar(g, 40, 8000)).toEqual(['baixo']) // não aguentou: volta
-    expect(g.esperaAtual).toBe(20000)
-    expect(rodar(g, 8, 15000)).toEqual([]) // agora precisa de 20 s de folga
-    expect(rodar(g, 8, 12000)).toEqual(['medio'])
+  it('quadro caro de verdade (p50 20): a resolução é a última e para em 0,75', () => {
+    const g = new GovernadorQualidade()
+    const trocas = correr(g, quadros({ p50: 20, p95: 26 }), 200000)
+    const iPix = trocas.findIndex((n) => n.startsWith('pixel'))
+    expect(iPix).toBeGreaterThan(trocas.indexOf('sem-estabilizar'))
+    expect(g.capPixel()).toBe(0.75)
+  })
+
+  it('só com o orçamento estourado (p50 30) desce abaixo de 0,75', () => {
+    const g = new GovernadorQualidade()
+    correr(g, quadros({ p50: 30, p95: 40 }), 300000)
+    expect(g.capPixel()).toBe(0.5)
+  })
+
+  it('sobe com folga sustentada, a resolução primeiro, e a espera dobra quando a subida não se sustenta', () => {
+    const g = new GovernadorQualidade()
+    correr(g, quadros({ p50: 20, p95: 26 }), 200000)
+    expect(g.capPixel()).toBe(0.75)
+    const subidas = correr(g, quadros({ p50: 9, p95: 12 }), 12000)
+    expect(subidas[0]).toBe('pixel-0.8')
+    correr(g, quadros({ p50: 20, p95: 26 }), 8000)
+    expect(g.esperaAtual).toBe(16000)
+    correr(g, quadros({ p50: 9, p95: 12 }), 400000)
+    expect(g.degrau).toBe(0)
   })
 
   it('troca de aba (dt enorme) zera a janela e não conta como caro', () => {
-    const g = new GovernadorQualidade({ nivel: 'alto' })
-    expect(rodar(g, 1000, 60000)).toEqual([])
+    const g = new GovernadorQualidade()
+    expect(correr(g, () => 1000, 60000)).toEqual([])
+  })
+
+  it('aplicarDegrau escreve as chaves por cima da base e volta a ela ao subir', () => {
+    const cfg = { mundo: { sombraPertoResolucao: 1024, sombraPerto: true, palhaPerto: 220 }, estilo: { arcPinturaMeia: false, dof: true, estabilizar: 0.85 }, desempenho: { cortePx: 3 }, pessoas: { ate: 400 }, marcos: { distDetalhe: 170 }, arvores: { lodPerto: 65, lodLonge: 85, lodBloco: 90 } }
+    const g = new GovernadorQualidade()
+    const base = {}
+    aplicarDegrau(cfg, g, base)
+    g.degrau = 4
+    aplicarDegrau(cfg, g, base)
+    expect(cfg.mundo.sombraPertoResolucao).toBe(512)
+    expect(cfg.estilo.dof).toBe(false)
+    expect(cfg.desempenho.cortePx).toBe(6)
+    g.degrau = 0
+    aplicarDegrau(cfg, g, base)
+    expect(cfg).toEqual({ mundo: { sombraPertoResolucao: 1024, sombraPerto: true, palhaPerto: 220 }, estilo: { arcPinturaMeia: false, dof: true, estabilizar: 0.85 }, desempenho: { cortePx: 3 }, pessoas: { ate: 400 }, marcos: { distDetalhe: 170 }, arvores: { lodPerto: 65, lodLonge: 85, lodBloco: 90 } })
   })
 })
 

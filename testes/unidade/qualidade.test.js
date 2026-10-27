@@ -16,7 +16,7 @@ describe('perfis de qualidade', () => {
     const cfg = cfgLimpa()
     expect(aplicarQualidade(cfg, 'baixo')).toBe(true)
     expect(cfg.desempenho.resolucao).toBe(0.75)
-    expect(cfg.desempenho.resolucaoMin).toBe(0.5)
+    expect(cfg.desempenho.resolucaoMin).toBe(0.75) // 27/10/2026: piso 0,75 (era 0,5, borrado na Retina)
     expect(cfg.mundo.resolucaoSombra).toBe(1024)
     expect(cfg.mundo.sombraPerto).toBe(false)
     expect(cfg.estilo.dof).toBe(false)
