@@ -7,6 +7,7 @@ import { carregarConfig } from './config.js'
 import { criarTelemetria } from './telemetria/gravador.js'
 import { globais } from './globais.js'
 import { linhaCosta, larguraPraia, distCosta } from './mundo/mapa.js'
+import { VISTAS } from './mundo/marcos1932/vistas.js'
 import { criarTerreno, alturaTerreno } from './mundo/terreno.js'
 import { criarFerrovia } from './mundo/ferrovia1932.js'
 import { criarOficinas1932 } from './mundo/oficinas1932.js'
@@ -175,11 +176,24 @@ async function iniciar() {
   const fisica = await criarFisica(cena, cfg, { coqueiros, toque, areia })
   marcar('fisica')
 
-  // começa na Praia de Iracema, entre as jangadas, olhando para o oeste: o porto
-  const x0 = (trechosJogo.praiaIracema[0] + trechosJogo.praiaIracema[1]) / 2
-  const z0 = linhaCosta(x0) + larguraPraia(x0) + 3.5
-  const inicio = new THREE.Vector3(x0, alturaChao(x0, z0), z0)
-  const jogador = new Jogador(cena, cfg, inicio, -Math.PI / 2)
+  // começa na Praça do Ferreira (pedido do Joabe, 27/10/2026), do lado leste da praça, olhando para a Coluna da
+  // Hora (a vista do conceito praca-ferreira.png, marcos1932/vistas.js). ?inicio=praia volta ao começo antigo: a
+  // Praia de Iracema, entre as jangadas, olhando para o oeste (o porto)
+  const naPraia = new URLSearchParams(location.search).get('inicio') === 'praia'
+  let inicio, yawInicio, yawCamInicio
+  if (naPraia) {
+    const x0 = (trechosJogo.praiaIracema[0] + trechosJogo.praiaIracema[1]) / 2
+    const z0 = linhaCosta(x0) + larguraPraia(x0) + 3.5
+    inicio = new THREE.Vector3(x0, alturaChao(x0, z0), z0)
+    yawInicio = -Math.PI / 2
+    yawCamInicio = Math.PI / 2
+  } else {
+    const v = VISTAS.colunaHora
+    inicio = new THREE.Vector3(v.x, alturaChao(v.x, v.z), v.z)
+    yawCamInicio = v.yaw // a câmera olha para -(sen yaw, cos yaw); o jogador, para o mesmo lado
+    yawInicio = v.yaw + Math.PI
+  }
+  const jogador = new Jogador(cena, cfg, inicio, yawInicio)
   let atores = null
   const carregamentos = [] // modelos em segundo plano (a foto justa espera todos)
   // corpo novo (esqueleto padrão + mocap do Mixamo): carrega em segundo plano e substitui o boneco antigo
@@ -218,7 +232,7 @@ async function iniciar() {
       if (window.maresia) window.maresia.avo2 = a
     }).catch((e) => console.error('Avô do Tripo:', e)))
   }
-  const cam = new CameraTerceiraPessoa(camera, canvas, cfg, Math.PI / 2)
+  const cam = new CameraTerceiraPessoa(camera, canvas, cfg, yawCamInicio)
   const interacoes = criarInteracoes({ jogador, fisica, lugares, camera })
   // partículas (visual Arcane): fumaça dos fogareiros, poeira, borrifo da arrebentação, pó no ar
   const particulas = criarParticulas(cena, renderer, camera)

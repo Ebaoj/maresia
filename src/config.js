@@ -524,7 +524,7 @@ export const PADRAO = {
     corMosaicoEscuro: '#45413b', // pedra portuguesa escura: cinza-carvão, não preto puro
   },
   fatia: {
-    travar: true,          // prende o jogador na fatia vertical da Praia do Peixe (mundo/fatia.js)
+    travar: false,         // prende o jogador na fatia vertical da Praia do Peixe (mundo/fatia.js); 27/10/2026: solto por padrão, ?fatia na URL prende
   },
   desempenho: {
     resolucao: 1.0,        // 24/10/2026: era 1,25; o perfil padrão é o "medio" (src/qualidade.js)
@@ -580,6 +580,7 @@ function mesclar(base, salvo) {
 // Padrão que mudou: o painel salva a config inteira, então quem salvou qualquer ajuste guardou também o padrão
 // antigo destas chaves e nunca veria o novo. Valor salvo igual ao padrão antigo vira o padrão novo.
 export const PADRAO_MUDOU = [
+  ['fatia.travar', true, false], // 27/10/2026: o jogo começa na Praça do Ferreira, sem a trava da fatia (?fatia prende)
   ['mundo.passoSombraMin', 4, 0], // 21/10/2026: a sombra dava um tranco a cada 4 s
   ['mundo.marcosNorte.corSe', '#cddbd6', '#bccfc6'], // 21/10/2026: reboco dos marcos, cores refeitas pelos conceitos
   ['mundo.marcosNorte.corSe', '#b7cbc1', '#bccfc6'],
@@ -627,6 +628,8 @@ export function carregarConfig() {
     if (salvo) mesclar(cfg, migrarPadroes(salvo))
   } catch { /* navegador sem storage: segue com o padrão */ }
   aplicarModoLeve(cfg, globalThis.location?.search)
+  // ?fatia: prende o jogador na fatia vertical da Praia do Peixe (ajuda de quem trabalha nela)
+  if (new URLSearchParams(globalThis.location?.search || '').has('fatia')) cfg.fatia.travar = true
   // perfil de qualidade (24/10/2026): ?qualidade=alto|medio|baixo|auto na URL, por cima do salvo, só nesta abertura
   // o perfil escolhido não é ajuste do painel: o salvo não vale, a URL decide a cada abertura
   cfg.desempenho.qualidadeEscolhida = PADRAO.desempenho.qualidadeEscolhida
