@@ -42,11 +42,14 @@ function massa(raio, cx, cy, cz, escura, clara, semente) {
   return g
 }
 
+// o IcosahedronGeometry já nasce sem índice: toNonIndexed() nele só avisa no console
+const semIndice = (g) => (g.index ? g.toNonIndexed() : g)
+
 function geometriaBuganvilia() {
   const partes = []
   for (let i = 0; i < 4; i++) partes.push(massa(rnd.entre(0.6, 0.9), rnd.entre(-0.8, 0.8), rnd.entre(-0.6, 0.2), rnd.entre(-0.2, 0.2), '#8a2a5a', '#c9558a', i * 5.1))
   partes.push(massa(0.5, 0, -0.9, 0, '#1f6b3a', '#4fa84a', 9.1))
-  return mergeGeometries(partes.map((g) => g.toNonIndexed()))
+  return mergeGeometries(partes.map(semIndice))
 }
 
 function geometriaVaso() {
@@ -55,7 +58,7 @@ function geometriaVaso() {
   const n = vaso.attributes.position.count
   const c = new THREE.Color('#c4552d')
   vaso.setAttribute('color', new THREE.Float32BufferAttribute(new Array(n).fill(0).flatMap(() => [c.r, c.g, c.b]), 3))
-  return mergeGeometries([vaso.toNonIndexed(), massa(0.45, 0, 0.85, 0, '#1f6b3a', '#6cc75a', 2.2).toNonIndexed()])
+  return mergeGeometries([vaso.toNonIndexed(), semIndice(massa(0.45, 0, 0.85, 0, '#1f6b3a', '#6cc75a', 2.2))])
 }
 
 export function criarArvores(cena, predios, grade) {

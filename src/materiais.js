@@ -256,7 +256,8 @@ export function toon(cor, extra = {}) {
 }
 
 export function toonVertice(extra = {}) {
-  return pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon(), ...extra }), 'toon-pintado')
+  const { semCache, ...resto } = extra // semCache é do toon() (cache de material), não propriedade do MeshToonMaterial
+  return pintar(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon(), ...resto }), 'toon-pintado')
 }
 
 // Prédio com fachada desenhada no shader: janela com moldura e peitoril, veneziana,
