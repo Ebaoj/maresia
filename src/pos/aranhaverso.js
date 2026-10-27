@@ -408,7 +408,9 @@ void main() {
     float trama = fioX * fioY * 0.6 + (ruido(px * 0.5) - 0.5) * 0.8;
     cor *= 1.0 + trama * uTelaPintura;
   }
-  cor += (hash(floor(px) + fract(uTempo * 7.13) * 91.7) - 0.5) * uGrao;
+  // grão parado, preso à tela como o papel (27/10/2026): com uTempo no hash ele trocava 8 vezes por segundo,
+  // depois da estabilização, e a tela inteira pulsava (docs/relatorio-visual.md, 1.2)
+  cor += (hash(floor(px)) - 0.5) * uGrao;
 
   // 10. linhas de velocidade quando corre
   vec2 dv = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);

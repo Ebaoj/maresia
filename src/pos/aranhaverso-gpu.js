@@ -532,7 +532,8 @@ function fragTela(W, u, T, uvGL) {
       const trama = fioX.mul(fioY).mul(0.6).add(ruido(px.mul(0.5)).sub(0.5).mul(0.8))
       cor.mulAssign(float(1.0).add(trama.mul(U.uTelaPintura)))
     })
-    cor.addAssign(hash(floor(px).add(fract(U.uTempo.mul(7.13)).mul(91.7))).sub(0.5).mul(U.uGrao))
+    // grão parado, preso à tela como o papel (27/10/2026; docs/relatorio-visual.md, 1.2)
+    cor.addAssign(hash(floor(px)).sub(0.5).mul(U.uGrao))
 
     // 10. linhas de velocidade quando corre
     const dv = uv.sub(0.5).mul(vec2(U.uRes.x.div(U.uRes.y), 1.0))
