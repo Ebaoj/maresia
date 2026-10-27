@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { carregar, ossosPorNome, carregarMovimentosMixamo } from './retarget.js'
 import { toon, toonVertice } from '../materiais.js'
 import { criarRosto } from './rosto.js'
+import { daBase } from '../caminho.js'
 
 export const ARQUIVO_AVO = '/arte/finais/avo-mpfb.glb'
 // rosto liso (órbitas tampadas, sem cílios), para olhos e sobrancelhas desenhados; a boca fica sob o bigode
@@ -122,7 +123,7 @@ export async function carregarAvo({ movimento = 'parado', rostoDesenhado = true,
 // do avô fica a ±2,8 cm do meio (o do neto a ±3,5): o desenho encolhe na mesma proporção
 async function ancorasAvo(cabeca, raiz) {
   try {
-    const r = await fetch('/arte/finais/avo-mpfb-sem-rosto-ancoras.json')
+    const r = await fetch(daBase('/arte/finais/avo-mpfb-sem-rosto-ancoras.json'))
     if (!r.ok || (r.headers.get('content-type') || '').includes('html')) return null
     const a = await r.json()
     raiz.updateMatrixWorld(true)

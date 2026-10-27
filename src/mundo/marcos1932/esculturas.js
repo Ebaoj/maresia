@@ -16,6 +16,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { registrarEstatico } from '../../render/sombra-estatica.js'
 import { Obra } from './obra.js'
 import { suavizarNormais } from './normais-suaves.js'
+import { daBase } from '../../caminho.js'
 
 // o modelo esculpido: arquivo, para onde ele olha (giro que leva a cabeça para +z), tamanho alvo e medida
 export const MODELOS = {
@@ -166,7 +167,7 @@ export function criarEsculturas(cena, cfg, mats, obra, lugares) {
     for (const [chave, def] of Object.entries(MODELOS)) {
       const alvo = porChave[chave]
       if (!alvo) continue
-      loader.load(def.arquivo, (gltf) => {
+      loader.load(daBase(def.arquivo), (gltf) => {
         try {
           const m = new THREE.Mesh(prepararModelo(gltf, def, cfg.marcos.metalSuave, cfg.marcos.metalBrilhoForma), alvo.mat)
           m.name = `escultura-${chave}-modelo`

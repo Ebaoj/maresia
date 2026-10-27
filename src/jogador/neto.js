@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { carregar, ossosPorNome } from './retarget.js'
 import { toon, toonVertice } from '../materiais.js'
 import { criarAleatorio } from '../utils.js'
+import { daBase } from '../caminho.js'
 
 export const ARQUIVO_NETO = '/arte/finais/neto-mpfb.glb'
 // rosto liso (sem olhos, sobrancelhas, cílios nem lábios), para o rosto desenhado em 2D (rosto.js)
@@ -265,7 +266,7 @@ function aplainar(pele, { x0, x1, y0, y1 }) {
 // boca, mundo em repouso): arte/finais/neto-mpfb-sem-rosto-ancoras.json
 async function ancorasMedidas(cabeca, malhas) {
   try {
-    const r = await fetch('/arte/finais/neto-mpfb-sem-rosto-ancoras.json')
+    const r = await fetch(daBase('/arte/finais/neto-mpfb-sem-rosto-ancoras.json'))
     if (!r.ok || (r.headers.get('content-type') || '').includes('html')) return null
     const a = await r.json()
     const inv = cabeca.matrixWorld.clone().invert()

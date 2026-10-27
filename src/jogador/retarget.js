@@ -9,6 +9,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { nomeCanonico, NOMES } from './esqueleto.js'
 import { usarDedosGravados, prepararTransferenciaDedos } from './dedos.js'
 import { PADRAO } from '../config.js'
+import { daBase } from '../caminho.js'
 
 export const ehDedo = nome => /^(Left|Right)Hand(Thumb|Index|Middle|Ring|Pinky)[1-4]$/.test(nome)
 
@@ -17,10 +18,10 @@ const gltf = new GLTFLoader()
 
 export async function carregar(url) {
   if (url.endsWith('.fbx')) {
-    const obj = await fbx.loadAsync(url)
+    const obj = await fbx.loadAsync(daBase(url))
     return { raiz: obj, clipes: obj.animations }
   }
-  const g = await gltf.loadAsync(url)
+  const g = await gltf.loadAsync(daBase(url))
   return { raiz: g.scene, clipes: g.animations }
 }
 
@@ -155,7 +156,7 @@ export function medirPassada(clipe, alvo, raiz) {
 export async function carregarMovimentosMixamo({ alvo, pasta, nomes, dedos = PADRAO.personagem, semDeslocamento = ['sentar', 'levantar', 'empurrar'] }) {
   const existe = async (url) => {
     try {
-      const r = await fetch(url, { method: 'HEAD' })
+      const r = await fetch(daBase(url), { method: 'HEAD' })
       return r.ok && !(r.headers.get('content-type') || '').includes('text/html')
     } catch { return false }
   }
