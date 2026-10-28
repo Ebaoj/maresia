@@ -15,6 +15,7 @@ import { uniformsFx2d, GLSL_FX2D } from './fx2d.js'
 import { GLSL_GRADACAO } from './gradacao-final.js'
 import { uniformsProfundidade, atualizarProfundidade, criarEstadoFoco, ProfundidadeWebgl } from './profundidade.js'
 import { uniformsEstabilizar, criarEstadoEstabilizar, atualizarEstabilizar, EstabilizarWebgl } from './estabilizar.js'
+import { SmaaWebgl } from './smaa.js'
 
 const vert = /* glsl */ `
 varying vec2 vUv;
@@ -621,6 +622,7 @@ export class Aranhaverso {
     this.tamCheio = [w, h]
     if (this.dof) this.dof.tamanho(w, h)
     if (this.estab) this.estab.tamanho(w, h)
+    if (this.smaa) this.smaa.tamanho(w, h)
     this.meiaPintura = null // o tamanho do alvo pintado sai em atualizar(), pela opção do painel
     this.uPintura.tensor.uTexel.value.set(1 / w, 1 / h)
     this.uPintura.kuwahara.uTexel.value.set(1 / w, 1 / h)
@@ -855,6 +857,14 @@ export class Aranhaverso {
         if (this.tamCheio) this.estab.tamanho(...this.tamCheio)
       }
       fonte = this.estab.desenhar(this, fonte, this.rtCor.depthTexture)
+    }
+    // 4a'. antisserrilhado (smaa.js): a escada parada sai antes do desfoque e da pincelada
+    if (e.smaa) {
+      if (!this.smaa) {
+        this.smaa = new SmaaWebgl(THREE)
+        if (this.tamCheio) this.smaa.tamanho(...this.tamCheio)
+      }
+      fonte = this.smaa.desenhar(this, fonte)
     }
     const dofAntes = e.dofOrdem !== 'depois'
     if (this.dofLigado && !this.dof) {

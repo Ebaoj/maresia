@@ -15,6 +15,7 @@ import { aplicarFx2dTsl } from './fx2d.js'
 import { fatorGradacaoTsl } from './gradacao-final.js'
 import { ProfundidadeGpu } from './profundidade-gpu.js'
 import { EstabilizarGpu } from './estabilizar-gpu.js'
+import { SmaaGpu } from './smaa-gpu.js'
 
 export class AranhaversoGpu {
   constructor(renderer, cena, camera, cfg, globais) {
@@ -81,6 +82,8 @@ export class AranhaversoGpu {
     this.dof = new ProfundidadeGpu(W, b.uDof, (no) => this.material(no), T.prof, uvGL)
     // estabilização no tempo (estabilizar-gpu.js): os mesmos uniforms da base
     this.estab = new EstabilizarGpu(W, b.uEstab, (no) => this.material(no), T.prof, uvGL)
+    // antisserrilhado (smaa-gpu.js): o mesmo lugar da cadeia que no WebGL
+    this.smaa = new SmaaGpu(W, (no) => this.material(no), uvGL)
     this.quad = new W.QuadMesh()
   }
 
@@ -108,6 +111,7 @@ export class AranhaversoGpu {
     this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
     this.dof.tamanho(w, h)
     this.estab.tamanho(w, h)
+    this.smaa.tamanho(w, h)
     this.base.rtPinturaAlvo = this.rtPintura // o tamanho (cheio ou meio) sai em atualizar() da base
     this.base.meiaPintura = null
     const tb = this.base.tamBrilho
@@ -162,6 +166,7 @@ export class AranhaversoGpu {
     let fonte = this.rtCor.textures[0]
     // 4a. estabilização no tempo (estabilizar-gpu.js): o resto da cadeia lê a cor já estável
     if (b.estabLigado) fonte = this.estab.desenhar(this, fonte)
+    if (e.smaa) fonte = this.smaa.desenhar(this, fonte)
     const dofAntes = e.dofOrdem !== 'depois'
     if (b.dofLigado && dofAntes) fonte = this.dof.desenhar(this, fonte)
 

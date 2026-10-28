@@ -163,6 +163,7 @@ export function secaoVisual(gui, cfg) {
   // estabilização no tempo contra o pisca (src/pos/estabilizar.js): vale nos dois estilos e nos dois renderizadores
   const est = visual.addFolder('Estabilizar (contra o pisca)')
   est.add(e, 'estabilizar', 0, 0.95, 0.01).name('cor do quadro anterior (0 desliga)')
+  est.add(e, 'smaa').name('antisserrilhado (SMAA)')
   est.add(e, 'estabilizarGama', 0.25, 3, 0.05).name('faixa das vizinhas')
 
   // fase A: pontos na luz e hachura na sombra, decididos pela luz recebida

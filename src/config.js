@@ -134,6 +134,7 @@ export const PADRAO = {
     // andando; quanto da cor do quadro anterior fica (0 desliga o passe e o custo)
     estabilizar: 0.85,
     estabilizarGama: 1.25, // largura da faixa das cores vizinhas em que a cor de antes pode ficar (menor = menos rastro, mais pisca)
+    smaa: true,            // 27/10/2026 (src/pos/smaa.js): antisserrilhado SMAA 1x depois da estabilização e antes do desfoque e da pincelada (a escada parada das quinas e silhuetas)
     linhasVelocidade: true,
     pincel: 0.35,          // variação de pincelada nos materiais
     pincelEscala: 0.6,
