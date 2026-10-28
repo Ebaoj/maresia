@@ -20,6 +20,7 @@ Abre em http://localhost:5195. No preview do Claude: `preview_start` com o nome 
 Na URL: `?qualidade=alto|medio|baixo|auto` escolhe o perfil de qualidade do jogo inteiro (24/10/2026, `src/qualidade.js`);
 `?leve` (ou `?leve=0.7`) deixa o jogo mais leve para jogar enquanto os agentes trabalham na mesma máquina. Os dois valem
 por cima do que está salvo no painel, só nesta abertura.
+O jogo abre às 15 h e o relógio anda 0,1 h por minuto real (27/10/2026); a hora salva não vale ao abrir, `?hora=9.5` escolhe.
 
 Controles: WASD andar, Shift correr, Espaço pular, arrastar o mouse gira a câmera, roda dá zoom,
 Z/C giram a câmera, E faz a ação (sentar, pegar, arremessar, pedir água de coco), M abre o mapa da cidade, H esconde o painel, N liga/desliga o som, T avança uma hora.

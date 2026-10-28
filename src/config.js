@@ -5,8 +5,8 @@ import { aplicarQualidadeDaUrl } from './qualidade.js'
 
 export const PADRAO = {
   tempo: {
-    hora: 16.6,          // começa na hora dourada (luz-arcane, item 3: o forte de 1932 da referência)
-    velocidade: 1.0,     // horas do jogo por minuto real
+    hora: 15,            // 27/10/2026: o jogo abre às 15 h (era 16,6, a hora dourada, que em 1 min já virava 17 h e o canteiro da Praça ficava marrom-violeta: docs/relatorio-visual.md, 4). A hora não vem do salvo; ?hora= na URL escolhe
+    velocidade: 0.1,     // horas do jogo por minuto real (27/10/2026: era 1,0; 0,1 = 10 min reais por hora, das 15 às 17 h em 20 min)
     pausado: false,
   },
   estilo: {
@@ -601,6 +601,7 @@ export const PADRAO_MUDOU = [
   // ligada e sombra de perto em 1024. Quem salvou o painel com o padrão antigo passa ao novo.
   ['desempenho.resolucao', 1.25, 1.0],
   ['mundo.sombraPertoResolucao', 2048, 1024],
+  ['tempo.velocidade', 1.0, 0.1], // 27/10/2026: o relógio corria 1 h por minuto e a cor da Praça mudava sozinha
 ]
 
 export function migrarPadroes(salvo) {
@@ -625,6 +626,13 @@ export function aplicarModoLeve(cfg, busca) {
   return true
 }
 
+// Hora de abrir (27/10/2026): a hora é estado do jogo, não ajuste; o salvo guardava a hora do momento em que o painel
+// mudou e o jogo abria cada vez numa luz. Abre sempre na do PADRAO; ?hora=9.5 na URL escolhe (só nesta abertura).
+export function aplicarHoraDeAbrir(cfg, busca) {
+  const h = parseFloat(new URLSearchParams(busca || '').get('hora'))
+  cfg.tempo.hora = Number.isFinite(h) ? ((h % 24) + 24) % 24 : PADRAO.tempo.hora
+}
+
 export function carregarConfig() {
   const cfg = copiaProfunda(PADRAO)
   try {
@@ -632,6 +640,7 @@ export function carregarConfig() {
     if (salvo) mesclar(cfg, migrarPadroes(salvo))
   } catch { /* navegador sem storage: segue com o padrão */ }
   aplicarModoLeve(cfg, globalThis.location?.search)
+  aplicarHoraDeAbrir(cfg, globalThis.location?.search)
   // ?fatia: prende o jogador na fatia vertical da Praia do Peixe (ajuda de quem trabalha nela)
   if (new URLSearchParams(globalThis.location?.search || '').has('fatia')) cfg.fatia.travar = true
   // perfil de qualidade (24/10/2026): ?qualidade=alto|medio|baixo|auto na URL, por cima do salvo, só nesta abertura
