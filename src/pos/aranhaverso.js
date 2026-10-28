@@ -10,7 +10,7 @@
 import * as THREE from 'three'
 import { criarAleatorio } from '../utils.js'
 import { CAL } from '../paleta.js'
-import { fragTensor, fragKuwahara, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
+import { fragTensor, fragKuwahara, fragDesfoqueTensor, uniformsPintura, atualizarPintura, amostrasPintura } from './pintura.js'
 import { uniformsFx2d, GLSL_FX2D } from './fx2d.js'
 import { GLSL_GRADACAO } from './gradacao-final.js'
 import { uniformsProfundidade, atualizarProfundidade, criarEstadoFoco, ProfundidadeWebgl } from './profundidade.js'
@@ -529,6 +529,7 @@ export class Aranhaverso {
     this.rtBrilhoB = new THREE.WebGLRenderTarget(1, 1, meia)
     // pincelada na tela (pintura.js): tensor em meia resolução e a cor pintada em resolução cheia
     this.rtTensor = new THREE.WebGLRenderTarget(1, 1, meia)
+    this.rtTensorB = new THREE.WebGLRenderTarget(1, 1, meia) // auxiliar do borrão do tensor
     this.rtPintura = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false })
     this.corFundo = new THREE.Color(0, 0, 0)
 
@@ -593,6 +594,8 @@ export class Aranhaverso {
     this.uPintura.kuwahara.tCor.value = this.rtCor.textures[0]
     this.uPintura.kuwahara.tTensor.value = this.rtTensor.texture
     this.matTensor = shader(fragTensor, this.uPintura.tensor)
+    this.matDesfTensorH = shader(fragDesfoqueTensor, this.uPintura.desfoqueH)
+    this.matDesfTensorV = shader(fragDesfoqueTensor, this.uPintura.desfoqueV)
     // um material por grade de amostras (4, 5 ou 7), montado na primeira vez que o painel pede
     this.matsKuwahara = {}
     this.kuwahara = (n) => (this.matsKuwahara[n] ||= shader(fragKuwahara(n), this.uPintura.kuwahara))
@@ -619,6 +622,9 @@ export class Aranhaverso {
     this.rtBrilhoA.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtBrilhoB.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
+    this.rtTensorB.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
+    this.uPintura.desfoqueH.uDir.value.set(1 / Math.ceil(w / 2), 0)
+    this.uPintura.desfoqueV.uDir.value.set(0, 1 / Math.ceil(h / 2))
     this.tamCheio = [w, h]
     if (this.dof) this.dof.tamanho(w, h)
     if (this.estab) this.estab.tamanho(w, h)
@@ -796,7 +802,7 @@ export class Aranhaverso {
     this.velocidade += (alvoVel - this.velocidade) * 0.1
     u.uVelocidade.value = this.velocidade
     // pincelada na tela: a tela lê a cor pintada no lugar da cor crua
-    this.pinturaLigada = atualizarPintura(this.uPintura, e, arc)
+    this.pinturaLigada = atualizarPintura(this.uPintura, e, arc, u.uPR.value)
     // meia resolução: um quarto dos pixels (a pincelada fica um pouco mais mole na borda)
     const meiaP = !!e.arcPinturaMeia
     if (this.tamCheio && meiaP !== this.meiaPintura) {
@@ -878,6 +884,12 @@ export class Aranhaverso {
       this.uPintura.tensor.tCor.value = fonte
       this.uPintura.kuwahara.tCor.value = fonte
       this.passo(this.matTensor, this.rtTensor)
+      if (e.arcPinturaSuavizar !== false) {
+        this.uPintura.desfoqueH.tFonte.value = this.rtTensor.texture
+        this.passo(this.matDesfTensorH, this.rtTensorB)
+        this.uPintura.desfoqueV.tFonte.value = this.rtTensorB.texture
+        this.passo(this.matDesfTensorV, this.rtTensor)
+      }
       this.passo(this.kuwahara(amostrasPintura(e)), this.rtPintura)
       fonte = this.rtPintura.texture
     }

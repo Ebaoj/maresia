@@ -9,7 +9,7 @@
 import * as THREE from 'three'
 import { Aranhaverso } from './aranhaverso.js'
 import { ref, funcoes, modulo, amostraAlvo } from '../render/gpu/comum.js'
-import { fragTensorGpu, fragKuwaharaGpu } from './pintura-gpu.js'
+import { fragTensorGpu, fragKuwaharaGpu, fragDesfoqueTensorGpu } from './pintura-gpu.js'
 import { amostrasPintura } from './pintura.js'
 import { aplicarFx2dTsl } from './fx2d.js'
 import { fatorGradacaoTsl } from './gradacao-final.js'
@@ -40,6 +40,7 @@ export class AranhaversoGpu {
     this.rtBrilhoB = new W.RenderTarget(1, 1, meia)
     // pincelada na tela (pintura.js): tensor em meia resolução e a cor pintada em resolução cheia
     this.rtTensor = new W.RenderTarget(1, 1, meia)
+    this.rtTensorB = new W.RenderTarget(1, 1, meia) // auxiliar do borrão do tensor
     this.rtPintura = new W.RenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false })
     this.corFundo = new THREE.Color(0, 0, 0)
     this.mrtCena = W.mrt({ output: W.output, gLuz: W.vec4(0, 0, 0, 1) })
@@ -75,6 +76,8 @@ export class AranhaversoGpu {
     this.fontePintura = { value: this.rtCor.textures[0] }
     const fontePintura = (q) => amostraAlvo(this.fontePintura, q).level(0)
     this.matTensor = this.material(fragTensorGpu(W, b.uPintura.tensor, fontePintura, uvGL))
+    this.matDesfTensorH = this.material(fragDesfoqueTensorGpu(W, b.uPintura.desfoqueH, amostraN(this.rtTensor.texture), uvGL))
+    this.matDesfTensorV = this.material(fragDesfoqueTensorGpu(W, b.uPintura.desfoqueV, amostraN(this.rtTensorB.texture), uvGL))
     // um material por grade de amostras (4, 5 ou 7), montado na primeira vez que o painel pede
     this.matsKuwahara = {}
     this.kuwahara = (n) => (this.matsKuwahara[n] ||= this.material(fragKuwaharaGpu(W, b.uPintura.kuwahara, n, fontePintura, amostraN(this.rtTensor.texture), uvGL)))
@@ -109,6 +112,7 @@ export class AranhaversoGpu {
     this.rtBrilhoA.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtBrilhoB.setSize(Math.ceil(w / 4), Math.ceil(h / 4))
     this.rtTensor.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
+    this.rtTensorB.setSize(Math.ceil(w / 2), Math.ceil(h / 2))
     this.dof.tamanho(w, h)
     this.estab.tamanho(w, h)
     this.smaa.tamanho(w, h)
@@ -174,6 +178,10 @@ export class AranhaversoGpu {
     if (b.pinturaLigada) {
       this.fontePintura.value = fonte
       this.passo(this.matTensor, this.rtTensor)
+      if (e.arcPinturaSuavizar !== false) {
+        this.passo(this.matDesfTensorH, this.rtTensorB)
+        this.passo(this.matDesfTensorV, this.rtTensor)
+      }
       this.passo(this.kuwahara(amostrasPintura(e)), this.rtPintura)
       fonte = this.rtPintura.texture
     }

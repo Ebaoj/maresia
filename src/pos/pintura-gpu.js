@@ -2,7 +2,7 @@
 // mesmos pesos, desenrolados em JavaScript. Os uniforms são os do WebGL (ref), então o painel muda os dois.
 
 import { ref } from '../render/gpu/comum.js'
-import { amostrasDisco, pesosSetores } from './pintura.js'
+import { amostrasDisco, pesosSetores, PESOS_TENSOR } from './pintura.js'
 
 const LUMV = [0.299, 0.587, 0.114]
 
@@ -19,21 +19,35 @@ export function fragTensorGpu(W, u, amostra, uvGL) {
   return vec4(gx.mul(gx), gx.mul(gy), gy.mul(gy), 1.0)
 }
 
+// o tensor borrado numa direção (pintura.js: fragDesfoqueTensor); amostra: (q) => vec4 do tensor
+export function fragDesfoqueTensorGpu(W, u, amostra, uvGL) {
+  const uDir = ref(u.uDir)
+  const [p0, p1, p2] = PESOS_TENSOR
+  return amostra(uvGL).mul(p0)
+    .add(amostra(uvGL.add(uDir)).add(amostra(uvGL.sub(uDir))).mul(p1))
+    .add(amostra(uvGL.add(uDir.mul(2.0))).add(amostra(uvGL.sub(uDir.mul(2.0)))).mul(p2))
+}
+
 // amostra e amostraTensor: (q) => vec4, como acima
 export function fragKuwaharaGpu(W, u, n, amostra, amostraTensor, uvGL) {
   const { Fn, vec2, vec3, vec4, float, sqrt, clamp, max, abs, pow, mix, normalize, dot } = W
   const U = {}
-  for (const k of ['uTexel', 'uRaio', 'uForca', 'uAniso', 'uNitidez', 'uBorda']) U[k] = ref(u[k])
+  for (const k of ['uTexel', 'uRaio', 'uForca', 'uAniso', 'uNitidez', 'uBorda', 'uAnisoLim', 'uBordaRaio']) U[k] = ref(u[k])
   return Fn(() => {
     const orig = amostra(uvGL)
     const peso = orig.a.lessThan(0.7).select(float(0.3), orig.a.lessThan(0.95).select(float(0.6), float(1.0)))
-    const raio = U.uRaio.mul(peso)
     const t = amostraTensor(uvGL).xyz
     const raiz = sqrt(max(t.x.sub(t.z).mul(t.x.sub(t.z)).add(t.y.mul(t.y).mul(4.0)), 0.0))
     const l1 = t.x.add(t.z).add(raiz).mul(0.5), l2 = t.x.add(t.z).sub(raiz).mul(0.5)
+    // borda forte: pintada com raio menor, não devolvida crua
+    const borda = W.smoothstep(0.04, 0.14, sqrt(max(l1, 0.0)))
+    const raio = U.uRaio.mul(peso).mul(mix(float(1.0), U.uBordaRaio, borda.mul(U.uBorda)))
     const dir0 = vec2(l1.sub(t.x), t.y.negate())
     const dir = dot(dir0, dir0).greaterThan(1e-12).select(normalize(dir0), vec2(0.0, 1.0))
+    const lim2 = U.uAnisoLim.mul(U.uAnisoLim)
+    // anisotropia só com gradiente
     const A = l1.add(l2).greaterThan(1e-8).select(l1.sub(l2).div(l1.add(l2)), float(0.0))
+      .mul(W.smoothstep(lim2.mul(0.1), lim2, l1.add(l2)))
     const a = raio.mul(clamp(U.uAniso.add(A).div(U.uAniso), 0.1, 2.0))
     const b = raio.mul(clamp(U.uAniso.div(U.uAniso.add(A)), 0.1, 2.0))
     // M * v do GLSL (colunas (dir*a) e (perp*b)): v.x ao longo da borda, v.y através dela
@@ -61,12 +75,7 @@ export function fragKuwaharaGpu(W, u, n, amostra, amostraTensor, uvGL) {
       somaW.addAssign(w)
     }
     const res = soma.div(max(somaW, 1e-6))
-    // BORDA PROTEGIDA: borda forte ou traço fino que o filtro apagaria fica com a imagem original
-    const LUM = vec3(...LUMV)
-    const Lo = dot(sqrt(clamp(orig.rgb, 0.0, 4.0)), LUM)
-    const Lr = dot(res, LUM)
-    const borda = max(W.smoothstep(0.07, 0.18, sqrt(max(l1, 0.0))), W.smoothstep(0.06, 0.16, abs(Lo.sub(Lr))))
-    const forca = U.uForca.mul(float(1.0).sub(borda.mul(U.uBorda)))
-    return vec4(mix(orig.rgb, res.mul(res), forca), orig.a)
+    // a borda nítida vem do raio menor acima, não da imagem crua
+    return vec4(mix(orig.rgb, res.mul(res), U.uForca), orig.a)
   })()
 }

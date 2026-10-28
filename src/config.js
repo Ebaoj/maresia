@@ -78,12 +78,15 @@ export const PADRAO = {
     arcFx2d: 0,                  // item 7: traços de tinta verde e amarela e spray de retícula por cima (fx2d.js); 0 = desligado
     // pincelada na tela (src/pos/pintura.js): Kuwahara anisotrópico sobre a cor da cena, a superfície vira mancha de tinta
     arcPintura: 0.85,       // força (0 desliga o passe e o custo); 0,85 desde a direção do sertão (21/10): modesto, objeto nítido
-    arcPinturaRaio: 3.0,    // raio da pincelada, em pixels da imagem (não muda o custo)
+    arcPinturaRaio: 2.5,    // raio da pincelada, em pixels CSS (x pixel ratio; não muda o custo). 27/10/2026: era 3 px da imagem, que mudava de tamanho com o Retina e o governador
     arcPinturaAniso: 1.0,   // quanto a pincelada se estica ao longo das bordas (menor = mais esticada)
-    arcPinturaNitidez: 10,  // quanto a borda forte resiste (setor de menor variância ganha)
-    arcPinturaBorda: 1.0,   // protege borda forte e traço fino (fio, poste, rosto) do filtro: a pincelada fica dentro da superfície
+    arcPinturaAnisoLimiar: 0.04, // 27/10/2026: gradiente (na raiz da cor) em que a pincelada já se estica toda; abaixo de ~1/3 disso ela fica redonda (no liso a direção é ruído)
+    arcPinturaNitidez: 7,   // quanto a borda forte resiste (setor de menor variância ganha). 27/10/2026: era 10 (expoente 5): com poucas amostras o setor vencedor trocava por ruído
+    arcPinturaBorda: 1.0,   // borda forte e traço fino (fio, poste, rosto) pintados com raio menor (0 = raio cheio também na borda)
+    arcPinturaBordaRaio: 0.35, // 27/10/2026: fração do raio na borda forte (antes a borda voltava crua, serrilhada)
+    arcPinturaSuavizar: true, // 27/10/2026: borra o tensor de estrutura (gaussiana de 2 px) antes do Kuwahara: a direção do traço não ferve
     arcPinturaMeia: false,  // passe da pincelada em meia resolução (um quarto do custo, borda mais mole)
-    arcPinturaAmostras: 4,  // grade de amostras: 4 (12 amostras, padrão para o M1), 5 (21) ou 7 (37, mais limpo e mais caro)
+    arcPinturaAmostras: 5,  // grade de amostras: 4 (12 amostras), 5 (21, padrão desde 27/10/2026) ou 7 (37, mais limpo e mais caro)
     arcTela: 0.05,          // trama da tela de pintura por cima de tudo
     espessuraLinha: 1.3,
     limiarProfundidade: 0.07,
@@ -602,7 +605,11 @@ export const PADRAO_MUDOU = [
   // ligada e sombra de perto em 1024. Quem salvou o painel com o padrão antigo passa ao novo.
   ['desempenho.resolucao', 1.25, 1.0],
   ['mundo.sombraPertoResolucao', 2048, 1024],
-  ['tempo.velocidade', 1.0, 0.1], // 27/10/2026: o relógio corria 1 h por minuto e a cor da Praça mudava sozinha
+  ['tempo.velocidade', 1.0, 0.1],
+  // 27/10/2026: a pincelada refeita (docs/relatorio-visual.md 2.3): 21 amostras, raio em px CSS, setor menos duro
+  ['estilo.arcPinturaAmostras', 4, 5],
+  ['estilo.arcPinturaRaio', 3.0, 2.5],
+  ['estilo.arcPinturaNitidez', 10, 7], // 27/10/2026: o relógio corria 1 h por minuto e a cor da Praça mudava sozinha
 ]
 
 export function migrarPadroes(salvo) {
