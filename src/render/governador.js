@@ -34,7 +34,7 @@ const GANHO_ESQUECER_MS = 30000 // o ganho medido de uma descida vale menos com 
 // (só nos degraus de resolução). `emergencia`: só com o quadro realmente estourado.
 export const DEGRAUS = [
   { nome: 'cheio', chaves: {} },
-  { nome: 'sombra-perto-leve', chaves: { 'mundo.sombraPertoResolucao': 512 } },
+  { nome: 'sombra-perto-leve', chaves: { 'mundo.sombraPertoResolucao': 512, 'mundo.sombraPertoACada': 2 } },
   { nome: 'distancia', chaves: { 'desempenho.cortePx': 6, 'pessoas.ate': 260, 'marcos.distDetalhe': 110 } },
   { nome: 'lod', chaves: { 'arvores.lodPerto': 40, 'arvores.lodLonge': 55, 'arvores.lodBloco': 60, 'mundo.palhaPerto': 150 } },
   { nome: 'sem-sombra-perto', chaves: { 'mundo.sombraPerto': false } },
@@ -219,7 +219,7 @@ export function aplicarDegrau(cfg, gov, base, transicao = null) {
 // refazem listas de cópias quando o número muda; 5 refazeres em 0,5 s em vez de 30).
 export const TRANSICAO_S = 0.5
 const TRANSICAO_PASSOS = 5
-const DISCRETAS = new Set(['mundo.sombraPertoResolucao']) // tamanho de textura: não tem meio-termo
+const DISCRETAS = new Set(['mundo.sombraPertoResolucao', 'mundo.sombraPertoACada']) // tamanho de textura e contagem de quadros: não têm meio-termo
 export class Transicao {
   constructor(segundos = TRANSICAO_S, passos = TRANSICAO_PASSOS) {
     this.segundos = segundos

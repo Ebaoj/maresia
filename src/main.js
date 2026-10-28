@@ -395,7 +395,7 @@ async function iniciar() {
     cenografia.atualizar()
     marcosNorte.atualizar(camera)
     const t0Casas = tele ? performance.now() : 0
-    casas.atualizar(camera, cfg.desempenho.casasPorQuadro ?? 1)
+    casas.atualizar(camera, cfg.desempenho.casasPorQuadro ?? 1, cfg)
     if (tele) tele.marcar('casas', performance.now() - t0Casas)
     marcos1932.atualizar(camera)
     marcos.atualizar(t)

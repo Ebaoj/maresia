@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { globais, geracaoTexturas } from './globais.js'
 import { ref } from './render/gpu/comum.js'
+import { GLSL_DISSOLVER, GLSL_DISSOLVER_VERT, GLSL_ANCORA, glslRecorte } from './render/dissolver.js'
 
 // Toon: a luz vira poucas faixas em vez de degradê contínuo, como pintura de animação.
 let _gradiente = null
@@ -37,8 +38,13 @@ float vP(vec2 p) {
   vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
   return mix(mix(hP(i), hP(i + vec2(1, 0)), u.x), mix(hP(i + vec2(0, 1)), hP(i + vec2(1, 1)), u.x), u.y);
 }
+// cada oitava some (vai à média 0,5) antes de passar de meia volta por pixel (27/10/2026, docs/relatorio-visual.md 2.4):
+// a mais fina, a ~33 ciclos por metro, passava do limite a partir de ~13 m e a borda da faixa de luz virava chuvisco
+float oitavaAA(vec2 q, vec2 fw) { return mix(0.5, vP(q), 1.0 - smoothstep(0.25, 0.5, max(fw.x, fw.y))); }
 float traco(vec2 uv) {
-  return 0.55 * vP(uv * vec2(0.6, 2.8)) + 0.3 * vP(uv * vec2(1.7, 7.0) + 3.1) + 0.15 * vP(uv * vec2(5.0, 18.0) + 7.7);
+  vec2 fw = fwidth(uv);
+  return 0.55 * oitavaAA(uv * vec2(0.6, 2.8), fw * vec2(0.6, 2.8)) + 0.3 * oitavaAA(uv * vec2(1.7, 7.0) + 3.1, fw * vec2(1.7, 7.0))
+    + 0.15 * oitavaAA(uv * vec2(5.0, 18.0) + 7.7, fw * vec2(5.0, 18.0));
 }
 float pincelada(vec3 p, vec3 n) {
   vec3 w = pow(abs(n), vec3(4.0));
@@ -67,6 +73,17 @@ export function pintar(mat, chave) {
     // e os próprios níveis das três faixas (o metal escuro das esculturas: com os do jogo, a sombra virava breu)
     if (mat.userData.arcNiveis) sh.uniforms.uArcNiveis = mat.userData.arcNiveis
     sh.uniforms.uSolDirA = globais.uSolDir
+    // troca de nível de detalhe por pontilhado preso ao mundo (render/dissolver.js): só nas versões de perto e de longe
+    const dis = mat.userData.dissolver
+    if (dis) {
+      sh.uniforms.uDissolveFaixa = dis.faixa
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\n' + GLSL_DISSOLVER_VERT)
+        .replace('#include <project_vertex>', '#include <project_vertex>\n' + GLSL_ANCORA)
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\n' + GLSL_DISSOLVER)
+        .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n' + glslRecorte(dis.lado, dis.modo))
+    }
     const tp = mat.userData.texPintada
     if (tp) {
       sh.defines = { ...(sh.defines || {}), TEX_PINTADA: '' }
@@ -130,8 +147,10 @@ export function pintar(mat, chave) {
             vec3 tomA = clamp(irrL / pesoIrr, 0.0, 2.0); // cor da luz (pôr do sol, lampião), sem a força
             float pinA = pincelada(vPMundo * 3.1, normalize(vNMundo)) - 0.5;
             float tA = lumA + pinA * uArcPincel;
-            float sombraA = 1.0 - smoothstep(uArcLim.x - uArcSuave, uArcLim.x + uArcSuave, tA);
-            float luzA = smoothstep(uArcLim.y - uArcSuave, uArcLim.y + uArcSuave, tA);
+            // a passagem entre as faixas nunca mais estreita que um pixel (borda antisserrilhada)
+            float suaveA = max(uArcSuave, fwidth(tA));
+            float sombraA = 1.0 - smoothstep(uArcLim.x - suaveA, uArcLim.x + suaveA, tA);
+            float luzA = smoothstep(uArcLim.y - suaveA, uArcLim.y + suaveA, tA);
             vec3 cLuz = mix(vec3(1.0), tomA, 0.65) * uArcNiveis.z;
             vec3 cMeio = mix(vec3(1.0), tomA, 0.35) * uArcNiveis.y;
             // a sombra esfria a cor do objeto sem trocá-la: só o matiz da cor fria entra, pela metade
@@ -189,7 +208,7 @@ export function pintar(mat, chave) {
         #include <normal_fragment_begin>`
       )
   }
-  mat.customProgramCacheKey = () => chave
+  mat.customProgramCacheKey = () => chave + (mat.userData.dissolver ? `|dis${mat.userData.dissolver.lado}${mat.userData.dissolver.modo}` : '')
   mat.userData.luzMRT = true
   // código GLSL próprio somado antes do pintar (fachada, vento...): no WebGPU precisa da versão em TSL
   // (mat.userData.tsl), senão vai para a lista "falta portar" (render/renderizador.js)

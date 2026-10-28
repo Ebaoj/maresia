@@ -282,6 +282,7 @@ export const PADRAO = {
     lodPerto: 65,          // m: até aqui os cartões de folha em tamanho cheio
     lodLonge: 85,          // m: aqui eles já sumiram (encolhem no meio)
     lodBloco: 90,          // m: bloco de árvores mais longe que isso troca para a copa simples
+    lodDissolve: 8,        // 27/10/2026 (render/dissolver.js): meia largura (m) da faixa em volta de lodBloco em que a árvore cheia e a copa simples se trocam por pontilhado preso ao mundo; 0 = troca seca
     lodCopia: true,        // 27/10/2026 (lod-arvores.js): no bloco de perto, cada árvore escolhe corpo ou copa simples pela distância dela (era o bloco inteiro)
     borda: 0.12,           // luz do céu na borda de cima da copa
     bordaCor: '#cfe3ee',   // a cor dessa luz
@@ -382,7 +383,7 @@ export const PADRAO = {
     sombraPerto: true,
     sombraPertoTamanho: 48,     // metros de lado (48 m em 1024 = 4,7 cm por texel; o de longe dá 8,5)
     sombraPertoResolucao: 1024,
-    sombraPertoACada: 2,       // a cada quantos quadros o mapa de perto é refeito (1 = todo quadro, como era)
+    sombraPertoACada: 1,       // a cada quantos quadros o mapa de perto é refeito. 27/10/2026: 1 (era 2: a sombra de quem anda dava tranco a 30 Hz); custa +7,5% do quadro no SwiftShader, então o primeiro degrau do governador volta a 2
     cacheSombraFatias: 6,       // fluido 23/10/2026 (render/cache-sombra-gpu.js): o mapa novo dos parados é desenhado em tantas fatias, uma por quadro, e só então troca (1 = de uma vez, como antes; WebGPU)
     sombraPertoRecorte: true,   // fluido 22/10/2026 (render/sombra-perto-recorte.js): o bloco grande de cópias entra no mapa de perto só com as cópias da janela (WebGPU)
     sombraPertoBorda: 0.12,     // fração da janela de perto em que ela se mistura com a de longe
@@ -397,6 +398,9 @@ export const PADRAO = {
     sombraCacheIntervaloMin: 0, // segundos (0 = como era; na T4, 0,5 ficou no ruído) entre dois refazimentos do cache por giro do sol (com passoSombraMin 0 o sol não para: era ~5x/s, cada vez um pico de quadro)
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
+    casasPerto: 70,      // 27/10/2026: até essa distância (m) a casa de 1932 é a detalhada; depois, a caixa com fachada pintada (quarteirao.js)
+    casasDissolve: 6,    // meia largura (m) da faixa em volta de casasPerto em que as duas se trocam por pontilhado preso ao mundo (render/dissolver.js); 0 = troca seca por bloco
+    dissolveCelula: 0.05, // tamanho (m) da célula do mundo do pontilhado das trocas de nível de detalhe (casas e árvores)
     palhaPerto: 220,     // até essa distância (un) a palhoça das vilas é a de perto; depois, a caixa de taipa e palha (vilas.js)
     // os telhados ao longe (src/mundo/telhados-longe.js): faixa de silhueta que acompanha a câmera e só sobe onde a planta tem cidade
     telhadosLonge: {
@@ -609,7 +613,8 @@ export const PADRAO_MUDOU = [
   // 27/10/2026: a pincelada refeita (docs/relatorio-visual.md 2.3): 21 amostras, raio em px CSS, setor menos duro
   ['estilo.arcPinturaAmostras', 4, 5],
   ['estilo.arcPinturaRaio', 3.0, 2.5],
-  ['estilo.arcPinturaNitidez', 10, 7], // 27/10/2026: o relógio corria 1 h por minuto e a cor da Praça mudava sozinha
+  ['estilo.arcPinturaNitidez', 10, 7],
+  ['mundo.sombraPertoACada', 2, 1], // 27/10/2026: sombra de perto todo quadro (o governador volta a 2 se precisar) // 27/10/2026: o relógio corria 1 h por minuto e a cor da Praça mudava sozinha
 ]
 
 export function migrarPadroes(salvo) {

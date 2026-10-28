@@ -13,6 +13,7 @@ import { globais } from '../globais.js'
 import { ref } from '../render/gpu/comum.js'
 import { gradienteToon, pintar, texturizar, texturaCanvas } from '../materiais.js'
 import { desenharAtlasFolhas } from './folha-textura.js'
+import { marcarDissolver, faixasDissolver } from '../render/dissolver.js'
 
 
 // de onde o vento vem, em graus (0 norte, 90 leste, 180 sul) -> para onde ele sopra no chão do jogo (x leste, z sul)
@@ -265,18 +266,26 @@ export function atlasFolhas() {
   return _atlas
 }
 
-// { corpo, cartoes }: os mesmos para todas as árvores (o vento e a cor por cópia vêm da malha e da cópia)
-export function materiaisArvores() {
-  if (_mats) return _mats
+function fazerMateriais(lado) {
   const corpo = aplicarVento(new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon() }), false)
+  if (lado) marcarDissolver(corpo, lado, faixasDissolver.arvores)
   pintar(corpo, 'arvore-corpo')
   // casca na textura do tronco; a folhagem (aTexAlt = 1) na textura de folha, miúda
   texturizar(corpo, { topo: 'tronco', lado: 'tronco', tam: 1.4, contraste: 1.1, massa: 0.3, alt: 'folha', tamAlt: 1.1 })
   const cartoes = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradienteToon(), map: atlasFolhas(), alphaTest: 0.5, side: THREE.FrontSide })
   cartoes.shadowSide = THREE.DoubleSide
   cartoes.defines = { ARV_CARTAO: '' }
+  if (lado) marcarDissolver(cartoes, lado, faixasDissolver.arvores)
   aplicarVento(cartoes, true)
   pintar(cartoes, 'arvore-cartao')
-  _mats = { corpo, cartoes }
+  return { corpo, cartoes }
+}
+
+// { corpo, cartoes }: os mesmos para todas as árvores (o vento e a cor por cópia vêm da malha e da cópia).
+// perto e longe (27/10/2026): as mesmas, com a troca de nível de detalhe por pontilhado (render/dissolver.js) na
+// faixa em volta de cfg.arvores.lodBloco; lod-arvores.js usa estas
+export function materiaisArvores() {
+  if (_mats) return _mats
+  _mats = { ...fazerMateriais(0), perto: fazerMateriais(-1), longe: fazerMateriais(1) }
   return _mats
 }

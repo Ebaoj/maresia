@@ -1,0 +1,87 @@
+{
+ "url": "http://localhost:5311/?semTelemetria",
+ "renderizador": "webgl",
+ "lugar": {
+  "x": 4240.84,
+  "z": 2164.09,
+  "yaw": 0,
+  "hora": 15,
+  "pitch": 0.2,
+  "dist": 5
+ },
+ "quadros": 8,
+ "rodadas": 3,
+ "variantes": {
+  "acada2": {
+   "tempos": [
+    1632.8,
+    1510.2,
+    1555.3,
+    1477.8,
+    1554.2,
+    1524.6,
+    1608.8,
+    1588.6,
+    1474.8,
+    1632,
+    1694,
+    1758.5,
+    1551,
+    1630.5,
+    1634.1,
+    1549.5,
+    1466.7,
+    1722.3,
+    1483.1,
+    1550.6,
+    1352.8,
+    1513.4,
+    1452.8,
+    1765.9
+   ],
+   "mediana": 1554.2,
+   "p25": 1510.2,
+   "p75": 1632.8
+  },
+  "acada1": {
+   "tempos": [
+    1713.3,
+    1750.5,
+    1742.5,
+    1732.3,
+    1794.4,
+    1830.3,
+    1757.4,
+    1804,
+    1661.2,
+    1618.7,
+    1734.8,
+    1644,
+    1629.3,
+    1541.8,
+    1644.4,
+    1787.9,
+    1609.7,
+    1605.9,
+    1539.8,
+    1611.1,
+    1626.6,
+    1694.9,
+    1734.1,
+    1711.6
+   ],
+   "mediana": 1711.6,
+   "p25": 1626.6,
+   "p75": 1750.5
+  }
+ },
+ "console": [
+  "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "[warning] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+  "[warning] escultura leaoSerpente: /arte/finais/marcos1932/leao-serpente-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura leao: /arte/finais/marcos1932/leao-pe-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura tigre: /arte/finais/marcos1932/tigre-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura general: /arte/finais/marcos1932/general-jogo.glb não carregou, fica a procedural"
+ ],
+ "quebrados": []
+}

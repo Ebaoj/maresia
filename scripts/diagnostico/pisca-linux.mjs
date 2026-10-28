@@ -10,6 +10,8 @@
 //                não roda: o laço sai cedo com controle.pausado)
 //   raf-tempo    idem com dt 1/30 e o relógio andando
 //   raf-giro     idem com dt 1/30 e a câmera girando 0,2 rad/s
+//   raf-varre    (27/10/2026) câmera e tempo parados; antes de cada quadro roda VARRE_JS com k = número do quadro (ex.:
+//                'm.cfg.arvores.lodBloco = 60 + k'): a diferença entre quadros vizinhos é só a troca de nível de detalhe
 // Sai PASTA/<situacao>/q0000.png ... e PASTA/estado.json (renderizador, governador, pixel ratio por quadro, console).
 import { chromium } from '/workspace/pw/node_modules/playwright-core/index.mjs'
 import { writeFileSync, mkdirSync } from 'node:fs'
@@ -21,6 +23,7 @@ const N = Number(process.argv[4]) || 16
 const L = { x: 4240.84, z: 2164.09, yaw: 0, hora: 15, pitch: 0.2, dist: 5 }
 const VARIANTE_JS = process.env.VARIANTE_JS || '' // ex.: 'm.cfg.estilo.grao = 0', aplicado antes de cada situação
 const SITS = (process.env.SITUACOES || 'vivo-parado,raf-parado,raf-tempo,raf-giro').split(',')
+const VARRE_JS = process.env.VARRE_JS || ''
 mkdirSync(PASTA, { recursive: true })
 
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome',
@@ -110,7 +113,7 @@ try {
         return { n: window.__q.length, meta }
       }, { L, N, preparar: preparar.toString(), VJ: VARIANTE_JS })
     } else {
-      r = await p.evaluate(async ({ L, N, sit, preparar, VJ }) => {
+      r = await p.evaluate(async ({ L, N, sit, preparar, VJ, VARRE }) => {
         const m = window.maresia
         m.controle.pausado = true
         m.tamanhoFixo(0)
@@ -118,12 +121,14 @@ try {
         if (VJ) eval(VJ)
         const raf = () => new Promise((r) => requestAnimationFrame(() => r()))
         for (let i = 0; i < 40; i++) { await raf(); m.passo(1 / 60) }
-        m.cfg.tempo.pausado = sit === 'raf-parado'
-        const dt = sit === 'raf-parado' ? 1e-6 : 1 / 30
+        const parado = sit === 'raf-parado' || sit === 'raf-varre'
+        m.cfg.tempo.pausado = parado
+        const dt = parado ? 1e-6 : 1 / 30
         window.__q = []
         const meta = { quadros: [], governadorAntes: m.governador?.nome ?? null }
         for (let i = 0; i < N; i++) {
           if (sit === 'raf-giro') m.cam.yaw += 0.2 / 30
+          if (sit === 'raf-varre' && VARRE) { const k = i; eval(VARRE) }
           await raf()
           m.passo(dt)
           window.__q.push(m.canvas.toDataURL('image/png'))
@@ -131,7 +136,7 @@ try {
         }
         meta.governadorDepois = m.governador?.nome ?? null
         return { n: window.__q.length, meta }
-      }, { L, N, sit, preparar: preparar.toString(), VJ: VARIANTE_JS })
+      }, { L, N, sit, preparar: preparar.toString(), VJ: VARIANTE_JS, VARRE: VARRE_JS })
     }
     for (let i = 0; i < r.n; i += 2) {
       const lote = await p.evaluate(([i]) => window.__q.slice(i, i + 2), [i])

@@ -10,6 +10,7 @@ import { instanciarEmBlocos } from './blocos.js'
 import { materiaisArvores } from './vento-arvores.js'
 import { formaArvores } from './especies.js'
 import { LongeMascarado } from './muito-longe.js'
+import { faixasDissolver } from '../render/dissolver.js'
 
 const grupos = []
 const c = new THREE.Color()
@@ -27,16 +28,17 @@ export function corDaCopia(x, z, variacao = 1) {
 // quintais somem atrás dos telhados, cfg.casario.quintal.ate); sem ela, de longe fica a copa simples
 export function instanciarArvores(cena, pecas, matrizes, { nome = 'arvore', variacao = formaArvores().variacao, ate = null, ...opcoes } = {}) {
   if (!matrizes.length) return null
-  const { corpo, cartoes } = materiaisArvores()
+  // as versões de perto e de longe se trocam por pontilhado na faixa de lodBloco (render/dissolver.js)
+  const { perto: mPerto, longe: mLonge } = materiaisArvores()
   const p = new THREE.Vector3()
   const cores = matrizes.map((m) => { p.setFromMatrixPosition(m); return corDaCopia(p.x, p.z, variacao) })
   const { placa: _placa, ...op } = opcoes // o vento é código de vértice: fica nos blocos, não vai para a vg
   op.semJuntarLonge = true // o LOD daqui tem a versão de longe mascarada (montarMascara)
-  const perto = instanciarEmBlocos(cena, pecas.corpo, corpo, matrizes, cores, { ...op, nome })
-  const longe = instanciarEmBlocos(cena, pecas.longe, corpo, matrizes, cores, { ...op, nome: nome + '-longe' })
-  const cart = pecas.cartoes ? instanciarEmBlocos(cena, pecas.cartoes, cartoes, matrizes, cores, { ...op, nome: nome + '-folhas' }) : null
+  const perto = instanciarEmBlocos(cena, pecas.corpo, mPerto.corpo, matrizes, cores, { ...op, nome })
+  const longe = instanciarEmBlocos(cena, pecas.longe, mLonge.corpo, matrizes, cores, { ...op, nome: nome + '-longe' })
+  const cart = pecas.cartoes ? instanciarEmBlocos(cena, pecas.cartoes, mPerto.cartoes, matrizes, cores, { ...op, nome: nome + '-folhas' }) : null
   // peças que a espécie não pode perder de longe (os leques da carnaúba), na versão simples
-  const cartLonge = pecas.cartoesLonge ? instanciarEmBlocos(cena, pecas.cartoesLonge, cartoes, matrizes, cores, { ...op, nome: nome + '-folhas-longe' }) : null
+  const cartLonge = pecas.cartoesLonge ? instanciarEmBlocos(cena, pecas.cartoesLonge, mLonge.cartoes, matrizes, cores, { ...op, nome: nome + '-folhas-longe' }) : null
   registrarLod(perto, longe, cart, cartLonge, ate)
   return { perto, longe, cartoes: cart, cartoesLonge: cartLonge }
 }
@@ -61,6 +63,12 @@ export function registrarLod(perto, longe, cartoes, cartoesLonge = null, ate = n
 // Mesma troca, na mesma distância, só que por árvore. Os cartões já sumiam no shader antes de lodLonge (< lodBloco).
 // A contagem dessas malhas muda com a câmera: elas não entram na assinatura do mapa de sombra em cache
 // (semAssinatura): a sombra das cópias está no mapa com uma versão ou a outra, nunca falta.
+// Troca por pontilhado (27/10/2026, render/dissolver.js, modo 'copia'): na faixa [D - w, D + w] da distância da câmera
+// ao centro da cópia (w = cfg.arvores.lodDissolve) as duas versões são desenhadas e o shader passa a árvore inteira de
+// uma para a outra pelo pontilhado. A cópia entra na lista de perto se o centro pode estar antes de D + w, e na de
+// longe se pode estar depois de D - w, com a margem de quanto a câmera anda até refazer as listas (CAM_REFAZ m): quem
+// decide o que aparece é o shader, então não há buraco nem histerese. w = 0: troca seca na distância D.
+const CAM_REFAZ = 6
 export const LOD_COPIA_ARVORES = { ligado: true, folga: 8 }
 const _p = new THREE.Vector3()
 function prepararCopias(g) {
@@ -104,14 +112,14 @@ function escreverCopias(m, lista, k) {
 }
 
 const _perto = [], _longe = []
-function repartirCopias(g, cp, D) {
+function repartirCopias(g, cp, D, w) {
   _perto.length = 0; _longe.length = 0
   const x = g.xyz
   for (let i = 0; i < g.n; i++) {
-    const d = Math.hypot(x[i * 3] - cp.x, x[i * 3 + 1] - cp.y, x[i * 3 + 2] - cp.z) - g.rCopia
-    const antes = g.ladoCopia ? g.ladoCopia[i] : 1
-    const perto = antes ? d < D + LOD_COPIA_ARVORES.folga : d < D
-    ;(perto ? _perto : _longe).push(i)
+    const d = Math.hypot(x[i * 3] - cp.x, x[i * 3 + 1] - cp.y, x[i * 3 + 2] - cp.z)
+    // as duas na faixa (o shader escolhe)
+    if (d < D + w + CAM_REFAZ) _perto.push(i)
+    if (d > D - w - CAM_REFAZ) _longe.push(i)
   }
   ;(g.ladoCopia ||= new Uint8Array(g.n)).fill(0)
   for (const i of _perto) g.ladoCopia[i] = 1
@@ -163,15 +171,19 @@ function montarMascara() {
 
 export function atualizarLodArvores(camera, cfg) {
   const D = cfg.arvores.lodBloco
+  const w = Math.max(1e-3, cfg.arvores.lodDissolve ?? 8)
+  faixasDissolver.arvores.value.set(D, w, cfg.mundo.dissolveCelula ?? 0.05, 96)
   const cp = camera.position
   // na primeira vez: todas as espécies já registraram os blocos
   if (!mascara && grupos.length) montarMascara()
   mascara?.atualizar(camera)
   for (const g of grupos) {
     const d = cp.distanceTo(g.c) - g.r
-    const nivel = estadoDoBloco(d, D, g.ate ? g.ate() : null, g.estado)
+    // o bloco fica 'perto' (cópia a cópia) enquanto alguma cópia pode estar na faixa
+    const nivel = estadoDoBloco(d, D + w + CAM_REFAZ, g.ate ? g.ate() : null, g.estado)
     if (nivel !== g.estado) {
       g.estado = nivel
+      g.duasTodas = null
       if (nivel !== 'perto') restaurarCopias(g)
       g.perto.visible = nivel === 'perto'
       if (g.cart) g.cart.visible = nivel === 'perto'
@@ -180,17 +192,20 @@ export function atualizarLodArvores(camera, cfg) {
     }
     // no bloco de perto, cópia a cópia (refaz quando a câmera anda 6 m)
     if (g.estado === 'perto' && g.xyz && LOD_COPIA_ARVORES.ligado && cfg.arvores.lodCopia !== false) {
-      if (!g.camCopia || g.camCopia.distanceToSquared(cp) > 36 || g.dCopia !== D) {
+      if (!g.camCopia || g.camCopia.distanceToSquared(cp) > CAM_REFAZ * CAM_REFAZ || g.dCopia !== D || g.wCopia !== w) {
         ;(g.camCopia ||= cp.clone()).copy(cp)
         g.dCopia = D
-        repartirCopias(g, cp, D)
+        g.wCopia = w
+        repartirCopias(g, cp, D, w)
       }
-    } else if (g.estado === 'perto' && g.porCopia) {
+    } else if (g.estado === 'perto' && (g.porCopia || !g.duasTodas)) {
+      // sem cópia a cópia: o bloco inteiro nas duas versões (o shader escolhe cada cópia pela distância)
       restaurarCopias(g)
+      g.duasTodas = true
       g.perto.visible = true
       if (g.cart) g.cart.visible = true
-      g.longe.visible = false
-      if (g.cartLonge) g.cartLonge.visible = false
+      g.longe.visible = true
+      if (g.cartLonge) g.cartLonge.visible = true
     }
   }
   mascara?.aplicar()

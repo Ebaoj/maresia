@@ -162,10 +162,11 @@ export class MuitoLonge {
     this.atualizarCopias(camera)
   }
 
-  // cópia a cópia nas células juntas: só quando a câmera anda 12 m (ou a célula acabou de fechar)
+  // cópia a cópia nas células juntas: só quando a câmera anda PASSO_LOD m (ou a célula acabou de fechar). Era 12 m:
+  // todas as trocas acumuladas em 12 m saíam no mesmo quadro (27/10/2026, docs/relatorio-visual.md 1.6)
   atualizarCopias(camera) {
     const p = camera.position
-    const anda = !this.camCopias || this.camCopias.distanceToSquared(p) > 144 || this.fovCopias !== camera.fov || this.corteCopias !== CFG?.desempenho?.cortePx
+    const anda = !this.camCopias || this.camCopias.distanceToSquared(p) > PASSO_LOD * PASSO_LOD || this.fovCopias !== camera.fov || this.corteCopias !== CFG?.desempenho?.cortePx
     if (anda) { (this.camCopias ||= p.clone()).copy(p); this.fovCopias = camera.fov; this.corteCopias = CFG?.desempenho?.cortePx }
     for (const c of this.lista) {
       if (!c.junta) continue
@@ -191,6 +192,10 @@ export class MuitoLonge {
 // um canto anda no máximo ~px/divisoes pixels (na tela de referência de 900 px), e menos quanto mais longe.
 // Peça com até LOD_COPIAS.minTri triângulos (a caixa das casas de longe, 52) fica como está.
 export const LOD_COPIAS = { ligado: true, px: 48, divisoes: 14, minTri: 64 }
+// troca de nível de longe com histerese (27/10/2026): a peça só volta ao nível mais detalhado com HISTERESE (12%) a
+// mais de tamanho na tela do que a fez sair dele; sem isso, a cópia na divisa trocava a cada passo da câmera
+export const HISTERESE = 0.12
+const PASSO_LOD = 4
 // a mancha das copas de longe (LongeMascarado): a peça menor que px (tela de referência de 900 px) vira a mancha
 export const LOD_MANCHA = { ligado: true, px: 28 }
 const _manchas = new Map()
@@ -318,14 +323,21 @@ function distribuir(f, p, fov) {
   const bm = f.simples?.instanceMatrix.array, bc = f.simples?.instanceColor?.array
   let nc = 0, ns = 0
   const xyz = f.xyz
+  // nível de cada cópia no quadro anterior (0 cortada, 1 simples, 2 cheia): para subir de nível a cópia precisa
+  // chegar HISTERESE mais perto do que a divisa
+  const nivel = (f.nivel ||= new Uint8Array(f.n).fill(255))
+  const H = 1 / (1 + HISTERESE)
   for (let i = 0; i < f.n; i++) {
     const d = Math.hypot(xyz[i * 3] - p.x, xyz[i * 3 + 1] - p.y, xyz[i * 3 + 2] - p.z) - f.tam / 2
-    if (d > dCorte) continue
-    if (d <= dCheia || !f.simples) {
+    const antes = nivel[i]
+    if (d > (antes === 0 ? dCorte * H : dCorte)) { nivel[i] = 0; continue }
+    if (!f.simples || d <= (antes === 1 || antes === 0 ? dCheia * H : dCheia)) {
+      nivel[i] = 2
       am.set(f.matrizes.subarray(i * 16, i * 16 + 16), nc * 16)
       if (ac) ac.set(f.cores.subarray(i * 3, i * 3 + 3), nc * 3)
       nc++
     } else {
+      nivel[i] = 1
       bm.set(f.matrizes.subarray(i * 16, i * 16 + 16), ns * 16)
       if (bc) bc.set(f.cores.subarray(i * 3, i * 3 + 3), ns * 3)
       ns++
@@ -472,20 +484,21 @@ export class LongeMascarado {
     this.sujas.clear()
   }
 
-  // corte por tamanho na tela, por faixa (só refaz a conta quando a câmera anda 8 m ou o painel muda): a faixa que
+  // corte por tamanho na tela, por faixa (só refaz a conta quando a câmera anda PASSO_LOD m ou o painel muda): a faixa que
   // muda de lado suja a família, e o aplicar() do mesmo quadro refaz a malha
   cortar(camera) {
     const d = CFG?.desempenho
     const chave = d ? `${d.cortePequenos !== false}:${d.cortePx}:${camera.fov}` : ''
     const p = camera.position
-    if (chave === this.corteAntes && this.cameraAntes && this.cameraAntes.distanceToSquared(p) < 64) return
+    if (chave === this.corteAntes && this.cameraAntes && this.cameraAntes.distanceToSquared(p) < PASSO_LOD * PASSO_LOD) return
     this.corteAntes = chave
     ;(this.cameraAntes ||= p.clone()).copy(p)
     for (const f of this.familias) {
       for (const fx of f.faixas) {
         const dist = Math.hypot(p.x - fx.cx, p.y - fx.cy, p.z - fx.cz) - fx.r
-        const corta = pecaSai(f.tam, dist, camera.fov, CFG)
-        const mancha = !!f.mancha && dist > 1 && (f.tam * 450 / Math.tan((camera.fov * Math.PI) / 360)) / dist < LOD_MANCHA.px
+        // com histerese: a faixa cortada só volta, e a mancha só volta à copa, com HISTERESE a mais de tamanho
+        const corta = pecaSai(f.tam, fx.cortada ? dist * (1 + HISTERESE) : dist, camera.fov, CFG)
+        const mancha = !!f.mancha && dist > 1 && (f.tam * 450 / Math.tan((camera.fov * Math.PI) / 360)) / dist < LOD_MANCHA.px * (fx.mancha ? 1 + HISTERESE : 1)
         if (corta === fx.cortada && mancha === !!fx.mancha) continue
         fx.cortada = corta
         fx.mancha = mancha

@@ -10,17 +10,22 @@
 
 import { globais } from '../globais.js'
 import { ref, funcoes, modulo } from './gpu/comum.js'
+import { tslFica } from './dissolver.js'
 
 let T = null // funções do shader, montadas uma vez
 let Classe = null
 
 function montar(W) {
-  const { Fn, vec2, vec3, pow, abs } = W
+  const { Fn, vec2, vec3, pow, abs, mix, max, float, smoothstep, fwidth } = W
   const { ruido } = funcoes()
-  const traco = Fn(([uv]) => ruido(uv.mul(vec2(0.6, 2.8))).mul(0.55)
-    .add(ruido(uv.mul(vec2(1.7, 7.0)).add(3.1)).mul(0.3))
-    .add(ruido(uv.mul(vec2(5.0, 18.0)).add(7.7)).mul(0.15)))
-    .setLayout({ name: 'aTraco', type: 'float', inputs: [{ name: 'uv', type: 'vec2' }] })
+  // cada oitava some (vai à média) antes de passar de meia volta por pixel (o mesmo oitavaAA do GLSL)
+  const oitavaAA = (q, fw) => mix(float(0.5), ruido(q), float(1.0).sub(smoothstep(0.25, 0.5, max(fw.x, fw.y))))
+  const traco = Fn(([uv]) => {
+    const fw = fwidth(uv)
+    return oitavaAA(uv.mul(vec2(0.6, 2.8)), fw.mul(vec2(0.6, 2.8))).mul(0.55)
+      .add(oitavaAA(uv.mul(vec2(1.7, 7.0)).add(3.1), fw.mul(vec2(1.7, 7.0))).mul(0.3))
+      .add(oitavaAA(uv.mul(vec2(5.0, 18.0)).add(7.7), fw.mul(vec2(5.0, 18.0))).mul(0.15))
+  }).setLayout({ name: 'aTraco', type: 'float', inputs: [{ name: 'uv', type: 'vec2' }] })
   // a escala vem como argumento: função com assinatura declarada não enxerga uniform de fora no WGSL
   const pinceladaFn = Fn(([p0, n, escala]) => {
     const w = pow(abs(n), vec3(4.0)).toVar()
@@ -123,8 +128,10 @@ function criarClasse(W) {
       const suave = ref(globais.uArcSuave)
       const niveis = ref(this.material.original?.userData.arcNiveis || globais.uArcNiveis)
       const corSombra = ref(this.material.original?.userData.arcCorSombra || globais.uArcCorSombra)
-      const sombraA = float(1.0).sub(smoothstep(lim.x.sub(suave), lim.x.add(suave), tA))
-      const luzA = smoothstep(lim.y.sub(suave), lim.y.add(suave), tA)
+      // a passagem entre as faixas nunca mais estreita que um pixel (borda antisserrilhada)
+      const suaveA = max(suave, W.fwidth(tA))
+      const sombraA = float(1.0).sub(smoothstep(lim.x.sub(suaveA), lim.x.add(suaveA), tA))
+      const luzA = smoothstep(lim.y.sub(suaveA), lim.y.add(suaveA), tA)
       const cLuz = mix(vec3(1.0), tomA, 0.65).mul(niveis.z)
       const cMeio = mix(vec3(1.0), tomA, 0.35).mul(niveis.y)
       const friaA = corSombra.div(max(dot(corSombra, LUM), 1e-3))
@@ -177,6 +184,8 @@ function criarClasse(W) {
         this.nMundo.assign(nMundoVg)
         // código de vértice do material que lê a posição no mundo (reboco, telhas): na vg a posição já sai no mundo
         const extraVg = this.original.userData.tsl
+        // âncora da troca por pontilhado (render/dissolver.js): a origem da cópia
+        if (this.original.userData.dissolver) { this.ancora = varyingProperty('vec3', 'vAncoraD'); this.ancora.assign(varyingProperty('vec3', 'vVgInstanceOrigin')) }
         if (extraVg?.posicaoVg) extraVg.posicaoVg({ W, builder, mundo: positionLocal, normalMundo: nMundoVg, origem: varyingProperty('vec3', 'vVgInstanceOrigin') })
         return positionLocal
       }
@@ -185,6 +194,12 @@ function criarClasse(W) {
       const inst = object.isInstancedMesh && object.instanceMatrix?.isInstancedBufferAttribute ? matrizInstancia(W, object) : null
       const instMat = inst?.no || null
       const ctx = { W, builder, material: this.original, objeto: object, instancia: instMat }
+      // âncora da troca por pontilhado (render/dissolver.js): a origem da cópia (ou do objeto) no mundo
+      if (this.original.userData.dissolver) {
+        this.ancora = varyingProperty('vec3', 'vAncoraD')
+        const o = W.vec4(0.0, 0.0, 0.0, 1.0)
+        this.ancora.assign((instMat ? modelWorldMatrix.mul(instMat).mul(o) : modelWorldMatrix.mul(o)).xyz)
+      }
       // ponto em que a pintura se prende (textura em três eixos, pincelada): a posição antes do vento, para a
       // textura andar junto com a folha que balança e não escorrer por cima dela (vento-arvores.js)
       if (extra?.pintura) {
@@ -213,6 +228,9 @@ function criarClasse(W) {
     // a cor de sempre (já com cor por vértice e por cópia), depois o código extra do material, depois a pintura
     setupDiffuseColor(builder) {
       super.setupDiffuseColor(builder)
+      // troca de nível de detalhe por pontilhado preso ao mundo (render/dissolver.js); só o passe de cor
+      const dis = this.original.userData.dissolver
+      if (dis) tslFica(W, ref, dis, this.ancora || W.positionWorld, W.positionWorld).not().discard()
       const ctx = { W, builder, material: this.original }
       const extra = this.original.userData.tsl
       let rgb = diffuseColor.rgb

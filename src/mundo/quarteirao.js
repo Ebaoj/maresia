@@ -21,6 +21,7 @@ import { TAM_LOD, instanciarEmBlocos } from './blocos.js'
 import { registrarEstatico } from '../render/sombra-estatica.js'
 import { criarAleatorio } from '../utils.js'
 import { ref } from '../render/gpu/comum.js'
+import { marcarDissolver, faixasDissolver } from '../render/dissolver.js'
 import { GLSL_DESGASTE, envelhecerTsl } from './desgaste.js'
 import { GLSL_CASCA_MARCO, ligarCascaGlsl, cascaMarcoTsl } from './desgaste-marcos.js'
 
@@ -579,6 +580,8 @@ export function materiaisDasCasas() {
 export function criarCasas(cena, casario, morro) {
   const rnd = criarAleatorio(1932)
   const { reboco: matReboco, rebocoMorro: matRebocoMorro, pecas: matPecas, telhas: matTelhas } = materiaisDasCasas()
+  // a casa detalhada é a versão de perto da troca por pontilhado (render/dissolver.js); a caixa, a de longe
+  for (const m of [matReboco, matRebocoMorro, matPecas, matTelhas]) marcarDissolver(m, -1, faixasDissolver.casas, 'bloco')
   const grupo = new THREE.Group()
   grupo.name = 'casas-1932'
   const blocos = new Map()
@@ -614,6 +617,9 @@ export function criarCasas(cena, casario, morro) {
     const a = pilhas.aceso.malha(matAceso, 'casas-interior-aceso')
     const t = pilhas.telhas.malha(matTelhas, 'casas-telhas')
     for (const m of [i, a]) if (m) m.castShadow = false
+    // a malha fica centrada no bloco: a origem dela é a âncora da troca por pontilhado (render/dissolver.js, 'bloco')
+    const cx = b.x0 + TAM_BLOCO / 2, cz = b.z0 + TAM_BLOCO / 2
+    for (const m of [r, p, i, a, t]) if (m) { m.geometry.translate(-cx, 0, -cz); m.position.set(cx, 0, cz); m.updateMatrixWorld(true) }
     for (const m of [r, p, i, a, t]) if (m) { m.visible = b.perto; grupo.add(m); b.malhas.push(m); registrarEstatico(m) }
     b.montado = true
     if (b.perto) for (const m of b.longe) m.visible = false
@@ -639,8 +645,13 @@ export function criarCasas(cena, casario, morro) {
   cena.add(grupo)
   const escuro = new THREE.Color('#4a3a30')
   const quente = new THREE.Color('#ffb860').multiplyScalar(2.2)
-  // LOD por bloco: perto da câmera a casa detalhada; longe, a caixa com fachada pintada (Lote.criar)
-  const PERTO = 70
+  // LOD por bloco: perto da câmera a casa detalhada; longe, a caixa com fachada pintada (Lote.criar).
+  // Troca por pontilhado (27/10/2026, render/dissolver.js, modo 'bloco'): na faixa [PERTO - w, PERTO + w] da
+  // distância da câmera ao bloco (cfg.mundo.casasPerto, casasDissolve) as duas versões do bloco ficam à vista e o
+  // pontilhado preso ao mundo passa de uma para a outra enquanto se anda 2w metros, em vez de o bloco de 96 m trocar
+  // inteiro num quadro. Antes de a detalhada estar montada, a caixa usa o material sem recorte (senão abriria buraco)
+  let PERTO = 70
+  let FAIXA = 6
   // de muito longe, as caixas de fachada pintada dos blocos se juntam por célula grande (muito-longe.js)
   const muitoLonge = new MuitoLonge(grupo, { nome: 'casas' })
   return {
@@ -655,37 +666,50 @@ export function criarCasas(cena, casario, morro) {
           get todas() { return [...b.malhas, ...b.longe] },
           distancia: (camera) => Math.hypot(Math.max(b.x0 - camera.position.x, 0, camera.position.x - (b.x0 + TAM_BLOCO)), Math.max(b.z0 - camera.position.z, 0, camera.position.z - (b.z0 + TAM_BLOCO))),
           // volta ao estado de longe (a caixa à vista); o laço decide de novo neste quadro
-          retomar: () => { b.perto = false; for (const m of b.malhas) m.visible = false; for (const m of b.longe) m.visible = true },
+          retomar: () => { b.perto = false; b.comCaixa = b.recorta = undefined; for (const m of b.malhas) m.visible = false; for (const m of b.longe) { m.visible = true; m.material = b.matLonge?.get(m) ?? m.material } },
         }
         muitoLonge.adicionar(b.unidade)
       }
       muitoLonge.montar()
     },
     // malhas instanciadas das caixas de longe (instanciarEmBlocos usa os mesmos blocos de 96 m)
-    registrarLonge(malhas, simples) {
+    // matDissolver: a versão do material da caixa com a troca por pontilhado (render/dissolver.js)
+    registrarLonge(malhas, simples, matDissolver = null) {
       const v = new THREE.Vector3()
       const mt = new THREE.Matrix4()
       for (const im of malhas) {
         im.getMatrixAt(0, mt)
         v.setFromMatrixPosition(mt)
         const b = blocos.get(`${simples ? 'm' : 'c'}${Math.floor(v.x / TAM_BLOCO)},${Math.floor(v.z / TAM_BLOCO)}`)
-        if (b) { b.longe.push(im); im.visible = !(b.perto && b.montado) } else im.visible = true
+        if (b) {
+          b.longe.push(im)
+          im.visible = !(b.perto && b.montado)
+          ;(b.matLonge ||= new Map()).set(im, im.material)
+          if (matDissolver) (b.matDissolver ||= new Map()).set(im, matDissolver)
+        } else im.visible = true
       }
     },
     // porQuadro (cfg.desempenho.casasPorQuadro): quantos blocos de casas detalhadas montar por quadro
-    atualizar(camera, porQuadro = 2) {
+    atualizar(camera, porQuadro = 2, cfg = null) {
       matAceso.color.copy(escuro).lerp(quente, globais.uNoite.value)
       if (!camera) return
+      PERTO = cfg?.mundo?.casasPerto ?? 70
+      FAIXA = Math.max(0, cfg?.mundo?.casasDissolve ?? 6)
+      // sem faixa: a detalhada não recorta nada (a distância vai longe) e a troca volta a ser por bloco
+      faixasDissolver.casas.value.set(FAIXA > 0 ? PERTO : 1e9, Math.max(FAIXA, 1e-3), cfg?.mundo?.dissolveCelula ?? 0.05, TAM_BLOCO)
       const cx = camera.position.x
       const cz = camera.position.z
       let montou = 0
-      muitoLonge.atualizar(camera, PERTO + 8)
+      const entra = PERTO + FAIXA
+      muitoLonge.atualizar(camera, entra + 8)
       for (const b of blocos.values()) {
         if (b.unidade?.suspenso) continue
         const dx = Math.max(b.x0 - cx, 0, cx - (b.x0 + TAM_BLOCO))
         const dz = Math.max(b.z0 - cz, 0, cz - (b.z0 + TAM_BLOCO))
         const d = Math.hypot(dx, dz)
-        const perto = b.perto ? d < PERTO + 8 : d < PERTO // folga para não piscar na divisa
+        const perto = b.perto ? d < entra + 8 : d < entra // folga para não piscar na divisa
+        // a caixa ainda aparece (pontilhada) enquanto o bloco não entrou todo em PERTO - w
+        const caixa = FAIXA > 0 && d > PERTO - FAIXA
         // bloco perto e ainda não montado: monta agora (no máximo porQuadro por quadro; 25/10/2026: cada bloco leva
         // 150 a 300 ms na T4, e dois no mesmo quadro davam o pico de ~650 ms depois de um teleporte)
         if (perto && !b.montado) {
@@ -693,12 +717,19 @@ export function criarCasas(cena, casario, morro) {
           b.perto = true
           montarBloco(b)
           montou++
-          continue
+          b.comCaixa = b.recorta = undefined // a caixa e o recorte já neste quadro (sem um quadro de buraco)
         }
-        if (perto === b.perto) continue
+        const comCaixa = !(perto && b.montado) || caixa
+        const recorta = perto && b.montado && caixa
+        if (perto === b.perto && comCaixa === b.comCaixa && recorta === b.recorta) continue
         b.perto = perto
+        b.comCaixa = comCaixa
+        b.recorta = recorta
         for (const m of b.malhas) m.visible = perto
-        for (const m of b.longe) m.visible = !(perto && b.montado)
+        for (const m of b.longe) {
+          m.visible = comCaixa
+          m.material = (recorta ? b.matDissolver?.get(m) : null) ?? b.matLonge?.get(m) ?? m.material
+        }
       }
     },
   }

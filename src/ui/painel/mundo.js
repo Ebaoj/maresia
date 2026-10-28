@@ -38,6 +38,9 @@ export function secaoMundo(gui, cfg) {
   }
 
   mundo.add(cfg.mundo, 'palhaPerto', 30, 2000, 10).name('palhoça detalhada até (un)')
+  mundo.add(cfg.mundo, 'casasPerto', 30, 200, 1).name('casa detalhada até (m)')
+  mundo.add(cfg.mundo, 'casasDissolve', 0, 30, 0.5).name('casa: troca por pontilhado, meia faixa (m)')
+  mundo.add(cfg.mundo, 'dissolveCelula', 0.01, 0.5, 0.005).name('pontilhado das trocas: célula (m)')
   const tl = mundo.addFolder('Telhados ao longe')
   tl.add(cfg.mundo.telhadosLonge, 'ligado').name(rec('ligados'))
   tl.add(cfg.mundo.telhadosLonge, 'distancia', 300, 3000, 10).name('distância da câmera (un)')
@@ -124,6 +127,7 @@ export function secaoMundo(gui, cfg) {
   ar.add(cfg.arvores, 'lodPerto', 10, 200, 1).name('folhas cheias até (m)')
   ar.add(cfg.arvores, 'lodLonge', 10, 250, 1).name('folhas somem em (m)')
   ar.add(cfg.arvores, 'lodBloco', 10, 300, 1).name('copa simples depois de (m)')
+  ar.add(cfg.arvores, 'lodDissolve', 0, 30, 0.5).name('troca por pontilhado: meia faixa (m)')
   ar.add(cfg.arvores, 'borda', 0, 1.5, 0.01).name('luz do céu na borda da copa')
   ar.addColor(cfg.arvores, 'bordaCor').name('cor da luz do céu')
   ar.add(cfg.arvores, 'transluz', 0, 2, 0.01).name('folha acesa na contraluz')
