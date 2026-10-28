@@ -1,0 +1,484 @@
+{
+ "seco": {
+  "quadros": 30,
+  "limiar": 24.0,
+  "media_abs_media": 0.0535,
+  "pct_acima_limiar_media": 0.0276,
+  "pares_identicos": 0,
+  "pares": [
+   {
+    "par": "0-1",
+    "media_abs": 0.0893,
+    "pct_acima_limiar": 0.0274,
+    "pct_acima_8": 0.1723,
+    "max": 89.8,
+    "identicos": false
+   },
+   {
+    "par": "1-2",
+    "media_abs": 0.0828,
+    "pct_acima_limiar": 0.0276,
+    "pct_acima_8": 0.152,
+    "max": 109.9,
+    "identicos": false
+   },
+   {
+    "par": "2-3",
+    "media_abs": 0.0674,
+    "pct_acima_limiar": 0.0179,
+    "pct_acima_8": 0.1076,
+    "max": 115.5,
+    "identicos": false
+   },
+   {
+    "par": "3-4",
+    "media_abs": 0.0597,
+    "pct_acima_limiar": 0.0147,
+    "pct_acima_8": 0.0924,
+    "max": 100.2,
+    "identicos": false
+   },
+   {
+    "par": "4-5",
+    "media_abs": 0.0496,
+    "pct_acima_limiar": 0.0102,
+    "pct_acima_8": 0.0625,
+    "max": 128.9,
+    "identicos": false
+   },
+   {
+    "par": "5-6",
+    "media_abs": 0.0411,
+    "pct_acima_limiar": 0.0054,
+    "pct_acima_8": 0.0455,
+    "max": 89.7,
+    "identicos": false
+   },
+   {
+    "par": "6-7",
+    "media_abs": 0.0342,
+    "pct_acima_limiar": 0.0041,
+    "pct_acima_8": 0.0301,
+    "max": 61.2,
+    "identicos": false
+   },
+   {
+    "par": "7-8",
+    "media_abs": 0.0296,
+    "pct_acima_limiar": 0.0035,
+    "pct_acima_8": 0.0231,
+    "max": 85.3,
+    "identicos": false
+   },
+   {
+    "par": "8-9",
+    "media_abs": 0.0268,
+    "pct_acima_limiar": 0.0023,
+    "pct_acima_8": 0.0197,
+    "max": 59.9,
+    "identicos": false
+   },
+   {
+    "par": "9-10",
+    "media_abs": 0.022,
+    "pct_acima_limiar": 0.0008,
+    "pct_acima_8": 0.0104,
+    "max": 37.3,
+    "identicos": false
+   },
+   {
+    "par": "10-11",
+    "media_abs": 0.0202,
+    "pct_acima_limiar": 0.0012,
+    "pct_acima_8": 0.0095,
+    "max": 51.8,
+    "identicos": false
+   },
+   {
+    "par": "11-12",
+    "media_abs": 0.0198,
+    "pct_acima_limiar": 0.0015,
+    "pct_acima_8": 0.0141,
+    "max": 63.9,
+    "identicos": false
+   },
+   {
+    "par": "12-13",
+    "media_abs": 0.0177,
+    "pct_acima_limiar": 0.0012,
+    "pct_acima_8": 0.0108,
+    "max": 56.0,
+    "identicos": false
+   },
+   {
+    "par": "13-14",
+    "media_abs": 0.0141,
+    "pct_acima_limiar": 0.0002,
+    "pct_acima_8": 0.0039,
+    "max": 35.0,
+    "identicos": false
+   },
+   {
+    "par": "14-15",
+    "media_abs": 0.0124,
+    "pct_acima_limiar": 0.0,
+    "pct_acima_8": 0.0025,
+    "max": 16.9,
+    "identicos": false
+   },
+   {
+    "par": "15-16",
+    "media_abs": 0.0116,
+    "pct_acima_limiar": 0.0004,
+    "pct_acima_8": 0.0019,
+    "max": 41.5,
+    "identicos": false
+   },
+   {
+    "par": "16-17",
+    "media_abs": 0.01,
+    "pct_acima_limiar": 0.0002,
+    "pct_acima_8": 0.0008,
+    "max": 25.0,
+    "identicos": false
+   },
+   {
+    "par": "17-18",
+    "media_abs": 0.0104,
+    "pct_acima_limiar": 0.0006,
+    "pct_acima_8": 0.0033,
+    "max": 37.3,
+    "identicos": false
+   },
+   {
+    "par": "18-19",
+    "media_abs": 0.7106,
+    "pct_acima_limiar": 0.6721,
+    "pct_acima_8": 1.8461,
+    "max": 156.4,
+    "identicos": false
+   },
+   {
+    "par": "19-20",
+    "media_abs": 0.0384,
+    "pct_acima_limiar": 0.0029,
+    "pct_acima_8": 0.0314,
+    "max": 49.4,
+    "identicos": false
+   },
+   {
+    "par": "20-21",
+    "media_abs": 0.033,
+    "pct_acima_limiar": 0.0012,
+    "pct_acima_8": 0.0208,
+    "max": 52.1,
+    "identicos": false
+   },
+   {
+    "par": "21-22",
+    "media_abs": 0.0287,
+    "pct_acima_limiar": 0.0015,
+    "pct_acima_8": 0.0162,
+    "max": 44.4,
+    "identicos": false
+   },
+   {
+    "par": "22-23",
+    "media_abs": 0.0233,
+    "pct_acima_limiar": 0.0004,
+    "pct_acima_8": 0.006,
+    "max": 28.7,
+    "identicos": false
+   },
+   {
+    "par": "23-24",
+    "media_abs": 0.0216,
+    "pct_acima_limiar": 0.0002,
+    "pct_acima_8": 0.0087,
+    "max": 41.3,
+    "identicos": false
+   },
+   {
+    "par": "24-25",
+    "media_abs": 0.0193,
+    "pct_acima_limiar": 0.0006,
+    "pct_acima_8": 0.0056,
+    "max": 40.5,
+    "identicos": false
+   },
+   {
+    "par": "25-26",
+    "media_abs": 0.0165,
+    "pct_acima_limiar": 0.0002,
+    "pct_acima_8": 0.0029,
+    "max": 37.3,
+    "identicos": false
+   },
+   {
+    "par": "26-27",
+    "media_abs": 0.0152,
+    "pct_acima_limiar": 0.0,
+    "pct_acima_8": 0.0029,
+    "max": 22.2,
+    "identicos": false
+   },
+   {
+    "par": "27-28",
+    "media_abs": 0.0146,
+    "pct_acima_limiar": 0.0015,
+    "pct_acima_8": 0.0056,
+    "max": 38.8,
+    "identicos": false
+   },
+   {
+    "par": "28-29",
+    "media_abs": 0.0125,
+    "pct_acima_limiar": 0.0002,
+    "pct_acima_8": 0.0023,
+    "max": 30.3,
+    "identicos": false
+   }
+  ]
+ },
+ "pontilhado": {
+  "quadros": 30,
+  "limiar": 24.0,
+  "media_abs_media": 0.1049,
+  "pct_acima_limiar_media": 0.0568,
+  "pares_identicos": 0,
+  "pares": [
+   {
+    "par": "0-1",
+    "media_abs": 0.1505,
+    "pct_acima_limiar": 0.0378,
+    "pct_acima_8": 0.2782,
+    "max": 89.8,
+    "identicos": false
+   },
+   {
+    "par": "1-2",
+    "media_abs": 0.1371,
+    "pct_acima_limiar": 0.0353,
+    "pct_acima_8": 0.2427,
+    "max": 109.9,
+    "identicos": false
+   },
+   {
+    "par": "2-3",
+    "media_abs": 0.1133,
+    "pct_acima_limiar": 0.023,
+    "pct_acima_8": 0.1761,
+    "max": 115.5,
+    "identicos": false
+   },
+   {
+    "par": "3-4",
+    "media_abs": 0.1006,
+    "pct_acima_limiar": 0.0195,
+    "pct_acima_8": 0.1487,
+    "max": 100.2,
+    "identicos": false
+   },
+   {
+    "par": "4-5",
+    "media_abs": 0.0848,
+    "pct_acima_limiar": 0.0141,
+    "pct_acima_8": 0.104,
+    "max": 128.9,
+    "identicos": false
+   },
+   {
+    "par": "5-6",
+    "media_abs": 0.0731,
+    "pct_acima_limiar": 0.0104,
+    "pct_acima_8": 0.0837,
+    "max": 89.7,
+    "identicos": false
+   },
+   {
+    "par": "6-7",
+    "media_abs": 0.063,
+    "pct_acima_limiar": 0.0085,
+    "pct_acima_8": 0.0627,
+    "max": 69.0,
+    "identicos": false
+   },
+   {
+    "par": "7-8",
+    "media_abs": 0.0579,
+    "pct_acima_limiar": 0.0073,
+    "pct_acima_8": 0.0598,
+    "max": 85.3,
+    "identicos": false
+   },
+   {
+    "par": "8-9",
+    "media_abs": 0.0594,
+    "pct_acima_limiar": 0.0091,
+    "pct_acima_8": 0.0708,
+    "max": 73.4,
+    "identicos": false
+   },
+   {
+    "par": "9-10",
+    "media_abs": 0.0549,
+    "pct_acima_limiar": 0.0098,
+    "pct_acima_8": 0.0642,
+    "max": 73.1,
+    "identicos": false
+   },
+   {
+    "par": "10-11",
+    "media_abs": 0.0564,
+    "pct_acima_limiar": 0.0056,
+    "pct_acima_8": 0.0708,
+    "max": 59.4,
+    "identicos": false
+   },
+   {
+    "par": "11-12",
+    "media_abs": 0.0624,
+    "pct_acima_limiar": 0.0112,
+    "pct_acima_8": 0.0903,
+    "max": 81.1,
+    "identicos": false
+   },
+   {
+    "par": "12-13",
+    "media_abs": 0.0627,
+    "pct_acima_limiar": 0.0096,
+    "pct_acima_8": 0.093,
+    "max": 86.9,
+    "identicos": false
+   },
+   {
+    "par": "13-14",
+    "media_abs": 0.0648,
+    "pct_acima_limiar": 0.012,
+    "pct_acima_8": 0.1003,
+    "max": 82.4,
+    "identicos": false
+   },
+   {
+    "par": "14-15",
+    "media_abs": 0.0701,
+    "pct_acima_limiar": 0.0139,
+    "pct_acima_8": 0.1213,
+    "max": 73.3,
+    "identicos": false
+   },
+   {
+    "par": "15-16",
+    "media_abs": 0.0746,
+    "pct_acima_limiar": 0.0147,
+    "pct_acima_8": 0.1599,
+    "max": 57.9,
+    "identicos": false
+   },
+   {
+    "par": "16-17",
+    "media_abs": 0.0755,
+    "pct_acima_limiar": 0.0233,
+    "pct_acima_8": 0.1717,
+    "max": 82.7,
+    "identicos": false
+   },
+   {
+    "par": "17-18",
+    "media_abs": 0.0854,
+    "pct_acima_limiar": 0.0318,
+    "pct_acima_8": 0.2245,
+    "max": 92.7,
+    "identicos": false
+   },
+   {
+    "par": "18-19",
+    "media_abs": 0.0859,
+    "pct_acima_limiar": 0.0411,
+    "pct_acima_8": 0.2186,
+    "max": 86.7,
+    "identicos": false
+   },
+   {
+    "par": "19-20",
+    "media_abs": 0.0771,
+    "pct_acima_limiar": 0.0322,
+    "pct_acima_8": 0.1875,
+    "max": 95.8,
+    "identicos": false
+   },
+   {
+    "par": "20-21",
+    "media_abs": 0.079,
+    "pct_acima_limiar": 0.032,
+    "pct_acima_8": 0.1939,
+    "max": 101.1,
+    "identicos": false
+   },
+   {
+    "par": "21-22",
+    "media_abs": 0.0762,
+    "pct_acima_limiar": 0.0368,
+    "pct_acima_8": 0.1873,
+    "max": 98.6,
+    "identicos": false
+   },
+   {
+    "par": "22-23",
+    "media_abs": 0.0655,
+    "pct_acima_limiar": 0.0266,
+    "pct_acima_8": 0.1406,
+    "max": 62.8,
+    "identicos": false
+   },
+   {
+    "par": "23-24",
+    "media_abs": 0.059,
+    "pct_acima_limiar": 0.0189,
+    "pct_acima_8": 0.1177,
+    "max": 111.1,
+    "identicos": false
+   },
+   {
+    "par": "24-25",
+    "media_abs": 0.0435,
+    "pct_acima_limiar": 0.0064,
+    "pct_acima_8": 0.0689,
+    "max": 71.0,
+    "identicos": false
+   },
+   {
+    "par": "25-26",
+    "media_abs": 0.9166,
+    "pct_acima_limiar": 1.126,
+    "pct_acima_8": 2.8476,
+    "max": 168.8,
+    "identicos": false
+   },
+   {
+    "par": "26-27",
+    "media_abs": 0.0771,
+    "pct_acima_limiar": 0.0168,
+    "pct_acima_8": 0.1128,
+    "max": 68.2,
+    "identicos": false
+   },
+   {
+    "par": "27-28",
+    "media_abs": 0.0605,
+    "pct_acima_limiar": 0.0062,
+    "pct_acima_8": 0.0671,
+    "max": 91.7,
+    "identicos": false
+   },
+   {
+    "par": "28-29",
+    "media_abs": 0.0543,
+    "pct_acima_limiar": 0.0069,
+    "pct_acima_8": 0.0544,
+    "max": 55.9,
+    "identicos": false
+   }
+  ]
+ }
+}

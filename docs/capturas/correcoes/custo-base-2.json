@@ -1,0 +1,48 @@
+{
+ "url": "http://localhost:5312/?semTelemetria",
+ "renderizador": "webgl",
+ "lugar": {
+  "x": 4240.84,
+  "z": 2164.09,
+  "yaw": 0,
+  "hora": 15,
+  "pitch": 0.2,
+  "dist": 5
+ },
+ "quadros": 8,
+ "rodadas": 2,
+ "variantes": {
+  "base": {
+   "tempos": [
+    1403.7,
+    1497.8,
+    1513.8,
+    1608.1,
+    1429.2,
+    1634,
+    1507.1,
+    1481.5,
+    1436.3,
+    1500.1,
+    1379.5,
+    1530.4,
+    1410.2,
+    1612.5,
+    1418.1,
+    1574.3
+   ],
+   "mediana": 1500.1,
+   "p25": 1429.2,
+   "p75": 1574.3
+  }
+ },
+ "console": [
+  "[error] Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "[warning] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+  "[warning] escultura leaoSerpente: /arte/finais/marcos1932/leao-serpente-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura leao: /arte/finais/marcos1932/leao-pe-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura tigre: /arte/finais/marcos1932/tigre-jogo.glb não carregou, fica a procedural",
+  "[warning] escultura general: /arte/finais/marcos1932/general-jogo.glb não carregou, fica a procedural"
+ ],
+ "quebrados": []
+}

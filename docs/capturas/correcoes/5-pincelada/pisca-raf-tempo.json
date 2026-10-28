@@ -1,0 +1,10 @@
+{
+ "raf-tempo": {
+  "quadros": 16,
+  "pisca_pct": 0.0115,
+  "pisca_borda_pct": 0.0361,
+  "pisca_liso_pct": 0.002,
+  "pior_quadro_pct": 0.0164,
+  "quadros_com_pisca_acima_0_05pct": 0
+ }
+}
