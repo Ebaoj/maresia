@@ -70,7 +70,8 @@ import { carregarAvo } from './jogador/avo.js'
 import { Aranhaverso } from './pos/aranhaverso.js'
 import { AranhaversoGpu } from './pos/aranhaverso-gpu.js'
 import { ResolucaoDinamica } from './render/resolucao-dinamica.js'
-import { GovernadorQualidade, aplicarDegrau } from './render/governador.js'
+import { GovernadorQualidade, aplicarDegrau, Transicao } from './render/governador.js'
+import { criarCustoQuadro } from './render/custo-quadro.js'
 import { instalarSombraLeve, procurarSombraLeve } from './render/simplificar.js'
 import { tetoPixel } from './qualidade.js'
 import { atualizarCorte } from './render/corte-tela.js'
@@ -293,10 +294,10 @@ async function iniciar() {
     orcamentoMs: cfg.desempenho.orcamentoQuadroMs,
     eficacia: true,
   })
-  // custo do quadro para a resolução dinâmica (WebGPU): do começo do passo até a placa terminar o que ele mandou. O
-  // intervalo do requestAnimationFrame anda em degraus do vsync (16,7 / 33,3 ms) e não mostra o ganho de uma descida
+  // custo do quadro (render/custo-quadro.js) para o governador e a resolução dinâmica: o trabalho da CPU no passo e o
+  // tempo da placa. O intervalo do requestAnimationFrame anda em degraus do vsync (16,7 / 33,3 ms) e não mostra folga
+  const custo = criarCustoQuadro(renderer, { webgpu, cfg })
   let custoQuadroMs = 0
-  let medindoCusto = false
   let resolucaoDoPainel = cfg.desempenho.resolucao // para notar quando o usuário mexe nela
   let dinamicaLigada = false
   let tamanhoTravado = false // a foto justa fixa o tamanho (tamanhoFixo): a resolução dinâmica não roda nesse tempo
@@ -309,6 +310,7 @@ async function iniciar() {
     ? new GovernadorQualidade({ orcamentoMs: cfg.desempenho.orcamentoQuadroMs })
     : null
   const baseGovernador = {}
+  const transicaoGovernador = new Transicao() // os números da escada mudam em 0,5 s, não num quadro
   if (governador) aplicarDegrau(cfg, governador, baseGovernador)
   const tetoGovernador = () => (governador ? governador.capPixel() : Infinity)
   let resolucao = 0
@@ -481,7 +483,7 @@ async function iniciar() {
   // (o compileAsync da vg monta listas de desenho e precisa das matrizes do mundo já calculadas)
   if (webgpu) { prepararCenaWebgpu(cena); cena.updateMatrixWorld(); await prepararMotorPlaca(renderer, cena, camera) }
 
-  const contadorFps = criarContadorFps(cfg)
+  const contadorFps = criarContadorFps(cfg, () => (governador && governador.degrau > 0 ? governador.nome : ''))
   function quadro() {
     requestAnimationFrame(quadro)
     contadorFps.quadro()
@@ -501,13 +503,15 @@ async function iniciar() {
       dinamica.orcamentoMs = cfg.desempenho.orcamentoQuadroMs
       dinamica.quadro(webgpu && custoQuadroMs > 0 ? custoQuadroMs : real * 1000)
     }
-    // governador (27/10/2026): um degrau por vez, pelo p95 sustentado; a resolução só no fim da escada
+    // governador (27/10/2026): um degrau por vez, pelo p95 sustentado do CUSTO do quadro anterior (não do intervalo do
+    // rAF); a resolução só no fim da escada; os números vão ao valor novo em 0,5 s
     if (governador && !tamanhoTravado) {
-      const degrau = governador.quadro(real * 1000)
+      const degrau = custoQuadroMs > 0 ? governador.quadro(custoQuadroMs, real * 1000) : null
       if (degrau !== null) {
-        aplicarDegrau(cfg, governador, baseGovernador)
+        aplicarDegrau(cfg, governador, baseGovernador, transicaoGovernador)
         marcarEvento('governador', { degrau: governador.nome })
       }
+      if (transicaoGovernador.ativa) transicaoGovernador.avancar(cfg, real)
     }
     if (!tamanhoTravado && Math.min(escalaAtual(), tetoPixel(cfg), tetoGovernador()) !== resolucao) {
       const t0r = performance.now()
@@ -516,13 +520,11 @@ async function iniciar() {
     }
     const t0Quadro = performance.now()
     const marcado0 = tele ? tele.somaMarcas() : 0
+    custo.inicio()
     passo(Math.min(real, 1 / 20))
+    custoQuadroMs = custo.fim()
     // o resto do passo (jogador, câmera, mundo) sem o que já tem marca própria (casas, chunks, sombra, cena, pós)
     if (tele) tele.marcar('atualizar', Math.max(0, performance.now() - t0Quadro - (tele.somaMarcas() - marcado0)))
-    if (webgpu && dinamicaLigada && !medindoCusto && renderer.backend?.device) {
-      medindoCusto = true
-      renderer.backend.device.queue.onSubmittedWorkDone().then(() => { custoQuadroMs = performance.now() - t0Quadro; medindoCusto = false })
-    }
     // tempo até o primeiro quadro desenhado de verdade (com os shaders montados), para comparar renderizadores
     if (window.__primeiroQuadroMs === undefined) window.__primeiroQuadroMs = Math.round(performance.now())
   }

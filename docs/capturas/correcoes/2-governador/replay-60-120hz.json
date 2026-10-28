@@ -1,0 +1,237 @@
+{
+ "60hz": {
+  "antigo": {
+   "degrauFinal": "pixel-0.8",
+   "trocas": 9,
+   "porDegrauS": {
+    "cheio": 63.2,
+    "sombra-perto-leve": 7.8,
+    "pincelada-meia": 7.8,
+    "sem-dof": 7.8,
+    "distancia": 96.7,
+    "lod": 7.7,
+    "sem-sombra-perto": 7.7,
+    "sem-estabilizar": 7.8,
+    "pixel-0.9": 98.3,
+    "pixel-0.8": 55.3
+   },
+   "cheioForaDoPesadoPct": 25.6,
+   "ultimasTrocas": [
+    {
+     "de": "sem-dof",
+     "para": "distancia",
+     "motivo": "caro",
+     "p50": 16.7,
+     "p95": 33.3
+    },
+    {
+     "de": "distancia",
+     "para": "lod",
+     "motivo": "caro",
+     "p50": 33.3,
+     "p95": 33.3
+    },
+    {
+     "de": "lod",
+     "para": "sem-sombra-perto",
+     "motivo": "caro",
+     "p50": 33.3,
+     "p95": 33.3
+    },
+    {
+     "de": "sem-sombra-perto",
+     "para": "sem-estabilizar",
+     "motivo": "caro",
+     "p50": 33.3,
+     "p95": 33.3
+    },
+    {
+     "de": "sem-estabilizar",
+     "para": "pixel-0.9",
+     "motivo": "caro",
+     "p50": 16.7,
+     "p95": 33.3
+    },
+    {
+     "de": "pixel-0.9",
+     "para": "pixel-0.8",
+     "motivo": "caro",
+     "p50": 16.7,
+     "p95": 33.3
+    }
+   ]
+  },
+  "novo": {
+   "degrauFinal": "sombra-perto-leve",
+   "trocas": 17,
+   "porDegrauS": {
+    "cheio": 173.9,
+    "sombra-perto-leve": 62.6,
+    "distancia": 71.5,
+    "lod": 52
+   },
+   "cheioForaDoPesadoPct": 68.7,
+   "ultimasTrocas": [
+    {
+     "de": "sombra-perto-leve",
+     "para": "cheio",
+     "motivo": "folga",
+     "p50": 10.3,
+     "p95": 11.4
+    },
+    {
+     "de": "cheio",
+     "para": "sombra-perto-leve",
+     "motivo": "caro",
+     "p50": 24.9,
+     "p95": 27.4
+    },
+    {
+     "de": "sombra-perto-leve",
+     "para": "distancia",
+     "motivo": "caro",
+     "p50": 23.2,
+     "p95": 26.4
+    },
+    {
+     "de": "distancia",
+     "para": "lod",
+     "motivo": "caro",
+     "p50": 21.8,
+     "p95": 24.9
+    },
+    {
+     "de": "lod",
+     "para": "distancia",
+     "motivo": "folga",
+     "p50": 8.9,
+     "p95": 10.2
+    },
+    {
+     "de": "distancia",
+     "para": "sombra-perto-leve",
+     "motivo": "folga",
+     "p50": 9.6,
+     "p95": 10.7
+    }
+   ]
+  }
+ },
+ "120hz": {
+  "antigo": {
+   "degrauFinal": "sem-sombra-perto",
+   "trocas": 14,
+   "porDegrauS": {
+    "cheio": 62.9,
+    "sombra-perto-leve": 7.7,
+    "pincelada-meia": 7.9,
+    "sem-dof": 7.9,
+    "distancia": 159.3,
+    "lod": 28.3,
+    "sem-sombra-perto": 45.5,
+    "sem-estabilizar": 40.6
+   },
+   "cheioForaDoPesadoPct": 25.6,
+   "ultimasTrocas": [
+    {
+     "de": "sem-sombra-perto",
+     "para": "lod",
+     "motivo": "folga",
+     "p50": 8.3,
+     "p95": 16.7
+    },
+    {
+     "de": "lod",
+     "para": "distancia",
+     "motivo": "folga",
+     "p50": 8.3,
+     "p95": 16.7
+    },
+    {
+     "de": "distancia",
+     "para": "lod",
+     "motivo": "caro",
+     "p50": 25,
+     "p95": 25
+    },
+    {
+     "de": "lod",
+     "para": "sem-sombra-perto",
+     "motivo": "caro",
+     "p50": 25,
+     "p95": 25
+    },
+    {
+     "de": "sem-sombra-perto",
+     "para": "sem-estabilizar",
+     "motivo": "caro",
+     "p50": 25,
+     "p95": 25
+    },
+    {
+     "de": "sem-estabilizar",
+     "para": "sem-sombra-perto",
+     "motivo": "folga",
+     "p50": 8.3,
+     "p95": 16.7
+    }
+   ]
+  },
+  "novo": {
+   "degrauFinal": "sem-sombra-perto",
+   "trocas": 16,
+   "porDegrauS": {
+    "cheio": 188.4,
+    "sombra-perto-leve": 48.7,
+    "distancia": 49.6,
+    "lod": 39.8,
+    "sem-sombra-perto": 33.4
+   },
+   "cheioForaDoPesadoPct": 76.3,
+   "ultimasTrocas": [
+    {
+     "de": "distancia",
+     "para": "sombra-perto-leve",
+     "motivo": "folga",
+     "p50": 9.2,
+     "p95": 10.7
+    },
+    {
+     "de": "sombra-perto-leve",
+     "para": "cheio",
+     "motivo": "folga",
+     "p50": 10.2,
+     "p95": 11.4
+    },
+    {
+     "de": "cheio",
+     "para": "sombra-perto-leve",
+     "motivo": "caro",
+     "p50": 23.7,
+     "p95": 27.9
+    },
+    {
+     "de": "sombra-perto-leve",
+     "para": "distancia",
+     "motivo": "caro",
+     "p50": 23.4,
+     "p95": 26.8
+    },
+    {
+     "de": "distancia",
+     "para": "lod",
+     "motivo": "caro",
+     "p50": 21.4,
+     "p95": 25
+    },
+    {
+     "de": "lod",
+     "para": "sem-sombra-perto",
+     "motivo": "caro",
+     "p50": 9.1,
+     "p95": 22.6
+    }
+   ]
+  }
+ }
+}

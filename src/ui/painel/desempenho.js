@@ -11,6 +11,7 @@ export function secaoDesempenho(gui, cfg) {
   des.add(d, 'resolucao', 0.5, 2, 0.05).name('resolução')
   des.add(d, 'resolucaoDinamica').name('resolução dinâmica')
   des.add(d, 'resolucaoMin', 0.4, 1.25, 0.05).name('resolução dinâmica: mínima')
+  des.add(d, 'cronometroGpu').name('governador: cronômetro da placa (WebGL)')
   des.add(d, 'tamBloco', [96, 192, 384]).name(rec('bloco de cópias (m)'))
   des.add(d, 'motorPlaca').name(rec('árvores na placa (WebGPU)'))
   des.add(d, 'atoresVat').name(rec('atores em textura (WebGPU)'))

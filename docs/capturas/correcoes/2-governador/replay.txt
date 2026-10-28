@@ -1,0 +1,4 @@
+60 Hz antigo {"cheio":63.2,"sombra-perto-leve":7.8,"pincelada-meia":7.8,"sem-dof":7.8,"distancia":96.7,"lod":7.7,"sem-sombra-perto":7.7,"sem-estabilizar":7.8,"pixel-0.9":98.3,"pixel-0.8":55.3} final pixel-0.8 cheio fora do pesado 25.6%
+60 Hz novo   {"cheio":173.9,"sombra-perto-leve":62.6,"distancia":71.5,"lod":52} final sombra-perto-leve cheio fora do pesado 68.7%
+120 Hz antigo {"cheio":62.9,"sombra-perto-leve":7.7,"pincelada-meia":7.9,"sem-dof":7.9,"distancia":159.3,"lod":28.3,"sem-sombra-perto":45.5,"sem-estabilizar":40.6} final sem-sombra-perto cheio fora do pesado 25.6%
+120 Hz novo   {"cheio":188.4,"sombra-perto-leve":48.7,"distancia":49.6,"lod":39.8,"sem-sombra-perto":33.4} final sem-sombra-perto cheio fora do pesado 76.3%
