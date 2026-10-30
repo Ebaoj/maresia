@@ -11,8 +11,8 @@
 // No WebGPU o filtro é escolhido ao montar o shader (cfg.mundo.sombraFiltro, pede recarregar).
 import * as THREE from 'three'
 
-// o trecho do getShadow (PCF) do three 0.186, com ou sem os comentários (o build tira os comentários)
-const ORIGINAL_PCF = /vec2 texelSize = vec2\( 1\.0 \) \/ shadowMapSize;\s*float radius = shadowRadius \* texelSize\.x;/
+// o trecho do getShadow (PCF) do three 0.187 (o raio virou vec2 na r187), com ou sem os comentários (o build tira os comentários)
+const ORIGINAL_PCF = /vec2 texelSize = vec2\( 1\.0 \) \/ shadowMapSize;\s*vec2 radius = shadowRadius \* texelSize;/
 
 const NOVO_PCF = /* glsl */ `vec2 texelSize = vec2( 1.0 ) / shadowMapSize;
 				if ( shadowRadius >= 0.0 ) {
@@ -29,7 +29,7 @@ const NOVO_PCF = /* glsl */ `vec2 texelSize = vec2( 1.0 ) / shadowMapSize;
 					return mix( 1.0, shadow, shadowIntensity );
 				}
 				// raio negativo: o filtro do three, o de antes
-				float radius = - shadowRadius * texelSize.x;`
+				vec2 radius = - shadowRadius * texelSize;`
 
 // Troca o corpo do getShadow (PCF, usado pela luz direcional e pelo spot) no ShaderChunk. Vale para todo
 // material compilado depois; chamar uma vez, antes do primeiro desenho. Devolve false se o three mudou o trecho
