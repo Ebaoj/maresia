@@ -93,7 +93,24 @@ export function instalar(m) {
       if (agora < fim) requestAnimationFrame(f)
       else {
         rast.parar()
-        resolver({ quadros: tempos.length, p99: percentil(tempos, 99), pior: +Math.max(0, ...tempos).toFixed(1), picos })
+        // o resumo do quadro (25/10/2026, o protocolo de medição do plano de performance):
+        // média, p95, p99, quantos quadros estouraram 33, 50 e 100 ms e o pior quadro
+        const n = tempos.length
+        const soma = tempos.reduce((a, b) => a + b, 0)
+        resolver({
+          quadros: n,
+          media: n ? +(soma / n).toFixed(2) : 0,
+          p95: percentil(tempos, 95),
+          p99: percentil(tempos, 99),
+          picos33: tempos.filter((t) => t > 33).length,
+          picos50: tempos.filter((t) => t > 50).length,
+          picos100: tempos.filter((t) => t > 100).length,
+          pior: +Math.max(0, ...tempos).toFixed(1),
+          // Fase 2: os desenhos do último quadro (renderer.info.render.calls) e o estado da sombra
+          desenhos: m.renderer?.info?.render?.calls ?? 0,
+          sombra: m.cacheSombra?.stats ?? null,
+          picos,
+        })
       }
     }
     requestAnimationFrame((t) => { anterior = t; requestAnimationFrame(f) })

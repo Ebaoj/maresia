@@ -157,7 +157,9 @@ function montar() {
   const luz = new THREE.DirectionalLight(); luz.castShadow = true; luz.shadow.mapSize.set(64, 64)
   const cena = new THREE.Scene(); cena.add(luz)
   const cam = new THREE.PerspectiveCamera()
-  const cfg = { mundo: { cacheSombra: true, cacheSombraRaio: 15 } }
+  // sombraEstatica desligado: este arquivo confere o caminho de camadas do F4 (o caminho novo, o da
+  // Fase 2, está em testes/unidade/decisao-sombra.test.js)
+  const cfg = { mundo: { cacheSombra: true, cacheSombraRaio: 15, sombraEstatica: false } }
   const cache = new CacheSombra(r, cena, cam, luz, cfg)
   const malha = (nome, parado) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial()); m.name = nome; m.castShadow = true; cena.add(m)

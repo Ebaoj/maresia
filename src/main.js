@@ -15,6 +15,7 @@ import { ocupacao as ocupacaoLivre } from './mundo/ocupacao.js'
 import { congelar } from './mundo/congelar.js'
 import { criarContadorFps } from './ui/contador-fps.js'
 import { criarRenderizador, prepararCenaWebgpu, preaquecerWebgpu, modulo as moduloWebgpu } from './render/renderizador.js'
+import { preaquecerWebgl } from './render/preaquecer-webgl.js'
 import { ligarMotorPlaca, prepararMotorPlaca } from './render/motor-placa.js'
 import { definirTamBloco, atualizarBlocosLonge } from './mundo/blocos.js'
 import { definirMuitoLonge } from './mundo/muito-longe.js'
@@ -27,6 +28,7 @@ import { criarMar } from './mundo/mar.js'
 import { criarFaixas } from './mundo/faixas.js'
 import { criarCidade, RECUSA } from './mundo/cidade.js'
 import { criarMarcosCentro } from './mundo/marcos1932/index.js'
+import { lugaresJogo } from './mundo/fortaleza1932.js'
 import { criarMarcosNorte } from './mundo/marcos-norte.js'
 import * as ocup1932 from './mundo/ocupacao1932.js'
 import { calcularChao1932 } from './mundo/chao1932.js'
@@ -46,6 +48,7 @@ import { criarQuintal1932 } from './mundo/quintal1932.js'
 import { criarVida1932 } from './mundo/vida1932.js'
 import { criarGrama } from './mundo/grama.js'
 import { criarCenografia } from './mundo/cenografia.js'
+import { preaquecerTexturas } from './mundo/preaquecer-texturas.js'
 import { criarUrubu1932 } from './mundo/urubu1932.js'
 import { criarVilas } from './mundo/vilas.js'
 import { criarObjetosFatia, FOGAREIROS } from './mundo/fatia-objetos.js'
@@ -134,7 +137,7 @@ async function iniciar() {
   const mar = criarMar(cena, mapaAltura, cfg, toque.publico)
   // calçadão e avenida saíram em 1932 (criarFaixas fica no código para referência)
   void criarFaixas
-  const { predios, casas, grade, quadras, frente } = criarCidade(cena, cfg)
+  const { predios, casas, grade, quadras, frente } = criarCidade(cena, cfg, { webgpu })
   // os marcos do centro (Coluna da Hora, cinemas, Excelsior, Leões, Mercado de Ferro): src/mundo/marcos1932/
   const marcos1932 = criarMarcosCentro(cena, cfg)
   const marcosNorte = criarMarcosNorte(cena, cfg) // a velha Sé, a Estação Central e o Passeio Público de 1932
@@ -205,6 +208,9 @@ async function iniciar() {
       jogador.trocarCorpo(c)
       // a gente mais próxima vira ator animado, com os mesmos movimentos (mundo/atores.js)
       atores = criarAtores(cena, pessoas, c.clipes, { passadaAndar: c.passadas.andar || 1.4, vat: webgpu && cfg.desempenho.atoresVat, quantos: cfg.personagem.quantosAtores })
+      // 26/10/2026: as texturas do corpo novo (o rosto, a roupa e o mapa dos ossos dos atores) sobem
+      // para a placa agora, e não no primeiro quadro em que o corpo aparece (era o pico de 76 ms)
+      preaquecerTexturas(renderer, cena).catch((e) => console.warn('[maresia] texturas do corpo:', e))
     }).catch((e) => console.error('Corpo novo:', e)))
   }
   // o avô parado perto de onde o jogo começa, de frente para o neto (para julgar o modelo com o filtro)
@@ -257,6 +263,9 @@ async function iniciar() {
   }
   ceu.usarCache(cacheSombra)
   sombraPerto.luz.userData.cacheSombraVizinho = cacheSombra // WebGPU: o mapa de perto desenha os parados também
+  // Fase 2: o mapa da sombra é refeito quando o conjunto de casas muda (no lote das casas a
+  // assinatura dos parados não muda: o aviso vem do bloco de casas)
+  casas.aoMudarCasas((motivo) => cacheSombra.invalidar(motivo))
   if (import.meta.env.DEV && !webgpu) {
     // todo material da cena precisa escrever a saída de luz (gLuz); avisa se algum esqueceu
     const faltando = new Set()
@@ -483,6 +492,22 @@ async function iniciar() {
   // (o compileAsync da vg monta listas de desenho e precisa das matrizes do mundo já calculadas)
   if (webgpu) { prepararCenaWebgpu(cena); cena.updateMatrixWorld(); await prepararMotorPlaca(renderer, cena, camera) }
 
+  // Fase 1 (25/10/2026): no WebGL os shaders são compilados antes de o jogo aparecer. Sem isso, cada material
+  // novo (o das casas, que só entram depois de um teleporte) compila no quadro em que aparece e trava.
+  // ?semPreaquecer desliga, para o A/B.
+  const semPreaquecer = new URLSearchParams(location.search).has('semPreaquecer')
+  // 26/10/2026: as texturas do mundo sobem para a placa antes de o jogo aparecer. Sem isso, a
+  // primeira subida cai no meio da partida (na T4: uma tarefa longa de 83 ms e um quadro de 76 ms
+  // com "texturas novas: 1" na pista do rastreador). O ?semPreaquecer desliga, para o A/B.
+  if (!semPreaquecer) {
+    const t = await preaquecerTexturas(renderer, cena)
+    if (import.meta.env.DEV) console.log('[maresia] texturas pré-aquecidas:', t)
+  }
+  if (!webgpu && cfg.desempenho.preaquecerShaders !== false && !semPreaquecer) {
+    const alvo = pos.rtCor || null // o alvo real do pós: o mesmo programa do jogo
+    await preaquecerWebgl(renderer, cena, camera, { alvo, extras: casas.representantesAquecimento() })
+  }
+
   const contadorFps = criarContadorFps(cfg, () => (governador && governador.degrau > 0 ? governador.nome : ''))
   function quadro() {
     requestAnimationFrame(quadro)
@@ -540,8 +565,21 @@ async function iniciar() {
     cam.yaw = yaw
     cam.iniciado = false
     cfg.tempo.hora = hora
+    // Fase 1: os blocos de casas do destino entram na fila de montagem antes de todo o resto
+    casas.prefetch(x, z)
+    // Fase 2: o mapa da sombra é refeito (a janela se recentra e o mundo à volta é outro)
+    cacheSombra.invalidar('teleporte')
   }
   window.__tempos = tempos
+  // Fase 2: o número de desenhos do quadro (renderer.info.render.calls), o estado da sombra em
+  // cache e o do lote das casas (para comparar o antes e o depois)
+  const desempenho = () => ({
+    desenhos: pos.desenhosCena ?? renderer.info.render.calls,
+    triangulos: pos.triangulosCena ?? renderer.info.render.triangles,
+    geometrias: renderer.info.memory.geometries,
+    sombra: cacheSombra?.stats ?? null,
+    casas: casas.lote?.stats() ?? null,
+  })
   // tamanho fixo do desenho (foto justa): mesma resolução nos dois renderizadores, sem depender da janela
   const tamanhoFixo = (w, h) => {
     tamanhoTravado = !!w
@@ -552,7 +590,9 @@ async function iniciar() {
     camera.updateProjectionMatrix()
     pos.tamanho(w, h, 1)
   }
-  window.maresia = { ferrovia: () => ferrovia, cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, governador, telemetria: tele, pixelRatio: () => renderer.getPixelRatio(), toque, areia, fisica, interacoes, grama, lugares, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932,
+  // `lugares` são os lugares do calçadão (bancos e carrinhos, para as interações);
+  // `lugaresJogo` são os pontos nomeados da cidade de 1932 (a praça, a sé, o mercado), em coordenadas de jogo.
+  window.maresia = { ferrovia: () => ferrovia, cfg, jogador, cena, renderer, cam, estatistica, pos, cacheSombra, sombraPerto, irPara, teclas, passo, controle, canvas, governador, telemetria: tele, pixelRatio: () => renderer.getPixelRatio(), toque, areia, fisica, interacoes, grama, lugares, lugaresJogo, particulas, fogareiros: FOGAREIROS, tamanhoFixo, resolucaoDinamica: dinamica, webgpu, atores: () => atores, pronto: Promise.allSettled(carregamentos), predios, quadras, recusa: RECUSA, frente, vida1932, pessoas, ocupacao1932: ocup1932, urubu, marcos1932, casas, desempenho,
     // para os testes: o módulo three/webgpu e a troca de materiais que o jogo usa (a mesma instância do módulo)
     gpu: webgpu ? { W: moduloWebgpu(), preparar: prepararCenaWebgpu } : null }
   if (import.meta.env.DEV) import('./debug/gravador.js').then((g) => g.instalar(window.maresia))

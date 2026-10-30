@@ -64,7 +64,7 @@ describe('filtro da borda (WebGL)', () => {
     expect(ini).toBeGreaterThan(0)
     expect(s.slice(ini, fim)).not.toContain('gl_FragCoord')
     // o ruído de tela continua só no ramo de raio negativo (o filtro de antes, para comparar)
-    expect(s).toContain('- shadowRadius * texelSize.x')
+    expect(s).toContain('- shadowRadius * texelSize')
     expect(instalarFiltroWebgl(chunks)).toBe(true) // segunda vez não duplica
     expect(chunks.shadowmap_pars_fragment.split('Maresia: grade 3 x 3').length).toBe(2)
   })

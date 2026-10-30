@@ -1,4 +1,4 @@
-// KAN-74 (F4): quando o mapa de sombra dos objetos parados precisa ser refeito. Lógica pura (sem three, sem GPU),
+// KAN-74 (F4) e Fase 2: quando o mapa de sombra precisa ser refeito. Lógica pura (sem three, sem GPU),
 // para testar em segundos.
 //
 // O mapa de sombra é uma janela quadrada em torno de um centro, olhando na direção do sol. O que está parado
@@ -12,6 +12,10 @@
 // mapa dos parados era refeito ~5 vezes por segundo (cada refazer é um passe de sombra inteiro: era o maior pico
 // de quadro do jogo). O giro do sol passa a esperar `intervaloMin` segundos entre um refazer e o outro; a janela
 // que andou com o jogador e o conjunto de parados não esperam (esses precisam valer na hora, senão a sombra some).
+//
+// Fase 2 (25/10/2026): a janela do mapa também se recentra por último (a grade de texels fica presa ao ponto
+// anterior, ver sombra-luz.js) e o passe de sombra só acontece quando alguma coisa muda de verdade. A casa que
+// aparece (o bloco de casas montado) e o teleporte pedem um refazer pelo invalidar('casas'/'teleporte').
 
 const GRAUS = Math.PI / 180
 
@@ -33,9 +37,25 @@ export class PoliticaCacheSombra {
     this.refeitos = 0
     this.motivos = {}
     this.ultimoRefazer = -Infinity // quando o mapa dos parados foi refeito pela última vez
+    this.assinatura = null // assinatura do conjunto de parados do último refazer (sombra-estatica.js)
+    this.tamanho = null // chave do tamanho do mapa no último refazer
   }
 
   invalidar(motivo = 'invalidado') { this.pendente = motivo }
+
+  // O que mudou fora da pose da luz: o conjunto de parados (a assinatura) ou o tamanho do mapa.
+  // Devolve o motivo do refazer, ou null se nada mudou. Quem chama guarda o estado com marcar().
+  estado(assinatura = null, tamanho = null) {
+    if (tamanho !== null && this.tamanho !== null && tamanho !== this.tamanho) return 'tamanho'
+    if (assinatura !== null && this.assinatura !== null && assinatura !== this.assinatura) return 'conjunto'
+    return null
+  }
+
+  // Guarda o estado do mapa que vale agora (chamar depois de refazer).
+  marcar(assinatura = null, tamanho = null) {
+    if (assinatura !== null) this.assinatura = assinatura
+    if (tamanho !== null) this.tamanho = tamanho
+  }
 
   // Pose da luz deste quadro. Cache vale: devolve a guardada. Não vale: guarda a nova e manda refazer.
   // agora: o relógio em segundos (o que for passado pelo chamador); só o giro do sol usa a espera mínima.
