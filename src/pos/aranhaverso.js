@@ -832,10 +832,6 @@ export class Aranhaverso {
     r.setClearColor(this.corFundo, 1)
     r.clear()
     r.render(this.cena, cam)
-    // Fase 2: os desenhos da cena (com a sombra dentro). O renderer.info zera a contagem a cada
-    // render(), e o pós ainda faz mais uns passes depois: quem guarda é este número.
-    this.desenhosCena = r.info.render.calls
-    this.triangulosCena = r.info.render.triangles
 
     // 3. oclusão
     if (e.oclusao > 0) {

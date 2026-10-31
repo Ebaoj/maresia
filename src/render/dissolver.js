@@ -31,10 +31,8 @@ export const GLSL_DISSOLVER_VERT = /* glsl */ `
 flat varying vec3 vAncoraD;
 `
 export const GLSL_ANCORA = /* glsl */ `
-  #if defined(USE_INSTANCING)
+  #ifdef USE_INSTANCING
     vAncoraD = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-  #elif defined(USE_BATCHING)
-    vAncoraD = (modelMatrix * batchingMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
   #else
     vAncoraD = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
   #endif

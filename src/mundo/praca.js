@@ -155,8 +155,8 @@ function geometriaArbusto(rndA) {
 // de 28/08/2022, Acervo Fortaleza), e antes disso quem iluminava a praça era a
 // Companhia do Gás. O lampião de ferro vai no limite da praça, um a cada ~30 m
 // (a distância que João Nogueira deu para a iluminação de 1848), e sem fio
-// nenhum: o anel de postes da Light com o fio dando a volta era anacrônico, e o
-// fio dele cortava a praça em diagonal, por causa do "braço" falso do
+// nenhum: o anel de postes da Light com o fio dando a volta era anacrônico —
+// e o fio dele cortava a praça em diagonal, por causa do "braço" falso do
 // contorno antigo. As contas e as fontes estão em docs/mapa-1932.md.
 const PASSO_LAMPIAO = 30 // 30 m de rua (João Nogueira, a iluminação de 1848): a praça
 // está em tamanho real, então o passo é o do mundo real

@@ -396,13 +396,6 @@ export const PADRAO = {
     cacheSombra: true,     // KAN-74 (F4): sombra dos objetos parados em cache (só WebGL); refaz com o sol, ao andar mais que cacheSombraRaio ou quando um parado aparece ou some. Ver docs/motor-f4-cache-sombra.md
     cacheSombraRaio: 43,   // metros que o jogador anda antes de a janela de sombra (173 m) se recentrar; a sombra sempre cobre pelo menos 173 - raio
     sombraCacheIntervaloMin: 0, // segundos (0 = como era; na T4, 0,5 ficou no ruído) entre dois refazimentos do cache por giro do sol (com passoSombraMin 0 o sol não para: era ~5x/s, cada vez um pico de quadro)
-    // Fase 2 (25/10/2026, no WebGL): o mapa de sombra do sol é refeito INTEIRO só quando alguma coisa muda (o sol gira
-    // além do limiar, o jogador sai da janela e ela se recentra na grade de texels, aparece ou some uma casa,
-    // o teleporte, o tamanho do mapa). Entre um refazer e outro o passe de sombra some do quadro: era o peso
-    // de tela cheia do M1. O que se mexe perto da câmera (jogador, gente, bicho) continua com sombra nova pelo
-    // mapa de perto (sombraPertoACada). Desligado: o caminho de camadas do F4 (a cópia do mapa em cache todo quadro).
-    // No WebGPU o cache é outro (render/cache-sombra-gpu.js) e esta chave não muda nada lá.
-    sombraEstatica: true,
     nevoaPerto: 403,     // unidades de jogo: 140 no mundo comprimido, vezes o fator 2,88 da descompressao da praca
     nevoaLonge: 2593,
     casasPerto: 70,      // 27/10/2026: até essa distância (m) a casa de 1932 é a detalhada; depois, a caixa com fachada pintada (quarteirao.js)
@@ -565,16 +558,6 @@ export const PADRAO = {
     qualidadeEscolhida: 'medio', // o perfil de partida do governador (?qualidade= muda; não é ajuste do painel)
     qualidadeFixa: false,  // true quando a URL fixou um perfil
     casasPorQuadro: 1,     // 25/10/2026: blocos de casas detalhadas montados por quadro (era 2: dois blocos num quadro davam ~650 ms na T4 depois do teleporte)
-    fatiarMontagem: true,  // 25/10/2026 (Fase 1): a montagem dos blocos de casas é fatiada em passos, com orçamento de tempo por quadro (desligado: o bloco inteiro num quadro, como antes)
-    orcamentoMontagemMs: 3, // 25/10/2026 (Fase 2: 3 ms medido melhor que 2 e 4 na T4; era 4 na Fase 1): quanto tempo por quadro a montagem dos blocos de casas pode gastar (ms)
-    orcamentoUploadMB: 16, // 25/10/2026 (Fase 1): quanto de geometria nova sobe para a placa por quadro (MB)
-    raioPrefetch: 96,      // 25/10/2026 (Fase 1): o anel de blocos montados à frente do jogador (m), para o casario já estar pronto quando ele chega
-    preaquecerShaders: true, // 25/10/2026 (Fase 1): no WebGL, compilar os shaders e desenhar uma vez antes de mostrar o jogo (?semPreaquecer desliga, para o A/B)
-    casasEmLote: true,     // 25/10/2026 (Fase 2): as casas de cada material num BatchedMesh só (um desenho por material, em vez de cinco por bloco); desligado: uma malha por pilha, como antes
-    casasLoteVertices: 5350185, // 26/10/2026: os vértices que os lotes de casas reservam na placa, no total (é o espaço FINAL: o lote nunca cresce, e o bloco que não cabe usa as malhas de antes, uma por pilha). A fatia de cada material sai da medição real do mapa (src/mundo/casas-capacidade.json, feita por scripts/medir-casas.mjs): o lote guarda o anel de blocos que o jogo desenha por perto (o pior anel do mapa, 4.863.804 vértices em 23 blocos) com 10% de folga. O mapa inteiro pediria 74.646.324 vértices (2,99 GB): fora do que a placa aguenta, e o resto do mapa é desenhado com as caixas de fachada pintada (o LOD de longe)
-    casasLoteIndices: 0, // 26/10/2026: o espaço de índice de cada lote. A geometria da casa é uma sopa de triângulos (cada peça entra com os seus vértices, sem os compartilhados): o lote não tem buffer de índice. Se um dia a geometria vier indexada, este número é o que o lote reserva (com mais de 65.535 vértices no lote o índice tem de ser de 32 bits: 4 bytes por vértice)
-    casasLoteInstancias: 2048, // 26/10/2026: as instâncias que cada lote reserva (o mapa tem 1.280 blocos de casas: um bloco é uma instância do lote do seu material)
-    casasLoteFatiaVertices: 65536, // 26/10/2026: o teto de vértices por fatia na escrita do lote (o orçamento do quadro é o que manda; este teto é a rede de segurança)
     resolucaoMin: 0.9,     // R1: menor escala que a resolução dinâmica aceita (0,9 = 72% da linha de 1,25; abaixo disso a retícula e o papel engrossam, docs/capturas/fluido/res-*.jpg)
     orcamentoQuadroMs: 16.7, // R1: orçamento de tempo de quadro da resolução dinâmica (60 Hz)
     cronometroGpu: true,   // 27/10/2026 (render/custo-quadro.js): no WebGL, o custo do quadro do governador usa também o cronômetro da placa (EXT_disjoint_timer_query_webgl2) quando existir; false: só a CPU
@@ -663,38 +646,6 @@ export function aplicarHoraDeAbrir(cfg, busca) {
   cfg.tempo.hora = Number.isFinite(h) ? ((h % 24) + 24) % 24 : PADRAO.tempo.hora
 }
 
-// Ajustes pela URL (25/10/2026, Fase 2): ?cfg=mundo.sombraEstatica=0;desempenho.casasEmLote=0
-// Vale por cima do que está salvo, só nesta abertura (como ?leve e ?qualidade). O caminho da chave é o mesmo do
-// painel (mundo.sombraEstatica). O valor é lido pelo tipo que a chave já tem: booleano, número ou texto.
-// Vários ajustes: separados por ponto e vírgula dentro do mesmo ?cfg=, ou com vários ?cfg= na URL.
-// Devolve a lista das chaves que mudou (para o console e para o teste).
-export function aplicarCfgDaUrl(cfg, busca) {
-  const p = new URLSearchParams(busca || '')
-  const mudou = []
-  for (const bruto of p.getAll('cfg')) {
-    for (const par of bruto.split(/[;,]/)) {
-      const partes = par.split('=')
-      if (partes.length < 2) continue
-      const caminho = partes[0].trim()
-      const valor = partes.slice(1).join('=').trim()
-      const chaves = caminho.split('.')
-      const ultima = chaves.pop()
-      if (!ultima) continue
-      const dono = chaves.reduce((o, k) => (o && typeof o === 'object' ? o[k] : undefined), cfg)
-      if (!dono || !(ultima in dono)) continue
-      const atual = dono[ultima]
-      if (typeof atual === 'boolean') dono[ultima] = !(valor === '0' || valor === 'false' || valor === 'nao' || valor === 'off')
-      else if (typeof atual === 'number') {
-        const n = Number(valor)
-        if (Number.isFinite(n)) dono[ultima] = n
-        else continue
-      } else dono[ultima] = valor
-      mudou.push(caminho)
-    }
-  }
-  return mudou
-}
-
 export function carregarConfig() {
   const cfg = copiaProfunda(PADRAO)
   try {
@@ -710,8 +661,6 @@ export function carregarConfig() {
   cfg.desempenho.qualidadeEscolhida = PADRAO.desempenho.qualidadeEscolhida
   cfg.desempenho.qualidadeFixa = false
   aplicarQualidadeDaUrl(cfg, globalThis.location?.search)
-  // ajustes pela URL (?cfg=mundo.sombraEstatica=0): por cima do salvo e do perfil, só nesta abertura
-  aplicarCfgDaUrl(cfg, globalThis.location?.search)
   return cfg
 }
 

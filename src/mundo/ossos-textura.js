@@ -5,7 +5,6 @@
 
 import * as THREE from 'three'
 import { criarBoneco } from '../jogador/esqueleto.js'
-import { registrarTextura } from './preaquecer-texturas.js'
 
 // Ordem fixa das peças do boneco: uma malha instanciada por papel (a cor de cada uma vem por instância).
 export const PAPEIS = ['pele', 'camisa', 'listra', 'calca', 'chapeu', 'cabelo']
@@ -61,9 +60,6 @@ export function assarOssos({ boneco, clipes, fps = 30 }) {
   textura.generateMipmaps = false
   textura.flipY = false
   textura.needsUpdate = true
-  // o pré-aquecimento sobe esta textura na placa (ela é um uniform do material dos atores: sem
-  // registro, a subida dela só aconteceria no primeiro quadro em que o ator aparecesse)
-  registrarTextura(textura)
   return { textura, nOssos, clipes: saida, fps }
 }
 

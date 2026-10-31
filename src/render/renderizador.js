@@ -33,7 +33,7 @@ export async function criarRenderizador(cfg, canvas) {
     // registrar as classes de luz do three, nenhuma luz da cena era achada e tudo saía preto
     for (const [no, classe] of [[W.DirectionalLightNode, THREE.DirectionalLight], [W.HemisphereLightNode, THREE.HemisphereLight],
       [W.AmbientLightNode, THREE.AmbientLight], [W.PointLightNode, THREE.PointLight], [W.SpotLightNode, THREE.SpotLight],
-      [W.RectAreaLightNode, THREE.RectAreaLight], [W.LightProbeNode, THREE.LightProbe]]) classe.registerNode(no)
+      [W.RectAreaLightNode, THREE.RectAreaLight], [W.LightProbeNode, THREE.LightProbe]]) renderer.library.addLight(no, classe)
     await renderer.init()
     // Matrizes das cópias sempre como atributo de vértice: com elas numa lista em uniform (o que o three faz quando
     // cabem no limite de 64 KB), cada objeto ganhava um nome de lista próprio no código do shader, nenhum programa
@@ -272,12 +272,6 @@ const pergunta = {
   iguais: () => {
     const { obs, ro, nf } = pergunta
     try {
-      // r187: antes do atalho dos parados o three confere troca do alvo de saída e buffer descartado (FULL nos dois)
-      const dados = obs.getRenderObjectData(ro)
-      const alvo = obs.getOutputTarget(nf.renderer)
-      if (dados.outputTarget !== alvo) { dados.outputTarget = alvo; return false }
-      const attrs = ro._geometries.attributes
-      if (dados.attributesDisposeVersion !== attrs.disposeVersion && obs.hasDisposedAttributes(ro, dados)) return false
       return obs.equals(ro, obs.getLights(ro.lightsNode, nf.renderId), nf.renderId)
     } catch (e) { // estado do observador que não bate com o objeto (luz que ganhou ou perdeu sombra): volta ao FULL de sempre
       if (estatisticas.erros++ === 0) console.warn('Observador de parados: equals() falhou, o objeto segue em refresh total.', e)

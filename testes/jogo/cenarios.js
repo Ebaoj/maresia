@@ -133,8 +133,8 @@ async function comLuzDoDia(m, f) {
 // cenário usava o x fixo (340, 20), que era o x da fatia antes do mapa mudar de
 // escala (a compressão no quadro da grade, 06f9525). Com o mapa novo, esse x
 // saiu do mundo jogável, a física jogava o jogador para a borda (longe dos
-// bancos) e o cenário sentarLevantar reprovava com "não chegou a sentar", a
-// mesma falha que a fatia teve e que foi corrigida em 715963c.
+// bancos) e o cenário sentarLevantar reprovava com "não chegou a sentar" —
+// a mesma falha que a fatia teve e que foi corrigida em 715963c.
 let pontoDeReferencia = null
 async function referencia() {
   if (!pontoDeReferencia) {

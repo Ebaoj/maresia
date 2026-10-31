@@ -266,14 +266,8 @@ function cenarioReal() {
     object: objeto, material: mat, geometry: objeto.geometry, lightsNode: luzes, bundle: null,
     context: { width: 100, height: 100 }, scene: { environment: null, environmentIntensity: 1, environmentRotation: new THREE.Euler() },
     getNodeBuilderState: () => estado,
-    // r187: o observador confere se os buffers foram descartados (attributes.disposeVersion, has)
-    _geometries: { attributes: { disposeVersion: 0, has: () => true } }, getVertexBuffers: () => [], getIndex: () => null,
   }
-  // r187: o observador lê o alvo de saída do renderer (getRenderTarget, getOutputRenderTarget, getCanvasTarget)
-  const canvasAlvo = {}
-  const renderer = { getMRT: () => null, getRenderTarget: () => null, getOutputRenderTarget: () => null, getCanvasTarget: () => canvasAlvo }
-  ro.renderer = renderer
-  const frame = (renderId) => ({ renderId, renderer })
+  const frame = (renderId) => ({ renderId, renderer: { getMRT: () => null } })
   return { Observador, observer, objeto, mat, ro, frame, estado }
 }
 

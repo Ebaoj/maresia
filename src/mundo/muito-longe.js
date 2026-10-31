@@ -155,8 +155,7 @@ export class MuitoLonge {
       for (const m of c.malhas) m.visible = junta
       for (const u of c.unidades) {
         u.suspenso = junta
-        // a casa detalhada pode estar no lote das casas (Fase 2): quem esconde é a unidade
-        if (junta) { if (u.esconder) u.esconder(); else for (const m of u.todas) m.visible = false }
+        if (junta) for (const m of u.todas) m.visible = false
         else u.retomar()
       }
     }
