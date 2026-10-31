@@ -15,6 +15,9 @@ export function explicarQuadro({ de, ate, marcas = [], recursos = [], longas = [
   if (d('programas') > 0) pistas.push(`shaders novos: ${d('programas')}`)
   if (d('geometrias') > 0) pistas.push(`geometrias novas: ${d('geometrias')}`)
   if (d('texturas') > 0) pistas.push(`texturas novas: ${d('texturas')}`)
+  // Fase 2: o número de desenhos do quadro (renderer.info.render.calls): se o quadro foi caro por
+  // causa de muitos desenhos, isto diz (a meta do plano é 100 desenhos no centro)
+  if (depois.desenhos > 0) pistas.push(`desenhos: ${depois.desenhos}`)
   if (d('heapMB') < -8) pistas.push(`heap caiu ${Math.round(-d('heapMB'))} MB (coleta de lixo?)`)
   return pistas
 }
@@ -38,6 +41,8 @@ export function criarRastreador(m) {
       programas: i?.programs?.length ?? 0,
       geometrias: i?.memory?.geometries ?? 0,
       texturas: i?.memory?.textures ?? 0,
+      // Fase 2: os desenhos do quadro (renderer.info.render.calls)
+      desenhos: i?.render?.calls ?? 0,
       heapMB: performance.memory ? performance.memory.usedJSHeapSize / 1048576 : 0,
     }
   }

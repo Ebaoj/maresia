@@ -296,7 +296,7 @@ function cidade(cas, sim) {
   return quadras
 }
 
-export function criarCidade(cena, cfg) {
+export function criarCidade(cena, cfg, opcoes = {}) {
   const opcCas = { celula: [2.3, 3.3], margem: [0.3, 0.2], loja: 3.4, vidro: '#3b2c26', telhado: CAL.telha, faixa: '#f4eee2', faixaAltura: 0.09, chanceAcesa: 0.55, moldura: '#f3ede0', cornija: 1, torto: 1, interior: '#33261f', madeira: 1, veneziana1: ESQUADRIAS[0], veneziana2: ESQUADRIAS[1], veneziana3: ESQUADRIAS[2], barra: 0.4, desgaste: 0.6, taipa: CAL.taipa }
   const opcSim = { celula: [2.6, 2.8], margem: [0.36, 0.33], terreo: 0, vidro: '#3b2c26', telhado: '#a3836a', faixa: '#efe6d2', faixaAltura: 0, luz: '#ffb85c', chanceAcesa: 0.6, moldura: '#e4d6bb', torto: 1.6, madeira: 1, veneziana2: ESQUADRIAS[2], veneziana3: ESQUADRIAS[3], veneziana1: ESQUADRIAS[1], barra: 0.55, desgaste: 0.9, taipa: CAL.taipa }
   const cas = new Lote(materialPredio(opcCas), 'casario')
@@ -306,7 +306,7 @@ export function criarCidade(cena, cfg) {
   const muros = preencheVaus(cas, cfg)
 
   // casas com geometria de verdade (src/mundo/quarteirao.js); de longe, a caixa com fachada pintada
-  const casas = criarCasas(cena, cas.itens, sim.itens)
+  const casas = criarCasas(cena, cas.itens, sim.itens, cfg, opcoes)
   // a caixa de longe ganha uma segunda versão do material, com a troca por pontilhado (render/dissolver.js), usada
   // só no bloco que já tem a casa detalhada montada
   casas.registrarLonge(cas.criar(cena, 'casario-longe', false), false, marcarDissolver(materialPredio(opcCas), 1, faixasDissolver.casas, 'bloco'))
