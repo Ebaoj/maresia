@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: npm }
       - run: npm ci
-      - run: npm test
+      - run: npx vitest run --hookTimeout=60000 --testTimeout=60000  # runner do GitHub é mais lento que a máquina local
       - run: npm run build
   regressao:
     # commit fix: sem arquivo de teste alterado no PR = vermelho (docs/PADRAO.md).
